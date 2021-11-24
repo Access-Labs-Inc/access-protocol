@@ -11,7 +11,7 @@ use solana_program::entrypoint;
 #[cfg(not(feature = "no-entrypoint"))]
 entrypoint!(process_instruction);
 
-/// The entrypoint to the Jabber program
+/// The entrypoint to the program
 pub fn process_instruction(
     program_id: &Pubkey,
     accounts: &[AccountInfo],

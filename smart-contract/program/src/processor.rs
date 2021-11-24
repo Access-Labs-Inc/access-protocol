@@ -29,9 +29,11 @@ impl Processor {
         match instruction {
             MediaInstruction::CreateCentralState(params) => {
                 msg!("Instruction: Create central state");
+                create_central_state::process_create_central_state(program_id, accounts, params)?;
             }
             MediaInstruction::CreateStakePool(params) => {
                 msg!("Instruction: Create stake pool");
+                create_stake_pool::process_create_stake_pool(program_id, accounts, params)?;
             }
             MediaInstruction::CreateStakeAccount(params) => {
                 msg!("Instruction: Create stake account");

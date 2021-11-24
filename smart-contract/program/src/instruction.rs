@@ -1,3 +1,4 @@
+use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 
 pub use crate::processor::{
@@ -6,10 +7,24 @@ pub use crate::processor::{
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub enum MediaInstruction {
-    // Create central state
+    /// Create central state
+    ///
+    /// Accounts expected by this instruction:
+    ///
+    /// 1. `[writable]` The central state account
+    /// 2. `[]` The system program account
+    /// 3. `[writable, signer]` The fee payer account
+    /// 4. `[]` The rent sysvar account
     CreateCentralState(create_central_state::Params),
 
-    // Create stake pool
+    /// Create stake pool
+    ///
+    /// Accounts expected by this instruction:
+    ///
+    /// 1. `[writable]` The stake pool account
+    /// 2. `[]` The system program account
+    /// 3. `[writable, signer]` The fee payer account
+    /// 4. `[]` The rent sysvar account
     CreateStakePool(create_stake_pool::Params),
 
     // Create stake account
