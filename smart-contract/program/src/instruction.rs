@@ -27,7 +27,14 @@ pub enum MediaInstruction {
     /// 4. `[]` The rent sysvar account
     CreateStakePool(create_stake_pool::Params),
 
-    // Create stake account
+    /// Create stake account
+    ///
+    /// Accounts expected by this instruction:
+    ///
+    /// 1. `[writable]` The stake account
+    /// 2. `[]` The system program account
+    /// 3. `[writable, signer]` The fee payer account
+    /// 4. `[]` The rent sysvar account
     CreateStakeAccount(create_stake_account::Params),
 
     // Stake tokens into a stake pool

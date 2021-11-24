@@ -73,7 +73,13 @@ impl StakePool {
         destination: &[u8; 32],
         program_id: &Pubkey,
     ) -> Pubkey {
-        let seeds: &[&[u8]] = &[&[*nonce], name.as_bytes(), owner, destination];
+        let seeds: &[&[u8]] = &[
+            StakePool::SEED.as_bytes(),
+            name.as_bytes(),
+            owner,
+            destination,
+            &[*nonce],
+        ];
         let key = Pubkey::create_program_address(seeds, program_id).unwrap();
         key
     }
@@ -101,6 +107,47 @@ pub struct StakeAccount {
 
     // Amount staked in the account
     pub stake_amount: u64,
+
+    // Stake pool to which the account belongs to
+    pub stake_pool: [u8; 32],
+}
+
+impl StakeAccount {
+    pub const SEED: &'static str = "stake_account";
+    pub const LEN: usize = 1 + 32 + 8 + 32;
+
+    pub fn new(owner: [u8; 32], stake_pool: [u8; 32]) -> Self {
+        Self {
+            tag: Tag::StakeAccount,
+            owner,
+            stake_amount: 0,
+            stake_pool,
+        }
+    }
+
+    pub fn create_key(
+        nonce: &u8,
+        owner: &[u8; 32],
+        stake_pool: &[u8; 32],
+        program_id: &Pubkey,
+    ) -> Pubkey {
+        let seeds: &[&[u8]] = &[StakeAccount::SEED.as_bytes(), owner, stake_pool, &[*nonce]];
+        let key = Pubkey::create_program_address(seeds, program_id).unwrap();
+        key
+    }
+
+    pub fn save(&self, mut dst: &mut [u8]) {
+        self.serialize(&mut dst).unwrap()
+    }
+
+    pub fn from_account_info(a: &AccountInfo) -> Result<StakeAccount, ProgramError> {
+        let mut data = &a.data.borrow() as &[u8];
+        if data[0] != Tag::StakeAccount as u8 && data[0] != Tag::Uninitialized as u8 {
+            return Err(MediaError::DataTypeMismatch.into());
+        }
+        let result = StakeAccount::deserialize(&mut data)?;
+        Ok(result)
+    }
 }
 #[derive(BorshSerialize, BorshDeserialize, Debug, PartialEq)]
 pub struct CentralState {
