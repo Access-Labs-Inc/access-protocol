@@ -32,5 +32,5 @@ pub enum MediaInstruction {
     CloseStakeAccount,
 
     // Change inflation rate
-    ChangeInflationRate(change_inflation::Params),
+    ChangeInflation(change_inflation::Params),
 }

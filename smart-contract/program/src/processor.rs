@@ -51,7 +51,7 @@ impl Processor {
             MediaInstruction::CloseStakeAccount => {
                 msg!("Instruction: Close stake account");
             }
-            MediaInstruction::ChangeInflationRate(params) => {
+            MediaInstruction::ChangeInflation(params) => {
                 msg!("Instruction: Change inflation rate");
             }
         }

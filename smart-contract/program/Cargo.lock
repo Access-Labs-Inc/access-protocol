@@ -177,6 +177,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d696c370c750c948ada61c69a0ee2cbbb9c50b1019ddb86d9317157a99c2cae"
 
 [[package]]
+name = "bonfida-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2 1.0.32",
+ "quote 1.0.10",
+ "solana-program",
+ "syn 1.0.81",
+]
+
+[[package]]
+name = "bonfida-utils"
+version = "0.1.0"
+dependencies = [
+ "bonfida-macros",
+ "borsh",
+ "solana-program",
+]
+
+[[package]]
 name = "borsh"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2738,6 +2757,7 @@ name = "the-block"
 version = "0.1.0"
 dependencies = [
  "arrayref",
+ "bonfida-utils",
  "borsh",
  "enumflags2",
  "hexdump",

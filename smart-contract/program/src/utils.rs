@@ -1,5 +1,8 @@
-use crate::state::{CentralState, StakeAccount, StakePool, SECONDS_IN_DAY};
+use crate::state::{CentralState, StakePool, SECONDS_IN_DAY};
+use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, pubkey::Pubkey};
 use spl_token::state::{Account, Mint};
+
+use crate::error::MediaError;
 
 pub fn get_balance(account: &Account) -> u64 {
     account.amount
@@ -29,6 +32,31 @@ pub fn calc_reward(
         .unwrap();
 
     amount.checked_mul(period).unwrap()
+}
+
+pub fn check_account_key(account: &AccountInfo, key: &Pubkey, error: MediaError) -> ProgramResult {
+    if account.key != key {
+        return Err(error.into());
+    }
+    Ok(())
+}
+
+pub fn check_account_owner(
+    account: &AccountInfo,
+    owner: &Pubkey,
+    error: MediaError,
+) -> ProgramResult {
+    if account.owner != owner {
+        return Err(error.into());
+    }
+    Ok(())
+}
+
+pub fn check_signer(account: &AccountInfo, error: MediaError) -> ProgramResult {
+    if !(account.is_signer) {
+        return Err(error.into());
+    }
+    Ok(())
 }
 
 #[test]

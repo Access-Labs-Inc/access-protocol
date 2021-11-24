@@ -9,6 +9,16 @@ pub type MediaResult<T = ()> = Result<T, MediaError>;
 pub enum MediaError {
     #[error("This account is already initialized")]
     AlreadyInitialized,
+    #[error("Data type mismatch")]
+    DataTypeMismatch,
+    #[error("Wrong system program key")]
+    WrongSystemProgram,
+    #[error("Wrong rent sysvar key")]
+    WrongRent,
+    #[error("Wrong account owner")]
+    WrongOwner,
+    #[error("Account not generated deterministically")]
+    AccountNotDeterministic,
 }
 
 impl From<MediaError> for ProgramError {
