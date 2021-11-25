@@ -1,5 +1,5 @@
-use crate::state::{CentralState, StakePool, SECONDS_IN_DAY};
-use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, pubkey::Pubkey};
+use crate::state::{CentralState, SECONDS_IN_DAY, StakeAccount, StakePool};
+use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, msg, pubkey::Pubkey};
 use spl_token::state::{Account, Mint};
 
 use crate::error::MediaError;
@@ -55,6 +55,22 @@ pub fn check_account_owner(
 pub fn check_signer(account: &AccountInfo, error: MediaError) -> ProgramResult {
     if !(account.is_signer) {
         return Err(error.into());
+    }
+    Ok(())
+}
+
+pub fn assert_empty_stake_pool(stake_pool: &StakePool) -> ProgramResult {
+    if stake_pool.total_staked != 0 {
+        msg!("The stake pool must be empty");
+        return Err(MediaError::StakePoolMustBeEmpty.into());
+    }
+    Ok(())
+}
+
+pub fn assert_empty_stake_account(stake_account: &StakeAccount) -> ProgramResult {
+    if stake_account.stake_amount != 0 {
+        msg!("The stake account must be empty");
+        return Err(MediaError::StakeAccountMustBeEmpty.into());
     }
     Ok(())
 }

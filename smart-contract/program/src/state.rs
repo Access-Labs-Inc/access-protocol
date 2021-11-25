@@ -96,6 +96,10 @@ impl StakePool {
         let result = StakePool::deserialize(&mut data)?;
         Ok(result)
     }
+
+    pub fn close(&mut self) {
+        self.tag = Tag::Deleted
+    }
 }
 #[derive(BorshSerialize, BorshDeserialize, Debug, PartialEq)]
 pub struct StakeAccount {
@@ -147,6 +151,10 @@ impl StakeAccount {
         }
         let result = StakeAccount::deserialize(&mut data)?;
         Ok(result)
+    }
+
+    pub fn close(&mut self) {
+        self.tag = Tag::Deleted
     }
 }
 #[derive(BorshSerialize, BorshDeserialize, Debug, PartialEq)]

@@ -19,6 +19,14 @@ pub enum MediaError {
     WrongOwner,
     #[error("Account not generated deterministically")]
     AccountNotDeterministic,
+    #[error("The stake pool owner must sign")]
+    StakePoolOwnerMustSign,
+    #[error("Wrong stake pool owner")]
+    WrongStakePoolOwner,
+    #[error("The stake pool must be empty")]
+    StakePoolMustBeEmpty,
+    #[error("The stake account must be empty")]
+    StakeAccountMustBeEmpty,
 }
 
 impl From<MediaError> for ProgramError {

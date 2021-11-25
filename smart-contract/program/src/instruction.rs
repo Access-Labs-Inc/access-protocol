@@ -2,7 +2,8 @@ use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 
 pub use crate::processor::{
-    change_inflation, create_central_state, create_stake_account, create_stake_pool, stake, unstake,
+    change_inflation, close_stake_account, close_stake_pool, create_central_state,
+    create_stake_account, create_stake_pool, stake, unstake,
 };
 
 #[derive(BorshDeserialize, BorshSerialize)]

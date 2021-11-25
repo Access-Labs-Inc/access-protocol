@@ -2,7 +2,6 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
-    msg,
     program_error::ProgramError,
     pubkey::Pubkey,
     system_program, sysvar,
@@ -11,8 +10,10 @@ use solana_program::{
 use crate::state::StakeAccount;
 use crate::{cpi::Cpi, error::MediaError};
 
+use bonfida_utils::{BorshSize, InstructionsAccount};
+
 use crate::utils::{check_account_key, check_account_owner};
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 pub struct Params {
     // The PDA nonce
     pub nonce: u8,
@@ -22,14 +23,17 @@ pub struct Params {
     pub stake_pool: [u8; 32],
 }
 
-struct Accounts<'a, 'b: 'a> {
-    stake_account: &'a AccountInfo<'b>,
-    system_program: &'a AccountInfo<'b>,
-    fee_payer: &'a AccountInfo<'b>,
-    rent_sysvar_account: &'a AccountInfo<'b>,
+#[derive(InstructionsAccount)]
+struct Accounts<'a, T> {
+    #[cons(writable)]
+    stake_account: &'a T,
+    system_program: &'a T,
+    #[cons(writable, signer)]
+    fee_payer: &'a T,
+    rent_sysvar_account: &'a T,
 }
 
-impl<'a, 'b: 'a> Accounts<'a, 'b> {
+impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     pub fn parse(accounts: &'a [AccountInfo<'b>]) -> Result<Self, ProgramError> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
