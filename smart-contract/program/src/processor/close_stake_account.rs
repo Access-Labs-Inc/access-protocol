@@ -7,7 +7,9 @@ use solana_program::{
     system_program,
 };
 
-use crate::utils::{assert_empty_stake_account, check_account_key, check_account_owner, check_signer};
+use crate::utils::{
+    assert_empty_stake_account, check_account_key, check_account_owner, check_signer,
+};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
 use crate::error::MediaError;
@@ -52,11 +54,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         )?;
 
         // Check ownership
-        check_account_owner(
-            accounts.stake_account,
-            program_id,
-            MediaError::WrongOwner,
-        )?;
+        check_account_owner(accounts.stake_account, program_id, MediaError::WrongOwner)?;
 
         // Check signer
         check_signer(accounts.owner, MediaError::StakePoolOwnerMustSign)?;
@@ -74,8 +72,8 @@ pub fn process_close_stake_account(
 
     let Params {
         nonce,
-        owner, 
-        stake_pool
+        owner,
+        stake_pool,
     } = params;
 
     let derived_stake_key = StakeAccount::create_key(&nonce, &owner, &stake_pool, program_id);

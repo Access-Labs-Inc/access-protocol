@@ -7,8 +7,8 @@ use solana_program::{
     system_program, sysvar,
 };
 
-use crate::state::StakePool;
 use crate::{cpi::Cpi, error::MediaError};
+use crate::{state::StakePool, utils::assert_valid_vault};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
 use crate::utils::{check_account_key, check_account_owner};
@@ -33,6 +33,7 @@ struct Accounts<'a, T> {
     #[cons(writable, signer)]
     fee_payer: &'a T,
     rent_sysvar_account: &'a T,
+    vault: &'a T,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -43,6 +44,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             system_program: next_account_info(accounts_iter)?,
             fee_payer: next_account_info(accounts_iter)?,
             rent_sysvar_account: next_account_info(accounts_iter)?,
+            vault: next_account_info(accounts_iter)?,
         };
 
         // Check keys
@@ -89,7 +91,15 @@ pub fn process_create_stake_pool(
         MediaError::AccountNotDeterministic,
     )?;
 
-    let stake_pool = StakePool::new(params.owner, params.destination, params.nonce, &params.name);
+    assert_valid_vault(accounts.vault, &derived_stake_key)?;
+
+    let stake_pool = StakePool::new(
+        params.owner,
+        params.destination,
+        params.nonce,
+        &params.name,
+        accounts.vault.key.to_bytes(),
+    );
 
     Cpi::create_account(
         program_id,
@@ -98,10 +108,10 @@ pub fn process_create_stake_pool(
         accounts.stake_pool_account,
         accounts.rent_sysvar_account,
         &[
-            &[params.nonce],
             params.name.as_bytes(),
             &params.owner,
             &params.destination,
+            &[params.nonce],
         ],
         stake_pool.len(),
     )?;

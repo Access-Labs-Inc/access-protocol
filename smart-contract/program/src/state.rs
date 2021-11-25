@@ -2,6 +2,7 @@ use bonfida_utils::pubkey;
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::account_info::AccountInfo;
 use solana_program::clock::Clock;
+use solana_program::entrypoint::ProgramResult;
 use solana_program::program_error::ProgramError;
 use solana_program::pubkey::Pubkey;
 use solana_program::sysvar::Sysvar;
@@ -9,7 +10,7 @@ use solana_program::sysvar::Sysvar;
 use crate::error::MediaError;
 
 // Just a random mint for now
-const MEDIA_MINT: Pubkey = pubkey!("EchesyfXePKdLtoiZSL8pBe8Myagyy8ZRqsACNCFGnvp");
+pub const MEDIA_MINT: Pubkey = pubkey!("EchesyfXePKdLtoiZSL8pBe8Myagyy8ZRqsACNCFGnvp");
 
 pub const SECONDS_IN_DAY: u64 = 3600 * 24;
 
@@ -44,6 +45,9 @@ pub struct StakePool {
 
     // Name of the stake pool (used for PDA derivation)
     pub name: String,
+
+    // Stake pool vault
+    pub vault: [u8; 32],
 }
 
 impl StakePool {
@@ -54,7 +58,13 @@ impl StakePool {
         StakePool::FIXED_LEN + self.name.len()
     }
 
-    pub fn new(owner: [u8; 32], rewards_destination: [u8; 32], nonce: u8, name: &str) -> Self {
+    pub fn new(
+        owner: [u8; 32],
+        rewards_destination: [u8; 32],
+        nonce: u8,
+        name: &str,
+        vault: [u8; 32],
+    ) -> Self {
         Self {
             tag: Tag::StakePool,
             total_staked: 0,
@@ -63,6 +73,7 @@ impl StakePool {
             rewards_destination,
             nonce,
             name: name.to_string(),
+            vault,
         }
     }
 
@@ -100,7 +111,18 @@ impl StakePool {
     pub fn close(&mut self) {
         self.tag = Tag::Deleted
     }
+
+    pub fn deposit(&mut self, amount: u64) -> ProgramResult {
+        self.total_staked = self.total_staked.checked_add(amount).unwrap();
+        Ok(())
+    }
+
+    pub fn withdraw(&mut self, amount: u64) -> ProgramResult {
+        self.total_staked = self.total_staked.checked_sub(amount).unwrap();
+        Ok(())
+    }
 }
+
 #[derive(BorshSerialize, BorshDeserialize, Debug, PartialEq)]
 pub struct StakeAccount {
     // Tag
@@ -155,6 +177,16 @@ impl StakeAccount {
 
     pub fn close(&mut self) {
         self.tag = Tag::Deleted
+    }
+
+    pub fn deposit(&mut self, amount: u64) -> ProgramResult {
+        self.stake_amount = self.stake_amount.checked_add(amount).unwrap();
+        Ok(())
+    }
+
+    pub fn withdraw(&mut self, amount: u64) -> ProgramResult {
+        self.stake_amount = self.stake_amount.checked_sub(amount).unwrap();
+        Ok(())
     }
 }
 #[derive(BorshSerialize, BorshDeserialize, Debug, PartialEq)]

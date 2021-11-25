@@ -27,6 +27,22 @@ pub enum MediaError {
     StakePoolMustBeEmpty,
     #[error("The stake account must be empty")]
     StakeAccountMustBeEmpty,
+    #[error("The stake account owner must sign")]
+    StakeAccountOwnerMustSign,
+    #[error("Wrong SPL token program ID")]
+    WrongSplTokenProgramId,
+    #[error("Source token account must be owned to SPL Token")]
+    WrongTokenAccountOwner,
+    #[error("Stake account must be program owned")]
+    WrongStakeAccountOwner,
+    #[error("Stake pool account must be program owned")]
+    WrongStakePoolAccountOwner,
+    #[error("Stake account owner mismatch")]
+    StakeAccountOwnerMismatch,
+    #[error("Stake pool mismatch")]
+    StakePoolMismatch,
+    #[error("Stake pool vault mismatch")]
+    StakePoolVaultMismatch,
 }
 
 impl From<MediaError> for ProgramError {

@@ -1,5 +1,8 @@
-use crate::state::{CentralState, SECONDS_IN_DAY, StakeAccount, StakePool};
-use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, msg, pubkey::Pubkey};
+use crate::state::{CentralState, StakeAccount, StakePool, MEDIA_MINT, SECONDS_IN_DAY};
+use solana_program::{
+    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
+    program_pack::Pack, pubkey::Pubkey,
+};
 use spl_token::state::{Account, Mint};
 
 use crate::error::MediaError;
@@ -75,54 +78,27 @@ pub fn assert_empty_stake_account(stake_account: &StakeAccount) -> ProgramResult
     Ok(())
 }
 
-#[test]
-fn test() {
-    use solana_program::{program_option::COption, pubkey::Pubkey};
-    use spl_token::state::AccountState;
+pub fn check_vault_account_and_get_mint(
+    account: &AccountInfo,
+    stake_pool_signer: &Pubkey,
+) -> Result<Pubkey, ProgramError> {
+    let acc = Account::unpack(&account.data.borrow())?;
+    if &acc.owner != stake_pool_signer {
+        msg!("The vault account should be owned by the stake pool signer");
+        return Err(ProgramError::InvalidArgument);
+    }
+    if acc.close_authority.is_some() || acc.delegate.is_some() {
+        msg!("Invalid vault account provided");
+        return Err(ProgramError::InvalidArgument);
+    }
+    Ok(acc.mint)
+}
 
-    let decimal_multiplier = 1_000_000;
-
-    let mint = Mint {
-        mint_authority: COption::None,
-        supply: decimal_multiplier * 1_000_000_000,
-        decimals: 6,
-        is_initialized: true,
-        freeze_authority: COption::None,
-    };
-
-    let vault = Account {
-        mint: Pubkey::new_unique(),
-        owner: Pubkey::new_unique(),
-        amount: decimal_multiplier * 10_000,
-        delegate: COption::None,
-        state: AccountState::Initialized,
-        is_native: COption::None,
-        delegated_amount: 0,
-        close_authority: COption::None,
-    };
-
-    let central_state = CentralState {
-        signer_nonce: 0,
-        daily_inflation: 100_000,
-    };
-
-    let stake_account = StakeAccount {
-        owner: Pubkey::new_unique().to_bytes(),
-        stake_amount: 4_000 * decimal_multiplier,
-    };
-
-    let last_crank = 1637639871;
-    let current_time = 1637726331;
-
-    let stake_pool = StakePool {
-        total_staked: decimal_multiplier * 10_000,
-        last_crank_time: last_crank,
-        owner: Pubkey::new_unique().to_bytes(),
-        rewards_destination: Pubkey::new_unique().to_bytes(),
-        nonce: 0,
-        name: "Test".to_string(),
-    };
-
-    let reward = calc_reward(current_time, &stake_pool, &central_state, &mint);
-    println!("Reward {}", reward);
+pub fn assert_valid_vault(account: &AccountInfo, stake_pool_signer: &Pubkey) -> ProgramResult {
+    let mint = check_vault_account_and_get_mint(account, stake_pool_signer)?;
+    if mint != MEDIA_MINT {
+        msg!("Invalid MEDIA mint");
+        return Err(ProgramError::InvalidArgument);
+    }
+    Ok(())
 }

@@ -50,6 +50,42 @@ impl PrintProgramError for MediaError {
             MediaError::AccountNotDeterministic => {
                 msg!("Error: Account not generated deterministically")
             }
+            MediaError::StakePoolOwnerMustSign => {
+                msg!("Error: The stake pool owner must sign")
+            }
+            MediaError::WrongStakePoolOwner => {
+                msg!("Error: The stake pool must be empty")
+            }
+            MediaError::StakePoolMustBeEmpty => {
+                msg!("Error: The stake account must be empty")
+            }
+            MediaError::StakeAccountMustBeEmpty => {
+                msg!("Error: The stake account owner must sign")
+            }
+            MediaError::StakeAccountOwnerMustSign => {
+                msg!("Error: Wrong SPL token program ID")
+            }
+            MediaError::WrongSplTokenProgramId => {
+                msg!("Error: Source token account must be owned to SPL Token")
+            }
+            MediaError::WrongTokenAccountOwner => {
+                msg!("Error: Stake account must be program owned")
+            }
+            MediaError::WrongStakeAccountOwner => {
+                msg!("Error: Stake pool account must be program owned")
+            }
+            MediaError::WrongStakePoolAccountOwner => {
+                msg!("Error: Stake account owner mismatch")
+            }
+            MediaError::StakeAccountOwnerMismatch => {
+                msg!("Error: Stake pool mismatch")
+            }
+            MediaError::StakePoolMismatch => {
+                msg!("Error: Stake pool mismatch")
+            }
+            MediaError::StakePoolVaultMismatch => {
+                msg!("Error: Stake pool vault mismatch")
+            }
         }
     }
 }
