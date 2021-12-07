@@ -86,6 +86,12 @@ impl PrintProgramError for MediaError {
             MediaError::StakePoolVaultMismatch => {
                 msg!("Error: Stake pool vault mismatch")
             }
+            MediaError::WrongCentralStateAuthority => {
+                msg!("Error: Wrong central state authority")
+            }
+            MediaError::CentralStateAuthorityMustSign => {
+                msg!("Error: The central state authority must sign")
+            }
         }
     }
 }

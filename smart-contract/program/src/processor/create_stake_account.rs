@@ -81,6 +81,8 @@ pub fn process_create_stake_account(
         MediaError::AccountNotDeterministic,
     )?;
 
+    let stake_account = StakeAccount::new(params.owner, params.stake_pool);
+
     Cpi::create_account(
         program_id,
         accounts.system_program,
@@ -93,10 +95,8 @@ pub fn process_create_stake_account(
             &params.stake_pool,
             &[params.nonce],
         ],
-        StakeAccount::LEN,
+        stake_account.borsh_len(),
     )?;
-
-    let stake_account = StakeAccount::new(params.owner, params.stake_pool);
 
     stake_account.save(&mut accounts.stake_account.data.borrow_mut());
 

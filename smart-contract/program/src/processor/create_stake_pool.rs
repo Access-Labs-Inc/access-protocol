@@ -113,7 +113,7 @@ pub fn process_create_stake_pool(
             &params.destination,
             &[params.nonce],
         ],
-        stake_pool.len(),
+        stake_pool.borsh_len(),
     )?;
 
     stake_pool.save(&mut accounts.stake_pool_account.data.borrow_mut());

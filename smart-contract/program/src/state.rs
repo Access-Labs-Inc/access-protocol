@@ -1,5 +1,6 @@
-use bonfida_utils::pubkey;
-use borsh::{BorshDeserialize, BorshSerialize};
+use crate::error::MediaError;
+use bonfida_utils::BorshSize;
+use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use solana_program::account_info::AccountInfo;
 use solana_program::clock::Clock;
 use solana_program::entrypoint::ProgramResult;
@@ -7,10 +8,9 @@ use solana_program::program_error::ProgramError;
 use solana_program::pubkey::Pubkey;
 use solana_program::sysvar::Sysvar;
 
-use crate::error::MediaError;
-
 // Just a random mint for now
-pub const MEDIA_MINT: Pubkey = pubkey!("EchesyfXePKdLtoiZSL8pBe8Myagyy8ZRqsACNCFGnvp");
+pub const MEDIA_MINT: Pubkey =
+    solana_program::pubkey!("EchesyfXePKdLtoiZSL8pBe8Myagyy8ZRqsACNCFGnvp");
 
 pub const SECONDS_IN_DAY: u64 = 3600 * 24;
 
@@ -22,7 +22,14 @@ pub enum Tag {
     CentralState,
     Deleted,
 }
-#[derive(BorshSerialize, BorshDeserialize, Debug, PartialEq)]
+
+impl BorshSize for Tag {
+    fn borsh_len(&self) -> usize {
+        1
+    }
+}
+
+#[derive(BorshSerialize, BorshDeserialize, BorshSize, Debug, PartialEq)]
 pub struct StakePool {
     // Tag
     pub tag: Tag,
@@ -43,20 +50,15 @@ pub struct StakePool {
     // Stake pool nonce
     pub nonce: u8,
 
-    // Name of the stake pool (used for PDA derivation)
-    pub name: String,
-
     // Stake pool vault
     pub vault: [u8; 32],
+
+    // Name of the stake pool (used for PDA derivation)
+    pub name: String,
 }
 
 impl StakePool {
     pub const SEED: &'static str = "stake_pool";
-    pub const FIXED_LEN: usize = 1 + 8 + 8 + 32 + 32 + 4;
-
-    pub fn len(&self) -> usize {
-        StakePool::FIXED_LEN + self.name.len()
-    }
 
     pub fn new(
         owner: [u8; 32],
@@ -123,7 +125,7 @@ impl StakePool {
     }
 }
 
-#[derive(BorshSerialize, BorshDeserialize, Debug, PartialEq)]
+#[derive(BorshSerialize, BorshDeserialize, Debug, PartialEq, BorshSize)]
 pub struct StakeAccount {
     // Tag
     pub tag: Tag,
@@ -140,7 +142,6 @@ pub struct StakeAccount {
 
 impl StakeAccount {
     pub const SEED: &'static str = "stake_account";
-    pub const LEN: usize = 1 + 32 + 8 + 32;
 
     pub fn new(owner: [u8; 32], stake_pool: [u8; 32]) -> Self {
         Self {
@@ -189,7 +190,7 @@ impl StakeAccount {
         Ok(())
     }
 }
-#[derive(BorshSerialize, BorshDeserialize, Debug, PartialEq)]
+#[derive(BorshSerialize, BorshDeserialize, Debug, PartialEq, BorshSize)]
 pub struct CentralState {
     // Tag
     pub tag: Tag,
@@ -203,17 +204,25 @@ pub struct CentralState {
 
     // Mint of the token being emitted
     pub token_mint: [u8; 32],
+
+    // Authority
+    // The public key that can change the inflation
+    pub authority: [u8; 32],
 }
 
 impl CentralState {
-    pub const LEN: usize = 1 + 1 + 8 + 32;
-
-    pub fn new(signer_nonce: u8, daily_inflation: u64, token_mint: [u8; 32]) -> Self {
+    pub fn new(
+        signer_nonce: u8,
+        daily_inflation: u64,
+        token_mint: [u8; 32],
+        authority: [u8; 32],
+    ) -> Self {
         Self {
             tag: Tag::CentralState,
             signer_nonce,
             daily_inflation,
             token_mint,
+            authority,
         }
     }
 
@@ -221,6 +230,10 @@ impl CentralState {
         let signer_seeds: &[&[u8]] = &[&program_id.to_bytes(), &[*signer_nonce]];
         let key = Pubkey::create_program_address(signer_seeds, program_id).unwrap();
         key
+    }
+
+    pub fn find_key(program_id: &Pubkey) -> (Pubkey, u8) {
+        Pubkey::find_program_address(&[&program_id.to_bytes()], program_id)
     }
 
     pub fn save(&self, mut dst: &mut [u8]) {

@@ -43,6 +43,10 @@ pub enum MediaError {
     StakePoolMismatch,
     #[error("Stake pool vault mismatch")]
     StakePoolVaultMismatch,
+    #[error("Wrong central state authority")]
+    WrongCentralStateAuthority,
+    #[error("The central state authority must sign")]
+    CentralStateAuthorityMustSign,
 }
 
 impl From<MediaError> for ProgramError {

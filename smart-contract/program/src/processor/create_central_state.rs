@@ -16,12 +16,12 @@ use crate::utils::{check_account_key, check_account_owner};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 pub struct Params {
-    // Nonce of the central state PDA
-    pub signer_nonce: u8,
     // Daily inflation in token amount
     pub daily_inflation: u64,
     // Mint
     pub token_mint: [u8; 32],
+    // Authority
+    pub authority: [u8; 32],
 }
 
 #[derive(InstructionsAccount)]
@@ -73,7 +73,7 @@ pub fn process_create_central_state(
     params: Params,
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts)?;
-    let derived_state_key = CentralState::create_key(&params.signer_nonce, program_id);
+    let (derived_state_key, nonce) = CentralState::find_key(program_id);
 
     check_account_key(
         accounts.state_account,
@@ -81,21 +81,23 @@ pub fn process_create_central_state(
         MediaError::AccountNotDeterministic,
     )?;
 
+    let state = CentralState::new(
+        nonce,
+        params.daily_inflation,
+        params.token_mint,
+        params.authority,
+    );
+
     Cpi::create_account(
         program_id,
         accounts.system_program,
         accounts.fee_payer,
         accounts.state_account,
         accounts.rent_sysvar_account,
-        &[&program_id.to_bytes(), &[params.signer_nonce]],
-        CentralState::LEN,
+        &[&program_id.to_bytes(), &[nonce]],
+        state.borsh_len(),
     )?;
 
-    let state = CentralState::new(
-        params.signer_nonce,
-        params.daily_inflation,
-        params.token_mint,
-    );
     state.save(&mut accounts.state_account.data.borrow_mut());
 
     Ok(())
