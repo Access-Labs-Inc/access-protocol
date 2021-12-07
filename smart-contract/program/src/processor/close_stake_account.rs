@@ -97,5 +97,11 @@ pub fn process_close_stake_account(
     stake_account.close();
     stake_account.save(&mut accounts.stake_account.data.borrow_mut());
 
+    let mut stake_lamports = accounts.stake_account.lamports.borrow_mut();
+    let mut owner_lamports = accounts.owner.lamports.borrow_mut();
+
+    **owner_lamports += **stake_lamports;
+    **stake_lamports = 0;
+
     Ok(())
 }
