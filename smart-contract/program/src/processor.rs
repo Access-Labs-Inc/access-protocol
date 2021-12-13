@@ -7,8 +7,11 @@ use solana_program::{
 use crate::instruction::MediaInstruction;
 
 pub mod change_inflation;
+pub mod claim_pool_rewards;
+pub mod claim_rewards;
 pub mod close_stake_account;
 pub mod close_stake_pool;
+pub mod crank;
 pub mod create_central_state;
 pub mod create_stake_account;
 pub mod create_stake_pool;

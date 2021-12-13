@@ -20,16 +20,15 @@ pub struct Params {
     // The PDA nonce
     pub nonce: u8,
     // Owner of the stake account
-    pub owner: [u8; 32],
+    pub owner: Pubkey,
     // Stake pool
-    pub stake_pool: [u8; 32],
+    pub stake_pool: Pubkey,
 }
 
 #[derive(InstructionsAccount)]
 struct Accounts<'a, T> {
     #[cons(writable)]
     stake_account: &'a T,
-    system_program: &'a T,
     #[cons(writable, signer)]
     owner: &'a T,
 }
@@ -42,16 +41,8 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
             stake_account: next_account_info(accounts_iter)?,
-            system_program: next_account_info(accounts_iter)?,
             owner: next_account_info(accounts_iter)?,
         };
-
-        // Check keys
-        check_account_key(
-            accounts.system_program,
-            &system_program::ID,
-            MediaError::WrongSystemProgram,
-        )?;
 
         // Check ownership
         check_account_owner(accounts.stake_account, program_id, MediaError::WrongOwner)?;
@@ -88,7 +79,7 @@ pub fn process_close_stake_account(
 
     check_account_key(
         accounts.owner,
-        &Pubkey::new(&stake_account.owner),
+        &stake_account.owner,
         MediaError::WrongStakePoolOwner,
     )?;
 

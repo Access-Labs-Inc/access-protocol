@@ -20,7 +20,7 @@ pub struct Params {
     // Name of the stake pool
     pub name: String,
     // Destination of the rewards
-    pub destination: [u8; 32],
+    pub destination: Pubkey,
 }
 
 #[derive(InstructionsAccount)]
@@ -78,13 +78,8 @@ pub fn process_close_stake_pool(
         destination,
     } = params;
 
-    let derived_stake_pool_key = StakePool::create_key(
-        &nonce,
-        &name,
-        &accounts.owner.key.to_bytes(),
-        &destination,
-        program_id,
-    );
+    let derived_stake_pool_key =
+        StakePool::create_key(&nonce, &accounts.owner.key, &destination, program_id);
 
     check_account_key(
         accounts.stake_pool_account,
@@ -92,18 +87,17 @@ pub fn process_close_stake_pool(
         MediaError::AccountNotDeterministic,
     )?;
 
-    let mut stake_pool = StakePool::from_account_info(accounts.stake_pool_account).unwrap();
+    let mut stake_pool = StakePool::get_checked(accounts.stake_pool_account).unwrap();
 
     check_account_key(
         accounts.owner,
-        &Pubkey::new(&stake_pool.owner),
+        &Pubkey::new(&stake_pool.header.owner),
         MediaError::WrongStakePoolOwner,
     )?;
 
     assert_empty_stake_pool(&stake_pool)?;
 
-    stake_pool.close();
-    stake_pool.save(&mut accounts.stake_pool_account.data.borrow_mut());
+    stake_pool.header.close();
 
     Ok(())
 }

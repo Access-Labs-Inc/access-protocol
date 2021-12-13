@@ -1,10 +1,12 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
+    clock::Clock,
     entrypoint::ProgramResult,
     program_error::ProgramError,
     pubkey::Pubkey,
     system_program, sysvar,
+    sysvar::Sysvar,
 };
 
 use crate::state::StakeAccount;
@@ -18,9 +20,9 @@ pub struct Params {
     // The PDA nonce
     pub nonce: u8,
     // Owner of the stake account
-    pub owner: [u8; 32],
+    pub owner: Pubkey,
     // Stake pool
-    pub stake_pool: [u8; 32],
+    pub stake_pool: Pubkey,
 }
 
 #[derive(InstructionsAccount)]
@@ -81,7 +83,8 @@ pub fn process_create_stake_account(
         MediaError::AccountNotDeterministic,
     )?;
 
-    let stake_account = StakeAccount::new(params.owner, params.stake_pool);
+    let current_time = Clock::get()?.unix_timestamp;
+    let stake_account = StakeAccount::new(params.owner, params.stake_pool, current_time);
 
     Cpi::create_account(
         program_id,
@@ -91,8 +94,8 @@ pub fn process_create_stake_account(
         accounts.rent_sysvar_account,
         &[
             StakeAccount::SEED.as_bytes(),
-            &params.owner,
-            &params.stake_pool,
+            &params.owner.to_bytes(),
+            &params.stake_pool.to_bytes(),
             &[params.nonce],
         ],
         stake_account.borsh_len(),

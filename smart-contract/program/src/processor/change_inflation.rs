@@ -60,7 +60,7 @@ pub fn process_change_inflation(
 
     check_account_key(
         accounts.authority,
-        &Pubkey::new(&central_state.authority),
+        &central_state.authority,
         MediaError::WrongCentralStateAuthority,
     )?;
 

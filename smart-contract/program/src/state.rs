@@ -1,18 +1,25 @@
 use crate::error::MediaError;
 use bonfida_utils::BorshSize;
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
+use bytemuck::{from_bytes_mut, try_cast_slice_mut, Pod, Zeroable};
 use solana_program::account_info::AccountInfo;
 use solana_program::clock::Clock;
 use solana_program::entrypoint::ProgramResult;
 use solana_program::program_error::ProgramError;
 use solana_program::pubkey::Pubkey;
 use solana_program::sysvar::Sysvar;
+use std::cell::RefMut;
+use std::mem::size_of;
 
 // Just a random mint for now
 pub const MEDIA_MINT: Pubkey =
     solana_program::pubkey!("EchesyfXePKdLtoiZSL8pBe8Myagyy8ZRqsACNCFGnvp");
 
 pub const SECONDS_IN_DAY: u64 = 3600 * 24;
+
+pub const STAKER_MULTIPLIER: u64 = 80;
+pub const OWNER_MULTIPLIER: u64 = 100 - STAKER_MULTIPLIER;
+pub const STAKE_BUFFER_LEN: u64 = 365;
 
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug, Clone, Copy)]
 pub enum Tag {
@@ -29,10 +36,20 @@ impl BorshSize for Tag {
     }
 }
 
-#[derive(BorshSerialize, BorshDeserialize, BorshSize, Debug, PartialEq)]
-pub struct StakePool {
+#[derive(BorshSerialize, BorshDeserialize, BorshSize, Copy, Clone, Pod, Zeroable)]
+#[repr(C)]
+pub struct StakePoolHeader {
     // Tag
-    pub tag: Tag,
+    pub tag: u8,
+
+    // Stake pool nonce
+    pub nonce: u8,
+
+    // Updated by a trustless cranker
+    pub current_day_idx: u16,
+
+    // Padding
+    pub _padding: [u8; 4],
 
     // Total amount staked in the pool
     pub total_staked: u64,
@@ -41,77 +58,96 @@ pub struct StakePool {
     // through a permissionless crank
     pub last_crank_time: i64,
 
+    // Last time the stake pool owner claimed
+    pub last_claimed_time: i64,
+
     // Owner of the stake pool
     pub owner: [u8; 32],
 
     // Address to which rewards are sent
     pub rewards_destination: [u8; 32],
 
-    // Stake pool nonce
-    pub nonce: u8,
-
     // Stake pool vault
     pub vault: [u8; 32],
-
-    // Name of the stake pool (used for PDA derivation)
-    pub name: String,
 }
 
-impl StakePool {
-    pub const SEED: &'static str = "stake_pool";
+pub struct StakePool<'a> {
+    pub header: RefMut<'a, StakePoolHeader>,
+    pub balances: RefMut<'a, [u64]>, // of length STAKE_BUFFER_LEN
+}
 
-    pub fn new(
-        owner: [u8; 32],
-        rewards_destination: [u8; 32],
-        nonce: u8,
-        name: &str,
-        vault: [u8; 32],
-    ) -> Self {
-        Self {
-            tag: Tag::StakePool,
-            total_staked: 0,
-            last_crank_time: Clock::get().unwrap().unix_timestamp,
-            owner,
-            rewards_destination,
-            nonce,
-            name: name.to_string(),
-            vault,
+impl<'a> StakePool<'a> {
+    pub fn get_checked<'b: 'a>(account_info: &'a AccountInfo<'b>) -> Result<Self, ProgramError> {
+        let (header, balances) = RefMut::map_split(account_info.data.borrow_mut(), |s| {
+            let (hd, rem) = s.split_at_mut(size_of::<StakePoolHeader>());
+            (
+                from_bytes_mut::<StakePoolHeader>(hd),
+                try_cast_slice_mut(rem).unwrap(),
+            )
+        });
+
+        if header.tag != Tag::StakePool as u8 && header.tag != Tag::Uninitialized as u8 {
+            return Err(MediaError::DataTypeMismatch.into());
         }
+
+        Ok(StakePool { header, balances })
+    }
+
+    pub fn push_balances_buff(&mut self, val: u64) {
+        self.balances[((self.header.current_day_idx as u64) % STAKE_BUFFER_LEN) as usize] = val;
+        self.header.current_day_idx += 1;
     }
 
     pub fn create_key(
         nonce: &u8,
-        name: &str,
-        owner: &[u8; 32],
-        destination: &[u8; 32],
+        owner: &Pubkey,
+        destination: &Pubkey,
         program_id: &Pubkey,
     ) -> Pubkey {
         let seeds: &[&[u8]] = &[
-            StakePool::SEED.as_bytes(),
-            name.as_bytes(),
-            owner,
-            destination,
+            StakePoolHeader::SEED.as_bytes(),
+            &owner.to_bytes(),
+            &destination.to_bytes(),
             &[*nonce],
         ];
         let key = Pubkey::create_program_address(seeds, program_id).unwrap();
         key
     }
+}
 
-    pub fn save(&self, mut dst: &mut [u8]) {
-        self.serialize(&mut dst).unwrap()
-    }
+impl StakePoolHeader {
+    pub const SEED: &'static str = "stake_pool";
 
-    pub fn from_account_info(a: &AccountInfo) -> Result<StakePool, ProgramError> {
-        let mut data = &a.data.borrow() as &[u8];
-        if data[0] != Tag::StakePool as u8 && data[0] != Tag::Uninitialized as u8 {
-            return Err(MediaError::DataTypeMismatch.into());
+    pub fn new(owner: Pubkey, rewards_destination: Pubkey, nonce: u8, vault: Pubkey) -> Self {
+        Self {
+            tag: Tag::StakePool as u8,
+            total_staked: 0,
+            current_day_idx: 0,
+            _padding: [0; 4],
+            last_crank_time: Clock::get().unwrap().unix_timestamp,
+            last_claimed_time: Clock::get().unwrap().unix_timestamp,
+            owner: owner.to_bytes(),
+            rewards_destination: rewards_destination.to_bytes(),
+            nonce,
+            vault: vault.to_bytes(),
         }
-        let result = StakePool::deserialize(&mut data)?;
-        Ok(result)
     }
+
+    // pub fn save(&self, mut dst: &mut [u8]) {
+    //     self.serialize(&mut dst).unwrap()
+    // }
+
+    // pub fn from_account_info(a: &AccountInfo) -> Result<StakePool, ProgramError> {
+    //     let mut data = &a.data.borrow() as &[u8];
+    //     if data[0] != Tag::StakePool as u8 && data[0] != Tag::Uninitialized as u8 {
+    //         return Err(MediaError::DataTypeMismatch.into());
+    //     }
+    //     let result = StakePool::deserialize(&mut data)?;
+    //     Ok(result)
+    // }
 
     pub fn close(&mut self) {
-        self.tag = Tag::Deleted
+        self.tag = Tag::Deleted as u8
     }
 
     pub fn deposit(&mut self, amount: u64) -> ProgramResult {
@@ -131,34 +167,43 @@ pub struct StakeAccount {
     pub tag: Tag,
 
     // Owner of the stake account
-    pub owner: [u8; 32],
+    pub owner: Pubkey,
 
     // Amount staked in the account
     pub stake_amount: u64,
 
     // Stake pool to which the account belongs to
-    pub stake_pool: [u8; 32],
+    pub stake_pool: Pubkey,
+
+    // Last unix timestamp where rewards were claimed
+    pub last_claimed_time: i64,
 }
 
 impl StakeAccount {
     pub const SEED: &'static str = "stake_account";
 
-    pub fn new(owner: [u8; 32], stake_pool: [u8; 32]) -> Self {
+    pub fn new(owner: Pubkey, stake_pool: Pubkey, current_time: i64) -> Self {
         Self {
             tag: Tag::StakeAccount,
             owner,
             stake_amount: 0,
             stake_pool,
+            last_claimed_time: current_time,
         }
     }
 
     pub fn create_key(
         nonce: &u8,
-        owner: &[u8; 32],
-        stake_pool: &[u8; 32],
+        owner: &Pubkey,
+        stake_pool: &Pubkey,
         program_id: &Pubkey,
     ) -> Pubkey {
-        let seeds: &[&[u8]] = &[StakeAccount::SEED.as_bytes(), owner, stake_pool, &[*nonce]];
+        let seeds: &[&[u8]] = &[
+            StakeAccount::SEED.as_bytes(),
+            &owner.to_bytes(),
+            &stake_pool.to_bytes(),
+            &[*nonce],
+        ];
         let key = Pubkey::create_program_address(seeds, program_id).unwrap();
         key
     }
@@ -202,25 +247,31 @@ pub struct CentralState {
     // the reserve owned by the central state
     pub daily_inflation: u64,
 
+    // Central vault
+    // From where the inflation is emitted
+    pub central_vault: Pubkey,
+
     // Mint of the token being emitted
-    pub token_mint: [u8; 32],
+    pub token_mint: Pubkey,
 
     // Authority
     // The public key that can change the inflation
-    pub authority: [u8; 32],
+    pub authority: Pubkey,
 }
 
 impl CentralState {
     pub fn new(
         signer_nonce: u8,
         daily_inflation: u64,
-        token_mint: [u8; 32],
-        authority: [u8; 32],
+        central_vault: Pubkey,
+        token_mint: Pubkey,
+        authority: Pubkey,
     ) -> Self {
         Self {
             tag: Tag::CentralState,
             signer_nonce,
             daily_inflation,
+            central_vault,
             token_mint,
             authority,
         }

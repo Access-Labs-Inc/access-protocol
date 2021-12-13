@@ -1,4 +1,6 @@
-use crate::state::{CentralState, StakeAccount, StakePool, MEDIA_MINT, SECONDS_IN_DAY};
+use crate::state::{
+    CentralState, StakeAccount, StakePool, MEDIA_MINT, SECONDS_IN_DAY, STAKE_BUFFER_LEN,
+};
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
     program_pack::Pack, pubkey::Pubkey,
@@ -7,34 +9,40 @@ use spl_token::state::{Account, Mint};
 
 use crate::error::MediaError;
 
-pub fn get_balance(account: &Account) -> u64 {
-    account.amount
+pub fn get_token_balance(token_account: &AccountInfo) -> u64 {
+    let balance = Account::unpack_from_slice(&token_account.data.borrow())
+        .unwrap()
+        .amount;
+
+    balance
 }
 
 pub fn get_supply(mint: &Mint) -> u64 {
     mint.supply
 }
 
-pub fn calc_reward(
-    current_time: u64,
+pub fn calc_previous_balances_and_inflation(
+    current_time: i64,
     stake_pool: &StakePool,
-    central_state: &CentralState,
-    mint: &Mint,
-) -> u64 {
-    let period = current_time
-        .checked_sub(stake_pool.last_crank_time as u64)
-        .unwrap()
-        .checked_div(SECONDS_IN_DAY)
-        .unwrap();
+) -> Result<u64, ProgramError> {
+    let last_full_day = current_time as u64 / SECONDS_IN_DAY;
+    let mut last_claimed_day = stake_pool.header.last_claimed_time as u64 / SECONDS_IN_DAY;
 
-    let amount = stake_pool
-        .total_staked
-        .checked_mul(central_state.daily_inflation)
-        .unwrap()
-        .checked_div(mint.supply)
-        .unwrap();
+    let mut i = last_full_day - last_claimed_day;
+    i = (stake_pool.header.current_day_idx as u64 - i) % STAKE_BUFFER_LEN;
 
-    amount.checked_mul(period).unwrap()
+    let mut reward: u64 = 0;
+
+    // Compute reward for all past days
+    while last_claimed_day < last_full_day {
+        reward = reward
+            .checked_add(stake_pool.balances[i as usize])
+            .ok_or(MediaError::Overflow)?;
+        i = (i + 1) % STAKE_BUFFER_LEN;
+        last_claimed_day += 1;
+    }
+
+    Ok(reward)
 }
 
 pub fn check_account_key(account: &AccountInfo, key: &Pubkey, error: MediaError) -> ProgramResult {
@@ -63,7 +71,7 @@ pub fn check_signer(account: &AccountInfo, error: MediaError) -> ProgramResult {
 }
 
 pub fn assert_empty_stake_pool(stake_pool: &StakePool) -> ProgramResult {
-    if stake_pool.total_staked != 0 {
+    if stake_pool.header.total_staked != 0 {
         msg!("The stake pool must be empty");
         return Err(MediaError::StakePoolMustBeEmpty.into());
     }
@@ -78,12 +86,9 @@ pub fn assert_empty_stake_account(stake_account: &StakeAccount) -> ProgramResult
     Ok(())
 }
 
-pub fn check_vault_account_and_get_mint(
-    account: &AccountInfo,
-    stake_pool_signer: &Pubkey,
-) -> Result<Pubkey, ProgramError> {
+pub fn assert_valid_vault(account: &AccountInfo, vault_signer: &Pubkey) -> ProgramResult {
     let acc = Account::unpack(&account.data.borrow())?;
-    if &acc.owner != stake_pool_signer {
+    if &acc.owner != vault_signer {
         msg!("The vault account should be owned by the stake pool signer");
         return Err(ProgramError::InvalidArgument);
     }
@@ -91,12 +96,7 @@ pub fn check_vault_account_and_get_mint(
         msg!("Invalid vault account provided");
         return Err(ProgramError::InvalidArgument);
     }
-    Ok(acc.mint)
-}
-
-pub fn assert_valid_vault(account: &AccountInfo, stake_pool_signer: &Pubkey) -> ProgramResult {
-    let mint = check_vault_account_and_get_mint(account, stake_pool_signer)?;
-    if mint != MEDIA_MINT {
+    if acc.mint != MEDIA_MINT {
         msg!("Invalid MEDIA mint");
         return Err(ProgramError::InvalidArgument);
     }

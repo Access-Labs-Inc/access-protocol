@@ -7,7 +7,11 @@ use solana_program::{
     system_program, sysvar,
 };
 
-use crate::{cpi::Cpi, error::MediaError};
+use crate::{
+    cpi::Cpi,
+    error::MediaError,
+    state::{StakePoolHeader, STAKE_BUFFER_LEN},
+};
 use crate::{state::StakePool, utils::assert_valid_vault};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
@@ -20,9 +24,9 @@ pub struct Params {
     // Name of the stake pool
     pub name: String,
     // Owner of the stake pool
-    pub owner: [u8; 32],
+    pub owner: Pubkey,
     // Destination of the rewards
-    pub destination: [u8; 32],
+    pub destination: Pubkey,
 }
 
 #[derive(InstructionsAccount)]
@@ -79,7 +83,6 @@ pub fn process_create_stake_pool(
 
     let derived_stake_key = StakePool::create_key(
         &params.nonce,
-        &params.name,
         &params.owner,
         &params.destination,
         program_id,
@@ -93,12 +96,11 @@ pub fn process_create_stake_pool(
 
     assert_valid_vault(accounts.vault, &derived_stake_key)?;
 
-    let stake_pool = StakePool::new(
+    let stake_pool_header = StakePoolHeader::new(
         params.owner,
         params.destination,
         params.nonce,
-        &params.name,
-        accounts.vault.key.to_bytes(),
+        *accounts.vault.key,
     );
 
     Cpi::create_account(
@@ -109,14 +111,16 @@ pub fn process_create_stake_pool(
         accounts.rent_sysvar_account,
         &[
             params.name.as_bytes(),
-            &params.owner,
-            &params.destination,
+            &params.owner.to_bytes(),
+            &params.destination.to_bytes(),
             &[params.nonce],
         ],
-        stake_pool.borsh_len(),
+        stake_pool_header.borsh_len() + 8 * STAKE_BUFFER_LEN as usize,
     )?;
 
-    stake_pool.save(&mut accounts.stake_pool_account.data.borrow_mut());
+    let mut stake_pool = StakePool::get_checked(accounts.stake_pool_account).unwrap();
+
+    *stake_pool.header = stake_pool_header;
 
     Ok(())
 }

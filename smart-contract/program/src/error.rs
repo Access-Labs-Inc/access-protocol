@@ -47,6 +47,16 @@ pub enum MediaError {
     WrongCentralStateAuthority,
     #[error("The central state authority must sign")]
     CentralStateAuthorityMustSign,
+    #[error("Overflow")]
+    Overflow,
+    #[error("Operation is a no-op")]
+    NoOp,
+    #[error("Wrong mint")]
+    WrongMint,
+    #[error("Wrong central vault")]
+    WrongCentralVault,
+    #[error("Wrong stake pool")]
+    WrongStakePool,
 }
 
 impl From<MediaError> for ProgramError {

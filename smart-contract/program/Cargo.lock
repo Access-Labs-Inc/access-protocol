@@ -2763,6 +2763,7 @@ dependencies = [
  "arrayref",
  "bonfida-utils",
  "borsh",
+ "bytemuck",
  "enumflags2",
  "hexdump",
  "num-derive",

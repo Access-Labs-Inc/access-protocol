@@ -9,7 +9,10 @@ use solana_program::{
 
 use spl_token::instruction::transfer;
 
-use crate::utils::{check_account_key, check_account_owner, check_signer};
+use crate::{
+    state::StakePoolHeader,
+    utils::{check_account_key, check_account_owner, check_signer},
+};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
 use crate::error::MediaError;
@@ -95,32 +98,31 @@ pub fn process_create_central_state(
     let accounts = Accounts::parse(accounts, program_id)?;
     let Params { amount } = params;
 
-    let mut stake_pool = StakePool::from_account_info(accounts.stake_pool)?;
+    let mut stake_pool = StakePool::get_checked(accounts.stake_pool)?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
 
     check_account_key(
         accounts.owner,
-        &Pubkey::new(&stake_account.owner),
+        &&stake_account.owner,
         MediaError::StakeAccountOwnerMismatch,
     )?;
     check_account_key(
         accounts.stake_pool,
-        &Pubkey::new(&stake_account.stake_pool),
+        &&stake_account.stake_pool,
         MediaError::StakePoolMismatch,
     )?;
     check_account_key(
         accounts.vault,
-        &Pubkey::new(&stake_pool.vault),
+        &Pubkey::new(&stake_pool.header.vault),
         MediaError::StakePoolVaultMismatch,
     )?;
 
     // Transfer tokens
     let signer_seeds: &[&[u8]] = &[
-        StakePool::SEED.as_bytes(),
-        stake_pool.name.as_bytes(),
-        &stake_pool.owner,
-        &stake_pool.rewards_destination,
-        &[stake_pool.nonce],
+        StakePoolHeader::SEED.as_bytes(),
+        &stake_pool.header.owner,
+        &stake_pool.header.rewards_destination,
+        &[stake_pool.header.nonce],
     ];
     let transfer_instruction = transfer(
         &spl_token::ID,
@@ -143,10 +145,9 @@ pub fn process_create_central_state(
 
     // Update stake account
     stake_account.withdraw(amount)?;
-    stake_pool.withdraw(amount)?;
+    stake_pool.header.withdraw(amount)?;
 
     // Save states
-    stake_pool.save(&mut accounts.stake_pool.data.borrow_mut());
     stake_account.save(&mut accounts.stake_account.data.borrow_mut());
 
     Ok(())

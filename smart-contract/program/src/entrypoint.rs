@@ -92,6 +92,21 @@ impl PrintProgramError for MediaError {
             MediaError::CentralStateAuthorityMustSign => {
                 msg!("Error: The central state authority must sign")
             }
+            MediaError::Overflow => {
+                msg!("Error: Overflow")
+            }
+            MediaError::NoOp => {
+                msg!("Error: operation is a no-op")
+            }
+            MediaError::WrongMint => {
+                msg!("Error: Wrong mint")
+            }
+            MediaError::WrongCentralVault => {
+                msg!("Error: Wrong central vault")
+            }
+            MediaError::WrongStakePool => {
+                msg!("Error: Wrong stake pool")
+            }
         }
     }
 }

@@ -95,22 +95,22 @@ pub fn process_create_central_state(
     let accounts = Accounts::parse(accounts, program_id)?;
     let Params { amount } = params;
 
-    let mut stake_pool = StakePool::from_account_info(accounts.stake_pool)?;
+    let mut stake_pool = StakePool::get_checked(accounts.stake_pool)?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
 
     check_account_key(
         accounts.owner,
-        &Pubkey::new(&stake_account.owner),
+        &stake_account.owner,
         MediaError::StakeAccountOwnerMismatch,
     )?;
     check_account_key(
         accounts.stake_pool,
-        &Pubkey::new(&stake_account.stake_pool),
+        &stake_account.stake_pool,
         MediaError::StakePoolMismatch,
     )?;
     check_account_key(
         accounts.vault,
-        &Pubkey::new(&stake_pool.vault),
+        &Pubkey::new(&stake_pool.header.vault),
         MediaError::StakePoolVaultMismatch,
     )?;
 
@@ -135,10 +135,9 @@ pub fn process_create_central_state(
 
     // Update stake account
     stake_account.deposit(amount)?;
-    stake_pool.deposit(amount)?;
+    stake_pool.header.deposit(amount)?;
 
     // Save states
-    stake_pool.save(&mut accounts.stake_pool.data.borrow_mut());
     stake_account.save(&mut accounts.stake_account.data.borrow_mut());
 
     Ok(())

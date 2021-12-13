@@ -12,16 +12,14 @@ use bonfida_utils::{BorshSize, InstructionsAccount};
 use crate::state::CentralState;
 use crate::{cpi::Cpi, error::MediaError};
 
-use crate::utils::{check_account_key, check_account_owner};
+use crate::utils::{assert_valid_vault, check_account_key, check_account_owner};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 pub struct Params {
     // Daily inflation in token amount
     pub daily_inflation: u64,
-    // Mint
-    pub token_mint: [u8; 32],
     // Authority
-    pub authority: [u8; 32],
+    pub authority: Pubkey,
 }
 
 #[derive(InstructionsAccount)]
@@ -32,6 +30,8 @@ struct Accounts<'a, T> {
     #[cons(writable, signer)]
     fee_payer: &'a T,
     rent_sysvar_account: &'a T,
+    central_vault: &'a T,
+    mint: &'a T,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -42,6 +42,8 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             system_program: next_account_info(accounts_iter)?,
             fee_payer: next_account_info(accounts_iter)?,
             rent_sysvar_account: next_account_info(accounts_iter)?,
+            central_vault: next_account_info(accounts_iter)?,
+            mint: next_account_info(accounts_iter)?,
         };
 
         // Check keys
@@ -75,6 +77,8 @@ pub fn process_create_central_state(
     let accounts = Accounts::parse(accounts)?;
     let (derived_state_key, nonce) = CentralState::find_key(program_id);
 
+    assert_valid_vault(accounts.central_vault, &derived_state_key)?;
+
     check_account_key(
         accounts.state_account,
         &derived_state_key,
@@ -84,7 +88,8 @@ pub fn process_create_central_state(
     let state = CentralState::new(
         nonce,
         params.daily_inflation,
-        params.token_mint,
+        *accounts.central_vault.key,
+        *accounts.mint.key,
         params.authority,
     );
 
