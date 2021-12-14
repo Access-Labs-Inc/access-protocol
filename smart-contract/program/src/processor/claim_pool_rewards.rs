@@ -21,7 +21,7 @@ use spl_token::{instruction::transfer, state::Mint};
 pub struct Params {}
 
 #[derive(InstructionsAccount)]
-struct Accounts<'a, T> {
+pub struct Accounts<'a, T> {
     #[cons(writable)]
     stake_pool: &'a T,
     #[cons(writable, signer)]
@@ -91,7 +91,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     }
 }
 
-pub fn process_claim_rewards(
+pub fn process_claim_pool_rewards(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
     _params: Params,

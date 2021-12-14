@@ -26,7 +26,7 @@ pub struct Params {
 }
 
 #[derive(InstructionsAccount)]
-struct Accounts<'a, T> {
+pub struct Accounts<'a, T> {
     #[cons(writable)]
     stake_account: &'a T,
     #[cons(writable, signer)]

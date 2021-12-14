@@ -16,7 +16,7 @@ use solana_program::{
 pub struct Params {}
 
 #[derive(InstructionsAccount)]
-struct Accounts<'a, T> {
+pub struct Accounts<'a, T> {
     #[cons(writable)]
     stake_pool: &'a T,
     central_state: &'a T,

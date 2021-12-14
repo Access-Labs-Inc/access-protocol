@@ -15,14 +15,14 @@ use bonfida_utils::{BorshSize, InstructionsAccount};
 use crate::error::MediaError;
 use crate::state::{StakeAccount, StakePool};
 
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 pub struct Params {
     // Amount to stake
     pub amount: u64,
 }
 
 #[derive(InstructionsAccount)]
-struct Accounts<'a, T> {
+pub struct Accounts<'a, T> {
     #[cons(writable)]
     stake_account: &'a T,
     #[cons(writable)]
@@ -87,7 +87,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     }
 }
 
-pub fn process_create_central_state(
+pub fn process_stake(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
     params: Params,

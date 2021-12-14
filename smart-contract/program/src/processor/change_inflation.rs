@@ -11,14 +11,14 @@ use bonfida_utils::{BorshSize, InstructionsAccount};
 
 use crate::utils::{check_account_key, check_account_owner, check_signer};
 
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 pub struct Params {
     // The new daily inflation token amount
     pub daily_inflation: u64,
 }
 
 #[derive(InstructionsAccount)]
-struct Accounts<'a, T> {
+pub struct Accounts<'a, T> {
     #[cons(writable)]
     central_state: &'a T,
     #[cons(signer)]

@@ -42,24 +42,39 @@ impl Processor {
             }
             MediaInstruction::CreateStakeAccount(params) => {
                 msg!("Instruction: Create stake account");
+                create_stake_account::process_create_stake_account(program_id, accounts, params)?;
             }
             MediaInstruction::Stake(params) => {
                 msg!("Instruction: Stake");
+                stake::process_stake(program_id, accounts, params)?;
             }
             MediaInstruction::Unstake(params) => {
                 msg!("Instruction: Unstake");
+                unstake::process_unstake(program_id, accounts, params)?;
             }
-            MediaInstruction::ClaimRewards => {
+            MediaInstruction::ClaimPoolRewards(params) => {
+                msg!("Instruction: Claim pool rewards");
+                claim_pool_rewards::process_claim_pool_rewards(program_id, accounts, params)?;
+            }
+            MediaInstruction::ClaimRewards(params) => {
                 msg!("Instruction: Claim rewards");
+                claim_rewards::process_claim_rewards(program_id, accounts, params)?;
             }
-            MediaInstruction::CloseStakePool => {
+            MediaInstruction::Crank(params) => {
+                msg!("Instruction: Crank");
+                crank::process_crank(program_id, accounts, params)?;
+            }
+            MediaInstruction::CloseStakePool(params) => {
                 msg!("Instruction: Close stake pool");
+                close_stake_pool::process_close_stake_pool(program_id, accounts, params)?;
             }
-            MediaInstruction::CloseStakeAccount => {
+            MediaInstruction::CloseStakeAccount(params) => {
                 msg!("Instruction: Close stake account");
+                close_stake_account::process_close_stake_account(program_id, accounts, params)?;
             }
             MediaInstruction::ChangeInflation(params) => {
                 msg!("Instruction: Change inflation rate");
+                change_inflation::process_change_inflation(program_id, accounts, params)?;
             }
         }
 
