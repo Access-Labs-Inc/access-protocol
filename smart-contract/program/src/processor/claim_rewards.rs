@@ -1,5 +1,5 @@
 use crate::error::MediaError;
-use crate::state::{CentralState, StakeAccount, StakePool, OWNER_MULTIPLIER, STAKER_MULTIPLIER};
+use crate::state::{CentralState, StakeAccount, StakePool, STAKER_MULTIPLIER};
 use crate::utils::{
     calc_previous_balances_and_inflation, check_account_key, check_account_owner, check_signer,
 };

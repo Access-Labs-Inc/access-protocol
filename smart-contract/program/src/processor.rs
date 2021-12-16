@@ -1,4 +1,5 @@
 use borsh::BorshDeserialize;
+use num_traits::FromPrimitive;
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
     pubkey::Pubkey,
@@ -27,53 +28,76 @@ impl Processor {
         instruction_data: &[u8],
     ) -> ProgramResult {
         msg!("Beginning processing");
-        let instruction = MediaInstruction::try_from_slice(instruction_data)
-            .map_err(|_| ProgramError::InvalidInstructionData)?;
+        let instruction = FromPrimitive::from_u8(instruction_data[0])
+            .ok_or(ProgramError::InvalidInstructionData)?;
+        let instruction_data = &instruction_data[1..];
         msg!("Instruction unpacked");
 
         match instruction {
-            MediaInstruction::CreateCentralState(params) => {
+            MediaInstruction::CreateCentralState => {
                 msg!("Instruction: Create central state");
+                let params = create_central_state::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
                 create_central_state::process_create_central_state(program_id, accounts, params)?;
             }
-            MediaInstruction::CreateStakePool(params) => {
+            MediaInstruction::CreateStakePool => {
                 msg!("Instruction: Create stake pool");
+                let params = create_stake_pool::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
                 create_stake_pool::process_create_stake_pool(program_id, accounts, params)?;
             }
-            MediaInstruction::CreateStakeAccount(params) => {
+            MediaInstruction::CreateStakeAccount => {
                 msg!("Instruction: Create stake account");
+                let params = create_stake_account::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
                 create_stake_account::process_create_stake_account(program_id, accounts, params)?;
             }
-            MediaInstruction::Stake(params) => {
+            MediaInstruction::Stake => {
                 msg!("Instruction: Stake");
+                let params = stake::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
                 stake::process_stake(program_id, accounts, params)?;
             }
-            MediaInstruction::Unstake(params) => {
+            MediaInstruction::Unstake => {
                 msg!("Instruction: Unstake");
+                let params = unstake::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
                 unstake::process_unstake(program_id, accounts, params)?;
             }
-            MediaInstruction::ClaimPoolRewards(params) => {
+            MediaInstruction::ClaimPoolRewards => {
                 msg!("Instruction: Claim pool rewards");
+                let params = claim_pool_rewards::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
                 claim_pool_rewards::process_claim_pool_rewards(program_id, accounts, params)?;
             }
-            MediaInstruction::ClaimRewards(params) => {
+            MediaInstruction::ClaimRewards => {
                 msg!("Instruction: Claim rewards");
+                let params = claim_rewards::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
                 claim_rewards::process_claim_rewards(program_id, accounts, params)?;
             }
-            MediaInstruction::Crank(params) => {
+            MediaInstruction::Crank => {
                 msg!("Instruction: Crank");
+                let params = crank::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
                 crank::process_crank(program_id, accounts, params)?;
             }
-            MediaInstruction::CloseStakePool(params) => {
+            MediaInstruction::CloseStakePool => {
                 msg!("Instruction: Close stake pool");
+                let params = close_stake_pool::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
                 close_stake_pool::process_close_stake_pool(program_id, accounts, params)?;
             }
-            MediaInstruction::CloseStakeAccount(params) => {
+            MediaInstruction::CloseStakeAccount => {
                 msg!("Instruction: Close stake account");
+                let params = close_stake_account::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
                 close_stake_account::process_close_stake_account(program_id, accounts, params)?;
             }
-            MediaInstruction::ChangeInflation(params) => {
+            MediaInstruction::ChangeInflation => {
                 msg!("Instruction: Change inflation rate");
+                let params = change_inflation::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
                 change_inflation::process_change_inflation(program_id, accounts, params)?;
             }
         }

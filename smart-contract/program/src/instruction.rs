@@ -1,13 +1,13 @@
-use bonfida_utils::InstructionsAccount;
-use borsh::{BorshDeserialize, BorshSerialize};
-use solana_program::{instruction::Instruction, pubkey::Pubkey};
-
 pub use crate::processor::{
     change_inflation, claim_pool_rewards, claim_rewards, close_stake_account, close_stake_pool,
     crank, create_central_state, create_stake_account, create_stake_pool, stake, unstake,
 };
+use bonfida_utils::InstructionsAccount;
+use borsh::{BorshDeserialize, BorshSerialize};
+use num_derive::FromPrimitive;
+use solana_program::{instruction::Instruction, pubkey::Pubkey};
 
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize, FromPrimitive)]
 pub enum MediaInstruction {
     /// Create central state
     ///
@@ -19,7 +19,7 @@ pub enum MediaInstruction {
     // | 1     | ❌        | ❌      | The system program account |
     // | 2     | ✅        | ✅      | The fee payer account      |
     // | 3     | ❌        | ❌      | The rent sysvar account    |
-    CreateCentralState(create_central_state::Params),
+    CreateCentralState,
 
     /// Create stake pool
     ///
@@ -31,7 +31,7 @@ pub enum MediaInstruction {
     /// | 1     | ❌        | ❌      | The system program account |
     /// | 2     | ✅        | ✅      | The fee payer account      |
     /// | 3     | ❌        | ❌      | The rent sysvar account    |
-    CreateStakePool(create_stake_pool::Params),
+    CreateStakePool,
 
     /// Create stake account
     ///
@@ -43,7 +43,7 @@ pub enum MediaInstruction {
     /// | 1     | ❌        | ❌      | The system program account |
     /// | 2     | ✅        | ✅      | The fee payer account      |
     /// | 3     | ❌        | ❌      | The rent sysvar account    |
-    CreateStakeAccount(create_stake_account::Params),
+    CreateStakeAccount,
 
     /// Stake tokens into a stake pool
     ///
@@ -57,7 +57,7 @@ pub enum MediaInstruction {
     /// | 3     | ✅        | ❌      | The source token account      |
     /// | 4     | ❌        | ❌      | The SPL token program account |
     /// | 5     | ✅        | ❌      | The vault token account       |
-    Stake(stake::Params),
+    Stake,
 
     /// Unstake tokens from a stake pool
     ///
@@ -71,7 +71,7 @@ pub enum MediaInstruction {
     /// | 3     | ✅        | ❌      | The destination token account |
     /// | 4     | ❌        | ❌      | The SPL token program account |
     /// | 5     | ✅        | ❌      | The vault token account       |
-    Unstake(unstake::Params),
+    Unstake,
 
     /// Claim rewards for stake pool owner
     ///
@@ -87,7 +87,7 @@ pub enum MediaInstruction {
     /// | 5     | ❌        | ❌      | The central vault account     |
     /// | 6     | ✅        | ❌      | The source rewards account    |
     /// | 7     | ❌        | ❌      | The SPL token program account |
-    ClaimPoolRewards(claim_pool_rewards::Params),
+    ClaimPoolRewards,
 
     /// Claim rewards for staker
     ///
@@ -104,7 +104,7 @@ pub enum MediaInstruction {
     /// | 6     | ❌        | ❌      | The central vault account       |
     /// | 7     | ✅        | ❌      | The source rewards account      |
     /// | 8     | ❌        | ❌      | The SPL token program account   |
-    ClaimRewards(claim_rewards::Params),
+    ClaimRewards,
 
     /// Permissionless crank to update the buffer of the stake pool
     ///
@@ -114,7 +114,7 @@ pub enum MediaInstruction {
     /// |-------|----------|--------|---------------------------|
     /// | 0     | ✅        | ❌      | The stake pool account    |
     /// | 1     | ❌        | ❌      | The central state account |
-    Crank(crank::Params),
+    Crank,
 
     /// Close stake pool
     ///
@@ -125,7 +125,7 @@ pub enum MediaInstruction {
     /// | 0     | ✅        | ❌      | The stake pool account     |
     /// | 1     | ❌        | ❌      | The system program account |
     /// | 2     | ✅        | ✅      | The stake pool owner       |
-    CloseStakePool(close_stake_pool::Params),
+    CloseStakePool,
 
     /// Close stake account
     ///
@@ -136,7 +136,7 @@ pub enum MediaInstruction {
     /// | 0     | ✅        | ❌      | The stake account          |
     /// | 1     | ❌        | ❌      | The system program account |
     /// | 2     | ✅        | ✅      | The stake pool owner       |
-    CloseStakeAccount(close_stake_account::Params),
+    CloseStakeAccount,
 
     /// Change inflation rate
     ///
@@ -146,73 +146,105 @@ pub enum MediaInstruction {
     /// |-------|----------|--------|-------------------------------------|
     /// | 0     | ✅        | ❌      | The central state account           |
     /// | 1     | ❌        | ✅      | The central state authority account |
-    ChangeInflation(change_inflation::Params),
+    ChangeInflation,
 }
 
 pub fn create_central_state(
+    program_id: Pubkey,
     accounts: create_central_state::Accounts<Pubkey>,
     params: create_central_state::Params,
 ) -> Instruction {
-    accounts.get_instruction(MediaInstruction::CreateCentralState as u8, params)
+    accounts.get_instruction(
+        program_id,
+        MediaInstruction::CreateCentralState as u8,
+        params,
+    )
 }
 
 pub fn create_stake_pool(
+    program_id: Pubkey,
     accounts: create_stake_pool::Accounts<Pubkey>,
     params: create_stake_pool::Params,
 ) -> Instruction {
-    accounts.get_instruction(MediaInstruction::CreateStakePool as u8, params)
+    accounts.get_instruction(program_id, MediaInstruction::CreateStakePool as u8, params)
 }
 
 pub fn create_stake_account(
+    program_id: Pubkey,
     accounts: create_stake_account::Accounts<Pubkey>,
     params: create_stake_account::Params,
 ) -> Instruction {
-    accounts.get_instruction(MediaInstruction::CreateStakeAccount as u8, params)
+    accounts.get_instruction(
+        program_id,
+        MediaInstruction::CreateStakeAccount as u8,
+        params,
+    )
 }
 
-pub fn stake(accounts: stake::Accounts<Pubkey>, params: stake::Params) -> Instruction {
-    accounts.get_instruction(MediaInstruction::Stake as u8, params)
+pub fn stake(
+    program_id: Pubkey,
+    accounts: stake::Accounts<Pubkey>,
+    params: stake::Params,
+) -> Instruction {
+    accounts.get_instruction(program_id, MediaInstruction::Stake as u8, params)
 }
 
-pub fn unstake(accounts: unstake::Accounts<Pubkey>, params: unstake::Params) -> Instruction {
-    accounts.get_instruction(MediaInstruction::Unstake as u8, params)
+pub fn unstake(
+    program_id: Pubkey,
+    accounts: unstake::Accounts<Pubkey>,
+    params: unstake::Params,
+) -> Instruction {
+    accounts.get_instruction(program_id, MediaInstruction::Unstake as u8, params)
 }
 
 pub fn claim_pool_rewards(
+    program_id: Pubkey,
     accounts: claim_pool_rewards::Accounts<Pubkey>,
     params: claim_pool_rewards::Params,
 ) -> Instruction {
-    accounts.get_instruction(MediaInstruction::ClaimPoolRewards as u8, params)
+    accounts.get_instruction(program_id, MediaInstruction::ClaimPoolRewards as u8, params)
 }
 
 pub fn claim_rewards(
+    program_id: Pubkey,
     accounts: claim_rewards::Accounts<Pubkey>,
     params: claim_rewards::Params,
 ) -> Instruction {
-    accounts.get_instruction(MediaInstruction::ClaimRewards as u8, params)
+    accounts.get_instruction(program_id, MediaInstruction::ClaimRewards as u8, params)
 }
 
-pub fn crank(accounts: crank::Accounts<Pubkey>, params: crank::Params) -> Instruction {
-    accounts.get_instruction(MediaInstruction::Crank as u8, params)
+pub fn crank(
+    program_id: Pubkey,
+    accounts: crank::Accounts<Pubkey>,
+    params: crank::Params,
+) -> Instruction {
+    accounts.get_instruction(program_id, MediaInstruction::Crank as u8, params)
 }
 
 pub fn close_stake_pool(
+    program_id: Pubkey,
     accounts: close_stake_pool::Accounts<Pubkey>,
     params: close_stake_pool::Params,
 ) -> Instruction {
-    accounts.get_instruction(MediaInstruction::CloseStakePool as u8, params)
+    accounts.get_instruction(program_id, MediaInstruction::CloseStakePool as u8, params)
 }
 
 pub fn close_stake_account(
+    program_id: Pubkey,
     accounts: close_stake_account::Accounts<Pubkey>,
     params: close_stake_account::Params,
 ) -> Instruction {
-    accounts.get_instruction(MediaInstruction::CloseStakeAccount as u8, params)
+    accounts.get_instruction(
+        program_id,
+        MediaInstruction::CloseStakeAccount as u8,
+        params,
+    )
 }
 
 pub fn change_inflation(
+    program_id: Pubkey,
     accounts: change_inflation::Accounts<Pubkey>,
     params: change_inflation::Params,
 ) -> Instruction {
-    accounts.get_instruction(MediaInstruction::ChangeInflation as u8, params)
+    accounts.get_instruction(program_id, MediaInstruction::ChangeInflation as u8, params)
 }

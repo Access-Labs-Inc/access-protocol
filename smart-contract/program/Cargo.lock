@@ -178,9 +178,9 @@ checksum = "8d696c370c750c948ada61c69a0ee2cbbb9c50b1019ddb86d9317157a99c2cae"
 
 [[package]]
 name = "bonfida-macros"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2ea65b30d3c5375a089c98f2e459f9999c40f088112cbedc2ff0c30525c60fa1"
+checksum = "6c1fb7b10374bf085c6d342363eec310e35642acb39d2d90be4df72160e708c2"
 dependencies = [
  "proc-macro2 1.0.32",
  "quote 1.0.10",
@@ -190,9 +190,9 @@ dependencies = [
 
 [[package]]
 name = "bonfida-utils"
-version = "0.1.1"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db89edb1ab91afb1743885f87b1d89f8b449e4f1ebbbfdce4da903e4875844dc"
+checksum = "1d03f660dd3b729261f1ef15801624d11b3b45ab99aa078e6a399d7e377b616a"
 dependencies = [
  "bonfida-macros",
  "borsh",
@@ -2619,6 +2619,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 
 [[package]]
+name = "spl-associated-token-account"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "393e2240d521c3dd770806bff25c2c00d761ac962be106e14e22dd912007f428"
+dependencies = [
+ "solana-program",
+ "spl-token",
+]
+
+[[package]]
 name = "spl-token"
 version = "3.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2773,6 +2783,7 @@ dependencies = [
  "solana-program",
  "solana-program-test",
  "solana-sdk",
+ "spl-associated-token-account",
  "spl-token",
  "thiserror",
  "tokio",

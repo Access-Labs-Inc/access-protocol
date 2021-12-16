@@ -25,13 +25,13 @@ pub struct Params {
 #[derive(InstructionsAccount)]
 pub struct Accounts<'a, T> {
     #[cons(writable)]
-    state_account: &'a T,
-    system_program: &'a T,
+    pub state_account: &'a T,
+    pub system_program: &'a T,
     #[cons(writable, signer)]
-    fee_payer: &'a T,
-    rent_sysvar_account: &'a T,
-    central_vault: &'a T,
-    mint: &'a T,
+    pub fee_payer: &'a T,
+    pub rent_sysvar_account: &'a T,
+    pub central_vault: &'a T,
+    pub mint: &'a T,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {

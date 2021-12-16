@@ -1,6 +1,6 @@
 use crate::error::MediaError;
 use bonfida_utils::BorshSize;
-use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
+use borsh::{BorshDeserialize, BorshSerialize};
 use bytemuck::{from_bytes_mut, try_cast_slice_mut, Pod, Zeroable};
 use solana_program::account_info::AccountInfo;
 use solana_program::clock::Clock;
@@ -110,8 +110,7 @@ impl<'a> StakePool<'a> {
             &destination.to_bytes(),
             &[*nonce],
         ];
-        let key = Pubkey::create_program_address(seeds, program_id).unwrap();
-        key
+        Pubkey::create_program_address(seeds, program_id).unwrap()
     }
 }
 
@@ -204,8 +203,7 @@ impl StakeAccount {
             &stake_pool.to_bytes(),
             &[*nonce],
         ];
-        let key = Pubkey::create_program_address(seeds, program_id).unwrap();
-        key
+        Pubkey::create_program_address(seeds, program_id).unwrap()
     }
 
     pub fn save(&self, mut dst: &mut [u8]) {
@@ -279,8 +277,7 @@ impl CentralState {
 
     pub fn create_key(signer_nonce: &u8, program_id: &Pubkey) -> Pubkey {
         let signer_seeds: &[&[u8]] = &[&program_id.to_bytes(), &[*signer_nonce]];
-        let key = Pubkey::create_program_address(signer_seeds, program_id).unwrap();
-        key
+        Pubkey::create_program_address(signer_seeds, program_id).unwrap()
     }
 
     pub fn find_key(program_id: &Pubkey) -> (Pubkey, u8) {

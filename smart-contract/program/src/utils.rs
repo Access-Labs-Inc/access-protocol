@@ -1,25 +1,11 @@
-use crate::state::{
-    CentralState, StakeAccount, StakePool, MEDIA_MINT, SECONDS_IN_DAY, STAKE_BUFFER_LEN,
-};
+use crate::state::{StakeAccount, StakePool, MEDIA_MINT, SECONDS_IN_DAY, STAKE_BUFFER_LEN};
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
     program_pack::Pack, pubkey::Pubkey,
 };
-use spl_token::state::{Account, Mint};
+use spl_token::state::Account;
 
 use crate::error::MediaError;
-
-pub fn get_token_balance(token_account: &AccountInfo) -> u64 {
-    let balance = Account::unpack_from_slice(&token_account.data.borrow())
-        .unwrap()
-        .amount;
-
-    balance
-}
-
-pub fn get_supply(mint: &Mint) -> u64 {
-    mint.supply
-}
 
 pub fn calc_previous_balances_and_inflation(
     current_time: i64,

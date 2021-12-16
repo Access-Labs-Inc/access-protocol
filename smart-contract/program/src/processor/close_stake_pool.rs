@@ -17,8 +17,6 @@ use crate::state::StakePool;
 pub struct Params {
     // The PDA nonce
     pub nonce: u8,
-    // Name of the stake pool
-    pub name: String,
     // Destination of the rewards
     pub destination: Pubkey,
 }
@@ -72,14 +70,10 @@ pub fn process_close_stake_pool(
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let Params {
-        nonce,
-        name,
-        destination,
-    } = params;
+    let Params { nonce, destination } = params;
 
     let derived_stake_pool_key =
-        StakePool::create_key(&nonce, &accounts.owner.key, &destination, program_id);
+        StakePool::create_key(&nonce, accounts.owner.key, &destination, program_id);
 
     check_account_key(
         accounts.stake_pool_account,

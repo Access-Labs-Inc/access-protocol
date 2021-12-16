@@ -103,12 +103,12 @@ pub fn process_unstake(
 
     check_account_key(
         accounts.owner,
-        &&stake_account.owner,
+        &stake_account.owner,
         MediaError::StakeAccountOwnerMismatch,
     )?;
     check_account_key(
         accounts.stake_pool,
-        &&stake_account.stake_pool,
+        &stake_account.stake_pool,
         MediaError::StakePoolMismatch,
     )?;
     check_account_key(
