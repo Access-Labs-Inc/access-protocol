@@ -228,7 +228,7 @@ async fn test_staking() {
     let crank_ix = crank(
         program_id,
         crank::Accounts {
-            stake_pool: &stake_acc_key,
+            stake_pool: &stake_pool_key,
             central_state: &central_state,
         },
         crank::Params {},
@@ -256,9 +256,13 @@ async fn test_staking() {
         claim_pool_rewards::Params {},
     );
 
-    sign_send_instructions(&mut prg_test_ctx, vec![claim_stake_pool_ix], vec![])
-        .await
-        .unwrap();
+    sign_send_instructions(
+        &mut prg_test_ctx,
+        vec![claim_stake_pool_ix],
+        vec![&stake_pool_owner],
+    )
+    .await
+    .unwrap();
 
     //
     // Claim rewards
@@ -279,7 +283,7 @@ async fn test_staking() {
         claim_rewards::Params {},
     );
 
-    sign_send_instructions(&mut prg_test_ctx, vec![claim_ix], vec![])
+    sign_send_instructions(&mut prg_test_ctx, vec![claim_ix], vec![&staker])
         .await
         .unwrap();
 
@@ -321,7 +325,7 @@ async fn test_staking() {
         },
     );
 
-    sign_send_instructions(&mut prg_test_ctx, vec![unstake_ix], vec![])
+    sign_send_instructions(&mut prg_test_ctx, vec![unstake_ix], vec![&staker])
         .await
         .unwrap();
 
@@ -342,9 +346,13 @@ async fn test_staking() {
         },
     );
 
-    sign_send_instructions(&mut prg_test_ctx, vec![close_stake_account_ix], vec![])
-        .await
-        .unwrap();
+    sign_send_instructions(
+        &mut prg_test_ctx,
+        vec![close_stake_account_ix],
+        vec![&staker],
+    )
+    .await
+    .unwrap();
 
     //
     // Close stake pool
@@ -363,7 +371,11 @@ async fn test_staking() {
         },
     );
 
-    sign_send_instructions(&mut prg_test_ctx, vec![close_stake_pool_ix], vec![])
-        .await
-        .unwrap();
+    sign_send_instructions(
+        &mut prg_test_ctx,
+        vec![close_stake_pool_ix],
+        vec![&stake_pool_owner],
+    )
+    .await
+    .unwrap();
 }

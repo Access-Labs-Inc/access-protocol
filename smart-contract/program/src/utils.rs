@@ -10,14 +10,14 @@ use crate::error::MediaError;
 pub fn calc_previous_balances_and_inflation(
     current_time: i64,
     stake_pool: &StakePool,
-) -> Result<u64, ProgramError> {
+) -> Result<u128, ProgramError> {
     let last_full_day = current_time as u64 / SECONDS_IN_DAY;
     let mut last_claimed_day = stake_pool.header.last_claimed_time as u64 / SECONDS_IN_DAY;
 
     let mut i = last_full_day - last_claimed_day;
     i = (stake_pool.header.current_day_idx as u64 - i) % STAKE_BUFFER_LEN;
 
-    let mut reward: u64 = 0;
+    let mut reward: u128 = 0;
 
     // Compute reward for all past days
     while last_claimed_day < last_full_day {
@@ -88,4 +88,13 @@ pub fn assert_valid_vault(account: &AccountInfo, vault_signer: &Pubkey) -> Progr
         return Err(ProgramError::InvalidArgument);
     }
     Ok(())
+}
+
+pub fn safe_downcast(n: u128) -> Option<u64> {
+    static BOUND: u128 = u64::MAX as u128;
+    if n > BOUND {
+        None
+    } else {
+        Some(n as u64)
+    }
 }

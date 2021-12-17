@@ -2,6 +2,7 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
+    msg,
     program::invoke_signed,
     program_error::ProgramError,
     pubkey::Pubkey,
@@ -132,23 +133,29 @@ pub fn process_unstake(
         &[],
         amount,
     )?;
+    msg!("0");
     invoke_signed(
         &transfer_instruction,
         &[
             accounts.spl_token_program.clone(),
             accounts.vault.clone(),
             accounts.destination_token.clone(),
-            accounts.owner.clone(),
+            accounts.stake_pool.clone(),
         ],
         &[signer_seeds],
     )?;
 
     // Update stake account
+    msg!("1");
     stake_account.withdraw(amount)?;
+    msg!("2");
+
     stake_pool.header.withdraw(amount)?;
+    msg!("3");
 
     // Save states
     stake_account.save(&mut accounts.stake_account.data.borrow_mut());
+    msg!("4");
 
     Ok(())
 }

@@ -7,6 +7,7 @@ use solana_program::{
     account_info::{next_account_info, AccountInfo},
     clock::Clock,
     entrypoint::ProgramResult,
+    msg,
     program_error::ProgramError,
     pubkey::Pubkey,
     sysvar::Sysvar,
@@ -61,13 +62,12 @@ pub fn process_crank(
         #[cfg(not(feature = "no-lock-time"))]
         return Err(MediaError::NoOp.into());
     }
+    msg!("Total staked {}", stake_pool.header.total_staked);
+    msg!("Daily inflation {}", central_vault.daily_inflation);
 
-    // Maybe need u128?
     stake_pool.push_balances_buff(
-        stake_pool
-            .header
-            .total_staked
-            .checked_mul(central_vault.daily_inflation)
+        (stake_pool.header.total_staked as u128)
+            .checked_mul(central_vault.daily_inflation as u128)
             .ok_or(MediaError::Overflow)?,
     );
     stake_pool.header.last_crank_time = present_time;

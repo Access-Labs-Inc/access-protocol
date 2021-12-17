@@ -115,7 +115,7 @@ pub fn process_create_stake_pool(
             &params.destination.to_bytes(),
             &[params.nonce],
         ],
-        stake_pool_header.borsh_len() + 8 * STAKE_BUFFER_LEN as usize,
+        stake_pool_header.borsh_len() + 16 * STAKE_BUFFER_LEN as usize,
     )?;
 
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool_account).unwrap();

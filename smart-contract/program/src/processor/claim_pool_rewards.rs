@@ -2,6 +2,7 @@ use crate::error::MediaError;
 use crate::state::{CentralState, StakePool, OWNER_MULTIPLIER};
 use crate::utils::{
     calc_previous_balances_and_inflation, check_account_key, check_account_owner, check_signer,
+    safe_downcast,
 };
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -119,12 +120,13 @@ pub fn process_claim_pool_rewards(
 
     let rewards = balances_and_inflation
         // Divide the accumulated total stake balance multiplied by the daily inflation
-        .checked_div(mint.supply)
+        .checked_div(mint.supply as u128)
         .ok_or(MediaError::Overflow)?
         // Multiply by % stake pool owner receives
-        .checked_mul(OWNER_MULTIPLIER)
+        .checked_mul(OWNER_MULTIPLIER as u128)
         .ok_or(MediaError::Overflow)?
         .checked_div(100)
+        .and_then(|x| safe_downcast(x))
         .ok_or(MediaError::Overflow)?;
 
     // Transfer rewards
@@ -132,7 +134,7 @@ pub fn process_claim_pool_rewards(
         &spl_token::ID,
         accounts.central_vault.key,
         accounts.rewards_destination.key,
-        accounts.central_vault.key,
+        accounts.central_state.key,
         &[],
         rewards,
     )?;
@@ -140,7 +142,7 @@ pub fn process_claim_pool_rewards(
         &transfer_ix,
         &[
             accounts.spl_token_program.clone(),
-            accounts.central_vault.clone(),
+            accounts.central_state.clone(),
             accounts.central_vault.clone(),
             accounts.rewards_destination.clone(),
         ],

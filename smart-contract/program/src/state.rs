@@ -74,7 +74,7 @@ pub struct StakePoolHeader {
 
 pub struct StakePool<'a> {
     pub header: RefMut<'a, StakePoolHeader>,
-    pub balances: RefMut<'a, [u64]>, // of length STAKE_BUFFER_LEN
+    pub balances: RefMut<'a, [u128]>, // of length STAKE_BUFFER_LEN
 }
 
 impl<'a> StakePool<'a> {
@@ -94,7 +94,7 @@ impl<'a> StakePool<'a> {
         Ok(StakePool { header, balances })
     }
 
-    pub fn push_balances_buff(&mut self, val: u64) {
+    pub fn push_balances_buff(&mut self, val: u128) {
         self.balances[((self.header.current_day_idx as u64) % STAKE_BUFFER_LEN) as usize] = val;
         self.header.current_day_idx += 1;
     }
