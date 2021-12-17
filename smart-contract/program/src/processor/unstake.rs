@@ -27,16 +27,16 @@ pub struct Params {
 #[derive(InstructionsAccount)]
 pub struct Accounts<'a, T> {
     #[cons(writable)]
-    stake_account: &'a T,
+    pub stake_account: &'a T,
     #[cons(writable)]
-    stake_pool: &'a T,
+    pub stake_pool: &'a T,
     #[cons(writable, signer)]
-    owner: &'a T,
+    pub owner: &'a T,
     #[cons(writable)]
-    destination_token: &'a T,
-    spl_token_program: &'a T,
+    pub destination_token: &'a T,
+    pub spl_token_program: &'a T,
     #[cons(writable)]
-    vault: &'a T,
+    pub vault: &'a T,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {

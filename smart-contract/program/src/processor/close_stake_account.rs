@@ -27,9 +27,9 @@ pub struct Params {
 #[derive(InstructionsAccount)]
 pub struct Accounts<'a, T> {
     #[cons(writable)]
-    stake_account: &'a T,
+    pub stake_account: &'a T,
     #[cons(writable, signer)]
-    owner: &'a T,
+    pub owner: &'a T,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {

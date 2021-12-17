@@ -23,19 +23,18 @@ pub struct Params {}
 #[derive(InstructionsAccount)]
 pub struct Accounts<'a, T> {
     #[cons(writable)]
-    stake_pool: &'a T,
+    pub stake_pool: &'a T,
     #[cons(writable)]
-    stake_account: &'a T,
+    pub stake_account: &'a T,
     #[cons(writable, signer)]
-    owner: &'a T,
+    pub owner: &'a T,
     #[cons(writable)]
-    rewards_destination: &'a T,
-    central_state: &'a T,
-    mint: &'a T,
-    central_vault: &'a T,
+    pub rewards_destination: &'a T,
+    pub central_state: &'a T,
+    pub mint: &'a T,
     #[cons(writable)]
-    source_rewards: &'a T,
-    spl_token_program: &'a T,
+    pub central_vault: &'a T,
+    pub spl_token_program: &'a T,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -52,7 +51,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             central_state: next_account_info(accounts_iter)?,
             mint: next_account_info(accounts_iter)?,
             central_vault: next_account_info(accounts_iter)?,
-            source_rewards: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
         };
 
@@ -83,11 +81,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_owner(accounts.mint, &spl_token::ID, MediaError::WrongOwner)?;
         check_account_owner(
             accounts.central_vault,
-            &spl_token::ID,
-            MediaError::WrongOwner,
-        )?;
-        check_account_owner(
-            accounts.source_rewards,
             &spl_token::ID,
             MediaError::WrongOwner,
         )?;
@@ -156,7 +149,7 @@ pub fn process_claim_rewards(
     // Transfer rewards
     let transfer_ix = transfer(
         &spl_token::ID,
-        accounts.source_rewards.key,
+        accounts.central_vault.key,
         accounts.rewards_destination.key,
         accounts.central_vault.key,
         &[],
@@ -167,7 +160,7 @@ pub fn process_claim_rewards(
         &[
             accounts.spl_token_program.clone(),
             accounts.central_vault.clone(),
-            accounts.source_rewards.clone(),
+            accounts.central_vault.clone(),
             accounts.rewards_destination.clone(),
         ],
         &[&[&program_id.to_bytes(), &[central_state.signer_nonce]]],

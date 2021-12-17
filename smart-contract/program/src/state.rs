@@ -36,6 +36,7 @@ impl BorshSize for Tag {
     }
 }
 
+// TODO add total number of stakers?
 #[derive(BorshSerialize, BorshDeserialize, BorshSize, Copy, Clone, Pod, Zeroable)]
 #[repr(C)]
 pub struct StakePoolHeader {
