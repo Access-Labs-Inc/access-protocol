@@ -84,6 +84,7 @@ pub fn assert_valid_vault(account: &AccountInfo, vault_signer: &Pubkey) -> Progr
     }
     if acc.mint != MEDIA_MINT {
         msg!("Invalid MEDIA mint");
+        #[cfg(not(feature = "no-mint-check"))]
         return Err(ProgramError::InvalidArgument);
     }
     Ok(())
