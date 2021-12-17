@@ -118,12 +118,19 @@ pub fn process_unstake(
         MediaError::StakePoolVaultMismatch,
     )?;
 
+    // Update stake account
+    stake_account.withdraw(amount)?;
+    stake_pool.header.withdraw(amount)?;
+    
+    // Save states
+    stake_account.save(&mut accounts.stake_account.data.borrow_mut());
+
     // Transfer tokens
     let signer_seeds: &[&[u8]] = &[
         StakePoolHeader::SEED.as_bytes(),
-        &stake_pool.header.owner,
-        &stake_pool.header.rewards_destination,
-        &[stake_pool.header.nonce],
+        &stake_pool.header.owner.clone(),
+        &stake_pool.header.rewards_destination.clone(),
+        &[stake_pool.header.nonce.clone()],
     ];
     let transfer_instruction = transfer(
         &spl_token::ID,
@@ -133,7 +140,9 @@ pub fn process_unstake(
         &[],
         amount,
     )?;
-    msg!("0");
+
+    drop(stake_pool);
+
     invoke_signed(
         &transfer_instruction,
         &[
@@ -144,18 +153,6 @@ pub fn process_unstake(
         ],
         &[signer_seeds],
     )?;
-
-    // Update stake account
-    msg!("1");
-    stake_account.withdraw(amount)?;
-    msg!("2");
-
-    stake_pool.header.withdraw(amount)?;
-    msg!("3");
-
-    // Save states
-    stake_account.save(&mut accounts.stake_account.data.borrow_mut());
-    msg!("4");
 
     Ok(())
 }
