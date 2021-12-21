@@ -9,6 +9,8 @@ import {
   LoginRequestSchema,
   LoginRequest,
 } from "../types/routes";
+import jwt from "jsonwebtoken";
+import { ACCESS_TOKEN_SECRET } from "../utils/jwt";
 
 const router = Router();
 
@@ -40,7 +42,11 @@ router.post("/login", validaRequestBody(LoginRequestSchema), (req, res) => {
     // Check nonce signature
     // Check amount staked
     // JWT
-    return res.sendStatus(200);
+    const token = jwt.sign(
+      { address, iat: new Date().getTime() },
+      ACCESS_TOKEN_SECRET
+    );
+    return res.json(new ApiResponse(true, { token }));
   } catch (err) {}
 });
 

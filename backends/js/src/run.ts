@@ -3,6 +3,7 @@ import express, { RequestHandler } from "express";
 import helmet from "helmet";
 import bodyParser from "body-parser";
 import authRoute from "./routes/auth";
+import articleRoute from "./routes/articles";
 
 export const run = () => {
   const app = express();
@@ -12,6 +13,7 @@ export const run = () => {
   app.use(bodyParser.urlencoded({ extended: true }) as RequestHandler);
 
   app.use("/auth", authRoute);
+  app.use("/article", articleRoute);
 
   app.use(helmet() as RequestHandler);
 

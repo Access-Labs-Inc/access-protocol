@@ -1,7 +1,7 @@
 import { ErrorMessage } from "./errors";
-import { NonceResponse } from "./routes";
+import { NonceResponse, LoginResponse } from "./routes";
 
-type Result = NonceResponse | ErrorMessage;
+type Result = ErrorMessage | NonceResponse | LoginResponse;
 
 export class ApiResponse {
   success: boolean;

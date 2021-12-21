@@ -1,6 +1,37 @@
 import { JSONSchemaType } from "ajv";
 
 /**
+ * Bearer token
+ */
+
+export interface AuthorizationHeader {
+  authorization: string;
+}
+
+export const AuthorizationHeaderSchema: JSONSchemaType<AuthorizationHeader> = {
+  type: "object",
+  properties: { authorization: { type: "string", format: "bearerToken" } },
+  required: ["authorization"],
+  additionalProperties: true,
+};
+
+/**
+ * Auth
+ */
+
+export interface Payload {
+  address: string;
+  iat: number;
+}
+
+export const PayloadSchema: JSONSchemaType<Payload> = {
+  type: "object",
+  properties: { address: { type: "string" }, iat: { type: "number" } },
+  required: ["address", "iat"],
+  additionalProperties: false,
+};
+
+/**
  * POST /auth/nonce
  */
 
@@ -37,3 +68,7 @@ export const LoginRequestSchema: JSONSchemaType<LoginRequest> = {
   required: ["address", "nonce"],
   additionalProperties: false,
 };
+
+export interface LoginResponse {
+  token: string;
+}
