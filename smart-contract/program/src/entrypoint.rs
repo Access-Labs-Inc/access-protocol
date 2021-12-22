@@ -107,6 +107,12 @@ impl PrintProgramError for MediaError {
             MediaError::WrongStakePool => {
                 msg!("Error: Wrong stake pool")
             }
+            MediaError::UnauthorizedSeller => {
+                msg!("Error: Unauthorized bond seller")
+            }
+            MediaError::BondSellerMustSign => {
+                msg!("Error: Bond seller must sign")
+            }
         }
     }
 }

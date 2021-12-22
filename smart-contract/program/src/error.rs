@@ -57,6 +57,16 @@ pub enum MediaError {
     WrongCentralVault,
     #[error("Wrong stake pool")]
     WrongStakePool,
+    #[error("Unauthorized seller")]
+    UnauthorizedSeller,
+    #[error("Bond seller must sign")]
+    BondSellerMustSign,
+    #[error("Bond seller has already signed")]
+    BondSellerAlreadySigner,
+    #[error("The bond does not have enough sellers")]
+    NotEnoughSellers,
+    #[error("The bond buyer must sign")]
+    BuyerMustSign,
 }
 
 impl From<MediaError> for ProgramError {

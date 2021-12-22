@@ -2,7 +2,6 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
-    msg,
     program::invoke_signed,
     program_error::ProgramError,
     pubkey::Pubkey,
@@ -121,7 +120,7 @@ pub fn process_unstake(
     // Update stake account
     stake_account.withdraw(amount)?;
     stake_pool.header.withdraw(amount)?;
-    
+
     // Save states
     stake_account.save(&mut accounts.stake_account.data.borrow_mut());
 

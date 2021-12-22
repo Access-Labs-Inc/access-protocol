@@ -26,6 +26,9 @@ pub enum Tag {
     Uninitialized,
     StakePool,
     StakeAccount,
+    // Bond accounts are inactive until the buyer transfered the funds
+    InactiveBondAccount,
+    BondAccount,
     CentralState,
     Deleted,
 }
@@ -161,7 +164,7 @@ impl StakePoolHeader {
     }
 }
 
-#[derive(BorshSerialize, BorshDeserialize, Debug, PartialEq, BorshSize)]
+#[derive(BorshSerialize, BorshDeserialize, BorshSize)]
 pub struct StakeAccount {
     // Tag
     pub tag: Tag,
@@ -234,7 +237,7 @@ impl StakeAccount {
         Ok(())
     }
 }
-#[derive(BorshSerialize, BorshDeserialize, Debug, PartialEq, BorshSize)]
+#[derive(BorshSerialize, BorshDeserialize, BorshSize)]
 pub struct CentralState {
     // Tag
     pub tag: Tag,
@@ -295,6 +298,134 @@ impl CentralState {
             return Err(MediaError::DataTypeMismatch.into());
         }
         let result = CentralState::deserialize(&mut data)?;
+        Ok(result)
+    }
+}
+
+pub const BOND_SIGNER_THRESHOLD: u64 = 1;
+pub const AUTHORIZED_BOND_SELLERS: [Pubkey; 1] = [solana_program::pubkey!(
+    "ERNVcTG8sGynQjy6BKr3qotMusv3Zo1pJsbGdBgy9eQQ"
+)];
+
+#[derive(BorshSerialize, BorshDeserialize, BorshSize)]
+pub struct BondAccount {
+    // Tag
+    pub tag: Tag,
+
+    // Owner of the bond
+    pub owner: Pubkey,
+
+    // Total amount sold
+    pub total_amount_sold: u64,
+
+    // Total quote token
+    pub total_quote_amount: u64,
+
+    // Quote mint used to buy the bond
+    pub quote_mint: Pubkey,
+
+    // Seller token account (i.e destination of the quote tokens)
+    pub seller_token_account: Pubkey,
+
+    // Unlock start date
+    pub unlock_start_date: i64,
+
+    // Unlock period
+    // time interval at which the tokens unlock
+    pub unlock_period: u64,
+
+    // Unlock amount
+    // amount unlocked at every unlock_period
+    pub unlock_amount: u64,
+
+    // Last unlock date
+    pub last_unlock_time: u64,
+
+    // Total amount unlocked (metric)
+    pub total_unlocked_amount: u64,
+
+    // Stake pool to which the account belongs to
+    pub stake_pool: Pubkey,
+
+    // Last unix timestamp where rewards were claimed
+    pub last_claimed_time: i64,
+
+    // Sellers who signed for the sell of the bond account
+    pub sellers: Vec<Pubkey>,
+}
+
+impl BondAccount {
+    pub const SEED: &'static str = "bond_account";
+
+    pub fn create_key(owner: &Pubkey, total_amount_sold: u64, program_id: &Pubkey) -> (Pubkey, u8) {
+        let seeds: &[&[u8]] = &[
+            BondAccount::SEED.as_bytes(),
+            &owner.to_bytes(),
+            &total_amount_sold.to_be_bytes(),
+        ];
+        Pubkey::find_program_address(seeds, program_id)
+    }
+
+    pub fn new(
+        owner: Pubkey,
+        total_amount_sold: u64,
+        total_quote_amount: u64,
+        quote_mint: Pubkey,
+        seller_token_account: Pubkey,
+        unlock_start_date: i64,
+        unlock_period: u64,
+        unlock_amount: u64,
+        last_unlock_time: u64,
+        total_unlocked_amount: u64,
+        stake_pool: Pubkey,
+        last_claimed_time: i64,
+        seller: Pubkey,
+    ) -> Self {
+        let sellers = vec![seller];
+        Self {
+            tag: Tag::InactiveBondAccount,
+            owner,
+            total_amount_sold,
+            total_quote_amount,
+            quote_mint,
+            seller_token_account,
+            unlock_start_date,
+            unlock_period,
+            unlock_amount,
+            last_unlock_time,
+            total_unlocked_amount,
+            stake_pool,
+            last_claimed_time,
+            sellers,
+        }
+    }
+
+    pub fn save(&self, mut dst: &mut [u8]) {
+        self.serialize(&mut dst).unwrap()
+    }
+
+    pub fn is_active(&self) -> bool {
+        self.tag == Tag::BondAccount
+    }
+
+    pub fn activate(&mut self) {
+        self.tag = Tag::BondAccount
+    }
+
+    pub fn from_account_info(
+        a: &AccountInfo,
+        allow_inactive: bool,
+    ) -> Result<BondAccount, ProgramError> {
+        let mut data = &a.data.borrow() as &[u8];
+        let tag = if allow_inactive {
+            Tag::InactiveBondAccount
+        } else {
+            Tag::BondAccount
+        };
+        if data[0] != tag as u8 && data[0] != Tag::Uninitialized as u8 {
+            return Err(MediaError::DataTypeMismatch.into());
+        }
+        let result = BondAccount::deserialize(&mut data)?;
         Ok(result)
     }
 }

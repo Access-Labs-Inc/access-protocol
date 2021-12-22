@@ -1,11 +1,11 @@
+use crate::error::MediaError;
+use crate::state::{BondAccount, AUTHORIZED_BOND_SELLERS};
 use crate::state::{StakeAccount, StakePool, MEDIA_MINT, SECONDS_IN_DAY, STAKE_BUFFER_LEN};
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
     program_pack::Pack, pubkey::Pubkey,
 };
 use spl_token::state::Account;
-
-use crate::error::MediaError;
 
 pub fn calc_previous_balances_and_inflation(
     current_time: i64,
@@ -87,6 +87,34 @@ pub fn assert_valid_vault(account: &AccountInfo, vault_signer: &Pubkey) -> Progr
         #[cfg(not(feature = "no-mint-check"))]
         return Err(ProgramError::InvalidArgument);
     }
+    Ok(())
+}
+
+pub fn assert_uninitialized(account: &AccountInfo) -> ProgramResult {
+    if !account.data_is_empty() {
+        return Err(ProgramError::AccountAlreadyInitialized);
+    }
+    Ok(())
+}
+
+pub fn assert_authorized_seller(seller: &AccountInfo, seller_index: usize) -> ProgramResult {
+    let expected_seller = AUTHORIZED_BOND_SELLERS
+        .get(seller_index)
+        .ok_or(MediaError::UnauthorizedSeller)?;
+    if seller.key != expected_seller {
+        return Err(MediaError::UnauthorizedSeller.into());
+    }
+    Ok(())
+}
+
+pub fn assert_bond_derivation(
+    account: &AccountInfo,
+    owner: &Pubkey,
+    total_amount_sold: u64,
+    program_id: &Pubkey,
+) -> ProgramResult {
+    let (key, _nonce) = BondAccount::create_key(owner, total_amount_sold, program_id);
+    check_account_key(account, &key, MediaError::AccountNotDeterministic)?;
     Ok(())
 }
 
