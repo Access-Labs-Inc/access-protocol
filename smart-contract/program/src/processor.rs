@@ -24,6 +24,9 @@ pub mod stake;
 pub mod unlock_bond_tokens;
 pub mod unstake;
 
+// TODO change to mint_to instead of transfers
+// Allow mint ix (or use bond?)
+
 pub struct Processor {}
 
 impl Processor {

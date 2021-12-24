@@ -10,7 +10,7 @@ use solana_program::{
 use crate::utils::{assert_empty_stake_pool, check_account_key, check_account_owner, check_signer};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
-use crate::error::MediaError;
+use crate::error::AccessError;
 use crate::state::StakePool;
 
 // TODO add admin close
@@ -51,11 +51,11 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_owner(
             accounts.stake_pool_account,
             program_id,
-            MediaError::WrongOwner,
+            AccessError::WrongOwner,
         )?;
 
         // Check signer
-        check_signer(accounts.owner, MediaError::StakePoolOwnerMustSign)?;
+        check_signer(accounts.owner, AccessError::StakePoolOwnerMustSign)?;
 
         Ok(accounts)
     }
@@ -76,7 +76,7 @@ pub fn process_close_stake_pool(
     check_account_key(
         accounts.stake_pool_account,
         &derived_stake_pool_key,
-        MediaError::AccountNotDeterministic,
+        AccessError::AccountNotDeterministic,
     )?;
 
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool_account).unwrap();
@@ -84,7 +84,7 @@ pub fn process_close_stake_pool(
     check_account_key(
         accounts.owner,
         &Pubkey::new(&stake_pool.header.owner),
-        MediaError::WrongStakePoolOwner,
+        AccessError::WrongStakePoolOwner,
     )?;
 
     assert_empty_stake_pool(&stake_pool)?;

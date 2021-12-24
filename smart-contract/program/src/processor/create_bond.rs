@@ -9,7 +9,7 @@ use solana_program::{
 };
 
 use crate::cpi::Cpi;
-use crate::error::MediaError;
+use crate::error::AccessError;
 use crate::state::{BondAccount, BOND_SIGNER_THRESHOLD};
 use crate::utils::{
     assert_authorized_seller, assert_uninitialized, check_account_key, check_signer,
@@ -66,11 +66,11 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_key(
             accounts.system_program,
             &system_program::ID,
-            MediaError::WrongSystemProgram,
+            AccessError::WrongSystemProgram,
         )?;
 
         // Check signer
-        check_signer(accounts.seller, MediaError::BondSellerMustSign)?;
+        check_signer(accounts.seller, AccessError::BondSellerMustSign)?;
 
         Ok(accounts)
     }
@@ -89,7 +89,7 @@ pub fn process_create_bond(
     check_account_key(
         accounts.bond_account,
         &derived_key,
-        MediaError::AccountNotDeterministic,
+        AccessError::AccountNotDeterministic,
     )?;
     assert_uninitialized(accounts.bond_account)?;
     assert_authorized_seller(accounts.seller, params.seller_index as usize)?;

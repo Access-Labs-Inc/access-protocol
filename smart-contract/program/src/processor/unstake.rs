@@ -16,7 +16,7 @@ use crate::{
 };
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
-use crate::error::MediaError;
+use crate::error::AccessError;
 use crate::state::{StakeAccount, StakePool};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -70,33 +70,33 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_key(
             accounts.spl_token_program,
             &spl_token::ID,
-            MediaError::WrongSplTokenProgramId,
+            AccessError::WrongSplTokenProgramId,
         )?;
 
         // Check ownership
         check_account_owner(
             accounts.stake_account,
             program_id,
-            MediaError::WrongStakeAccountOwner,
+            AccessError::WrongStakeAccountOwner,
         )?;
         check_account_owner(
             accounts.stake_pool,
             program_id,
-            MediaError::WrongStakePoolAccountOwner,
+            AccessError::WrongStakePoolAccountOwner,
         )?;
         check_account_owner(
             accounts.destination_token,
             &spl_token::ID,
-            MediaError::WrongTokenAccountOwner,
+            AccessError::WrongTokenAccountOwner,
         )?;
         check_account_owner(
             accounts.vault,
             &spl_token::ID,
-            MediaError::WrongTokenAccountOwner,
+            AccessError::WrongTokenAccountOwner,
         )?;
 
         // Check signer
-        check_signer(accounts.owner, MediaError::StakeAccountOwnerMustSign)?;
+        check_signer(accounts.owner, AccessError::StakeAccountOwnerMustSign)?;
 
         Ok(accounts)
     }
@@ -116,17 +116,17 @@ pub fn process_unstake(
     check_account_key(
         accounts.owner,
         &stake_account.owner,
-        MediaError::StakeAccountOwnerMismatch,
+        AccessError::StakeAccountOwnerMismatch,
     )?;
     check_account_key(
         accounts.stake_pool,
         &stake_account.stake_pool,
-        MediaError::StakePoolMismatch,
+        AccessError::StakePoolMismatch,
     )?;
     check_account_key(
         accounts.vault,
         &Pubkey::new(&stake_pool.header.vault),
-        MediaError::StakePoolVaultMismatch,
+        AccessError::StakePoolVaultMismatch,
     )?;
 
     // Update stake account

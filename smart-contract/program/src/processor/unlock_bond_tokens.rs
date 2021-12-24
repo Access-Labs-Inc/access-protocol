@@ -11,7 +11,7 @@ use solana_program::{
     sysvar::Sysvar,
 };
 
-use crate::error::MediaError;
+use crate::error::AccessError;
 use crate::state::{BondAccount, CentralState};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
@@ -30,9 +30,8 @@ pub struct Accounts<'a, T> {
     #[cons(writable, signer)]
     pub bond_owner: &'a T,
 
-    /// The ACCESS token vault
-    #[cons(writable)]
-    pub access_central_vault: &'a T,
+    /// The ACCESS mint token
+    pub mint: &'a T,
 
     /// The ACCESS token destination
     #[cons(writable)]
@@ -51,7 +50,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         let accounts = Accounts {
             bond_account: next_account_info(accounts_iter)?,
             bond_owner: next_account_info(accounts_iter)?,
-            access_central_vault: next_account_info(accounts_iter)?,
+            mint: next_account_info(accounts_iter)?,
             access_token_destination: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
@@ -62,7 +61,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         // Check ownership
 
         // Check signer
-        check_signer(accounts.bond_owner, MediaError::BuyerMustSign)?;
+        check_signer(accounts.bond_owner, AccessError::BuyerMustSign)?;
 
         Ok(accounts)
     }
@@ -97,7 +96,7 @@ pub fn process_unlock_bond_tokens(
 
     let delta = current_time
         .checked_sub(bond.last_claimed_time)
-        .ok_or(MediaError::Overflow)?;
+        .ok_or(AccessError::Overflow)?;
 
     if delta < bond.unlock_period {
         msg!("Need to wait the end of the current unlock period before unlocking the bond");
@@ -106,14 +105,14 @@ pub fn process_unlock_bond_tokens(
 
     let missed_periods = delta
         .checked_div(bond.unlock_period)
-        .ok_or(MediaError::Overflow)?;
+        .ok_or(AccessError::Overflow)?;
 
     let unlock_amount = bond.calc_unlock_amount(missed_periods as u64)?;
 
     // Transfer tokens
-    let transfer_ix = spl_token::instruction::transfer(
+    let transfer_ix = spl_token::instruction::mint_to(
         &spl_token::ID,
-        accounts.access_central_vault.key,
+        accounts.mint.key,
         accounts.access_token_destination.key,
         accounts.central_state.key,
         &[],
@@ -124,7 +123,7 @@ pub fn process_unlock_bond_tokens(
         &[
             accounts.spl_token_program.clone(),
             accounts.central_state.clone(),
-            accounts.access_central_vault.clone(),
+            accounts.mint.clone(),
             accounts.access_token_destination.clone(),
         ],
         &[&[&program_id.to_bytes(), &[central_state.signer_nonce]]],

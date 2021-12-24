@@ -11,7 +11,7 @@ use solana_program::{
 use crate::utils::{assert_authorized_seller, check_account_owner, check_signer};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
-use crate::error::MediaError;
+use crate::error::AccessError;
 use crate::state::{BondAccount, BOND_SIGNER_THRESHOLD};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -39,10 +39,10 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         };
 
         // Check ownership
-        check_account_owner(accounts.bond_account, program_id, MediaError::WrongOwner)?;
+        check_account_owner(accounts.bond_account, program_id, AccessError::WrongOwner)?;
 
         // Check signer
-        check_signer(accounts.seller, MediaError::BondSellerMustSign)?;
+        check_signer(accounts.seller, AccessError::BondSellerMustSign)?;
 
         Ok(accounts)
     }
@@ -60,13 +60,13 @@ pub fn process_sign_bond(
 
     if bond.sellers.len() == BOND_SIGNER_THRESHOLD as usize {
         msg!("There are enough signers already");
-        return Err(MediaError::NoOp.into());
+        return Err(AccessError::NoOp.into());
     }
 
     for current_seller in &bond.sellers {
         if accounts.seller.key == current_seller {
             msg!("The seller has already signed");
-            return Err(MediaError::BondSellerAlreadySigner.into());
+            return Err(AccessError::BondSellerAlreadySigner.into());
         }
     }
 

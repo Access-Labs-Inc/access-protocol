@@ -1,4 +1,4 @@
-use crate::error::MediaError;
+use crate::error::AccessError;
 use bonfida_utils::BorshSize;
 use borsh::{BorshDeserialize, BorshSerialize};
 use bytemuck::{from_bytes_mut, try_cast_slice_mut, Pod, Zeroable};
@@ -87,7 +87,7 @@ impl<'a> StakePool<'a> {
         });
 
         if header.tag != Tag::StakePool as u8 && header.tag != Tag::Uninitialized as u8 {
-            return Err(MediaError::DataTypeMismatch.into());
+            return Err(AccessError::DataTypeMismatch.into());
         }
 
         Ok(StakePool { header, balances })
@@ -146,7 +146,7 @@ impl StakePoolHeader {
     // pub fn from_account_info(a: &AccountInfo) -> Result<StakePool, ProgramError> {
     //     let mut data = &a.data.borrow() as &[u8];
     //     if data[0] != Tag::StakePool as u8 && data[0] != Tag::Uninitialized as u8 {
-    //         return Err(MediaError::DataTypeMismatch.into());
+    //         return Err(AccessError::DataTypeMismatch.into());
     //     }
     //     let result = StakePool::deserialize(&mut data)?;
     //     Ok(result)
@@ -228,7 +228,7 @@ impl StakeAccount {
     pub fn from_account_info(a: &AccountInfo) -> Result<StakeAccount, ProgramError> {
         let mut data = &a.data.borrow() as &[u8];
         if data[0] != Tag::StakeAccount as u8 && data[0] != Tag::Uninitialized as u8 {
-            return Err(MediaError::DataTypeMismatch.into());
+            return Err(AccessError::DataTypeMismatch.into());
         }
         let result = StakeAccount::deserialize(&mut data)?;
         Ok(result)
@@ -260,10 +260,6 @@ pub struct CentralState {
     // the reserve owned by the central state
     pub daily_inflation: u64,
 
-    // Central vault
-    // From where the inflation is emitted
-    pub central_vault: Pubkey,
-
     // Mint of the token being emitted
     pub token_mint: Pubkey,
 
@@ -276,7 +272,6 @@ impl CentralState {
     pub fn new(
         signer_nonce: u8,
         daily_inflation: u64,
-        central_vault: Pubkey,
         token_mint: Pubkey,
         authority: Pubkey,
     ) -> Self {
@@ -284,7 +279,6 @@ impl CentralState {
             tag: Tag::CentralState,
             signer_nonce,
             daily_inflation,
-            central_vault,
             token_mint,
             authority,
         }
@@ -306,7 +300,7 @@ impl CentralState {
     pub fn from_account_info(a: &AccountInfo) -> Result<CentralState, ProgramError> {
         let mut data = &a.data.borrow() as &[u8];
         if data[0] != Tag::CentralState as u8 && data[0] != Tag::Uninitialized as u8 {
-            return Err(MediaError::DataTypeMismatch.into());
+            return Err(AccessError::DataTypeMismatch.into());
         }
         let result = CentralState::deserialize(&mut data)?;
         Ok(result)
@@ -439,7 +433,7 @@ impl BondAccount {
             Tag::BondAccount
         };
         if data[0] != tag as u8 && data[0] != Tag::Uninitialized as u8 {
-            return Err(MediaError::DataTypeMismatch.into());
+            return Err(AccessError::DataTypeMismatch.into());
         }
         let result = BondAccount::deserialize(&mut data)?;
         Ok(result)
@@ -450,13 +444,13 @@ impl BondAccount {
         if self
             .total_unlocked_amount
             .checked_add(unlock_amount)
-            .ok_or(MediaError::Overflow)?
+            .ok_or(AccessError::Overflow)?
             > self.total_amount_sold
         {
             Ok(self
                 .total_amount_sold
                 .checked_sub(unlock_amount)
-                .ok_or(MediaError::Overflow)?)
+                .ok_or(AccessError::Overflow)?)
         } else {
             Ok(unlock_amount)
         }

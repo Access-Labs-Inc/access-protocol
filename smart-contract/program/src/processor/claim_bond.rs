@@ -9,7 +9,7 @@ use solana_program::{
     pubkey::Pubkey,
 };
 
-use crate::error::MediaError;
+use crate::error::AccessError;
 use crate::state::{BondAccount, BOND_SIGNER_THRESHOLD};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
@@ -56,7 +56,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         // Check ownership
 
         // Check signer
-        check_signer(accounts.buyer, MediaError::BuyerMustSign)?;
+        check_signer(accounts.buyer, AccessError::BuyerMustSign)?;
 
         Ok(accounts)
     }
@@ -79,7 +79,7 @@ pub fn process_claim_bond(
 
     if bond.sellers.len() < BOND_SIGNER_THRESHOLD as usize {
         msg!("Not enough sellers have signed");
-        return Err(MediaError::NotEnoughSellers.into());
+        return Err(AccessError::NotEnoughSellers.into());
     }
 
     // Transfer tokens

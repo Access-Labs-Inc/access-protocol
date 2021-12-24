@@ -1,5 +1,5 @@
 //! Permissionless crank to update the stake pool rewards
-use crate::error::MediaError;
+use crate::error::AccessError;
 use crate::state::{CentralState, StakePool, SECONDS_IN_DAY};
 use crate::utils::check_account_owner;
 use bonfida_utils::{BorshSize, InstructionsAccount};
@@ -42,9 +42,9 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_owner(
             accounts.stake_pool,
             program_id,
-            MediaError::WrongStakeAccountOwner,
+            AccessError::WrongStakeAccountOwner,
         )?;
-        check_account_owner(accounts.central_state, program_id, MediaError::WrongOwner)?;
+        check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
 
         Ok(accounts)
     }
@@ -60,19 +60,19 @@ pub fn process_crank(
     let present_time = Clock::get()?.unix_timestamp;
 
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool)?;
-    let central_vault = CentralState::from_account_info(accounts.central_state)?;
+    let central_state = CentralState::from_account_info(accounts.central_state)?;
 
     if present_time - stake_pool.header.last_crank_time < SECONDS_IN_DAY as i64 {
         #[cfg(not(feature = "no-lock-time"))]
-        return Err(MediaError::NoOp.into());
+        return Err(AccessError::NoOp.into());
     }
     msg!("Total staked {}", stake_pool.header.total_staked);
-    msg!("Daily inflation {}", central_vault.daily_inflation);
+    msg!("Daily inflation {}", central_state.daily_inflation);
 
     stake_pool.push_balances_buff(
         (stake_pool.header.total_staked as u128)
-            .checked_mul(central_vault.daily_inflation as u128)
-            .ok_or(MediaError::Overflow)?,
+            .checked_mul(central_state.daily_inflation as u128)
+            .ok_or(AccessError::Overflow)?,
     );
     stake_pool.header.last_crank_time = present_time;
 

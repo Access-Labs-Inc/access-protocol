@@ -1,4 +1,4 @@
-use crate::error::MediaError;
+use crate::error::AccessError;
 use crate::state::{BondAccount, AUTHORIZED_BOND_SELLERS};
 use crate::state::{StakeAccount, StakePool, MEDIA_MINT, SECONDS_IN_DAY, STAKE_BUFFER_LEN};
 use solana_program::{
@@ -24,7 +24,7 @@ pub fn calc_previous_balances_and_inflation(
     while last_claimed_day < last_full_day {
         reward = reward
             .checked_add(stake_pool.balances[i as usize])
-            .ok_or(MediaError::Overflow)?;
+            .ok_or(AccessError::Overflow)?;
         i = (i + 1) % STAKE_BUFFER_LEN;
         last_claimed_day += 1;
     }
@@ -32,7 +32,7 @@ pub fn calc_previous_balances_and_inflation(
     Ok(reward)
 }
 
-pub fn check_account_key(account: &AccountInfo, key: &Pubkey, error: MediaError) -> ProgramResult {
+pub fn check_account_key(account: &AccountInfo, key: &Pubkey, error: AccessError) -> ProgramResult {
     if account.key != key {
         return Err(error.into());
     }
@@ -42,7 +42,7 @@ pub fn check_account_key(account: &AccountInfo, key: &Pubkey, error: MediaError)
 pub fn check_account_owner(
     account: &AccountInfo,
     owner: &Pubkey,
-    error: MediaError,
+    error: AccessError,
 ) -> ProgramResult {
     if account.owner != owner {
         return Err(error.into());
@@ -50,7 +50,7 @@ pub fn check_account_owner(
     Ok(())
 }
 
-pub fn check_signer(account: &AccountInfo, error: MediaError) -> ProgramResult {
+pub fn check_signer(account: &AccountInfo, error: AccessError) -> ProgramResult {
     if !(account.is_signer) {
         return Err(error.into());
     }
@@ -60,7 +60,7 @@ pub fn check_signer(account: &AccountInfo, error: MediaError) -> ProgramResult {
 pub fn assert_empty_stake_pool(stake_pool: &StakePool) -> ProgramResult {
     if stake_pool.header.total_staked != 0 {
         msg!("The stake pool must be empty");
-        return Err(MediaError::StakePoolMustBeEmpty.into());
+        return Err(AccessError::StakePoolMustBeEmpty.into());
     }
     Ok(())
 }
@@ -68,7 +68,7 @@ pub fn assert_empty_stake_pool(stake_pool: &StakePool) -> ProgramResult {
 pub fn assert_empty_stake_account(stake_account: &StakeAccount) -> ProgramResult {
     if stake_account.stake_amount != 0 {
         msg!("The stake account must be empty");
-        return Err(MediaError::StakeAccountMustBeEmpty.into());
+        return Err(AccessError::StakeAccountMustBeEmpty.into());
     }
     Ok(())
 }
@@ -101,9 +101,9 @@ pub fn assert_uninitialized(account: &AccountInfo) -> ProgramResult {
 pub fn assert_authorized_seller(seller: &AccountInfo, seller_index: usize) -> ProgramResult {
     let expected_seller = AUTHORIZED_BOND_SELLERS
         .get(seller_index)
-        .ok_or(MediaError::UnauthorizedSeller)?;
+        .ok_or(AccessError::UnauthorizedSeller)?;
     if seller.key != expected_seller {
-        return Err(MediaError::UnauthorizedSeller.into());
+        return Err(AccessError::UnauthorizedSeller.into());
     }
     Ok(())
 }
@@ -115,7 +115,7 @@ pub fn assert_bond_derivation(
     program_id: &Pubkey,
 ) -> ProgramResult {
     let (key, _nonce) = BondAccount::create_key(owner, total_amount_sold, program_id);
-    check_account_key(account, &key, MediaError::AccountNotDeterministic)?;
+    check_account_key(account, &key, AccessError::AccountNotDeterministic)?;
     Ok(())
 }
 

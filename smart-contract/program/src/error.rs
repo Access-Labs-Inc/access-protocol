@@ -3,10 +3,10 @@ use thiserror::Error;
 
 use solana_program::{decode_error::DecodeError, program_error::ProgramError};
 
-pub type MediaResult<T = ()> = Result<T, MediaError>;
+pub type MediaResult<T = ()> = Result<T, AccessError>;
 
 #[derive(Clone, Debug, Error, FromPrimitive)]
-pub enum MediaError {
+pub enum AccessError {
     #[error("This account is already initialized")]
     AlreadyInitialized,
     #[error("Data type mismatch")]
@@ -69,14 +69,14 @@ pub enum MediaError {
     BuyerMustSign,
 }
 
-impl From<MediaError> for ProgramError {
-    fn from(e: MediaError) -> Self {
+impl From<AccessError> for ProgramError {
+    fn from(e: AccessError) -> Self {
         ProgramError::Custom(e as u32)
     }
 }
 
-impl<T> DecodeError<T> for MediaError {
+impl<T> DecodeError<T> for AccessError {
     fn type_of() -> &'static str {
-        "MediaError"
+        "AccessError"
     }
 }

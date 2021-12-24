@@ -7,7 +7,7 @@ use solana_program::{
     pubkey::Pubkey,
 };
 
-use crate::{error::MediaError, state::CentralState};
+use crate::{error::AccessError, state::CentralState};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
 use crate::utils::{check_account_key, check_account_owner, check_signer};
@@ -41,12 +41,12 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         };
 
         // Check ownership
-        check_account_owner(accounts.central_state, program_id, MediaError::WrongOwner)?;
+        check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
 
         // Check signer
         check_signer(
             accounts.authority,
-            MediaError::CentralStateAuthorityMustSign,
+            AccessError::CentralStateAuthorityMustSign,
         )?;
 
         Ok(accounts)
@@ -65,7 +65,7 @@ pub fn process_change_inflation(
     check_account_key(
         accounts.authority,
         &central_state.authority,
-        MediaError::WrongCentralStateAuthority,
+        AccessError::WrongCentralStateAuthority,
     )?;
 
     central_state.daily_inflation = params.daily_inflation;

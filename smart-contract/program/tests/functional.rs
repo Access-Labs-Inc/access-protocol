@@ -1,11 +1,11 @@
-use solana_program::{pubkey, pubkey::Pubkey, system_program, sysvar};
+use solana_program::{pubkey, pubkey::Pubkey, system_program};
 use solana_program_test::{processor, ProgramTest};
 use solana_sdk::signer::{keypair::Keypair, Signer};
 use spl_associated_token_account::{create_associated_token_account, get_associated_token_address};
 use spl_token::instruction::mint_to;
 pub mod common;
 use crate::common::utils::{mint_bootstrap, sign_send_instructions};
-use the_block::{
+use access_protocol::{
     entrypoint::process_instruction,
     instruction::{
         change_inflation, claim_pool_rewards, claim_rewards, close_stake_account, close_stake_pool,
@@ -21,12 +21,6 @@ async fn test_staking() {
     let mut program_test =
         ProgramTest::new("the_block", program_id, processor!(process_instruction));
 
-    //
-    // Create mint
-    //
-    let mint_authority = Keypair::new();
-    let (mint, _) = mint_bootstrap(None, 6, &mut program_test, &mint_authority.pubkey());
-
     ////
     // Create test context
     ////
@@ -39,18 +33,9 @@ async fn test_staking() {
         Pubkey::find_program_address(&[&program_id.to_bytes()], &program_id);
 
     //
-    // Create central vault
+    // Create mint
     //
-    let create_associated_instruction =
-        create_associated_token_account(&prg_test_ctx.payer.pubkey(), &central_state, &mint);
-    let central_vault = get_associated_token_address(&central_state, &mint);
-    sign_send_instructions(
-        &mut prg_test_ctx,
-        vec![create_associated_instruction],
-        vec![],
-    )
-    .await
-    .unwrap();
+    let (mint, _) = mint_bootstrap(None, 6, &mut program_test, &central_state);
 
     //
     // Create central state
@@ -62,7 +47,6 @@ async fn test_staking() {
             state_account: &central_state,
             system_program: &system_program::ID,
             fee_payer: &prg_test_ctx.payer.pubkey(),
-            central_vault: &central_vault,
             mint: &mint,
         },
         create_central_state::Params {
@@ -184,7 +168,7 @@ async fn test_staking() {
         &spl_token::ID,
         &mint,
         &staker_token_acc,
-        &mint_authority.pubkey(),
+        &central_key.pubkey(),
         &[],
         token_amount,
     )
@@ -241,7 +225,6 @@ async fn test_staking() {
             rewards_destination: &stake_pool_owner_token_acc,
             central_state: &central_state,
             mint: &mint,
-            central_vault: &central_vault,
             spl_token_program: &spl_token::ID,
         },
         claim_pool_rewards::Params {},
@@ -268,7 +251,6 @@ async fn test_staking() {
             rewards_destination: &staker_token_acc,
             central_state: &central_state,
             mint: &mint,
-            central_vault: &central_vault,
             spl_token_program: &spl_token::ID,
         },
         claim_rewards::Params {},

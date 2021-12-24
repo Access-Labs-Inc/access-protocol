@@ -1,5 +1,5 @@
 //! Claim rewards of a stake pool
-use crate::error::MediaError;
+use crate::error::AccessError;
 use crate::state::{CentralState, StakePool, OWNER_MULTIPLIER};
 use crate::utils::{
     calc_previous_balances_and_inflation, check_account_key, check_account_owner, check_signer,
@@ -17,7 +17,7 @@ use solana_program::{
     pubkey::Pubkey,
     sysvar::Sysvar,
 };
-use spl_token::{instruction::transfer, state::Mint};
+use spl_token::{instruction::mint_to, state::Mint};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 pub struct Params {}
@@ -42,10 +42,6 @@ pub struct Accounts<'a, T> {
     /// The mint address of the ACCESS token
     pub mint: &'a T,
 
-    /// The central vault account
-    #[cons(writable)]
-    pub central_vault: &'a T,
-
     /// The SPL token program account
     pub spl_token_program: &'a T,
 }
@@ -62,7 +58,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             rewards_destination: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
             mint: next_account_info(accounts_iter)?,
-            central_vault: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
         };
 
@@ -70,30 +65,25 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_key(
             accounts.spl_token_program,
             &spl_token::ID,
-            MediaError::WrongSplTokenProgramId,
+            AccessError::WrongSplTokenProgramId,
         )?;
 
         // Check ownership
         check_account_owner(
             accounts.stake_pool,
             program_id,
-            MediaError::WrongStakePoolAccountOwner,
+            AccessError::WrongStakePoolAccountOwner,
         )?;
         check_account_owner(
             accounts.rewards_destination,
             &spl_token::ID,
-            MediaError::WrongOwner,
+            AccessError::WrongOwner,
         )?;
-        check_account_owner(accounts.central_state, program_id, MediaError::WrongOwner)?;
-        check_account_owner(accounts.mint, &spl_token::ID, MediaError::WrongOwner)?;
-        check_account_owner(
-            accounts.central_vault,
-            &spl_token::ID,
-            MediaError::WrongOwner,
-        )?;
+        check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
+        check_account_owner(accounts.mint, &spl_token::ID, AccessError::WrongOwner)?;
 
         // Check signer
-        check_signer(accounts.owner, MediaError::StakePoolOwnerMustSign)?;
+        check_signer(accounts.owner, AccessError::StakePoolOwnerMustSign)?;
 
         Ok(accounts)
     }
@@ -117,17 +107,12 @@ pub fn process_claim_pool_rewards(
     check_account_key(
         accounts.owner,
         &Pubkey::new(&stake_pool.header.owner),
-        MediaError::WrongStakePoolAccountOwner,
+        AccessError::WrongStakePoolAccountOwner,
     )?;
     check_account_key(
         accounts.mint,
         &central_state.token_mint,
-        MediaError::WrongMint,
-    )?;
-    check_account_key(
-        accounts.central_vault,
-        &central_state.central_vault,
-        MediaError::WrongCentralVault,
+        AccessError::WrongMint,
     )?;
 
     let balances_and_inflation = calc_previous_balances_and_inflation(
@@ -139,18 +124,18 @@ pub fn process_claim_pool_rewards(
     let rewards = balances_and_inflation
         // Divide the accumulated total stake balance multiplied by the daily inflation
         .checked_div(mint.supply as u128)
-        .ok_or(MediaError::Overflow)?
+        .ok_or(AccessError::Overflow)?
         // Multiply by % stake pool owner receives
         .checked_mul(OWNER_MULTIPLIER as u128)
-        .ok_or(MediaError::Overflow)?
+        .ok_or(AccessError::Overflow)?
         .checked_div(100)
         .and_then(safe_downcast)
-        .ok_or(MediaError::Overflow)?;
+        .ok_or(AccessError::Overflow)?;
 
     // Transfer rewards
-    let transfer_ix = transfer(
+    let transfer_ix = mint_to(
         &spl_token::ID,
-        accounts.central_vault.key,
+        accounts.mint.key,
         accounts.rewards_destination.key,
         accounts.central_state.key,
         &[],
@@ -161,7 +146,7 @@ pub fn process_claim_pool_rewards(
         &[
             accounts.spl_token_program.clone(),
             accounts.central_state.clone(),
-            accounts.central_vault.clone(),
+            accounts.mint.clone(),
             accounts.rewards_destination.clone(),
         ],
         &[&[&program_id.to_bytes(), &[central_state.signer_nonce]]],

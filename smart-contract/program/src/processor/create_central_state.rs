@@ -11,7 +11,7 @@ use solana_program::{
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
 use crate::state::CentralState;
-use crate::{cpi::Cpi, error::MediaError};
+use crate::{cpi::Cpi, error::AccessError};
 
 use crate::utils::{assert_valid_vault, check_account_key, check_account_owner};
 
@@ -36,9 +36,6 @@ pub struct Accounts<'a, T> {
     #[cons(writable, signer)]
     pub fee_payer: &'a T,
 
-    /// The central state account
-    pub central_vault: &'a T,
-
     /// The mint of the ACCESS token
     pub mint: &'a T,
 }
@@ -50,7 +47,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             state_account: next_account_info(accounts_iter)?,
             system_program: next_account_info(accounts_iter)?,
             fee_payer: next_account_info(accounts_iter)?,
-            central_vault: next_account_info(accounts_iter)?,
             mint: next_account_info(accounts_iter)?,
         };
 
@@ -58,14 +54,14 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_key(
             accounts.system_program,
             &system_program::ID,
-            MediaError::WrongSystemProgram,
+            AccessError::WrongSystemProgram,
         )?;
 
         // Check ownership
         check_account_owner(
             accounts.state_account,
             &system_program::ID,
-            MediaError::WrongOwner,
+            AccessError::WrongOwner,
         )?;
 
         Ok(accounts)
@@ -80,18 +76,15 @@ pub fn process_create_central_state(
     let accounts = Accounts::parse(accounts)?;
     let (derived_state_key, nonce) = CentralState::find_key(program_id);
 
-    assert_valid_vault(accounts.central_vault, &derived_state_key)?;
-
     check_account_key(
         accounts.state_account,
         &derived_state_key,
-        MediaError::AccountNotDeterministic,
+        AccessError::AccountNotDeterministic,
     )?;
 
     let state = CentralState::new(
         nonce,
         params.daily_inflation,
-        *accounts.central_vault.key,
         *accounts.mint.key,
         params.authority,
     );

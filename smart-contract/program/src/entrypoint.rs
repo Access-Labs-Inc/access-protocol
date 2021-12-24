@@ -1,4 +1,4 @@
-use crate::error::MediaError;
+use crate::error::AccessError;
 use crate::processor::Processor;
 use num_traits::FromPrimitive;
 use solana_program::{
@@ -20,106 +20,106 @@ pub fn process_instruction(
     msg!("Entrypoint");
     if let Err(error) = Processor::process_instruction(program_id, accounts, instruction_data) {
         // catch the error so we can print it
-        error.print::<MediaError>();
+        error.print::<AccessError>();
         return Err(error);
     }
     Ok(())
 }
 
-impl PrintProgramError for MediaError {
+impl PrintProgramError for AccessError {
     fn print<E>(&self)
     where
         E: 'static + std::error::Error + DecodeError<E> + PrintProgramError + FromPrimitive,
     {
         match self {
-            MediaError::AlreadyInitialized => {
+            AccessError::AlreadyInitialized => {
                 msg!("Error: This account is already initialized")
             }
-            MediaError::DataTypeMismatch => {
+            AccessError::DataTypeMismatch => {
                 msg!("Error: Data type mismatch")
             }
-            MediaError::WrongSystemProgram => {
+            AccessError::WrongSystemProgram => {
                 msg!("Error: Wrong system program key");
             }
-            MediaError::WrongRent => {
+            AccessError::WrongRent => {
                 msg!("Error: Wrong rent sysvar key")
             }
-            MediaError::WrongOwner => {
+            AccessError::WrongOwner => {
                 msg!("Error: Wrong account owner")
             }
-            MediaError::AccountNotDeterministic => {
+            AccessError::AccountNotDeterministic => {
                 msg!("Error: Account not generated deterministically")
             }
-            MediaError::StakePoolOwnerMustSign => {
+            AccessError::StakePoolOwnerMustSign => {
                 msg!("Error: The stake pool owner must sign")
             }
-            MediaError::WrongStakePoolOwner => {
+            AccessError::WrongStakePoolOwner => {
                 msg!("Error: The stake pool must be empty")
             }
-            MediaError::StakePoolMustBeEmpty => {
+            AccessError::StakePoolMustBeEmpty => {
                 msg!("Error: The stake account must be empty")
             }
-            MediaError::StakeAccountMustBeEmpty => {
+            AccessError::StakeAccountMustBeEmpty => {
                 msg!("Error: The stake account owner must sign")
             }
-            MediaError::StakeAccountOwnerMustSign => {
+            AccessError::StakeAccountOwnerMustSign => {
                 msg!("Error: Wrong SPL token program ID")
             }
-            MediaError::WrongSplTokenProgramId => {
+            AccessError::WrongSplTokenProgramId => {
                 msg!("Error: Source token account must be owned to SPL Token")
             }
-            MediaError::WrongTokenAccountOwner => {
+            AccessError::WrongTokenAccountOwner => {
                 msg!("Error: Stake account must be program owned")
             }
-            MediaError::WrongStakeAccountOwner => {
+            AccessError::WrongStakeAccountOwner => {
                 msg!("Error: Stake pool account must be program owned")
             }
-            MediaError::WrongStakePoolAccountOwner => {
+            AccessError::WrongStakePoolAccountOwner => {
                 msg!("Error: Stake account owner mismatch")
             }
-            MediaError::StakeAccountOwnerMismatch => {
+            AccessError::StakeAccountOwnerMismatch => {
                 msg!("Error: Stake pool mismatch")
             }
-            MediaError::StakePoolMismatch => {
+            AccessError::StakePoolMismatch => {
                 msg!("Error: Stake pool mismatch")
             }
-            MediaError::StakePoolVaultMismatch => {
+            AccessError::StakePoolVaultMismatch => {
                 msg!("Error: Stake pool vault mismatch")
             }
-            MediaError::WrongCentralStateAuthority => {
+            AccessError::WrongCentralStateAuthority => {
                 msg!("Error: Wrong central state authority")
             }
-            MediaError::CentralStateAuthorityMustSign => {
+            AccessError::CentralStateAuthorityMustSign => {
                 msg!("Error: The central state authority must sign")
             }
-            MediaError::Overflow => {
+            AccessError::Overflow => {
                 msg!("Error: Overflow")
             }
-            MediaError::NoOp => {
+            AccessError::NoOp => {
                 msg!("Error: operation is a no-op")
             }
-            MediaError::WrongMint => {
+            AccessError::WrongMint => {
                 msg!("Error: Wrong mint")
             }
-            MediaError::WrongCentralVault => {
+            AccessError::WrongCentralVault => {
                 msg!("Error: Wrong central vault")
             }
-            MediaError::WrongStakePool => {
+            AccessError::WrongStakePool => {
                 msg!("Error: Wrong stake pool")
             }
-            MediaError::UnauthorizedSeller => {
+            AccessError::UnauthorizedSeller => {
                 msg!("Error: Unauthorized bond seller")
             }
-            MediaError::BondSellerMustSign => {
+            AccessError::BondSellerMustSign => {
                 msg!("Error: Bond seller must sign")
             }
-            MediaError::BondSellerAlreadySigner => {
+            AccessError::BondSellerAlreadySigner => {
                 msg!("Error: Bond seller has already signed")
             }
-            MediaError::NotEnoughSellers => {
+            AccessError::NotEnoughSellers => {
                 msg!("Error: The bond does not have enough sellers")
             }
-            MediaError::BuyerMustSign => {
+            AccessError::BuyerMustSign => {
                 msg!("Error: The bond buyer must sign")
             }
         }

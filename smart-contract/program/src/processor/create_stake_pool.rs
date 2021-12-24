@@ -10,7 +10,7 @@ use solana_program::{
 
 use crate::{
     cpi::Cpi,
-    error::MediaError,
+    error::AccessError,
     state::{StakePoolHeader, STAKE_BUFFER_LEN},
 };
 use crate::{state::StakePool, utils::assert_valid_vault};
@@ -63,14 +63,14 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_key(
             accounts.system_program,
             &system_program::ID,
-            MediaError::WrongSystemProgram,
+            AccessError::WrongSystemProgram,
         )?;
 
         // Check ownership
         check_account_owner(
             accounts.stake_pool_account,
             &system_program::ID,
-            MediaError::WrongOwner,
+            AccessError::WrongOwner,
         )?;
 
         Ok(accounts)
@@ -94,7 +94,7 @@ pub fn process_create_stake_pool(
     check_account_key(
         accounts.stake_pool_account,
         &derived_stake_key,
-        MediaError::AccountNotDeterministic,
+        AccessError::AccountNotDeterministic,
     )?;
 
     assert_valid_vault(accounts.vault, &derived_stake_key)?;

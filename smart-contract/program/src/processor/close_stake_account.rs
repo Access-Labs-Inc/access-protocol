@@ -12,7 +12,7 @@ use crate::utils::{
 };
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
-use crate::error::MediaError;
+use crate::error::AccessError;
 use crate::state::StakeAccount;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -48,10 +48,10 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         };
 
         // Check ownership
-        check_account_owner(accounts.stake_account, program_id, MediaError::WrongOwner)?;
+        check_account_owner(accounts.stake_account, program_id, AccessError::WrongOwner)?;
 
         // Check signer
-        check_signer(accounts.owner, MediaError::StakePoolOwnerMustSign)?;
+        check_signer(accounts.owner, AccessError::StakePoolOwnerMustSign)?;
 
         Ok(accounts)
     }
@@ -75,7 +75,7 @@ pub fn process_close_stake_account(
     check_account_key(
         accounts.stake_account,
         &derived_stake_key,
-        MediaError::AccountNotDeterministic,
+        AccessError::AccountNotDeterministic,
     )?;
 
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account).unwrap();
@@ -83,7 +83,7 @@ pub fn process_close_stake_account(
     check_account_key(
         accounts.owner,
         &stake_account.owner,
-        MediaError::WrongStakePoolOwner,
+        AccessError::WrongStakePoolOwner,
     )?;
 
     assert_empty_stake_account(&stake_account)?;

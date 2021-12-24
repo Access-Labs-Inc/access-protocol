@@ -14,7 +14,7 @@ use spl_token::instruction::transfer;
 use crate::utils::{check_account_key, check_account_owner, check_signer};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
-use crate::error::MediaError;
+use crate::error::AccessError;
 use crate::state::{StakeAccount, StakePool};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -68,33 +68,33 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_key(
             accounts.spl_token_program,
             &spl_token::ID,
-            MediaError::WrongSplTokenProgramId,
+            AccessError::WrongSplTokenProgramId,
         )?;
 
         // Check ownership
         check_account_owner(
             accounts.stake_account,
             program_id,
-            MediaError::WrongStakeAccountOwner,
+            AccessError::WrongStakeAccountOwner,
         )?;
         check_account_owner(
             accounts.stake_pool,
             program_id,
-            MediaError::WrongStakePoolAccountOwner,
+            AccessError::WrongStakePoolAccountOwner,
         )?;
         check_account_owner(
             accounts.source_token,
             &spl_token::ID,
-            MediaError::WrongTokenAccountOwner,
+            AccessError::WrongTokenAccountOwner,
         )?;
         check_account_owner(
             accounts.vault,
             &spl_token::ID,
-            MediaError::WrongTokenAccountOwner,
+            AccessError::WrongTokenAccountOwner,
         )?;
 
         // Check signer
-        check_signer(accounts.owner, MediaError::StakeAccountOwnerMustSign)?;
+        check_signer(accounts.owner, AccessError::StakeAccountOwnerMustSign)?;
 
         Ok(accounts)
     }
@@ -114,17 +114,17 @@ pub fn process_stake(
     check_account_key(
         accounts.owner,
         &stake_account.owner,
-        MediaError::StakeAccountOwnerMismatch,
+        AccessError::StakeAccountOwnerMismatch,
     )?;
     check_account_key(
         accounts.stake_pool,
         &stake_account.stake_pool,
-        MediaError::StakePoolMismatch,
+        AccessError::StakePoolMismatch,
     )?;
     check_account_key(
         accounts.vault,
         &Pubkey::new(&stake_pool.header.vault),
-        MediaError::StakePoolVaultMismatch,
+        AccessError::StakePoolVaultMismatch,
     )?;
 
     // Transfer tokens
@@ -149,8 +149,9 @@ pub fn process_stake(
     if stake_account
         .stake_amount
         .checked_add(amount)
-        .ok_or(MediaError::Overflow)?
-        < stake_account.pool_minimum_at_creation // or min(stake_account.min, stake_pool.min)?
+        .ok_or(AccessError::Overflow)?
+        < stake_account.pool_minimum_at_creation
+    // or min(stake_account.min, stake_pool.min)?
     {
         msg!(
             "The minimum stake amount must be > {}",
