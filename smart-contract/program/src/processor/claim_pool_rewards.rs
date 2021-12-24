@@ -1,3 +1,4 @@
+//! Claim rewards of a stake pool
 use crate::error::MediaError;
 use crate::state::{CentralState, StakePool, OWNER_MULTIPLIER};
 use crate::utils::{
@@ -23,16 +24,29 @@ pub struct Params {}
 
 #[derive(InstructionsAccount)]
 pub struct Accounts<'a, T> {
+    /// The stake pool account
     #[cons(writable)]
     pub stake_pool: &'a T,
+
+    /// The stake pool owner account
     #[cons(writable, signer)]
     pub owner: &'a T,
+
+    /// The rewards destination
     #[cons(writable)]
     pub rewards_destination: &'a T,
+
+    /// The central state account
     pub central_state: &'a T,
+
+    /// The mint address of the ACCESS token
     pub mint: &'a T,
+
+    /// The central vault account
     #[cons(writable)]
     pub central_vault: &'a T,
+
+    /// The SPL token program account
     pub spl_token_program: &'a T,
 }
 
@@ -116,7 +130,11 @@ pub fn process_claim_pool_rewards(
         MediaError::WrongCentralVault,
     )?;
 
-    let balances_and_inflation = calc_previous_balances_and_inflation(current_time, &stake_pool)?;
+    let balances_and_inflation = calc_previous_balances_and_inflation(
+        current_time,
+        stake_pool.header.last_claimed_time,
+        &stake_pool,
+    )?;
 
     let rewards = balances_and_inflation
         // Divide the accumulated total stake balance multiplied by the daily inflation
@@ -126,7 +144,7 @@ pub fn process_claim_pool_rewards(
         .checked_mul(OWNER_MULTIPLIER as u128)
         .ok_or(MediaError::Overflow)?
         .checked_div(100)
-        .and_then(|x| safe_downcast(x))
+        .and_then(safe_downcast)
         .ok_or(MediaError::Overflow)?;
 
     // Transfer rewards

@@ -1,15 +1,8 @@
-use solana_program::{
-    instruction::InstructionError, pubkey, pubkey::Pubkey, rent::Rent, system_program, sysvar,
-};
+use solana_program::{pubkey, pubkey::Pubkey, system_program, sysvar};
 use solana_program_test::{processor, ProgramTest};
-use solana_sdk::{
-    signer::{keypair::Keypair, Signer},
-    transaction::TransactionError,
-    transport::TransportError,
-};
+use solana_sdk::signer::{keypair::Keypair, Signer};
 use spl_associated_token_account::{create_associated_token_account, get_associated_token_address};
 use spl_token::instruction::mint_to;
-use std::time::{SystemTime, UNIX_EPOCH};
 pub mod common;
 use crate::common::utils::{mint_bootstrap, sign_send_instructions};
 use the_block::{
@@ -69,7 +62,6 @@ async fn test_staking() {
             state_account: &central_state,
             system_program: &system_program::ID,
             fee_payer: &prg_test_ctx.payer.pubkey(),
-            rent_sysvar_account: &sysvar::rent::ID,
             central_vault: &central_vault,
             mint: &mint,
         },
@@ -141,7 +133,6 @@ async fn test_staking() {
             stake_pool_account: &stake_pool_key,
             system_program: &system_program::ID,
             fee_payer: &prg_test_ctx.payer.pubkey(),
-            rent_sysvar_account: &sysvar::rent::ID,
             vault: &pool_vault,
         },
         create_stake_pool::Params {
@@ -149,6 +140,7 @@ async fn test_staking() {
             name: "stake_pool".to_string(),
             owner: stake_pool_owner.pubkey(),
             destination: stake_pool_owner_token_acc,
+            minimum_stake_amount: 10_000_000,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![create_stake_pool_ix], vec![])
@@ -173,12 +165,11 @@ async fn test_staking() {
             stake_account: &stake_acc_key,
             system_program: &system_program::ID,
             fee_payer: &prg_test_ctx.payer.pubkey(),
-            rent_sysvar_account: &sysvar::rent::ID,
+            stake_pool: &stake_pool_key,
         },
         create_stake_account::Params {
             nonce: stake_nonce,
             owner: staker.pubkey(),
-            stake_pool: stake_pool_key,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![create_stake_account_ix], vec![])
@@ -362,7 +353,6 @@ async fn test_staking() {
         program_id,
         close_stake_pool::Accounts {
             stake_pool_account: &stake_pool_key,
-            system_program: &system_program::ID,
             owner: &stake_pool_owner.pubkey(),
         },
         close_stake_pool::Params {
@@ -378,4 +368,6 @@ async fn test_staking() {
     )
     .await
     .unwrap();
+
+    // TODO add bond tests
 }

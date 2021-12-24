@@ -1,7 +1,9 @@
+//! Stake
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
+    msg,
     program::invoke,
     program_error::ProgramError,
     pubkey::Pubkey,
@@ -23,16 +25,27 @@ pub struct Params {
 
 #[derive(InstructionsAccount)]
 pub struct Accounts<'a, T> {
+    /// The stake account
     #[cons(writable)]
     pub stake_account: &'a T,
+
+    /// The stake pool account
     #[cons(writable)]
     pub stake_pool: &'a T,
+
+    /// The owner of the stake account
     #[cons(writable, signer)]
     pub owner: &'a T,
+
+    /// The source account of the stake tokens
     #[cons(writable)]
     pub source_token: &'a T,
+
+    /// The SPL token program account
     pub spl_token_program: &'a T,
     #[cons(writable)]
+
+    /// The stake pool vault account
     pub vault: &'a T,
 }
 
@@ -132,6 +145,19 @@ pub fn process_stake(
             accounts.owner.clone(),
         ],
     )?;
+
+    if stake_account
+        .stake_amount
+        .checked_add(amount)
+        .ok_or(MediaError::Overflow)?
+        < stake_account.pool_minimum_at_creation // or min(stake_account.min, stake_pool.min)?
+    {
+        msg!(
+            "The minimum stake amount must be > {}",
+            stake_account.pool_minimum_at_creation
+        );
+        return Err(ProgramError::InvalidArgument.into());
+    }
 
     // Update stake account
     stake_account.deposit(amount)?;

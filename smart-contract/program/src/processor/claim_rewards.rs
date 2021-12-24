@@ -1,3 +1,4 @@
+//! Claim rewards of a stake account
 use crate::error::MediaError;
 use crate::state::{CentralState, StakeAccount, StakePool, STAKER_MULTIPLIER};
 use crate::utils::{
@@ -23,18 +24,33 @@ pub struct Params {}
 
 #[derive(InstructionsAccount)]
 pub struct Accounts<'a, T> {
+    /// The stake pool account
     #[cons(writable)]
     pub stake_pool: &'a T,
+
+    /// The stake account
     #[cons(writable)]
     pub stake_account: &'a T,
+
+    /// The owner of the stake account
     #[cons(writable, signer)]
     pub owner: &'a T,
+
+    /// The rewards destination
     #[cons(writable)]
     pub rewards_destination: &'a T,
+
+    /// The central state account
     pub central_state: &'a T,
+
+    /// The mint address of the ACCESS token
     pub mint: &'a T,
     #[cons(writable)]
+
+    /// The central vault account
     pub central_vault: &'a T,
+
+    /// The SPL token program account
     pub spl_token_program: &'a T,
 }
 
@@ -103,7 +119,7 @@ pub fn process_claim_rewards(
     let current_time = Clock::get().unwrap().unix_timestamp;
 
     let central_state = CentralState::from_account_info(accounts.central_state)?;
-    let mut stake_pool = StakePool::get_checked(accounts.stake_pool)?;
+    let stake_pool = StakePool::get_checked(accounts.stake_pool)?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
 
     let mint = Mint::unpack_from_slice(&accounts.mint.data.borrow_mut())?;
@@ -130,7 +146,11 @@ pub fn process_claim_rewards(
         MediaError::WrongMint,
     )?;
 
-    let balances_and_inflation = calc_previous_balances_and_inflation(current_time, &stake_pool)?;
+    let balances_and_inflation = calc_previous_balances_and_inflation(
+        current_time,
+        stake_account.last_claimed_time,
+        &stake_pool,
+    )?;
 
     let rewards = balances_and_inflation
         // Divide the accumulated total stake balance multiplied by the daily inflation
@@ -145,7 +165,7 @@ pub fn process_claim_rewards(
         .checked_mul(stake_account.stake_amount as u128)
         .ok_or(MediaError::Overflow)?
         .checked_div(stake_pool.header.total_staked as u128)
-        .and_then(|x| safe_downcast(x))
+        .and_then(safe_downcast)
         .ok_or(MediaError::Overflow)?;
 
     // Transfer rewards
@@ -169,7 +189,6 @@ pub fn process_claim_rewards(
     )?;
 
     // Update states
-    stake_pool.header.last_claimed_time = current_time;
     stake_account.last_claimed_time = current_time;
     stake_account.save(&mut accounts.stake_account.data.borrow_mut());
 

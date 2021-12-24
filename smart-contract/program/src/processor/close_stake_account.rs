@@ -1,3 +1,4 @@
+//! Close a stake account
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -26,8 +27,11 @@ pub struct Params {
 
 #[derive(InstructionsAccount)]
 pub struct Accounts<'a, T> {
+    /// The stake account
     #[cons(writable)]
     pub stake_account: &'a T,
+
+    /// The owner of the stake account
     #[cons(writable, signer)]
     pub owner: &'a T,
 }

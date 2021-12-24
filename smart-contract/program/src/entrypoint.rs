@@ -113,6 +113,15 @@ impl PrintProgramError for MediaError {
             MediaError::BondSellerMustSign => {
                 msg!("Error: Bond seller must sign")
             }
+            MediaError::BondSellerAlreadySigner => {
+                msg!("Error: Bond seller has already signed")
+            }
+            MediaError::NotEnoughSellers => {
+                msg!("Error: The bond does not have enough sellers")
+            }
+            MediaError::BuyerMustSign => {
+                msg!("Error: The bond buyer must sign")
+            }
         }
     }
 }

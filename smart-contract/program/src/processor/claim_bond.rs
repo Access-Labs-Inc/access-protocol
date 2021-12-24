@@ -1,3 +1,4 @@
+//! Claim a bond after it has been issued and signed
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -6,30 +7,36 @@ use solana_program::{
     program::invoke,
     program_error::ProgramError,
     pubkey::Pubkey,
-    system_program, sysvar,
 };
 
-use crate::{
-    cpi::Cpi,
-    error::MediaError,
-    state::{StakePoolHeader, STAKE_BUFFER_LEN},
-};
-use crate::{
-    state::{BondAccount, BOND_SIGNER_THRESHOLD},
-};
+use crate::error::MediaError;
+use crate::state::{BondAccount, BOND_SIGNER_THRESHOLD};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
-use crate::utils::{assert_bond_derivation, check_account_key, check_account_owner, check_signer};
+use crate::utils::{assert_bond_derivation, check_signer};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 pub struct Params {}
 
 #[derive(InstructionsAccount)]
 pub struct Accounts<'a, T> {
+    /// The bond account
+    #[cons(writable)]
     pub bond_account: &'a T,
+
+    /// The account of the bond buyer
+    #[cons(writable, signer)]
     pub buyer: &'a T,
+
+    /// The token account used to purchase the bond
+    #[cons(writable)]
     pub quote_token_source: &'a T,
+
+    /// The token account where the sell proceed is sent
+    #[cons(writable)]
     pub quote_token_destination: &'a T,
+
+    /// The SPL token program account
     pub spl_token_program: &'a T,
 }
 
@@ -92,7 +99,7 @@ pub fn process_claim_bond(
             accounts.quote_token_source.clone(),
             accounts.buyer.clone(),
         ],
-    );
+    )?;
 
     // Activate the bond account
     bond.activate();

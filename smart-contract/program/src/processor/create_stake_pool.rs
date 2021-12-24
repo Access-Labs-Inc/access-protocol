@@ -1,10 +1,11 @@
+//! Create stake pool
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
     program_error::ProgramError,
     pubkey::Pubkey,
-    system_program, sysvar,
+    system_program,
 };
 
 use crate::{
@@ -27,16 +28,24 @@ pub struct Params {
     pub owner: Pubkey,
     // Destination of the rewards
     pub destination: Pubkey,
+    // Minimum amount to stake
+    pub minimum_stake_amount: u64,
 }
 
 #[derive(InstructionsAccount)]
 pub struct Accounts<'a, T> {
+    /// The stake pool account
     #[cons(writable)]
     pub stake_pool_account: &'a T,
+
+    /// The system program account
     pub system_program: &'a T,
+
+    /// The fee payer account
     #[cons(writable, signer)]
     pub fee_payer: &'a T,
-    pub rent_sysvar_account: &'a T,
+
+    /// The stake pool vault account
     pub vault: &'a T,
 }
 
@@ -47,7 +56,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             stake_pool_account: next_account_info(accounts_iter)?,
             system_program: next_account_info(accounts_iter)?,
             fee_payer: next_account_info(accounts_iter)?,
-            rent_sysvar_account: next_account_info(accounts_iter)?,
             vault: next_account_info(accounts_iter)?,
         };
 
@@ -56,11 +64,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             accounts.system_program,
             &system_program::ID,
             MediaError::WrongSystemProgram,
-        )?;
-        check_account_key(
-            accounts.rent_sysvar_account,
-            &sysvar::rent::ID,
-            MediaError::WrongRent,
         )?;
 
         // Check ownership
@@ -101,6 +104,7 @@ pub fn process_create_stake_pool(
         params.destination,
         params.nonce,
         *accounts.vault.key,
+        params.minimum_stake_amount,
     );
 
     Cpi::create_account(
@@ -108,7 +112,6 @@ pub fn process_create_stake_pool(
         accounts.system_program,
         accounts.fee_payer,
         accounts.stake_pool_account,
-        accounts.rent_sysvar_account,
         &[
             params.name.as_bytes(),
             &params.owner.to_bytes(),

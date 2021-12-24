@@ -1,3 +1,4 @@
+//! Permissionless crank to update the stake pool rewards
 use crate::error::MediaError;
 use crate::state::{CentralState, StakePool, SECONDS_IN_DAY};
 use crate::utils::check_account_owner;
@@ -18,8 +19,11 @@ pub struct Params {}
 
 #[derive(InstructionsAccount)]
 pub struct Accounts<'a, T> {
+    /// The stake pool account
     #[cons(writable)]
     pub stake_pool: &'a T,
+
+    /// The account of the central state
     pub central_state: &'a T,
 }
 

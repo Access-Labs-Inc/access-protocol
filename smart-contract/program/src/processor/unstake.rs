@@ -1,3 +1,4 @@
+//! Unstake
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -26,15 +27,26 @@ pub struct Params {
 
 #[derive(InstructionsAccount)]
 pub struct Accounts<'a, T> {
+    /// The stake account
     #[cons(writable)]
     pub stake_account: &'a T,
+
+    /// The stake pool account
     #[cons(writable)]
     pub stake_pool: &'a T,
+
+    /// The owner of the stake account
     #[cons(writable, signer)]
     pub owner: &'a T,
+
+    /// The destination of the staked tokens
     #[cons(writable)]
     pub destination_token: &'a T,
+
+    /// The SPL token program account
     pub spl_token_program: &'a T,
+
+    /// The stake pool vault
     #[cons(writable)]
     pub vault: &'a T,
 }
@@ -129,7 +141,7 @@ pub fn process_unstake(
         StakePoolHeader::SEED.as_bytes(),
         &stake_pool.header.owner.clone(),
         &stake_pool.header.rewards_destination.clone(),
-        &[stake_pool.header.nonce.clone()],
+        &[stake_pool.header.nonce],
     ];
     let transfer_instruction = transfer(
         &spl_token::ID,

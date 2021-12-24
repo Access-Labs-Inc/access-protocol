@@ -1,10 +1,11 @@
+//! Create a bond
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
     program_error::ProgramError,
     pubkey::Pubkey,
-    system_program, sysvar,
+    system_program,
 };
 
 use crate::cpi::Cpi;
@@ -23,9 +24,9 @@ pub struct Params {
     quote_mint: Pubkey,
     seller_token_account: Pubkey,
     unlock_start_date: i64,
-    unlock_period: u64,
+    unlock_period: i64,
     unlock_amount: u64,
-    last_unlock_time: u64,
+    last_unlock_time: i64,
     total_unlocked_amount: u64,
     stake_pool: Pubkey,
     seller_index: u64,
@@ -33,13 +34,19 @@ pub struct Params {
 
 #[derive(InstructionsAccount)]
 pub struct Accounts<'a, T> {
+    /// The bond seller account
     #[cons(writable, signer)]
     seller: &'a T,
+
+    /// The bond account
     #[cons(writable)]
     bond_account: &'a T,
+
+    /// The system program account
     system_program: &'a T,
+
+    /// The fee account
     fee_payer: &'a T,
-    rent_sysvar: &'a T,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -53,18 +60,12 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             bond_account: next_account_info(accounts_iter)?,
             system_program: next_account_info(accounts_iter)?,
             fee_payer: next_account_info(accounts_iter)?,
-            rent_sysvar: next_account_info(accounts_iter)?,
         };
 
         // Check keys
         check_account_key(
             accounts.system_program,
             &system_program::ID,
-            MediaError::WrongSystemProgram,
-        )?;
-        check_account_key(
-            accounts.rent_sysvar,
-            &sysvar::rent::ID,
             MediaError::WrongSystemProgram,
         )?;
 
@@ -122,7 +123,6 @@ pub fn process_create_bond(
         accounts.system_program,
         accounts.fee_payer,
         accounts.bond_account,
-        accounts.rent_sysvar,
         seeds,
         bond.borsh_len() + ((BOND_SIGNER_THRESHOLD - 1) * 32) as usize,
     )?;

@@ -1,10 +1,11 @@
+//! Create central state
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
     program_error::ProgramError,
     pubkey::Pubkey,
-    system_program, sysvar,
+    system_program,
 };
 
 use bonfida_utils::{BorshSize, InstructionsAccount};
@@ -24,13 +25,21 @@ pub struct Params {
 
 #[derive(InstructionsAccount)]
 pub struct Accounts<'a, T> {
+    /// The stake account
     #[cons(writable)]
     pub state_account: &'a T,
+
+    /// The system program account
     pub system_program: &'a T,
+
+    /// The fee payer account
     #[cons(writable, signer)]
     pub fee_payer: &'a T,
-    pub rent_sysvar_account: &'a T,
+
+    /// The central state account
     pub central_vault: &'a T,
+
+    /// The mint of the ACCESS token
     pub mint: &'a T,
 }
 
@@ -41,7 +50,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             state_account: next_account_info(accounts_iter)?,
             system_program: next_account_info(accounts_iter)?,
             fee_payer: next_account_info(accounts_iter)?,
-            rent_sysvar_account: next_account_info(accounts_iter)?,
             central_vault: next_account_info(accounts_iter)?,
             mint: next_account_info(accounts_iter)?,
         };
@@ -51,11 +59,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             accounts.system_program,
             &system_program::ID,
             MediaError::WrongSystemProgram,
-        )?;
-        check_account_key(
-            accounts.rent_sysvar_account,
-            &sysvar::rent::ID,
-            MediaError::WrongRent,
         )?;
 
         // Check ownership
@@ -98,7 +101,6 @@ pub fn process_create_central_state(
         accounts.system_program,
         accounts.fee_payer,
         accounts.state_account,
-        accounts.rent_sysvar_account,
         &[&program_id.to_bytes(), &[nonce]],
         state.borsh_len(),
     )?;

@@ -1,10 +1,10 @@
+//! Close a stake pool
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
     program_error::ProgramError,
     pubkey::Pubkey,
-    system_program,
 };
 
 use crate::utils::{assert_empty_stake_pool, check_account_key, check_account_owner, check_signer};
@@ -23,9 +23,11 @@ pub struct Params {
 
 #[derive(InstructionsAccount)]
 pub struct Accounts<'a, T> {
+    /// The account of the stake pool
     #[cons(writable)]
     pub stake_pool_account: &'a T,
-    pub system_program: &'a T,
+
+    /// The owner of the stake pool
     #[cons(writable, signer)]
     pub owner: &'a T,
 }
@@ -38,16 +40,10 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
             stake_pool_account: next_account_info(accounts_iter)?,
-            system_program: next_account_info(accounts_iter)?,
             owner: next_account_info(accounts_iter)?,
         };
 
         // Check keys
-        check_account_key(
-            accounts.system_program,
-            &system_program::ID,
-            MediaError::WrongSystemProgram,
-        )?;
 
         // Check ownership
         check_account_owner(

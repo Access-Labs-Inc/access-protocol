@@ -21,7 +21,7 @@ pub const STAKER_MULTIPLIER: u64 = 80;
 pub const OWNER_MULTIPLIER: u64 = 100 - STAKER_MULTIPLIER;
 pub const STAKE_BUFFER_LEN: u64 = 365;
 
-#[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug, Clone, Copy)]
+#[derive(BorshSerialize, BorshDeserialize, BorshSize, PartialEq)]
 pub enum Tag {
     Uninitialized,
     StakePool,
@@ -33,13 +33,6 @@ pub enum Tag {
     Deleted,
 }
 
-impl BorshSize for Tag {
-    fn borsh_len(&self) -> usize {
-        1
-    }
-}
-
-// TODO add total number of stakers?
 #[derive(BorshSerialize, BorshDeserialize, BorshSize, Copy, Clone, Pod, Zeroable)]
 #[repr(C)]
 pub struct StakePoolHeader {
@@ -54,6 +47,9 @@ pub struct StakePoolHeader {
 
     // Padding
     pub _padding: [u8; 4],
+
+    // Minimum amount to stake to get access to the pool
+    pub minimum_stake_amount: u64,
 
     // Total amount staked in the pool
     pub total_staked: u64,
@@ -121,7 +117,13 @@ impl<'a> StakePool<'a> {
 impl StakePoolHeader {
     pub const SEED: &'static str = "stake_pool";
 
-    pub fn new(owner: Pubkey, rewards_destination: Pubkey, nonce: u8, vault: Pubkey) -> Self {
+    pub fn new(
+        owner: Pubkey,
+        rewards_destination: Pubkey,
+        nonce: u8,
+        vault: Pubkey,
+        minimum_stake_amount: u64,
+    ) -> Self {
         Self {
             tag: Tag::StakePool as u8,
             total_staked: 0,
@@ -133,6 +135,7 @@ impl StakePoolHeader {
             rewards_destination: rewards_destination.to_bytes(),
             nonce,
             vault: vault.to_bytes(),
+            minimum_stake_amount,
         }
     }
 
@@ -180,18 +183,26 @@ pub struct StakeAccount {
 
     // Last unix timestamp where rewards were claimed
     pub last_claimed_time: i64,
+
+    pub pool_minimum_at_creation: u64,
 }
 
 impl StakeAccount {
     pub const SEED: &'static str = "stake_account";
 
-    pub fn new(owner: Pubkey, stake_pool: Pubkey, current_time: i64) -> Self {
+    pub fn new(
+        owner: Pubkey,
+        stake_pool: Pubkey,
+        current_time: i64,
+        pool_minimum_at_creation: u64,
+    ) -> Self {
         Self {
             tag: Tag::StakeAccount,
             owner,
             stake_amount: 0,
             stake_pool,
             last_claimed_time: current_time,
+            pool_minimum_at_creation,
         }
     }
 
@@ -318,6 +329,9 @@ pub struct BondAccount {
     // Total amount sold
     pub total_amount_sold: u64,
 
+    // Total staked tokens
+    pub total_staked: u64,
+
     // Total quote token
     pub total_quote_amount: u64,
 
@@ -332,14 +346,14 @@ pub struct BondAccount {
 
     // Unlock period
     // time interval at which the tokens unlock
-    pub unlock_period: u64,
+    pub unlock_period: i64,
 
     // Unlock amount
     // amount unlocked at every unlock_period
     pub unlock_amount: u64,
 
     // Last unlock date
-    pub last_unlock_time: u64,
+    pub last_unlock_time: i64,
 
     // Total amount unlocked (metric)
     pub total_unlocked_amount: u64,
@@ -366,6 +380,7 @@ impl BondAccount {
         Pubkey::find_program_address(seeds, program_id)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         owner: Pubkey,
         total_amount_sold: u64,
@@ -373,9 +388,9 @@ impl BondAccount {
         quote_mint: Pubkey,
         seller_token_account: Pubkey,
         unlock_start_date: i64,
-        unlock_period: u64,
+        unlock_period: i64,
         unlock_amount: u64,
-        last_unlock_time: u64,
+        last_unlock_time: i64,
         total_unlocked_amount: u64,
         stake_pool: Pubkey,
         last_claimed_time: i64,
@@ -386,6 +401,7 @@ impl BondAccount {
             tag: Tag::InactiveBondAccount,
             owner,
             total_amount_sold,
+            total_staked: total_amount_sold,
             total_quote_amount,
             quote_mint,
             seller_token_account,
@@ -427,5 +443,22 @@ impl BondAccount {
         }
         let result = BondAccount::deserialize(&mut data)?;
         Ok(result)
+    }
+
+    pub fn calc_unlock_amount(&self, missed_periods: u64) -> Result<u64, ProgramError> {
+        let unlock_amount = missed_periods * self.unlock_amount;
+        if self
+            .total_unlocked_amount
+            .checked_add(unlock_amount)
+            .ok_or(MediaError::Overflow)?
+            > self.total_amount_sold
+        {
+            Ok(self
+                .total_amount_sold
+                .checked_sub(unlock_amount)
+                .ok_or(MediaError::Overflow)?)
+        } else {
+            Ok(unlock_amount)
+        }
     }
 }

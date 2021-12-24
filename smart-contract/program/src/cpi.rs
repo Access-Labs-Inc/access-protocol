@@ -11,16 +11,13 @@ impl Cpi {
         system_program: &AccountInfo<'a>,
         fee_payer: &AccountInfo<'a>,
         account_to_create: &AccountInfo<'a>,
-        rent_sysvar_account: &AccountInfo<'a>,
         signer_seeds: &[&[u8]],
         space: usize,
     ) -> ProgramResult {
-        let rent = Rent::from_account_info(rent_sysvar_account)?;
-
         let create_state_instruction = create_account(
             fee_payer.key,
             account_to_create.key,
-            rent.minimum_balance(space),
+            Rent::get()?.minimum_balance(space),
             space as u64,
             program_id,
         );

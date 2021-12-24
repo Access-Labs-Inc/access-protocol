@@ -1,3 +1,4 @@
+//! Sign a bond
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -47,7 +48,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     }
 }
 
-pub fn process_create_bond(
+pub fn process_sign_bond(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
     params: Params,

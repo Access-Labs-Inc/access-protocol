@@ -9,10 +9,11 @@ use spl_token::state::Account;
 
 pub fn calc_previous_balances_and_inflation(
     current_time: i64,
+    last_claimed_time: i64,
     stake_pool: &StakePool,
 ) -> Result<u128, ProgramError> {
     let last_full_day = current_time as u64 / SECONDS_IN_DAY;
-    let mut last_claimed_day = stake_pool.header.last_claimed_time as u64 / SECONDS_IN_DAY;
+    let mut last_claimed_day = last_claimed_time as u64 / SECONDS_IN_DAY;
 
     let mut i = last_full_day - last_claimed_day;
     i = (stake_pool.header.current_day_idx as u64 - i) % STAKE_BUFFER_LEN;

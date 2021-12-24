@@ -105,6 +105,36 @@ impl Processor {
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 change_inflation::process_change_inflation(program_id, accounts, params)?;
             }
+            MediaInstruction::CreateBond => {
+                msg!("Instruction: create bond");
+                let params = create_bond::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                create_bond::process_create_bond(program_id, accounts, params)?;
+            }
+            MediaInstruction::SignBond => {
+                msg!("Instruction: sign bond");
+                let params = sign_bond::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                sign_bond::process_sign_bond(program_id, accounts, params)?;
+            }
+            MediaInstruction::UnlockBondTokens => {
+                msg!("Instruction: unlock bond token");
+                let params = unlock_bond_tokens::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                unlock_bond_tokens::process_unlock_bond_tokens(program_id, accounts, params)?;
+            }
+            MediaInstruction::ClaimBond => {
+                msg!("Instruction: claim bond");
+                let params = claim_bond::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                claim_bond::process_claim_bond(program_id, accounts, params)?;
+            }
+            MediaInstruction::ClaimBondRewards => {
+                msg!("Instruction: claim bond rewards");
+                let params = claim_bond_rewards::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                claim_bond_rewards::process_claim_bond_rewards(program_id, accounts, params)?;
+            }
         }
 
         Ok(())

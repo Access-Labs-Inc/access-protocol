@@ -1,3 +1,4 @@
+//! Change central state inflation
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -19,8 +20,11 @@ pub struct Params {
 
 #[derive(InstructionsAccount)]
 pub struct Accounts<'a, T> {
+    /// The account of the central state
     #[cons(writable)]
     pub central_state: &'a T,
+
+    /// The account of the central state authority
     #[cons(signer)]
     pub authority: &'a T,
 }
