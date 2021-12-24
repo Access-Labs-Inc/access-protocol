@@ -13,6 +13,8 @@ use bonfida_utils::{BorshSize, InstructionsAccount};
 use crate::error::MediaError;
 use crate::state::StakePool;
 
+// TODO add admin close
+
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 pub struct Params {
     // The PDA nonce
