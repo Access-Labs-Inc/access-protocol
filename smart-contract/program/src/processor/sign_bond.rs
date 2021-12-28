@@ -63,6 +63,7 @@ pub fn process_sign_bond(
         return Err(AccessError::NoOp.into());
     }
 
+    #[cfg(not(feature = "no-bond-signer"))]
     for current_seller in &bond.sellers {
         if accounts.seller.key == current_seller {
             msg!("The seller has already signed");

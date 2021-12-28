@@ -5,6 +5,7 @@ use bytemuck::{from_bytes_mut, try_cast_slice_mut, Pod, Zeroable};
 use solana_program::account_info::AccountInfo;
 use solana_program::clock::Clock;
 use solana_program::entrypoint::ProgramResult;
+use solana_program::msg;
 use solana_program::program_error::ProgramError;
 use solana_program::pubkey::Pubkey;
 use solana_program::sysvar::Sysvar;
@@ -385,7 +386,6 @@ impl BondAccount {
         unlock_period: i64,
         unlock_amount: u64,
         last_unlock_time: i64,
-        total_unlocked_amount: u64,
         stake_pool: Pubkey,
         last_claimed_time: i64,
         seller: Pubkey,
@@ -403,7 +403,7 @@ impl BondAccount {
             unlock_period,
             unlock_amount,
             last_unlock_time,
-            total_unlocked_amount,
+            total_unlocked_amount: 0,
             stake_pool,
             last_claimed_time,
             sellers,
@@ -440,7 +440,13 @@ impl BondAccount {
     }
 
     pub fn calc_unlock_amount(&self, missed_periods: u64) -> Result<u64, ProgramError> {
+        msg!("{}", missed_periods);
         let unlock_amount = missed_periods * self.unlock_amount;
+        msg!(
+            "unlock amount {} total amount {}",
+            unlock_amount,
+            self.total_amount_sold
+        );
         if self
             .total_unlocked_amount
             .checked_add(unlock_amount)

@@ -3,6 +3,7 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
+    msg,
     program_error::ProgramError,
     pubkey::Pubkey,
     system_program,
@@ -13,7 +14,7 @@ use bonfida_utils::{BorshSize, InstructionsAccount};
 use crate::state::CentralState;
 use crate::{cpi::Cpi, error::AccessError};
 
-use crate::utils::{assert_valid_vault, check_account_key, check_account_owner};
+use crate::utils::{check_account_key, check_account_owner};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 pub struct Params {

@@ -44,8 +44,8 @@ pub struct Accounts<'a, T> {
     pub central_state: &'a T,
 
     /// The mint address of the ACCESS token
-    pub mint: &'a T,
     #[cons(writable)]
+    pub mint: &'a T,
 
     /// The SPL token program account
     pub spl_token_program: &'a T,

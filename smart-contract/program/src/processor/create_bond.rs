@@ -18,35 +18,34 @@ use bonfida_utils::{BorshSize, InstructionsAccount};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 pub struct Params {
-    buyer: Pubkey,
-    total_amount_sold: u64,
-    total_quote_amount: u64,
-    quote_mint: Pubkey,
-    seller_token_account: Pubkey,
-    unlock_start_date: i64,
-    unlock_period: i64,
-    unlock_amount: u64,
-    last_unlock_time: i64,
-    total_unlocked_amount: u64,
-    stake_pool: Pubkey,
-    seller_index: u64,
+    pub buyer: Pubkey,
+    pub total_amount_sold: u64,
+    pub total_quote_amount: u64,
+    pub quote_mint: Pubkey,
+    pub seller_token_account: Pubkey,
+    pub unlock_start_date: i64,
+    pub unlock_period: i64,
+    pub unlock_amount: u64,
+    pub last_unlock_time: i64,
+    pub stake_pool: Pubkey,
+    pub seller_index: u64,
 }
 
 #[derive(InstructionsAccount)]
 pub struct Accounts<'a, T> {
     /// The bond seller account
     #[cons(writable, signer)]
-    seller: &'a T,
+    pub seller: &'a T,
 
     /// The bond account
     #[cons(writable)]
-    bond_account: &'a T,
+    pub bond_account: &'a T,
 
     /// The system program account
-    system_program: &'a T,
+    pub system_program: &'a T,
 
     /// The fee account
-    fee_payer: &'a T,
+    pub fee_payer: &'a T,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -92,6 +91,8 @@ pub fn process_create_bond(
         AccessError::AccountNotDeterministic,
     )?;
     assert_uninitialized(accounts.bond_account)?;
+
+    #[cfg(not(feature = "no-bond-signer"))]
     assert_authorized_seller(accounts.seller, params.seller_index as usize)?;
 
     let bond = BondAccount::new(
@@ -104,7 +105,6 @@ pub fn process_create_bond(
         params.unlock_period,
         params.unlock_amount,
         params.last_unlock_time,
-        params.total_unlocked_amount,
         params.stake_pool,
         params.unlock_start_date,
         *accounts.seller.key,

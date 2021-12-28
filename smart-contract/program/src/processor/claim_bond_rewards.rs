@@ -4,6 +4,7 @@ use solana_program::{
     account_info::{next_account_info, AccountInfo},
     clock::Clock,
     entrypoint::ProgramResult,
+    msg,
     program::invoke_signed,
     program_error::ProgramError,
     program_pack::Pack,
@@ -46,6 +47,7 @@ pub struct Accounts<'a, T> {
     pub central_state: &'a T,
 
     /// The mint address of the ACCESS token
+    #[cons(writable)]
     pub mint: &'a T,
 
     /// The SPL token program account
@@ -133,9 +135,14 @@ pub fn process_claim_bond_rewards(
         AccessError::WrongMint,
     )?;
 
+
+    let balances_and_inflation: u128 = 100;
+    #[cfg(not(feature = "no-lock-time"))]
     let balances_and_inflation =
         calc_previous_balances_and_inflation(current_time, bond.last_claimed_time, &stake_pool)?;
 
+
+    // This can be factoriser
     let rewards = balances_and_inflation
         // Divide the accumulated total stake balance multiplied by the daily inflation
         .checked_div(mint.supply as u128) // TODO: Check whether max supply or current supply

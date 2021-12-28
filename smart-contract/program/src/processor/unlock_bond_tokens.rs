@@ -31,6 +31,7 @@ pub struct Accounts<'a, T> {
     pub bond_owner: &'a T,
 
     /// The ACCESS mint token
+    #[cons(writable)]
     pub mint: &'a T,
 
     /// The ACCESS token destination
@@ -103,6 +104,9 @@ pub fn process_unlock_bond_tokens(
         return Err(ProgramError::InvalidArgument);
     }
 
+    let missed_periods = 1;
+
+    #[cfg(not(feature = "no-lock-time"))]
     let missed_periods = delta
         .checked_div(bond.unlock_period)
         .ok_or(AccessError::Overflow)?;

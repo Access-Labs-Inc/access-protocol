@@ -10,6 +10,7 @@ no-entrypoint = []
 test-bpf = []
 no-mint-check = []
 no-lock-time = []
+no-bond-signer = []
 
 [dependencies]
 solana-program = "1.8.0"
