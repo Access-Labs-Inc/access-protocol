@@ -9,7 +9,7 @@ export enum RedisKey {
 export const redisClient = createClient(); // Can pass URL
 
 export const setNonce = async (nonce: string, user: string) => {
-  redisClient.set(RedisKey.Nonce + user, nonce, { EX: EXPIRE_TIME });
+  await redisClient.set(RedisKey.Nonce + user, nonce, { EX: EXPIRE_TIME });
 };
 
 export const getNonce = async (user: string) => {
