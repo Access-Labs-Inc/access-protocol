@@ -23,7 +23,7 @@ export const verifyNonce = (
 ) => {
   return sign.detached.verify(
     new TextEncoder().encode(nonce),
-    new TextEncoder().encode(signedNonce),
+    new Uint8Array(Buffer.from(signedNonce, "hex")),
     new PublicKey(pubKeyString).toBytes()
   );
 };

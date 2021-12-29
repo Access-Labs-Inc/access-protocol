@@ -63,7 +63,7 @@ export const LoginRequestSchema: JSONSchemaType<LoginRequest> = {
   type: "object",
   properties: {
     address: { type: "string", format: "pubkey" },
-    signedNonce: { type: "string", format: "nonce" },
+    signedNonce: { type: "string" },
   },
   required: ["address", "signedNonce"],
   additionalProperties: false,

@@ -5,6 +5,7 @@ import bodyParser from "body-parser";
 import authRoute from "./routes/auth";
 import articleRoute from "./routes/articles";
 import { redisClient } from "./utils/redis";
+import cors from "cors";
 
 export const run = async () => {
   await redisClient.connect();
@@ -14,6 +15,7 @@ export const run = async () => {
   app.set("trust proxy", true);
   app.use(express.json() as RequestHandler);
   app.use(bodyParser.urlencoded({ extended: true }) as RequestHandler);
+  app.use(cors({ methods: ["GET", "POST"] }));
 
   app.use("/auth", authRoute);
   app.use("/article", articleRoute);
@@ -24,5 +26,5 @@ export const run = async () => {
     res.send({ succes: true, message: "visit https://bonfida.org" });
   });
 
-  app.listen(3000);
+  app.listen(3001);
 };
