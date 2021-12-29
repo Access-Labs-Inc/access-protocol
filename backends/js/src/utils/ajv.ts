@@ -1,4 +1,4 @@
-import Ajv, { Schema } from "ajv";
+import Ajv from "ajv";
 import { isValidPubkey } from "./pubkey";
 import { isValidNonce } from "./nonce";
 

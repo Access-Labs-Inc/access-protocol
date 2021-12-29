@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { validateToken } from "../utils/jwt";
+import path from "path";
 
 const router = Router();
 
-router.get("/test", validateToken, (req, res) => {
+router.get("/", validateToken, (req, res) => {
   res.sendStatus(200);
 });
 

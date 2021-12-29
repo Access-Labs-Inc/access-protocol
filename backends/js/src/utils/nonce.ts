@@ -1,4 +1,7 @@
 import crypto from "crypto";
+import { PublicKey } from "@solana/web3.js";
+import { sign } from "tweetnacl";
+import { TextEncoder } from "util";
 
 export const genrateNonce = () => {
   const nonce = crypto.randomBytes(16).toString("hex");
@@ -11,4 +14,16 @@ export const isValidNonce = (nonce: string) => {
     return false;
   }
   return true;
+};
+
+export const verifyNonce = (
+  nonce: string,
+  signedNonce: string,
+  pubKeyString: string
+) => {
+  return sign.detached.verify(
+    new TextEncoder().encode(nonce),
+    new TextEncoder().encode(signedNonce),
+    new PublicKey(pubKeyString).toBytes()
+  );
 };

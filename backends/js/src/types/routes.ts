@@ -56,16 +56,16 @@ export interface NonceResponse {
 
 export interface LoginRequest {
   address: string;
-  nonce: string;
+  signedNonce: string;
 }
 
 export const LoginRequestSchema: JSONSchemaType<LoginRequest> = {
   type: "object",
   properties: {
     address: { type: "string", format: "pubkey" },
-    nonce: { type: "string", format: "nonce" },
+    signedNonce: { type: "string", format: "nonce" },
   },
-  required: ["address", "nonce"],
+  required: ["address", "signedNonce"],
   additionalProperties: false,
 };
 

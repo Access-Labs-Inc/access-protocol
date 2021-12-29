@@ -4,8 +4,11 @@ import helmet from "helmet";
 import bodyParser from "body-parser";
 import authRoute from "./routes/auth";
 import articleRoute from "./routes/articles";
+import { redisClient } from "./utils/redis";
 
-export const run = () => {
+export const run = async () => {
+  await redisClient.connect();
+
   const app = express();
 
   app.set("trust proxy", true);
