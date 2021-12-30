@@ -1,9 +1,10 @@
-import { createClient, RedisClientType } from "redis";
+import { createClient } from "redis";
 
 const EXPIRE_TIME = 10 * 60; // in seconds
 
 export enum RedisKey {
   Nonce = "nonce:",
+  Stake = "stake:",
 }
 
 export const redisClient = createClient(); // Can pass URL
