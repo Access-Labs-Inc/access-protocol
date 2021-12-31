@@ -2,16 +2,17 @@ package utils
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
+
+	"os"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 )
 
 func keyFunc(t *jwt.Token) (interface{}, error) {
-	signingKey := []byte("secret") // TODO change
+	signingKey := []byte(os.Getenv("ACCESS_TOKEN"))
 	if t.Method.Alg() != "HS256" {
 		return nil, fmt.Errorf("unexpected jwt signing method=%v", t.Header["alg"])
 	}
@@ -28,9 +29,11 @@ func ValidateToken(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 		bearerToken := splitted[1]
 
-		token, err := jwt.Parse(bearerToken, keyFunc)
+		_, err := jwt.Parse(bearerToken, keyFunc)
 
-		log.Println(token, err)
+		if err != nil {
+			return c.String(http.StatusForbidden, "Invalid autorization header")
+		}
 
 		return next(c)
 	}
