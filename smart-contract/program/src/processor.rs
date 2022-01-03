@@ -8,6 +8,7 @@ use solana_program::{
 use crate::instruction::MediaInstruction;
 
 pub mod change_inflation;
+pub mod change_pool_minimum;
 pub mod claim_bond;
 pub mod claim_bond_rewards;
 pub mod claim_pool_rewards;
@@ -137,6 +138,12 @@ impl Processor {
                 let params = claim_bond_rewards::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 claim_bond_rewards::process_claim_bond_rewards(program_id, accounts, params)?;
+            }
+            MediaInstruction::ChangePoolMinimum => {
+                msg!("Instruction: Change pool minimum");
+                let params = change_pool_minimum::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                change_pool_minimum::process_change_pool_minimum(program_id, accounts, params)?;
             }
         }
 

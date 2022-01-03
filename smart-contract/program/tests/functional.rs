@@ -7,9 +7,10 @@ use crate::common::utils::{mint_bootstrap, sign_send_instructions};
 use access_protocol::{
     entrypoint::process_instruction,
     instruction::{
-        change_inflation, claim_bond, claim_bond_rewards, claim_pool_rewards, claim_rewards,
-        close_stake_account, close_stake_pool, crank, create_bond, create_central_state,
-        create_stake_account, create_stake_pool, sign_bond, stake, unlock_bond_tokens, unstake,
+        change_inflation, change_pool_minimum, claim_bond, claim_bond_rewards, claim_pool_rewards,
+        claim_rewards, close_stake_account, close_stake_pool, crank, create_bond,
+        create_central_state, create_stake_account, create_stake_pool, sign_bond, stake,
+        unlock_bond_tokens, unstake,
     },
     state::BondAccount,
 };
@@ -146,6 +147,7 @@ async fn test_staking() {
     let create_bond_ix = create_bond(
         program_id,
         create_bond::Accounts {
+            stake_pool: &stake_pool_key,
             seller: &prg_test_ctx.payer.pubkey(),
             bond_account: &bond_key,
             system_program: &system_program::ID,
@@ -373,6 +375,29 @@ async fn test_staking() {
         .unwrap();
 
     //
+    // Change minimum stake pool
+    //
+
+    let change_min_ix = change_pool_minimum(
+        program_id,
+        change_pool_minimum::Accounts {
+            stake_pool: &stake_pool_key,
+            stake_pool_owner: &stake_pool_owner.pubkey(),
+        },
+        change_pool_minimum::Params {
+            new_minimum: 10_000_000 / 2,
+        },
+    );
+
+    sign_send_instructions(
+        &mut prg_test_ctx,
+        vec![change_min_ix],
+        vec![&stake_pool_owner],
+    )
+    .await
+    .unwrap();
+
+    //
     // Unstake
     //
 
@@ -443,6 +468,4 @@ async fn test_staking() {
     )
     .await
     .unwrap();
-
-    // TODO add bond tests
 }

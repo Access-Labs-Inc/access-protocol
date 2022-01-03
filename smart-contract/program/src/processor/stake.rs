@@ -157,7 +157,7 @@ pub fn process_stake(
             "The minimum stake amount must be > {}",
             stake_account.pool_minimum_at_creation
         );
-        return Err(ProgramError::InvalidArgument.into());
+        return Err(ProgramError::InvalidArgument);
     }
 
     // Update stake account

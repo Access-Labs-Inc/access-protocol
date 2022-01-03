@@ -1,6 +1,6 @@
 pub use crate::processor::{
-    change_inflation, claim_bond, claim_bond_rewards, claim_pool_rewards, claim_rewards,
-    close_stake_account, close_stake_pool, crank, create_bond, create_central_state,
+    change_inflation, change_pool_minimum, claim_bond, claim_bond_rewards, claim_pool_rewards,
+    claim_rewards, close_stake_account, close_stake_pool, crank, create_bond, create_central_state,
     create_stake_account, create_stake_pool, sign_bond, stake, unlock_bond_tokens, unstake,
 };
 use bonfida_utils::InstructionsAccount;
@@ -16,8 +16,7 @@ pub enum MediaInstruction {
     /// | 0     | ✅        | ❌      | The stake account            |
     /// | 1     | ❌        | ❌      | The system program account   |
     /// | 2     | ✅        | ✅      | The fee payer account        |
-    /// | 3     | ❌        | ❌      | The central state account    |
-    /// | 4     | ❌        | ❌      | The mint of the ACCESS token |
+    /// | 3     | ❌        | ❌      | The mint of the ACCESS token |
     CreateCentralState,
     /// Create stake pool
     ///
@@ -67,9 +66,8 @@ pub enum MediaInstruction {
     /// | 1     | ✅        | ✅      | The stake pool owner account         |
     /// | 2     | ✅        | ❌      | The rewards destination              |
     /// | 3     | ❌        | ❌      | The central state account            |
-    /// | 4     | ❌        | ❌      | The mint address of the ACCESS token |
-    /// | 5     | ✅        | ❌      | The central vault account            |
-    /// | 6     | ❌        | ❌      | The SPL token program account        |
+    /// | 4     | ✅        | ❌      | The mint address of the ACCESS token |
+    /// | 5     | ❌        | ❌      | The SPL token program account        |
     ClaimPoolRewards,
     /// Claim rewards of a stake account
     ///
@@ -80,9 +78,8 @@ pub enum MediaInstruction {
     /// | 2     | ✅        | ✅      | The owner of the stake account       |
     /// | 3     | ✅        | ❌      | The rewards destination              |
     /// | 4     | ❌        | ❌      | The central state account            |
-    /// | 5     | ❌        | ❌      | The mint address of the ACCESS token |
-    /// | 6     | ✅        | ❌      | The central vault account            |
-    /// | 7     | ❌        | ❌      | The SPL token program account        |
+    /// | 5     | ✅        | ❌      | The mint address of the ACCESS token |
+    /// | 6     | ❌        | ❌      | The SPL token program account        |
     ClaimRewards,
     /// Permissionless crank to update the stake pool rewards
     ///
@@ -134,7 +131,7 @@ pub enum MediaInstruction {
     /// | ------------------------------------------------------------ |
     /// | 0     | ✅        | ❌      | The bond account                 |
     /// | 1     | ✅        | ✅      | The account of the bond owner    |
-    /// | 2     | ✅        | ❌      | The ACCESS token vault           |
+    /// | 2     | ✅        | ❌      | The ACCESS mint token            |
     /// | 3     | ✅        | ❌      | The ACCESS token destination     |
     /// | 4     | ❌        | ❌      | The account of the central state |
     /// | 5     | ❌        | ❌      | The SPL token program account    |
@@ -158,10 +155,16 @@ pub enum MediaInstruction {
     /// | 2     | ✅        | ✅      | The bond account owner               |
     /// | 3     | ✅        | ❌      | The rewards destination              |
     /// | 4     | ❌        | ❌      | The central state account            |
-    /// | 5     | ❌        | ❌      | The mint address of the ACCESS token |
-    /// | 6     | ✅        | ❌      | The central vault account            |
-    /// | 7     | ❌        | ❌      | The SPL token program account        |
+    /// | 5     | ✅        | ❌      | The mint address of the ACCESS token |
+    /// | 6     | ❌        | ❌      | The SPL token program account        |
     ClaimBondRewards,
+    /// Change the minimum stakeable amount of a pool
+    ///
+    /// | Index | Writable | Signer | Description            |
+    /// | -------------------------------------------------- |
+    /// | 0     | ✅        | ❌      | The stake pool account |
+    /// | 1     | ✅        | ✅      | The bond account       |
+    ChangePoolMinimum,
 }
 pub fn create_central_state(
     program_id: Pubkey,
@@ -286,4 +289,15 @@ pub fn claim_bond_rewards(
     params: claim_bond_rewards::Params,
 ) -> Instruction {
     accounts.get_instruction(program_id, MediaInstruction::ClaimBondRewards as u8, params)
+}
+pub fn change_pool_minimum(
+    program_id: Pubkey,
+    accounts: change_pool_minimum::Accounts<Pubkey>,
+    params: change_pool_minimum::Params,
+) -> Instruction {
+    accounts.get_instruction(
+        program_id,
+        MediaInstruction::ChangePoolMinimum as u8,
+        params,
+    )
 }

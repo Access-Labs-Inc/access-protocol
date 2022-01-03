@@ -185,6 +185,8 @@ pub struct StakeAccount {
     // Last unix timestamp where rewards were claimed
     pub last_claimed_time: i64,
 
+    // Minimum stakeable amount of the pool when the account
+    // was created
     pub pool_minimum_at_creation: u64,
 }
 
@@ -353,6 +355,10 @@ pub struct BondAccount {
     // Total amount unlocked (metric)
     pub total_unlocked_amount: u64,
 
+    // Minimum stakeable amount of the pool when the account
+    // was created
+    pub pool_minimum_at_creation: u64,
+
     // Stake pool to which the account belongs to
     pub stake_pool: Pubkey,
 
@@ -386,6 +392,7 @@ impl BondAccount {
         unlock_period: i64,
         unlock_amount: u64,
         last_unlock_time: i64,
+        pool_minimum_at_creation: u64,
         stake_pool: Pubkey,
         last_claimed_time: i64,
         seller: Pubkey,
@@ -407,6 +414,7 @@ impl BondAccount {
             stake_pool,
             last_claimed_time,
             sellers,
+            pool_minimum_at_creation,
         }
     }
 
