@@ -15,7 +15,7 @@ use crate::error::AccessError;
 use crate::state::{BondAccount, CentralState};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
-use crate::utils::{assert_bond_derivation, check_signer};
+use crate::utils::{assert_bond_derivation, check_account_key, check_account_owner, check_signer};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 pub struct Params {}
@@ -46,7 +46,10 @@ pub struct Accounts<'a, T> {
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
-    pub fn parse(accounts: &'a [AccountInfo<'b>]) -> Result<Self, ProgramError> {
+    pub fn parse(
+        accounts: &'a [AccountInfo<'b>],
+        program_id: &Pubkey,
+    ) -> Result<Self, ProgramError> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
             bond_account: next_account_info(accounts_iter)?,
@@ -58,8 +61,15 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         };
 
         // Check keys
+        check_account_key(
+            accounts.spl_token_program,
+            &spl_token::ID,
+            AccessError::WrongSplTokenProgramId,
+        )?;
 
         // Check ownership
+        check_account_owner(accounts.bond_account, program_id, AccessError::WrongOwner)?;
+        check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
 
         // Check signer
         check_signer(accounts.bond_owner, AccessError::BuyerMustSign)?;
@@ -73,7 +83,7 @@ pub fn process_unlock_bond_tokens(
     accounts: &[AccountInfo],
     _params: Params,
 ) -> ProgramResult {
-    let accounts = Accounts::parse(accounts)?;
+    let accounts = Accounts::parse(accounts, program_id)?;
     let central_state = CentralState::from_account_info(accounts.central_state)?;
     let mut bond = BondAccount::from_account_info(accounts.bond_account, false)?;
     let current_time = Clock::get()?.unix_timestamp;
@@ -83,6 +93,11 @@ pub fn process_unlock_bond_tokens(
         accounts.bond_owner.key,
         bond.total_amount_sold,
         program_id,
+    )?;
+    check_account_key(
+        accounts.mint,
+        &central_state.token_mint,
+        AccessError::WrongMint,
     )?;
 
     if bond.total_amount_sold <= bond.total_unlocked_amount {

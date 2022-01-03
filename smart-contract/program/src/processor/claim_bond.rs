@@ -13,7 +13,7 @@ use crate::error::AccessError;
 use crate::state::{BondAccount, BOND_SIGNER_THRESHOLD};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
-use crate::utils::{assert_bond_derivation, check_signer};
+use crate::utils::{assert_bond_derivation, check_account_owner, check_signer};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 pub struct Params {}
@@ -41,7 +41,10 @@ pub struct Accounts<'a, T> {
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
-    pub fn parse(accounts: &'a [AccountInfo<'b>]) -> Result<Self, ProgramError> {
+    pub fn parse(
+        accounts: &'a [AccountInfo<'b>],
+        program_id: &Pubkey,
+    ) -> Result<Self, ProgramError> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
             bond_account: next_account_info(accounts_iter)?,
@@ -54,6 +57,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         // Check keys
 
         // Check ownership
+        check_account_owner(accounts.bond_account, program_id, AccessError::WrongOwner)?;
 
         // Check signer
         check_signer(accounts.buyer, AccessError::BuyerMustSign)?;
@@ -67,7 +71,7 @@ pub fn process_claim_bond(
     accounts: &[AccountInfo],
     _params: Params,
 ) -> ProgramResult {
-    let accounts = Accounts::parse(accounts)?;
+    let accounts = Accounts::parse(accounts, program_id)?;
     let mut bond = BondAccount::from_account_info(accounts.bond_account, true)?;
 
     assert_bond_derivation(
