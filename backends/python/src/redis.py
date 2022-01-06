@@ -1,4 +1,4 @@
-import reddis
+import redis
 
 EXPIRE_TIME = 10 * 60  # in seconds
 

@@ -2,11 +2,11 @@ from enum import Enum
 
 
 class ErrorType(Enum):
-    ErrorGeneratingNonce
-    InvalidNonce
-    InvalidStake
-    ErrorValidatingNonce
-    InvalidToken
+    ErrorGeneratingNonce = 0
+    InvalidNonce = 1
+    InvalidStake = 2
+    ErrorValidatingNonce = 3
+    InvalidToken = 4
 
 
 ErrorMessage = {
