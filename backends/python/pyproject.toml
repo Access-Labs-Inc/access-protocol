@@ -1,3 +1,31 @@
+[project]
+name = "python-backend"
+version = "0.1.0"
+description = "A python backend for the authentication of users."
+authors = [
+    "Bonfida <lucas@bonfida.com>"
+]
+license = "MIT"
+readme = "README.md"
+python = "^3.6"
+homepage = "https://github.com/Bonfida/the-block"
+repository = "https://github.com/Bonfida/the-block"
+documentation = "https://github.com/Bonfida/the-block"
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent"
+]
+
+[project.dependencies]
+flask = { }
+flask_inputs = { }
+solana = { }
+redis = { }
+base58 = { }
+pip = { url = "https://github.com/pypa/pip/archive/1.3.1.zip" }
+
+
 [build-system]
 requires = [
     "setuptools>=42",

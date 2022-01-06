@@ -1,10 +1,17 @@
-from flask import Flask
-from app import app
-from flask import request
-from errors import ErrorMessage
-from utils import generate_nonce, verify_nonce, encode_jwt
-from redis import redis_set_nonce, redis_get_nonce
-from validate import NonceRequestForm, LoginRequestForm, AuthorizationHeaderForm
+# from validate_req import NonceRequestForm, LoginRequestForm, AuthorizationHeaderForm
+# from redis import redis_set_nonce, redis_get_nonce
+# from utils import generate_nonce, verify_nonce, encode_jwt
+from flask import Flask, request
+import os
+# from errors import ErrorMessage
+exec(open("errors.py").read())
+exec(open("redis.py").read())
+exec(open("utils.py").read())
+exec(open("validate_req.py").read())
+# execfile("validate_req.py")
+
+app = Flask(__name__)
+ACCESS_TOKEN_SECRET = os.getenv('ACCESS_TOKEN_SECRET')
 
 
 @app.route('/', methods=['GET'])
