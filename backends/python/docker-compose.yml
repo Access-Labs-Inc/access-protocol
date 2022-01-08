@@ -1,0 +1,10 @@
+version: "3.8"
+services:
+  access_protocol:
+    build: .
+    ports:
+      - "3001:3001"
+  redis:
+    image: "redis"
+    ports:
+      - "6379:6379"

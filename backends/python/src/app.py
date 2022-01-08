@@ -1,13 +1,12 @@
 from flask_inputs import inputs
 from validate_req import NonceRequestForm, LoginRequestForm, AuthorizationHeaderForm
 from redis_client import redis_set_nonce, redis_get_nonce
-from utils import generate_nonce, verify_nonce, encode_jwt, verify_stake, verify_jwt
+from utils import generate_nonce, verify_nonce, encode_jwt, verify_stake, validate_jwt, ACCESS_TOKEN_SECRET
 from flask import Flask, request, jsonify
-import os
 from errors import ErrorMessage, ErrorType
 
 app = Flask(__name__)
-ACCESS_TOKEN_SECRET = os.getenv("ACCESS_TOKEN_SECRET")
+
 
 
 @app.route("/", methods=["GET"])
@@ -65,7 +64,11 @@ def articles():
     authorization = request.args.get("authorization")
     token = authorization.split(" ")[1]
 
-    if not (verify_jwt(token)):
+    if not (validate_jwt(token)):
         return ErrorMessage[ErrorType.invalid], 403
 
     return "Successfully logged in", 200
+
+
+if __name__ == '__main__':
+      app.run()

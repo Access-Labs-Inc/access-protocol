@@ -4,8 +4,10 @@ import base58
 from nacl.encoding import Base64Encoder
 from nacl.signing import VerifyKey
 import secrets
+import os
 
-from main import ACCESS_TOKEN_SECRET
+
+ACCESS_TOKEN_SECRET = os.getenv("ACCESS_TOKEN_SECRET")
 
 
 def generate_nonce() -> str:

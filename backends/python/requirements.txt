@@ -3,3 +3,4 @@ flask_inputs==0.3.0
 solana==0.20.0
 redis==4.1.0
 base58==2.1.1
+jwt==1.3.1
