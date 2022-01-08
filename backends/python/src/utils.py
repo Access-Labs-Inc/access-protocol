@@ -1,11 +1,16 @@
-from datetime import timezone, datetime
+from datetime import timezone, datetime, timedelta
 import jwt
+import time
 import base58
-from nacl.encoding import Base64Encoder
+from nacl.encoding import Base64Encoder, HexEncoder, URLSafeBase64Encoder
 from nacl.signing import VerifyKey
 import secrets
 import os
+from solana import publickey
+from dotenv import load_dotenv
+from flask import jsonify
 
+load_dotenv()
 
 ACCESS_TOKEN_SECRET = os.getenv("ACCESS_TOKEN_SECRET")
 
@@ -14,13 +19,11 @@ def generate_nonce() -> str:
     return secrets.token_hex(16)
 
 
-def verify_nonce(nonce: str, signed_nonce: str, address: str) -> bool:
+def verify_nonce(nonce: bytes, signed_nonce: str, address: str) -> bool:
     address_bytes = base58.b58decode(address)
-    vk = VerifyKey(
-        address_bytes,
-    )
+    vk = VerifyKey(address_bytes)
     try:
-        VerifyKey.verify(nonce, signed_nonce.message, encoder=Base64Encoder)
+        vk.verify(nonce, bytes.fromhex(signed_nonce))
         return True
     except:
         return False
@@ -38,8 +41,7 @@ def encode_jwt(address: str) -> bytes:
     return jwt.encode(
         {
             "some": address,
-            "exp": datetime.datetime.now(tz=timezone.utc)
-            + datetime.timedelta(seconds=JWT_EXPIRATION_INTERVAL),
+            "iat": time.time()
         },
         ACCESS_TOKEN_SECRET,
     )
@@ -47,4 +49,28 @@ def encode_jwt(address: str) -> bytes:
 
 def validate_jwt(token: str) -> bool:
     expiry_date = jwt.decode(token, ACCESS_TOKEN_SECRET)["exp"]
-    return expiry_date > datetime.datetime.now(tz=timezone.utc)
+    return expiry_date > datetime.now(tz=timezone.utc)
+
+
+def validate_pubkey(address: str) -> bool:
+    try:
+        publickey.PublicKey(address)
+        return True
+    except:
+        return False
+
+
+def validate_login(data: dict[str, str]) -> bool:
+    try:
+        address = data["address"]
+        publickey.PublicKey(address)
+        signed_nonce = data["signedNonce"]
+        if not isinstance(signed_nonce, str):
+            return False
+        return True
+    except:
+        return False
+
+
+def make_json_response(success: bool, result: any) -> any:
+    return jsonify({"success": success, "result": result})
