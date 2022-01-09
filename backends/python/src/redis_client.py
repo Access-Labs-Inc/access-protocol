@@ -1,6 +1,6 @@
 import redis
 
-EXPIRE_TIME: int = 10 * 60  # in seconds
+from utils import REDIS_EXPIRE_TIME
 
 NONCE_PREFIX = "nonce:"
 
@@ -9,7 +9,7 @@ redis_client: redis.Redis = redis.Redis(
 
 
 def redis_set_nonce(nonce: str, user_address: str):
-    redis_client.set(NONCE_PREFIX + user_address, nonce, ex=EXPIRE_TIME)
+    redis_client.set(NONCE_PREFIX + user_address, nonce, ex=REDIS_EXPIRE_TIME)
 
 
 def redis_get_nonce(user_address: str):

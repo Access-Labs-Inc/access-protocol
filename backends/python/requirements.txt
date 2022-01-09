@@ -6,3 +6,4 @@ base58==2.1.1
 pyjwt==2.3.0
 flask-cors==3.0.10
 python-dotenv==0.19.2
+Flask-JWT-Extended==4.3.1

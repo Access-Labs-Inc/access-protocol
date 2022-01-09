@@ -1,18 +1,21 @@
-from datetime import timezone, datetime, timedelta
-import jwt
-import time
-import base58
-from nacl.encoding import Base64Encoder, HexEncoder, URLSafeBase64Encoder
-from nacl.signing import VerifyKey
-import secrets
 import os
-from solana import publickey
-from dotenv import load_dotenv
+import secrets
+from datetime import datetime, timedelta, timezone
+from typing import Dict
+
+import jwt
 from flask import jsonify
+
+import base58
+from dotenv import load_dotenv
+from nacl.signing import VerifyKey
+from solana import publickey
 
 load_dotenv()
 
 ACCESS_TOKEN_SECRET = os.getenv("ACCESS_TOKEN_SECRET")
+REDIS_EXPIRE_TIME = int(os.getenv("REDIS_EXPIRE_TIME"))
+JWT_EXPIRE = int(os.getenv("JWT_EXPIRE"))
 
 
 def generate_nonce() -> str:
@@ -33,23 +36,16 @@ def verify_stake() -> bool:
     return True  # TODO
 
 
-# JWT
-JWT_EXPIRATION_INTERVAL: int = 24 * 60 * 60
-
-
 def encode_jwt(address: str) -> bytes:
+    now = datetime.now(timezone.utc)
+    exp_timestamp = datetime.timestamp(now + timedelta(hours=JWT_EXPIRE))
     return jwt.encode(
         {
-            "some": address,
-            "iat": time.time()
+            "address": address,
+            "exp": int(exp_timestamp)
         },
         ACCESS_TOKEN_SECRET,
     )
-
-
-def validate_jwt(token: str) -> bool:
-    expiry_date = jwt.decode(token, ACCESS_TOKEN_SECRET)["exp"]
-    return expiry_date > datetime.now(tz=timezone.utc)
 
 
 def validate_pubkey(address: str) -> bool:
@@ -60,7 +56,7 @@ def validate_pubkey(address: str) -> bool:
         return False
 
 
-def validate_login(data: dict[str, str]) -> bool:
+def validate_login(data: Dict[str, str]) -> bool:
     try:
         address = data["address"]
         publickey.PublicKey(address)
@@ -72,5 +68,5 @@ def validate_login(data: dict[str, str]) -> bool:
         return False
 
 
-def make_json_response(success: bool, result: any) -> any:
-    return jsonify({"success": success, "result": result})
+def json_response(success: bool, result: any, status_code: int) -> any:
+    return jsonify({"success": success, "result": result}), status_code
