@@ -1,16 +1,18 @@
+mod errors;
 mod routes;
 mod structs;
 mod utils;
+
 use actix_cors::Cors;
 use std::sync::Arc;
 
-use actix_web::{get, http, middleware, web, App, HttpServer, Responder};
-use routes::auth;
+use actix_web::{get, middleware, web, App, HttpServer, Responder};
+use routes::{article, auth};
 use structs::app_data::AppData;
 
 #[get("/")]
 async fn home() -> impl Responder {
-    format!("Hello")
+    "Home page"
 }
 
 #[actix_web::main]
@@ -26,6 +28,7 @@ async fn main() -> std::io::Result<()> {
             .service(home)
             .service(auth::handle_get_nonce)
             .service(auth::handle_login)
+            .service(article::handle_get_article)
     })
     .bind("localhost:3001")?
     .run()

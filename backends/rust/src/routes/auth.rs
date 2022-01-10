@@ -10,7 +10,9 @@ use nacl::sign::verify;
 use solana_program::pubkey::Pubkey;
 use std::str::FromStr;
 
+use crate::errors::AccessError;
 use crate::utils::{
+    jwt::create_jwt,
     pubkey::is_valid_pubkey,
     request::{deserialize_body, load_body},
 };
@@ -35,17 +37,23 @@ pub async fn handle_get_nonce(
 ) -> Result<HttpResponse, Error> {
     let nonce = generate_nonce();
 
-    let NonceRequest { address } = deserialize_body::<NonceRequest>(&load_body(payload).await);
+    let NonceRequest { address } = deserialize_body::<NonceRequest>(&load_body(payload).await?);
 
     let is_valid_body = is_valid_pubkey(address.as_str());
 
-    println!("Valid pubkey {}", is_valid_body);
+    if !is_valid_body {
+        return Err(AccessError::BadClientData.into());
+    }
 
     // Add nonce to Redis cache
-    let mut connection = data.redis_client.get_connection().unwrap();
+    let mut connection = data
+        .redis_client
+        .get_connection()
+        .map_err(|_| AccessError::InternalError)?;
+
     let _: () = connection
         .set(format!("nonce:{}", &address), &nonce)
-        .unwrap();
+        .map_err(|_| AccessError::InternalError)?;
 
     let result = NonceResponse { nonce };
     Ok(HttpResponse::Ok().json(ApiResponse::new(true, result)))
@@ -71,20 +79,32 @@ pub async fn handle_login(
     let LoginRequest {
         address,
         signed_nonce,
-    } = deserialize_body::<LoginRequest>(&load_body(payload).await);
+    } = deserialize_body::<LoginRequest>(&load_body(payload).await?);
 
-    let mut connection = data.redis_client.get_connection().unwrap();
-    let nonce: String = connection.get(format!("nonce:{}", &address)).unwrap();
+    let mut connection = data
+        .redis_client
+        .get_connection()
+        .map_err(|_| AccessError::InternalError)?;
 
-    let is_valid_nonce = verify(
-        hex::decode(signed_nonce).unwrap().as_slice(),
+    let nonce: String = connection
+        .get(format!("nonce:{}", &address))
+        .map_err(|_| AccessError::InvalidNonce)?;
+
+    verify(
+        hex::decode(signed_nonce)
+            .map_err(|_| AccessError::InvalidSignedNonce)?
+            .as_slice(),
         nonce.as_bytes(),
-        &Pubkey::from_str(&address).unwrap().to_bytes(),
+        &Pubkey::from_str(&address)
+            .map_err(|_| AccessError::InvalidPubkey)?
+            .to_bytes(),
     )
-    .unwrap();
+    .map_err(|_| AccessError::InvalidNonce)?;
 
-    println!("is_valid_nonce {}", is_valid_nonce);
+    // TODO check staked amount
 
-    let result = "";
-    Ok(HttpResponse::Ok().json(ApiResponse::new(true, result)))
+    // Create JWT
+    let jwt = create_jwt(address)?;
+
+    Ok(HttpResponse::Ok().json(ApiResponse::new(true, LoginResponse { token: jwt })))
 }

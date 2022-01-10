@@ -1,14 +1,15 @@
+use crate::errors::AccessError;
 use actix_web::web::{BytesMut, Payload};
 use futures::StreamExt;
 use serde::Deserialize;
 
 const MAX_SIZE: usize = 262_144; // max payload size is 256k
 
-pub async fn load_body(mut payload: Payload) -> BytesMut {
+pub async fn load_body(mut payload: Payload) -> Result<BytesMut, AccessError> {
     // payload is a stream of Bytes objects
     let mut body = BytesMut::new();
     while let Some(chunk) = payload.next().await {
-        let chunk = chunk.unwrap();
+        let chunk = chunk.map_err(|_| AccessError::InternalError)?;
         // limit max size of in-memory payload
         if (body.len() + chunk.len()) > MAX_SIZE {
             // return Err(error::ErrorBadRequest("overflow"));
@@ -16,9 +17,9 @@ pub async fn load_body(mut payload: Payload) -> BytesMut {
         }
         body.extend_from_slice(&chunk);
     }
-    body
+    Ok(body)
 }
 
 pub fn deserialize_body<'a, T: Deserialize<'a>>(bytes: &'a BytesMut) -> T {
-    serde_json::from_slice::<T>(&bytes).unwrap()
+    serde_json::from_slice::<T>(bytes).unwrap()
 }
