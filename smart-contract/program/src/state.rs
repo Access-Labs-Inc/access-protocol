@@ -113,6 +113,15 @@ impl<'a> StakePool<'a> {
         ];
         Pubkey::create_program_address(seeds, program_id).unwrap()
     }
+
+    pub fn find_key(owner: &Pubkey, destination: &Pubkey, program_id: &Pubkey) -> (Pubkey, u8) {
+        let seeds: &[&[u8]] = &[
+            StakePoolHeader::SEED.as_bytes(),
+            &owner.to_bytes(),
+            &destination.to_bytes(),
+        ];
+        Pubkey::find_program_address(seeds, program_id)
+    }
 }
 
 impl StakePoolHeader {
@@ -222,6 +231,15 @@ impl StakeAccount {
             &[*nonce],
         ];
         Pubkey::create_program_address(seeds, program_id).unwrap()
+    }
+
+    pub fn find_key(owner: &Pubkey, stake_pool: &Pubkey, program_id: &Pubkey) -> (Pubkey, u8) {
+        let seeds: &[&[u8]] = &[
+            StakeAccount::SEED.as_bytes(),
+            &owner.to_bytes(),
+            &stake_pool.to_bytes(),
+        ];
+        Pubkey::find_program_address(seeds, program_id)
     }
 
     pub fn save(&self, mut dst: &mut [u8]) {

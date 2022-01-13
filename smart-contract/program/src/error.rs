@@ -67,6 +67,8 @@ pub enum AccessError {
     NotEnoughSellers,
     #[error("The bond buyer must sign")]
     BuyerMustSign,
+    #[error("Wrong quote token destination")]
+    WrongQuoteDestination,
 }
 
 impl From<AccessError> for ProgramError {

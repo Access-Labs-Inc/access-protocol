@@ -17,10 +17,6 @@ use crate::state::StakeAccount;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 pub struct Params {
-    // The PDA nonce
-    pub nonce: u8,
-    // Owner of the stake account
-    pub owner: Pubkey,
     // Stake pool
     pub stake_pool: Pubkey,
 }
@@ -64,13 +60,10 @@ pub fn process_close_stake_account(
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let Params {
-        nonce,
-        owner,
-        stake_pool,
-    } = params;
+    let Params { stake_pool } = params;
 
-    let derived_stake_key = StakeAccount::create_key(&nonce, &owner, &stake_pool, program_id);
+    let (derived_stake_key, _) =
+        StakeAccount::find_key(&accounts.owner.key, &stake_pool, program_id);
 
     check_account_key(
         accounts.stake_account,

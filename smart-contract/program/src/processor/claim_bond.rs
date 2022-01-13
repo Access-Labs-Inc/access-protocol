@@ -13,7 +13,7 @@ use crate::error::AccessError;
 use crate::state::{BondAccount, BOND_SIGNER_THRESHOLD};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
-use crate::utils::{assert_bond_derivation, check_account_owner, check_signer};
+use crate::utils::{assert_bond_derivation, check_account_key, check_account_owner, check_signer};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 pub struct Params {}
@@ -79,6 +79,12 @@ pub fn process_claim_bond(
         accounts.buyer.key,
         bond.total_amount_sold,
         program_id,
+    )?;
+
+    check_account_key(
+        accounts.quote_token_destination,
+        &bond.seller_token_account,
+        AccessError::WrongQuoteDestination,
     )?;
 
     if bond.sellers.len() < BOND_SIGNER_THRESHOLD as usize {

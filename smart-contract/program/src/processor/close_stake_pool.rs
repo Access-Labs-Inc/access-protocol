@@ -17,8 +17,6 @@ use crate::state::StakePool;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 pub struct Params {
-    // The PDA nonce
-    pub nonce: u8,
     // Destination of the rewards
     pub destination: Pubkey,
 }
@@ -68,10 +66,10 @@ pub fn process_close_stake_pool(
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let Params { nonce, destination } = params;
+    let Params { destination } = params;
 
-    let derived_stake_pool_key =
-        StakePool::create_key(&nonce, accounts.owner.key, &destination, program_id);
+    let (derived_stake_pool_key, _) =
+        StakePool::find_key(accounts.owner.key, &destination, program_id);
 
     check_account_key(
         accounts.stake_pool_account,

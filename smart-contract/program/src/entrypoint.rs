@@ -122,6 +122,9 @@ impl PrintProgramError for AccessError {
             AccessError::BuyerMustSign => {
                 msg!("Error: The bond buyer must sign")
             }
+            AccessError::WrongQuoteDestination => {
+                msg!("Error: Wrong quote token destination")
+            }
         }
     }
 }
