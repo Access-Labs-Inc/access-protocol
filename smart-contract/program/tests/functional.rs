@@ -156,7 +156,7 @@ async fn test_staking() {
         create_bond::Params {
             buyer: staker.pubkey(),
             total_amount_sold: bond_amount,
-            seller_token_account: Pubkey::default(),
+            seller_token_account: stake_pool_owner_token_acc,
             total_quote_amount: 0,
             quote_mint: Pubkey::default(),
             unlock_period: 1,
@@ -431,8 +431,6 @@ async fn test_staking() {
             owner: &staker.pubkey(),
         },
         close_stake_account::Params {
-            nonce: stake_nonce,
-            owner: staker.pubkey(),
             stake_pool: stake_pool_key,
         },
     );
@@ -456,7 +454,6 @@ async fn test_staking() {
             owner: &stake_pool_owner.pubkey(),
         },
         close_stake_pool::Params {
-            nonce: stake_pool_nonce,
             destination: stake_pool_owner_token_acc,
         },
     );
