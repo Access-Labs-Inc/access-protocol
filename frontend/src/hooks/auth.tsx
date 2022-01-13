@@ -3,7 +3,7 @@ import axios from "axios";
 import { useWallet } from "@solana/wallet-adapter-react";
 import tuple from "immutable-tuple";
 
-export const BACKEND_URL = process.env.REACT_APP_BACKEND;
+export const BACKEND_URL = process.env.REACT_APP_BACKEND + "/";
 
 export interface NonceResult {
   nonce: string;
@@ -20,7 +20,7 @@ export const useNonce = () => {
   const fn = async () => {
     if (!connected || !publicKey) return;
     const response = (
-      await axios.post(BACKEND_URL + "/auth/nonce", {
+      await axios.post(BACKEND_URL + "auth/nonce", {
         address: publicKey.toBase58(),
       })
     ).data as NonceResponse;
