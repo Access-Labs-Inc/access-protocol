@@ -62,7 +62,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             accounts.state_account,
             &system_program::ID,
             AccessError::WrongOwner,
-        )?;
+        )?; // Not sure if necessary? Euqivalent to is_empty check?
 
         Ok(accounts)
     }

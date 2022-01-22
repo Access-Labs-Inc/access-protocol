@@ -65,6 +65,8 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             AccessError::WrongOwner,
         )?;
 
+        //TODO (stake pool owner == pgr id) is not checked?
+
         Ok(accounts)
     }
 }

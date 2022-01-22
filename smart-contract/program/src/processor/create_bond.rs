@@ -27,7 +27,7 @@ pub struct Params {
     pub unlock_period: i64,
     pub unlock_amount: u64,
     pub last_unlock_time: i64,
-    pub stake_pool: Pubkey,
+    pub stake_pool: Pubkey, // Is redundant with stake_pool account given as input
     pub seller_index: u64,
 }
 
@@ -48,6 +48,7 @@ pub struct Accounts<'a, T> {
     pub system_program: &'a T,
 
     /// The fee account
+    /// TODO needs to sign and be writable
     pub fee_payer: &'a T,
 }
 
@@ -74,6 +75,8 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
         // Check signer
         check_signer(accounts.seller, AccessError::BondSellerMustSign)?;
+
+        //TODO (stake pool owner == pgr id) is not checked?
 
         Ok(accounts)
     }
