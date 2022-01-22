@@ -68,6 +68,7 @@ pub fn process_close_stake_pool(
 
     let Params { destination } = params;
 
+    // Derivation check doesn't seem necessary? If  stake_pool_acc is program owned and has correct account tag and owner written in state?
     let (derived_stake_pool_key, _) =
         StakePool::find_key(accounts.owner.key, &destination, program_id);
 
@@ -88,6 +89,8 @@ pub fn process_close_stake_pool(
     assert_empty_stake_pool(&stake_pool)?;
 
     stake_pool.header.close();
+
+    //TODO Not actually deleting the account?
 
     Ok(())
 }

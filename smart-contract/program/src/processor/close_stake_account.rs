@@ -62,6 +62,7 @@ pub fn process_close_stake_account(
 
     let Params { stake_pool } = params;
 
+    // Derivation check doesn't seem necessary? If  stake_acc is program owned and has correct account tag and owner written in state?
     let (derived_stake_key, _) =
         StakeAccount::find_key(&accounts.owner.key, &stake_pool, program_id);
 

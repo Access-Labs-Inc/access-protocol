@@ -33,7 +33,7 @@ pub struct Accounts<'a, T> {
     pub stake_account: &'a T,
 
     /// The owner of the stake account
-    #[cons(writable, signer)]
+    #[cons(writable, signer)] // TODO Doesnt need to be writable
     pub owner: &'a T,
 
     /// The rewards destination
@@ -89,9 +89,9 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             accounts.rewards_destination,
             &spl_token::ID,
             AccessError::WrongOwner,
-        )?;
+        )?; // Not strictly necessary
         check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
-        check_account_owner(accounts.mint, &spl_token::ID, AccessError::WrongOwner)?;
+        check_account_owner(accounts.mint, &spl_token::ID, AccessError::WrongOwner)?; // Not strictly necessary
 
         // Check signer
         check_signer(accounts.owner, AccessError::StakePoolOwnerMustSign)?;
@@ -116,6 +116,8 @@ pub fn process_claim_rewards(
     let mint = Mint::unpack_from_slice(&accounts.mint.data.borrow_mut())?;
 
     // Safety checks
+    // Shouldn't stake_pool.header.rewards_destination==accounts.rewards_destination be checked? Maybe not bc owner signs, then why store the value in header?
+    // Same question for claim_bond_rewards.rs, claim_pool_rewards.rs
     check_account_key(
         accounts.stake_pool,
         &stake_account.stake_pool,

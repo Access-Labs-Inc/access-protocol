@@ -29,7 +29,7 @@ pub struct Accounts<'a, T> {
     pub stake_pool: &'a T,
 
     /// The stake pool owner account
-    #[cons(writable, signer)]
+    #[cons(writable, signer)] //TODO does not need to be writable
     pub owner: &'a T,
 
     /// The rewards destination
@@ -79,12 +79,14 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             accounts.rewards_destination,
             &spl_token::ID,
             AccessError::WrongOwner,
-        )?;
+        )?; // Not strictly necessary, done by spl token
         check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
-        check_account_owner(accounts.mint, &spl_token::ID, AccessError::WrongOwner)?;
+        check_account_owner(accounts.mint, &spl_token::ID, AccessError::WrongOwner)?; // Not strictly necessary, done by spl token
 
         // Check signer
         check_signer(accounts.owner, AccessError::StakePoolOwnerMustSign)?;
+
+        // Spl token pgr id not explicitely checked
 
         Ok(accounts)
     }

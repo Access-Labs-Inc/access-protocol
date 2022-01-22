@@ -25,7 +25,7 @@ pub struct Accounts<'a, T> {
     pub bond_account: &'a T,
 
     /// The account of the bond buyer
-    #[cons(writable, signer)]
+    #[cons(writable, signer)] //TODO does not need to be writable
     pub buyer: &'a T,
 
     /// The token account used to purchase the bond
@@ -55,6 +55,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         };
 
         // Check keys
+        // Spl token id check is implicit
 
         // Check ownership
         check_account_owner(accounts.bond_account, program_id, AccessError::WrongOwner)?;
