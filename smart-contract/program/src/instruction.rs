@@ -1,3 +1,4 @@
+use crate::processor::admin_mint;
 pub use crate::processor::{
     change_inflation, change_pool_minimum, claim_bond, claim_bond_rewards, claim_pool_rewards,
     claim_rewards, close_stake_account, close_stake_pool, crank, create_bond, create_central_state,
@@ -166,6 +167,16 @@ pub enum MediaInstruction {
     /// | 0     | ✅        | ❌      | The stake pool account |
     /// | 1     | ❌        | ✅      | The bond account       |
     ChangePoolMinimum,
+    /// Mint ACCESS tokens as an admin
+    ///
+    /// | Index | Writable | Signer | Description                      |
+    /// | ------------------------------------------------------------ |
+    /// | 0     | ❌        | ✅      | The central state authority account |
+    /// | 1     | ✅        | ❌      | The ACCESS mint token               |
+    /// | 2     | ✅        | ❌      | The ACCESS token destination        |
+    /// | 3     | ❌        | ❌      | The account of the central state    |
+    /// | 4     | ❌        | ❌      | The SPL token program account       |
+    AdminMint,
 }
 pub fn create_central_state(
     program_id: Pubkey,
@@ -301,4 +312,11 @@ pub fn change_pool_minimum(
         MediaInstruction::ChangePoolMinimum as u8,
         params,
     )
+}
+pub fn admin_mint(
+    program_id: Pubkey,
+    accounts: admin_mint::Accounts<Pubkey>,
+    params: admin_mint::Params,
+) -> Instruction {
+    accounts.get_instruction(program_id, MediaInstruction::AdminMint as u8, params)
 }
