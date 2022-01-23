@@ -99,27 +99,17 @@ impl<'a> StakePool<'a> {
         self.header.current_day_idx += 1;
     }
 
-    pub fn create_key(
-        nonce: &u8,
-        owner: &Pubkey,
-        destination: &Pubkey,
-        program_id: &Pubkey,
-    ) -> Pubkey {
+    pub fn create_key(nonce: &u8, owner: &Pubkey, program_id: &Pubkey) -> Pubkey {
         let seeds: &[&[u8]] = &[
             StakePoolHeader::SEED.as_bytes(),
             &owner.to_bytes(),
-            &destination.to_bytes(),
             &[*nonce],
         ];
         Pubkey::create_program_address(seeds, program_id).unwrap()
     }
 
-    pub fn find_key(owner: &Pubkey, destination: &Pubkey, program_id: &Pubkey) -> (Pubkey, u8) {
-        let seeds: &[&[u8]] = &[
-            StakePoolHeader::SEED.as_bytes(),
-            &owner.to_bytes(),
-            &destination.to_bytes(),
-        ];
+    pub fn find_key(owner: &Pubkey, program_id: &Pubkey) -> (Pubkey, u8) {
+        let seeds: &[&[u8]] = &[StakePoolHeader::SEED.as_bytes(), &owner.to_bytes()];
         Pubkey::find_program_address(seeds, program_id)
     }
 }

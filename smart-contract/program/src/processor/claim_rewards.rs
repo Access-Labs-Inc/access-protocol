@@ -115,9 +115,6 @@ pub fn process_claim_rewards(
 
     let mint = Mint::unpack_from_slice(&accounts.mint.data.borrow_mut())?;
 
-    // Safety checks
-    // Shouldn't stake_pool.header.rewards_destination==accounts.rewards_destination be checked? Maybe not bc owner signs, then why store the value in header?
-    // Same question for claim_bond_rewards.rs, claim_pool_rewards.rs
     check_account_key(
         accounts.stake_pool,
         &stake_account.stake_pool,

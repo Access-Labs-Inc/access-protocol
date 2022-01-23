@@ -100,7 +100,6 @@ async fn test_staking() {
         &[
             "stake_pool".as_bytes(),
             &stake_pool_owner.pubkey().to_bytes(),
-            &stake_pool_owner_token_acc.to_bytes(),
         ],
         &program_id,
     );
@@ -163,7 +162,6 @@ async fn test_staking() {
             unlock_amount: bond_amount,
             unlock_start_date: 0,
             last_unlock_time: 1,
-            stake_pool: stake_pool_key,
             seller_index: 0,
         },
     );
@@ -430,9 +428,7 @@ async fn test_staking() {
             stake_account: &stake_acc_key,
             owner: &staker.pubkey(),
         },
-        close_stake_account::Params {
-            stake_pool: stake_pool_key,
-        },
+        close_stake_account::Params {},
     );
 
     sign_send_instructions(
@@ -453,9 +449,7 @@ async fn test_staking() {
             stake_pool_account: &stake_pool_key,
             owner: &stake_pool_owner.pubkey(),
         },
-        close_stake_pool::Params {
-            destination: stake_pool_owner_token_acc,
-        },
+        close_stake_pool::Params {},
     );
 
     sign_send_instructions(

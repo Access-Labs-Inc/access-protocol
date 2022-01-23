@@ -85,12 +85,7 @@ pub fn process_create_stake_pool(
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts)?;
 
-    let derived_stake_key = StakePool::create_key(
-        &params.nonce,
-        &params.owner,
-        &params.destination,
-        program_id,
-    );
+    let derived_stake_key = StakePool::create_key(&params.nonce, &params.owner, program_id);
 
     check_account_key(
         accounts.stake_pool_account,
@@ -116,7 +111,6 @@ pub fn process_create_stake_pool(
         &[
             params.name.as_bytes(),
             &params.owner.to_bytes(),
-            &params.destination.to_bytes(),
             &[params.nonce],
         ],
         stake_pool_header.borsh_len() + 16 * STAKE_BUFFER_LEN as usize,
