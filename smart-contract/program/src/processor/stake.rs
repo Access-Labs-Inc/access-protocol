@@ -34,7 +34,7 @@ pub struct Accounts<'a, T> {
     pub stake_pool: &'a T,
 
     /// The owner of the stake account
-    #[cons(writable, signer)] //TODO rm writable
+    #[cons(signer)]
     pub owner: &'a T,
 
     /// The source account of the stake tokens
@@ -43,9 +43,9 @@ pub struct Accounts<'a, T> {
 
     /// The SPL token program account
     pub spl_token_program: &'a T,
-    #[cons(writable)] //TODO move
 
     /// The stake pool vault account
+    #[cons(writable)]
     pub vault: &'a T,
 }
 
@@ -86,12 +86,12 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             accounts.source_token,
             &spl_token::ID,
             AccessError::WrongTokenAccountOwner,
-        )?; // Not strictly necessary, done by spl token
+        )?;
         check_account_owner(
             accounts.vault,
             &spl_token::ID,
             AccessError::WrongTokenAccountOwner,
-        )?; // Not strictly necessary, done by spl token
+        )?;
 
         // Check signer
         check_signer(accounts.owner, AccessError::StakeAccountOwnerMustSign)?;
@@ -150,8 +150,10 @@ pub fn process_stake(
         .stake_amount
         .checked_add(amount)
         .ok_or(AccessError::Overflow)?
-        < stake_account.pool_minimum_at_creation
-    // or min(stake_account.min, stake_pool.min)? //TODO I agree
+        < std::cmp::min(
+            stake_account.pool_minimum_at_creation,
+            stake_pool.header.minimum_stake_amount,
+        )
     {
         msg!(
             "The minimum stake amount must be > {}",

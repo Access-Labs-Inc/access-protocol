@@ -42,7 +42,10 @@ pub struct Accounts<'a, T> {
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
-    pub fn parse(accounts: &'a [AccountInfo<'b>]) -> Result<Self, ProgramError> {
+    pub fn parse(
+        accounts: &'a [AccountInfo<'b>],
+        program_id: &Pubkey,
+    ) -> Result<Self, ProgramError> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
             stake_account: next_account_info(accounts_iter)?,
@@ -64,8 +67,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             &system_program::ID,
             AccessError::WrongOwner,
         )?;
-
-        //TODO (stake pool owner == pgr id) is not checked?
+        check_account_owner(accounts.stake_pool, program_id, AccessError::WrongOwner)?;
 
         Ok(accounts)
     }
@@ -76,7 +78,7 @@ pub fn process_create_stake_account(
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
-    let accounts = Accounts::parse(accounts)?;
+    let accounts = Accounts::parse(accounts, program_id)?;
 
     let stake_pool = StakePool::get_checked(accounts.stake_pool)?;
 

@@ -36,7 +36,7 @@ pub struct Accounts<'a, T> {
     pub stake_pool: &'a T,
 
     /// The owner of the stake account
-    #[cons(writable, signer)] //TODO rm writable
+    #[cons(signer)]
     pub owner: &'a T,
 
     /// The destination of the staked tokens
@@ -88,12 +88,12 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             accounts.destination_token,
             &spl_token::ID,
             AccessError::WrongTokenAccountOwner,
-        )?; // Not strictly necessary, done by spl token
+        )?;
         check_account_owner(
             accounts.vault,
             &spl_token::ID,
             AccessError::WrongTokenAccountOwner,
-        )?; // Not strictly necessary, done by spl token
+        )?;
 
         // Check signer
         check_signer(accounts.owner, AccessError::StakeAccountOwnerMustSign)?;

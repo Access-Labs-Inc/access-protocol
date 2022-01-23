@@ -13,8 +13,6 @@ use bonfida_utils::{BorshSize, InstructionsAccount};
 use crate::error::AccessError;
 use crate::state::StakePool;
 
-// TODO add admin close
-
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 pub struct Params {
     // Destination of the rewards
@@ -68,16 +66,6 @@ pub fn process_close_stake_pool(
 
     let Params { destination } = params;
 
-    // Derivation check doesn't seem necessary? If  stake_pool_acc is program owned and has correct account tag and owner written in state?
-    let (derived_stake_pool_key, _) =
-        StakePool::find_key(accounts.owner.key, &destination, program_id);
-
-    check_account_key(
-        accounts.stake_pool_account,
-        &derived_stake_pool_key,
-        AccessError::AccountNotDeterministic,
-    )?;
-
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool_account).unwrap();
 
     check_account_key(
@@ -90,7 +78,11 @@ pub fn process_close_stake_pool(
 
     stake_pool.header.close();
 
-    //TODO Not actually deleting the account?
+    let mut stake_pool_lamports = accounts.stake_pool_account.lamports.borrow_mut();
+    let mut owner_lamports = accounts.owner.lamports.borrow_mut();
+
+    **owner_lamports += **stake_pool_lamports;
+    **stake_pool_lamports = 0;
 
     Ok(())
 }

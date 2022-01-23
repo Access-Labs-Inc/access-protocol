@@ -21,7 +21,7 @@ pub struct Params {
 
 #[derive(InstructionsAccount)]
 pub struct Accounts<'a, T> {
-    #[cons(writable, signer)] //TODO remove writable
+    #[cons(signer)] //TODO remove writable
     seller: &'a T,
     #[cons(writable)]
     bond_account: &'a T,

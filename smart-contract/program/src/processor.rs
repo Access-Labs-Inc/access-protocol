@@ -99,9 +99,7 @@ impl Processor {
             }
             MediaInstruction::CloseStakeAccount => {
                 msg!("Instruction: Close stake account");
-                let params = close_stake_account::Params::try_from_slice(instruction_data)
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
-                close_stake_account::process_close_stake_account(program_id, accounts, params)?;
+                close_stake_account::process_close_stake_account(program_id, accounts)?;
             }
             MediaInstruction::ChangeInflation => {
                 msg!("Instruction: Change inflation rate");

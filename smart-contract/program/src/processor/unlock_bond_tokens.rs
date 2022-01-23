@@ -27,7 +27,7 @@ pub struct Accounts<'a, T> {
     pub bond_account: &'a T,
 
     /// The account of the bond owner
-    #[cons(writable, signer)] //TODO rm writable
+    #[cons(signer)]
     pub bond_owner: &'a T,
 
     /// The ACCESS mint token

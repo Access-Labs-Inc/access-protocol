@@ -10,7 +10,7 @@ use solana_program::{instruction::Instruction, pubkey::Pubkey};
 #[derive(BorshDeserialize, BorshSerialize, FromPrimitive)]
 pub enum MediaInstruction {
     /// Create central state
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                  |
     /// | -------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake account            |
@@ -19,7 +19,7 @@ pub enum MediaInstruction {
     /// | 3     | ❌        | ❌      | The mint of the ACCESS token |
     CreateCentralState,
     /// Create stake pool
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                  |
     /// | -------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake pool account       |
@@ -28,7 +28,7 @@ pub enum MediaInstruction {
     /// | 3     | ❌        | ❌      | The stake pool vault account |
     CreateStakePool,
     /// Create stake account
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                |
     /// | ------------------------------------------------------ |
     /// | 0     | ✅        | ❌      | The stake account          |
@@ -37,133 +37,134 @@ pub enum MediaInstruction {
     /// | 3     | ✅        | ✅      | The fee payer account      |
     CreateStakeAccount,
     /// Stake
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                            |
     /// | ------------------------------------------------------------------ |
     /// | 0     | ✅        | ❌      | The stake account                      |
     /// | 1     | ✅        | ❌      | The stake pool account                 |
-    /// | 2     | ✅        | ✅      | The owner of the stake account         |
+    /// | 2     | ❌        | ✅      | The owner of the stake account         |
     /// | 3     | ✅        | ❌      | The source account of the stake tokens |
     /// | 4     | ❌        | ❌      | The SPL token program account          |
     /// | 5     | ✅        | ❌      | The stake pool vault account           |
     Stake,
     /// Unstake
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake account                    |
     /// | 1     | ✅        | ❌      | The stake pool account               |
-    /// | 2     | ✅        | ✅      | The owner of the stake account       |
+    /// | 2     | ❌        | ✅      | The owner of the stake account       |
     /// | 3     | ✅        | ❌      | The destination of the staked tokens |
     /// | 4     | ❌        | ❌      | The SPL token program account        |
     /// | 5     | ✅        | ❌      | The stake pool vault                 |
     Unstake,
     /// Claim rewards of a stake pool
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake pool account               |
-    /// | 1     | ✅        | ✅      | The stake pool owner account         |
+    /// | 1     | ❌        | ✅      | The stake pool owner account         |
     /// | 2     | ✅        | ❌      | The rewards destination              |
     /// | 3     | ❌        | ❌      | The central state account            |
     /// | 4     | ✅        | ❌      | The mint address of the ACCESS token |
     /// | 5     | ❌        | ❌      | The SPL token program account        |
     ClaimPoolRewards,
     /// Claim rewards of a stake account
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake pool account               |
     /// | 1     | ✅        | ❌      | The stake account                    |
-    /// | 2     | ✅        | ✅      | The owner of the stake account       |
+    /// | 2     | ❌        | ✅      | The owner of the stake account       |
     /// | 3     | ✅        | ❌      | The rewards destination              |
     /// | 4     | ❌        | ❌      | The central state account            |
     /// | 5     | ✅        | ❌      | The mint address of the ACCESS token |
     /// | 6     | ❌        | ❌      | The SPL token program account        |
     ClaimRewards,
     /// Permissionless crank to update the stake pool rewards
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                      |
     /// | ------------------------------------------------------------ |
     /// | 0     | ✅        | ❌      | The stake pool account           |
     /// | 1     | ❌        | ❌      | The account of the central state |
     Crank,
     /// Close a stake pool
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                   |
     /// | --------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The account of the stake pool |
     /// | 1     | ✅        | ✅      | The owner of the stake pool   |
     CloseStakePool,
     /// Close a stake account
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                    |
     /// | ---------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake account              |
     /// | 1     | ✅        | ✅      | The owner of the stake account |
     CloseStakeAccount,
     /// Change central state inflation
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                                |
     /// | ---------------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The account of the central state           |
     /// | 1     | ❌        | ✅      | The account of the central state authority |
     ChangeInflation,
     /// Create a bond
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                |
     /// | ------------------------------------------------------ |
     /// | 0     | ✅        | ✅      | The bond seller account    |
     /// | 1     | ✅        | ❌      | The bond account           |
-    /// | 2     | ❌        | ❌      | The system program account |
-    /// | 3     | ❌        | ❌      | The fee account            |
+    /// | 2     | ❌        | ❌      |                            |
+    /// | 3     | ❌        | ❌      | The system program account |
+    /// | 4     | ❌        | ❌      | The fee account            |
     CreateBond,
     /// Sign a bond
-    ///
+    /// 
     /// | Index | Writable | Signer | Description |
     /// | --------------------------------------- |
-    /// | 0     | ✅        | ✅      |             |
+    /// | 0     | ❌        | ✅      |             |
     /// | 1     | ✅        | ❌      |             |
     SignBond,
     /// Unlock ACCESS tokens bought through a bond account
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                      |
     /// | ------------------------------------------------------------ |
     /// | 0     | ✅        | ❌      | The bond account                 |
-    /// | 1     | ✅        | ✅      | The account of the bond owner    |
+    /// | 1     | ❌        | ✅      | The account of the bond owner    |
     /// | 2     | ✅        | ❌      | The ACCESS mint token            |
     /// | 3     | ✅        | ❌      | The ACCESS token destination     |
     /// | 4     | ❌        | ❌      | The account of the central state |
     /// | 5     | ❌        | ❌      | The SPL token program account    |
     UnlockBondTokens,
     /// Claim a bond after it has been issued and signed
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                                      |
     /// | ---------------------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The bond account                                 |
-    /// | 1     | ✅        | ✅      | The account of the bond buyer                    |
+    /// | 1     | ❌        | ✅      | The account of the bond buyer                    |
     /// | 2     | ✅        | ❌      | The token account used to purchase the bond      |
     /// | 3     | ✅        | ❌      | The token account where the sell proceed is sent |
     /// | 4     | ❌        | ❌      | The SPL token program account                    |
     ClaimBond,
     /// Claim bond rewards
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake pool account               |
     /// | 1     | ✅        | ❌      | The bond account                     |
-    /// | 2     | ✅        | ✅      | The bond account owner               |
+    /// | 2     | ❌        | ✅      | The bond account owner               |
     /// | 3     | ✅        | ❌      | The rewards destination              |
     /// | 4     | ❌        | ❌      | The central state account            |
     /// | 5     | ✅        | ❌      | The mint address of the ACCESS token |
     /// | 6     | ❌        | ❌      | The SPL token program account        |
     ClaimBondRewards,
     /// Change the minimum stakeable amount of a pool
-    ///
+    /// 
     /// | Index | Writable | Signer | Description            |
     /// | -------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake pool account |
-    /// | 1     | ✅        | ✅      | The bond account       |
+    /// | 1     | ❌        | ✅      | The bond account       |
     ChangePoolMinimum,
 }
 pub fn create_central_state(

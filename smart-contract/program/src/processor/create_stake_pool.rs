@@ -72,8 +72,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             &system_program::ID,
             AccessError::WrongOwner,
         )?;
-
-        //TODO (vault owner == spl token id) not checked, unsure of consequences
+        check_account_owner(accounts.vault, &spl_token::ID, AccessError::WrongOwner)?;
 
         Ok(accounts)
     }

@@ -25,7 +25,7 @@ pub struct Accounts<'a, T> {
     pub stake_pool: &'a T,
 
     /// The bond account
-    #[cons(writable, signer)] //TODO remove writable
+    #[cons(signer)]
     pub stake_pool_owner: &'a T,
 }
 
