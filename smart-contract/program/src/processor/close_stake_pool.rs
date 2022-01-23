@@ -14,10 +14,7 @@ use crate::error::AccessError;
 use crate::state::StakePool;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
-pub struct Params {
-    // Destination of the rewards
-    pub destination: Pubkey,
-}
+pub struct Params {}
 
 #[derive(InstructionsAccount)]
 pub struct Accounts<'a, T> {
@@ -60,11 +57,9 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 pub fn process_close_stake_pool(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
-    params: Params,
+    _params: Params,
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
-
-    let Params { destination } = params;
 
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool_account).unwrap();
 

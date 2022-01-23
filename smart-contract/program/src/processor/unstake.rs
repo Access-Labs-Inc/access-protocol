@@ -140,7 +140,6 @@ pub fn process_unstake(
     let signer_seeds: &[&[u8]] = &[
         StakePoolHeader::SEED.as_bytes(),
         &stake_pool.header.owner.clone(),
-        &stake_pool.header.rewards_destination.clone(),
         &[stake_pool.header.nonce],
     ];
     let transfer_instruction = transfer(
