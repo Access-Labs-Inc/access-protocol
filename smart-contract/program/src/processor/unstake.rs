@@ -20,12 +20,14 @@ use crate::error::AccessError;
 use crate::state::{StakeAccount, StakePool};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
+/// The required parameters for the `unstake` instruction
 pub struct Params {
     // Amount to unstake
     pub amount: u64,
 }
 
 #[derive(InstructionsAccount)]
+/// The required accounts for the `unstake` instruction
 pub struct Accounts<'a, T> {
     /// The stake account
     #[cons(writable)]

@@ -1,4 +1,5 @@
-//! Claim a bond after it has been issued and signed
+//! Claim bond
+//! This instruction allows a buyer to claim a bond once it has been signed by enough DAO members.
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -17,9 +18,11 @@ use spl_token;
 use crate::utils::{assert_bond_derivation, check_account_key, check_account_owner, check_signer};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
+/// The required parameters for the `claim_bond` instruction
 pub struct Params {}
 
 #[derive(InstructionsAccount)]
+/// The required accounts for the `claim_bond_rewards` instruction
 pub struct Accounts<'a, T> {
     /// The bond account
     #[cons(writable)]

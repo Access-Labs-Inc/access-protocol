@@ -1,4 +1,5 @@
 //! Claim bond rewards
+//! This Instruction allows bond owners to claim their staking rewards
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -22,9 +23,11 @@ use crate::utils::{
 };
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
+/// The required parameters for the `claim_bond_rewards` instruction
 pub struct Params {}
 
 #[derive(InstructionsAccount)]
+/// The required accounts for the `claim_bond_rewards` instruction
 pub struct Accounts<'a, T> {
     /// The stake pool account
     #[cons(writable)]

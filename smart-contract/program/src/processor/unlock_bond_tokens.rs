@@ -1,4 +1,5 @@
 //! Unlock ACCESS tokens bought through a bond account
+//! When tokens are unlocked they are withdrawn from the pool and are not considered staked anymore
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -18,9 +19,11 @@ use bonfida_utils::{BorshSize, InstructionsAccount};
 use crate::utils::{assert_bond_derivation, check_account_key, check_account_owner, check_signer};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
+/// The required parameters for the `unlock_bond_tokens` instruction
 pub struct Params {}
 
 #[derive(InstructionsAccount)]
+/// The required accounts for the `unlock_bond_tokens` instruction
 pub struct Accounts<'a, T> {
     /// The bond account
     #[cons(writable)]

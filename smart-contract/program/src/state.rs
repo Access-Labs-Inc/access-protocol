@@ -260,6 +260,7 @@ impl StakeAccount {
     }
 }
 #[derive(BorshSerialize, BorshDeserialize, BorshSize)]
+/// Describes the current state of the event queue
 pub struct CentralState {
     // Tag
     pub tag: Tag,

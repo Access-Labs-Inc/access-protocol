@@ -1,4 +1,5 @@
 //! Claim rewards of a stake pool
+//! This instruction is used by stake pool owner for claiming their staking rewards
 use crate::error::AccessError;
 use crate::state::{CentralState, StakePool, OWNER_MULTIPLIER};
 use crate::utils::{
@@ -20,9 +21,11 @@ use solana_program::{
 use spl_token::{instruction::mint_to, state::Mint};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
+/// The required parameters for the `claim_pool_rewards` instruction
 pub struct Params {}
 
 #[derive(InstructionsAccount)]
+/// The required accounts for the `claim_pool_rewards` instruction
 pub struct Accounts<'a, T> {
     /// The stake pool account
     #[cons(writable)]

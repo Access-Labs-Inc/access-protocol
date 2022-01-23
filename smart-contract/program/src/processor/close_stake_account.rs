@@ -1,4 +1,5 @@
 //! Close a stake account
+//! This instruction can be used to close an empty stake account and collect the lamports
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -17,9 +18,11 @@ use crate::error::AccessError;
 use crate::state::StakeAccount;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
+/// The required parameters for the `close_stake_account` instruction
 pub struct Params {}
 
 #[derive(InstructionsAccount)]
+/// The required accounts for the `close_stake_account` instruction
 pub struct Accounts<'a, T> {
     /// The stake account
     #[cons(writable)]

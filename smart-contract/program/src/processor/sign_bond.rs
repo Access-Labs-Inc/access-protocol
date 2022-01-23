@@ -1,4 +1,5 @@
 //! Sign a bond
+//! This instruction is used by authorized sellers to approve the creation of a bond
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -15,13 +16,15 @@ use crate::error::AccessError;
 use crate::state::{BondAccount, BOND_SIGNER_THRESHOLD};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
+/// The required parameters for the `sign_bond` instruction
 pub struct Params {
     seller_index: u64,
 }
 
 #[derive(InstructionsAccount)]
+/// The required accounts for the `sign_bond` instruction
 pub struct Accounts<'a, T> {
-    #[cons(signer)] //TODO remove writable
+    #[cons(signer)]
     seller: &'a T,
     #[cons(writable)]
     bond_account: &'a T,

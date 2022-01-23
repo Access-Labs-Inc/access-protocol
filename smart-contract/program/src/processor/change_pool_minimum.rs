@@ -1,4 +1,5 @@
 //! Change the minimum stakeable amount of a pool
+//! This instruction allows a pool owner to adjust the price of its subscription for new joiners without impacting people who already subscribed
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -14,11 +15,13 @@ use bonfida_utils::{BorshSize, InstructionsAccount};
 use crate::utils::{check_account_key, check_account_owner, check_signer};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
+/// The required parameters for the `change_pool_minimum` instruction
 pub struct Params {
     pub new_minimum: u64,
 }
 
 #[derive(InstructionsAccount)]
+/// The required accounts for the `change_pool_minimum` instruction
 pub struct Accounts<'a, T> {
     /// The stake pool account
     #[cons(writable)]

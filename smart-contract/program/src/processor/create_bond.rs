@@ -1,4 +1,5 @@
 //! Create a bond
+//! This instruction can be used by authorized sellers to create a bond
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -18,20 +19,32 @@ use crate::utils::{
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
+/// The required parameters for the `create_bond` instruction
 pub struct Params {
+    /// Ultimate buyer of the bond
     pub buyer: Pubkey,
+    /// Total amount of ACCESS tokens being sold
     pub total_amount_sold: u64,
+    /// Total price of the bond
     pub total_quote_amount: u64,
+    /// Mint of the token used to buy the bond
     pub quote_mint: Pubkey,
+    /// The token account i.e where the sell proceeds go
     pub seller_token_account: Pubkey,
+    /// The start date of the unlock
     pub unlock_start_date: i64,
+    /// The time interval at which the tokens unlock
     pub unlock_period: i64,
+    /// The amount of tokens that unlock at each `unlock_period`
     pub unlock_amount: u64,
+    /// Last time tokens unlocked
     pub last_unlock_time: i64,
+    /// Index of the seller in the [`array`][`crate::state::AUTHORIZED_BOND_SELLERS`] of authorized sellers
     pub seller_index: u64,
 }
 
 #[derive(InstructionsAccount)]
+/// The required accounts for the `create_bond` instruction
 pub struct Accounts<'a, T> {
     /// The bond seller account
     #[cons(writable, signer)]

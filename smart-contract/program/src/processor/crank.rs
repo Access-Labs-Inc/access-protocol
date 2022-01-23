@@ -1,4 +1,5 @@
 //! Permissionless crank to update the stake pool rewards
+//! This instructions updates the circular buffer with the pool balances multiplied by the current inflation
 use crate::error::AccessError;
 use crate::state::{CentralState, StakePool, SECONDS_IN_DAY};
 use crate::utils::check_account_owner;
@@ -15,9 +16,11 @@ use solana_program::{
 };
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
+/// The required parameters for the `crank` instruction
 pub struct Params {}
 
 #[derive(InstructionsAccount)]
+/// The required accounts for the `crank` instruction
 pub struct Accounts<'a, T> {
     /// The stake pool account
     #[cons(writable)]

@@ -19,6 +19,7 @@ use bonfida_utils::{BorshSize, InstructionsAccount};
 use crate::utils::{check_account_key, check_account_owner};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
+/// The required parameters for the `create_stake_pool` instruction
 pub struct Params {
     // The PDA nonce
     pub nonce: u8,
@@ -33,6 +34,7 @@ pub struct Params {
 }
 
 #[derive(InstructionsAccount)]
+/// The required accounts for the `create_stake_pool` instruction
 pub struct Accounts<'a, T> {
     /// The stake pool account
     #[cons(writable)]

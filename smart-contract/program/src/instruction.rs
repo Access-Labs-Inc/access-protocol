@@ -10,7 +10,7 @@ use solana_program::{instruction::Instruction, pubkey::Pubkey};
 #[derive(BorshDeserialize, BorshSerialize, FromPrimitive)]
 pub enum MediaInstruction {
     /// Create central state
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                  |
     /// | -------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake account            |
@@ -19,7 +19,7 @@ pub enum MediaInstruction {
     /// | 3     | ❌        | ❌      | The mint of the ACCESS token |
     CreateCentralState,
     /// Create stake pool
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                  |
     /// | -------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake pool account       |
@@ -28,7 +28,7 @@ pub enum MediaInstruction {
     /// | 3     | ❌        | ❌      | The stake pool vault account |
     CreateStakePool,
     /// Create stake account
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                |
     /// | ------------------------------------------------------ |
     /// | 0     | ✅        | ❌      | The stake account          |
@@ -37,7 +37,7 @@ pub enum MediaInstruction {
     /// | 3     | ✅        | ✅      | The fee payer account      |
     CreateStakeAccount,
     /// Stake
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                            |
     /// | ------------------------------------------------------------------ |
     /// | 0     | ✅        | ❌      | The stake account                      |
@@ -48,7 +48,7 @@ pub enum MediaInstruction {
     /// | 5     | ✅        | ❌      | The stake pool vault account           |
     Stake,
     /// Unstake
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake account                    |
@@ -59,7 +59,7 @@ pub enum MediaInstruction {
     /// | 5     | ✅        | ❌      | The stake pool vault                 |
     Unstake,
     /// Claim rewards of a stake pool
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake pool account               |
@@ -70,7 +70,7 @@ pub enum MediaInstruction {
     /// | 5     | ❌        | ❌      | The SPL token program account        |
     ClaimPoolRewards,
     /// Claim rewards of a stake account
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake pool account               |
@@ -82,35 +82,35 @@ pub enum MediaInstruction {
     /// | 6     | ❌        | ❌      | The SPL token program account        |
     ClaimRewards,
     /// Permissionless crank to update the stake pool rewards
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                      |
     /// | ------------------------------------------------------------ |
     /// | 0     | ✅        | ❌      | The stake pool account           |
     /// | 1     | ❌        | ❌      | The account of the central state |
     Crank,
     /// Close a stake pool
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                   |
     /// | --------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The account of the stake pool |
     /// | 1     | ✅        | ✅      | The owner of the stake pool   |
     CloseStakePool,
     /// Close a stake account
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                    |
     /// | ---------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake account              |
     /// | 1     | ✅        | ✅      | The owner of the stake account |
     CloseStakeAccount,
     /// Change central state inflation
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                                |
     /// | ---------------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The account of the central state           |
     /// | 1     | ❌        | ✅      | The account of the central state authority |
     ChangeInflation,
     /// Create a bond
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                |
     /// | ------------------------------------------------------ |
     /// | 0     | ✅        | ✅      | The bond seller account    |
@@ -120,14 +120,14 @@ pub enum MediaInstruction {
     /// | 4     | ❌        | ❌      | The fee account            |
     CreateBond,
     /// Sign a bond
-    /// 
+    ///
     /// | Index | Writable | Signer | Description |
     /// | --------------------------------------- |
     /// | 0     | ❌        | ✅      |             |
     /// | 1     | ✅        | ❌      |             |
     SignBond,
     /// Unlock ACCESS tokens bought through a bond account
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                      |
     /// | ------------------------------------------------------------ |
     /// | 0     | ✅        | ❌      | The bond account                 |
@@ -138,7 +138,7 @@ pub enum MediaInstruction {
     /// | 5     | ❌        | ❌      | The SPL token program account    |
     UnlockBondTokens,
     /// Claim a bond after it has been issued and signed
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                                      |
     /// | ---------------------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The bond account                                 |
@@ -148,7 +148,7 @@ pub enum MediaInstruction {
     /// | 4     | ❌        | ❌      | The SPL token program account                    |
     ClaimBond,
     /// Claim bond rewards
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake pool account               |
@@ -160,7 +160,7 @@ pub enum MediaInstruction {
     /// | 6     | ❌        | ❌      | The SPL token program account        |
     ClaimBondRewards,
     /// Change the minimum stakeable amount of a pool
-    /// 
+    ///
     /// | Index | Writable | Signer | Description            |
     /// | -------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake pool account |

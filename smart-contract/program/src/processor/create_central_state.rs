@@ -16,6 +16,7 @@ use crate::{cpi::Cpi, error::AccessError};
 use crate::utils::{check_account_key, check_account_owner};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
+/// The required parameters for the `create_central_state` instruction
 pub struct Params {
     // Daily inflation in token amount
     pub daily_inflation: u64,
@@ -24,6 +25,7 @@ pub struct Params {
 }
 
 #[derive(InstructionsAccount)]
+/// The required accounts for the `create_central_state` instruction
 pub struct Accounts<'a, T> {
     /// The stake account
     #[cons(writable)]
