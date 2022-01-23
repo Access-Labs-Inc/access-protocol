@@ -10,16 +10,14 @@ use solana_program::{
 use crate::utils::{
     assert_empty_stake_account, check_account_key, check_account_owner, check_signer,
 };
-use bonfida_utils::{BorshSize, InstructionsAccount};
+use bonfida_utils::BorshSize;
+use bonfida_utils::InstructionsAccount;
 
 use crate::error::AccessError;
 use crate::state::StakeAccount;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
-pub struct Params {
-    // Stake pool
-    pub stake_pool: Pubkey,
-}
+pub struct Params {}
 
 #[derive(InstructionsAccount)]
 pub struct Accounts<'a, T> {
@@ -53,24 +51,8 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     }
 }
 
-pub fn process_close_stake_account(
-    program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    params: Params,
-) -> ProgramResult {
+pub fn process_close_stake_account(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
-
-    let Params { stake_pool } = params;
-
-    // Derivation check doesn't seem necessary? If  stake_acc is program owned and has correct account tag and owner written in state?
-    let (derived_stake_key, _) =
-        StakeAccount::find_key(&accounts.owner.key, &stake_pool, program_id);
-
-    check_account_key(
-        accounts.stake_account,
-        &derived_stake_key,
-        AccessError::AccountNotDeterministic,
-    )?;
 
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account).unwrap();
 

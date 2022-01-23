@@ -12,6 +12,7 @@ use solana_program::{
 use crate::error::AccessError;
 use crate::state::{BondAccount, BOND_SIGNER_THRESHOLD};
 use bonfida_utils::{BorshSize, InstructionsAccount};
+use spl_token;
 
 use crate::utils::{assert_bond_derivation, check_account_key, check_account_owner, check_signer};
 
@@ -25,7 +26,7 @@ pub struct Accounts<'a, T> {
     pub bond_account: &'a T,
 
     /// The account of the bond buyer
-    #[cons(writable, signer)] //TODO does not need to be writable
+    #[cons(signer)]
     pub buyer: &'a T,
 
     /// The token account used to purchase the bond
@@ -55,7 +56,11 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         };
 
         // Check keys
-        // Spl token id check is implicit
+        check_account_key(
+            accounts.spl_token_program,
+            &spl_token::id(),
+            AccessError::WrongSplTokenProgramId,
+        )?;
 
         // Check ownership
         check_account_owner(accounts.bond_account, program_id, AccessError::WrongOwner)?;

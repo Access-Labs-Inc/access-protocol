@@ -12,7 +12,8 @@ use crate::cpi::Cpi;
 use crate::error::AccessError;
 use crate::state::{BondAccount, StakePool, BOND_SIGNER_THRESHOLD};
 use crate::utils::{
-    assert_authorized_seller, assert_uninitialized, check_account_key, check_signer,
+    assert_authorized_seller, assert_uninitialized, check_account_key, check_account_owner,
+    check_signer,
 };
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
@@ -27,7 +28,6 @@ pub struct Params {
     pub unlock_period: i64,
     pub unlock_amount: u64,
     pub last_unlock_time: i64,
-    pub stake_pool: Pubkey, // Is redundant with stake_pool account given as input
     pub seller_index: u64,
 }
 
@@ -55,7 +55,7 @@ pub struct Accounts<'a, T> {
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     pub fn parse(
         accounts: &'a [AccountInfo<'b>],
-        _program_id: &Pubkey,
+        program_id: &Pubkey,
     ) -> Result<Self, ProgramError> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
@@ -72,6 +72,9 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             &system_program::ID,
             AccessError::WrongSystemProgram,
         )?;
+
+        // Check ownership
+        check_account_owner(accounts.stake_pool, &program_id, AccessError::WrongOwner)?;
 
         // Check signer
         check_signer(accounts.seller, AccessError::BondSellerMustSign)?;
@@ -95,11 +98,6 @@ pub fn process_create_bond(
     let stake_pool = StakePool::get_checked(accounts.stake_pool)?;
 
     check_account_key(
-        accounts.stake_pool,
-        &params.stake_pool,
-        AccessError::StakePoolMismatch,
-    )?;
-    check_account_key(
         accounts.bond_account,
         &derived_key,
         AccessError::AccountNotDeterministic,
@@ -120,7 +118,7 @@ pub fn process_create_bond(
         params.unlock_amount,
         params.last_unlock_time,
         stake_pool.header.minimum_stake_amount,
-        params.stake_pool,
+        *accounts.stake_pool.key,
         params.unlock_start_date,
         *accounts.seller.key,
     );
