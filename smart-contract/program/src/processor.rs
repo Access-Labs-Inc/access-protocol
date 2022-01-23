@@ -7,6 +7,7 @@ use solana_program::{
 
 use crate::instruction::MediaInstruction;
 
+pub mod admin_mint;
 pub mod change_inflation;
 pub mod change_pool_minimum;
 pub mod claim_bond;
@@ -24,9 +25,6 @@ pub mod sign_bond;
 pub mod stake;
 pub mod unlock_bond_tokens;
 pub mod unstake;
-
-// TODO change to mint_to instead of transfers
-// Allow mint ix (or use bond?)
 
 pub struct Processor {}
 
@@ -142,6 +140,12 @@ impl Processor {
                 let params = change_pool_minimum::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 change_pool_minimum::process_change_pool_minimum(program_id, accounts, params)?;
+            }
+            MediaInstruction::AdminMint => {
+                msg!("Instruction: Mint ACCESS tokens");
+                let params = admin_mint::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                admin_mint::process_admin_mint(program_id, accounts, params)?;
             }
         }
 

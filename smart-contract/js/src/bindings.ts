@@ -25,6 +25,7 @@ import {
   Token,
   ASSOCIATED_TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
+import { adminMintInstruction } from ".";
 
 export const changeInflation = async (
   connection: Connection,
@@ -154,9 +155,11 @@ export const closeStakeAccount = async (
 ) => {
   const stake = await StakeAccount.retrieve(connection, stakeAccount);
 
-  const ix = new closeStakeAccountInstruction({
-    stakePool: stake.stakePool.toBuffer(),
-  }).getInstruction(programId, stakeAccount, stake.owner);
+  const ix = new closeStakeAccountInstruction().getInstruction(
+    programId,
+    stakeAccount,
+    stake.owner
+  );
 
   return ix;
 };
@@ -168,9 +171,11 @@ export const closeStakePool = async (
 ) => {
   const stakePool = await StakePool.retrieve(connection, stakePoolAccount);
 
-  const ix = new closeStakePoolInstruction({
-    destination: stakePool.rewardsDestination.toBuffer(),
-  }).getInstruction(programId, stakePoolAccount, stakePool.owner);
+  const ix = new closeStakePoolInstruction().getInstruction(
+    programId,
+    stakePoolAccount,
+    stakePool.owner
+  );
 
   return ix;
 };
@@ -220,7 +225,6 @@ export const createBond = async (
     unlockPeriod: new BN(unlockPeriod),
     unlockAmount: new BN(unlockAmount),
     lastUnlockTime: new BN(lastUnlockTime),
-    stakePool: stakePool.toBuffer(),
     sellerIndex: new BN(sellerIndex),
   }).getInstruction(
     programId,
@@ -412,6 +416,29 @@ export const unstake = async (
     destinationToken,
     TOKEN_PROGRAM_ID,
     stakePool.vault
+  );
+
+  return ix;
+};
+
+export const adminMint = async (
+  connection: Connection,
+  amount: number,
+  destinationToken: PublicKey,
+  programId: PublicKey
+) => {
+  const [centralKey] = await CentralState.getKey(programId);
+  const centralState = await CentralState.retrieve(connection, centralKey);
+
+  const ix = new adminMintInstruction({
+    amount: new BN(amount),
+  }).getInstruction(
+    programId,
+    centralState.authority,
+    centralState.tokenMint,
+    destinationToken,
+    centralKey,
+    TOKEN_PROGRAM_ID
   );
 
   return ix;
