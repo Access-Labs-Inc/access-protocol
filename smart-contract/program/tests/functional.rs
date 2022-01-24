@@ -7,10 +7,10 @@ use crate::common::utils::{mint_bootstrap, sign_send_instructions};
 use access_protocol::{
     entrypoint::process_instruction,
     instruction::{
-        change_inflation, change_pool_minimum, claim_bond, claim_bond_rewards, claim_pool_rewards,
-        claim_rewards, close_stake_account, close_stake_pool, crank, create_bond,
-        create_central_state, create_stake_account, create_stake_pool, sign_bond, stake,
-        unlock_bond_tokens, unstake,
+        admin_mint, change_inflation, change_pool_minimum, claim_bond, claim_bond_rewards,
+        claim_pool_rewards, claim_rewards, close_stake_account, close_stake_pool, crank,
+        create_bond, create_central_state, create_stake_account, create_stake_pool, sign_bond,
+        stake, unlock_bond_tokens, unstake,
     },
     state::BondAccount,
 };
@@ -91,6 +91,27 @@ async fn test_staking() {
 
     let staker_token_acc = get_associated_token_address(&staker.pubkey(), &mint);
     let stake_pool_owner_token_acc = get_associated_token_address(&staker.pubkey(), &mint);
+
+    //
+    // Admin mint
+    //
+
+    let admin_mint_ix = admin_mint(
+        program_id,
+        admin_mint::Accounts {
+            authority: &prg_test_ctx.payer.pubkey(),
+            mint: &mint,
+            access_token_destination: &staker_token_acc,
+            central_state: &central_state,
+            spl_token_program: &spl_token::ID,
+        },
+        admin_mint::Params {
+            amount: 10_000 * 1_000_000,
+        },
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![admin_mint_ix], vec![])
+        .await
+        .unwrap();
 
     //
     // Create stake pool

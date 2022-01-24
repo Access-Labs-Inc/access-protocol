@@ -16,6 +16,7 @@ import {
   stakeInstruction,
   unlockBondTokensInstruction,
   unstakeInstruction,
+  adminMintInstruction,
 } from "./raw_instructions";
 import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
 import { CentralState, StakePool, BondAccount, StakeAccount } from "./state";
@@ -25,7 +26,6 @@ import {
   Token,
   ASSOCIATED_TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { adminMintInstruction } from ".";
 
 export const changeInflation = async (
   connection: Connection,

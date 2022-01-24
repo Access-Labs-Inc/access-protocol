@@ -17,7 +17,7 @@ use crate::utils::{check_account_key, check_account_owner, check_signer};
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 pub struct Params {
     /// The amount to be minted
-    amount: u64,
+    pub amount: u64,
 }
 
 #[derive(InstructionsAccount)]
