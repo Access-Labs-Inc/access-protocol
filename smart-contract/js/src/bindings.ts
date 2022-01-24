@@ -354,6 +354,14 @@ export const createCentralState = async (
   return ix;
 };
 
+/**
+ * This function can be used to create a stake account in stake pool
+ * @param stakePool The key of the stake pool
+ * @param owner The owner of the staking account being created (i.e the staker)
+ * @param feePayer The fee payer of the transaction
+ * @param programId The ACCESS program ID
+ * @returns
+ */
 export const createStakeAccount = async (
   stakePool: PublicKey,
   owner: PublicKey,
@@ -380,6 +388,17 @@ export const createStakeAccount = async (
   return ix;
 };
 
+/**
+ * This instruction can be used by content publishers to create their staking pool on which subscription will be based on
+ * @param connection The Solana RPC connection
+ * @param name The name of the stake pool
+ * @param owner The owner of the stake pool (only key authorized to collect staking rewards)
+ * @param destination The destination of the stake pool rewards
+ * @param minimumStakeAmount The minimum amount of tokens to stake in the pool
+ * @param feePayer The fee payer of the tx
+ * @param programId The ACCESS program ID
+ * @returns
+ */
 export const createStakePool = async (
   connection: Connection,
   name: string,
@@ -430,6 +449,14 @@ export const createStakePool = async (
   return [createVaultIx, ix];
 };
 
+/**
+ * This instruction can be used by authorized sellers to approve the sell of a bond
+ * @param sellerIndex The index of the seller in the array of authorized sellers
+ * @param seller The seller key
+ * @param bondAccount The bond account key
+ * @param programId The ACCESS program ID
+ * @returns
+ */
 export const signBond = async (
   sellerIndex: number,
   seller: PublicKey,
@@ -443,6 +470,15 @@ export const signBond = async (
   return ix;
 };
 
+/**
+ * This instruction can be used by stakers to deposit ACCESS tokens in their stake account
+ * @param connection The Solana RPC connection
+ * @param stakeAccount The key of the stake account
+ * @param sourceToken The token account from which the ACCESS tokens are sent to the stake account
+ * @param amount The raw amount of tokens to stake
+ * @param programId The ACCESS program ID
+ * @returns
+ */
 export const stake = async (
   connection: Connection,
   stakeAccount: PublicKey,
@@ -466,6 +502,14 @@ export const stake = async (
   return ix;
 };
 
+/**
+ * This instruction can be used by a bond owned to unlock ACCESS tokens. Once unlocked the tokens are not staked anymore.
+ * @param connection The Solana RPC connection
+ * @param bondAccount The key of the bond account
+ * @param destinationToken The token account receiving the tokens
+ * @param programId The ACCESS program ID
+ * @returns
+ */
 export const unlockBondTokens = async (
   connection: Connection,
   bondAccount: PublicKey,
@@ -489,6 +533,15 @@ export const unlockBondTokens = async (
   return ix;
 };
 
+/**
+ * This instruction can be used to unstake ACCESS tokens
+ * @param connection The Solana RPC connection
+ * @param stakeAccount The key of the stake account
+ * @param destinationToken The token account receiving the ACCESS tokens
+ * @param amount The amount of tokens to unstake
+ * @param programId The ACCESS program ID
+ * @returns
+ */
 export const unstake = async (
   connection: Connection,
   stakeAccount: PublicKey,
@@ -514,6 +567,14 @@ export const unstake = async (
   return ix;
 };
 
+/**
+ * This instruction can be used to mint ACCESS tokens. It requires the central state authority to sign.
+ * @param connection The Solana RPC connection
+ * @param amount The amount of tokens to mint
+ * @param destinationToken The token account receiving the ACCESS tokens
+ * @param programId The ACCESS program ID
+ * @returns
+ */
 export const adminMint = async (
   connection: Connection,
   amount: number,
