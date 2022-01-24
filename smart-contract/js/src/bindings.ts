@@ -27,6 +27,13 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 
+/**
+ * This function can be used to update the inflation schedule of the central state
+ * @param connection The Solana RPC connection
+ * @param newInflation The new inflation amount (in raw token amounts per day)
+ * @param programId The ACCESS program ID
+ * @returns
+ */
 export const changeInflation = async (
   connection: Connection,
   newInflation: number,
@@ -42,6 +49,14 @@ export const changeInflation = async (
   return ix;
 };
 
+/**
+ * This function can be used to update the minimum amount of tokens that give access to the content
+ * @param connection The Solana RPC connection
+ * @param stakePoolKey The key of the stake pool
+ * @param newMinimum The new minimum amount of tokens to stake to get access
+ * @param programId The ACCESS program ID
+ * @returns
+ */
 export const changePoolMinimum = async (
   connection: Connection,
   stakePoolKey: PublicKey,
@@ -57,6 +72,14 @@ export const changePoolMinimum = async (
   return ix;
 };
 
+/**
+ * This function can be used by a bond owner to claim his staking rewards
+ * @param connection The Solana RPC connection
+ * @param bondAccount The key of the bond account
+ * @param rewardsDestination The destination token account for the rewards being claimed
+ * @param programId The ACCESS program ID
+ * @returns
+ */
 export const claimBondRewards = async (
   connection: Connection,
   bondAccount: PublicKey,
@@ -82,6 +105,15 @@ export const claimBondRewards = async (
   return ix;
 };
 
+/**
+ * This function can be used by a bond buyer to claim his bond
+ * @param connection The Solana RPC connection
+ * @param bondAccount The key of the bond account
+ * @param buyer The key of the bond buyer
+ * @param quoteTokenSource The token account used to purchase the bond
+ * @param programId The ACCESS program ID
+ * @returns
+ */
 export const claimBond = async (
   connection: Connection,
   bondAccount: PublicKey,
@@ -103,6 +135,13 @@ export const claimBond = async (
   return ix;
 };
 
+/**
+ * This function can be used by a pool owner to claim his staking rewards
+ * @param connection The Solana RPC connection
+ * @param stakePoolAccount The key of the stake pool
+ * @param rewardsDestination The destination token account for the rewards being claimed
+ * @param programId The ACCESS program ID
+ */
 export const claimPoolRewards = async (
   connection: Connection,
   stakePoolAccount: PublicKey,
@@ -124,6 +163,14 @@ export const claimPoolRewards = async (
   );
 };
 
+/**
+ * This function can be used by a staker to claim his staking rewards
+ * @param connection The Solana RPC connection
+ * @param stakeAccount The key of the stake account
+ * @param rewardsDestination The destination token account for the rewards being claimed
+ * @param programId The ACCESS program ID
+ * @returns
+ */
 export const claimRewards = async (
   connection: Connection,
   stakeAccount: PublicKey,
@@ -148,6 +195,13 @@ export const claimRewards = async (
   return ix;
 };
 
+/**
+ * This function can be used by a staker to close his stake account and collect its rent
+ * @param connection The Solana RPC connection
+ * @param stakeAccount The key of the stake account
+ * @param programId The ACCESS program ID
+ * @returns
+ */
 export const closeStakeAccount = async (
   connection: Connection,
   stakeAccount: PublicKey,
@@ -164,6 +218,13 @@ export const closeStakeAccount = async (
   return ix;
 };
 
+/**
+ * This function can be used by a stake pool owner to close the pool and collect its rent
+ * @param connection The Solana RPC connection
+ * @param stakePoolAccount The key of the stake pool
+ * @param programId The ACCESS program ID
+ * @returns
+ */
 export const closeStakePool = async (
   connection: Connection,
   stakePoolAccount: PublicKey,
@@ -180,6 +241,12 @@ export const closeStakePool = async (
   return ix;
 };
 
+/**
+ * This function can be used to update the balances of the stake pool
+ * @param stakePoolAccount The key fo the stake pool to crank
+ * @param programId The ACCESS program ID
+ * @returns
+ */
 export const crank = async (
   stakePoolAccount: PublicKey,
   programId: PublicKey
@@ -194,6 +261,23 @@ export const crank = async (
   return ix;
 };
 
+/**
+ * This function can be used to issue ACCESS locked tokens (bonds)
+ * @param seller The initial bond seller
+ * @param buyer The bond buyer
+ * @param totalAmountSold The total amount of ACCESS tokens being sold
+ * @param totalQuoteAmount The total amount of quote tokens used to buy the bond
+ * @param quoteMint The mint of the token used to buy the bond
+ * @param sellerTokenAccount The seller token account (used to collect proceeds of the sale)
+ * @param unlockStartDate The unix timestamp (in s) at which the tokens start unlock
+ * @param unlockPeriod The time interval at which the tokens unlock
+ * @param unlockAmount The amount that unlocks at each period
+ * @param lastUnlockTime The unix timestamp at which the unlock stops
+ * @param stakePool The stake pool key
+ * @param sellerIndex The seller index in the array of authorized sellers
+ * @param programId The ACCESS program ID
+ * @returns
+ */
 export const createBond = async (
   seller: PublicKey,
   buyer: PublicKey,
@@ -238,6 +322,15 @@ export const createBond = async (
   return ix;
 };
 
+/**
+ * This function can be used to create the central when deploying the program
+ * @param dailyInflation The daily inflation (i.e raw token amounts being emitted per day)
+ * @param authority The central state authority (only key that will be able to upgrade the central state)
+ * @param feePayer The fee payer of the tx
+ * @param mint The ACCESS token mint
+ * @param programId The ACCESS program ID
+ * @returns
+ */
 export const createCentralState = async (
   dailyInflation: number,
   authority: PublicKey,
