@@ -125,6 +125,9 @@ impl PrintProgramError for AccessError {
             AccessError::WrongQuoteDestination => {
                 msg!("Error: Wrong quote token destination")
             }
+            AccessError::UnclaimedRewards => {
+                msg!("Error: Some rewards need to be claimed first")
+            }
         }
     }
 }

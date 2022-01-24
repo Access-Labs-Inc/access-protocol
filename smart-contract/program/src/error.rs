@@ -69,6 +69,8 @@ pub enum AccessError {
     BuyerMustSign,
     #[error("Wrong quote token destination")]
     WrongQuoteDestination,
+    #[error("Rewards must be claimed first")]
+    UnclaimedRewards,
 }
 
 impl From<AccessError> for ProgramError {

@@ -2,16 +2,21 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
+    clock::Clock,
     entrypoint::ProgramResult,
     msg,
     program::invoke,
     program_error::ProgramError,
     pubkey::Pubkey,
+    sysvar::Sysvar,
 };
 
 use spl_token::instruction::transfer;
 
-use crate::utils::{check_account_key, check_account_owner, check_signer};
+use crate::{
+    state::SECONDS_IN_DAY,
+    utils::{check_account_key, check_account_owner, check_signer},
+};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
 use crate::error::AccessError;
@@ -128,6 +133,13 @@ pub fn process_stake(
         &Pubkey::new(&stake_pool.header.vault),
         AccessError::StakePoolVaultMismatch,
     )?;
+
+    let current_time = Clock::get().unwrap().unix_timestamp;
+    if stake_account.stake_amount > 0
+        && stake_account.last_claimed_time < current_time - (SECONDS_IN_DAY as i64)
+    {
+        return Err(AccessError::UnclaimedRewards.into());
+    }
 
     // Transfer tokens
     let transfer_instruction = transfer(
