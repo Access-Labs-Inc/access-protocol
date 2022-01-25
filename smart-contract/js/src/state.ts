@@ -3,8 +3,14 @@ import BN from "bn.js";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { u64 } from "./u64";
 
+/**
+ * Lenght of the stake pool circular buffer used to store balances and inflation
+ */
 const STAKE_BUFFER_LEN = 365;
 
+/**
+ * Account tags (used for deserialization on-chain)
+ */
 export enum Tag {
   Uninitialized = 0,
   StakePool = 1,
@@ -16,6 +22,9 @@ export enum Tag {
   Deleted = 6,
 }
 
+/**
+ * Stake pool state
+ */
 export class StakePool {
   tag: Tag;
   nonce: number;
@@ -82,6 +91,12 @@ export class StakePool {
     return deserialize(this.schema, StakePool, data);
   }
 
+  /**
+   * This method can be used to retrieve the state of a stake pool
+   * @param connection The Solana RPC connection
+   * @param key The key of the stake pool
+   * @returns
+   */
   static async retrieve(connection: Connection, key: PublicKey) {
     const accountInfo = await connection.getAccountInfo(key);
     if (!accountInfo || !accountInfo.data) {
@@ -90,6 +105,12 @@ export class StakePool {
     return this.deserialize(accountInfo.data);
   }
 
+  /**
+   * This method can be used to derive the stake pool key
+   * @param programId The ACCESS program ID
+   * @param owner The owner of the stake pool
+   * @returns
+   */
   static async getKey(programId: PublicKey, owner: PublicKey) {
     return await PublicKey.findProgramAddress(
       [Buffer.from("stake_pool"), owner.toBuffer()],
@@ -98,6 +119,9 @@ export class StakePool {
   }
 }
 
+/**
+ * Stake account state
+ */
 export class StakeAccount {
   tag: Tag;
   owner: PublicKey;
@@ -143,6 +167,12 @@ export class StakeAccount {
     return deserialize(this.schema, StakeAccount, data);
   }
 
+  /**
+   * This method can be used to retrieve the state of a stake account
+   * @param connection The Solana RPC connection
+   * @param key The stake account key
+   * @returns
+   */
   static async retrieve(connection: Connection, key: PublicKey) {
     const accountInfo = await connection.getAccountInfo(key);
     if (!accountInfo || !accountInfo.data) {
@@ -151,6 +181,13 @@ export class StakeAccount {
     return this.deserialize(accountInfo.data);
   }
 
+  /**
+   * This method can be used to derive the stake account key
+   * @param programId The ACCESS program ID
+   * @param owner The key of the stake account owner
+   * @param stakePool The key of the stake pool
+   * @returns
+   */
   static async getKey(
     programId: PublicKey,
     owner: PublicKey,
@@ -163,6 +200,9 @@ export class StakeAccount {
   }
 }
 
+/**
+ * The central state
+ */
 export class CentralState {
   tag: Tag;
   signerNonce: number;
@@ -204,6 +244,12 @@ export class CentralState {
     return deserialize(this.schema, CentralState, data);
   }
 
+  /**
+   * This method can be used to retrieve the state of the central state
+   * @param connection The Solana RPC connection
+   * @param key The key of the stake account
+   * @returns
+   */
   static async retrieve(connection: Connection, key: PublicKey) {
     const accountInfo = await connection.getAccountInfo(key);
     if (!accountInfo || !accountInfo.data) {
@@ -211,6 +257,12 @@ export class CentralState {
     }
     return this.deserialize(accountInfo.data);
   }
+
+  /**
+   * This method can be used to derive the central state key
+   * @param programId The ACCESS program ID
+   * @returns
+   */
   static async getKey(programId: PublicKey) {
     return await PublicKey.findProgramAddress(
       [programId.toBuffer()],
@@ -219,6 +271,9 @@ export class CentralState {
   }
 }
 
+/**
+ * The bond account state
+ */
 export class BondAccount {
   tag: Tag;
   owner: PublicKey;
@@ -304,6 +359,12 @@ export class BondAccount {
     return deserialize(this.schema, BondAccount, data);
   }
 
+  /**
+   * This method can be used to retrieve the state of the bond account
+   * @param connection The Solana RPC connection
+   * @param key The key of the bond account
+   * @returns
+   */
   static async retrieve(connection: Connection, key: PublicKey) {
     const accountInfo = await connection.getAccountInfo(key);
     if (!accountInfo || !accountInfo.data) {
@@ -312,6 +373,13 @@ export class BondAccount {
     return this.deserialize(accountInfo.data);
   }
 
+  /**
+   * This method can be used to derive the bond account key
+   * @param programId The ACCESS program ID
+   * @param owner The owner of the bond
+   * @param totalAmountSold The total amount of ACCESS token sold in the bond
+   * @returns
+   */
   static async getKey(
     programId: PublicKey,
     owner: PublicKey,

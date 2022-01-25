@@ -27,6 +27,9 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 
+// TODO Change
+export const ACCESS_PROGRAM_ID = PublicKey.default;
+
 /**
  * This function can be used to update the inflation schedule of the central state
  * @param connection The Solana RPC connection
