@@ -3,6 +3,26 @@
 version = 3
 
 [[package]]
+name = "access_protocol_server"
+version = "0.1.0"
+dependencies = [
+ "actix-cors",
+ "actix-web",
+ "derive_more",
+ "futures",
+ "hex",
+ "hmac 0.12.0",
+ "jwt",
+ "nacl",
+ "rand 0.8.4",
+ "redis",
+ "serde",
+ "serde_json",
+ "sha2 0.10.1",
+ "solana-program",
+]
+
+[[package]]
 name = "actix-codec"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1758,26 +1778,6 @@ checksum = "52e44394d2086d010551b14b53b1f24e31647570cd1deb0379e2c21b329aba00"
 dependencies = [
  "hostname",
  "quick-error",
-]
-
-[[package]]
-name = "rust"
-version = "0.1.0"
-dependencies = [
- "actix-cors",
- "actix-web",
- "derive_more",
- "futures",
- "hex",
- "hmac 0.12.0",
- "jwt",
- "nacl",
- "rand 0.8.4",
- "redis",
- "serde",
- "serde_json",
- "sha2 0.10.1",
- "solana-program",
 ]
 
 [[package]]

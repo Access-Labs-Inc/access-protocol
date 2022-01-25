@@ -140,7 +140,7 @@ pub fn process_create_bond(
     let seeds: &[&[u8]] = &[
         BondAccount::SEED.as_bytes(),
         &params.buyer.to_bytes(),
-        &params.total_amount_sold.to_be_bytes(),
+        &params.total_amount_sold.to_le_bytes(),
         &[nonce],
     ];
 

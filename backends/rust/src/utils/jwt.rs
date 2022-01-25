@@ -1,4 +1,5 @@
 use crate::errors::AccessError;
+use crate::utils::settings::{JWT_ACCESS_TOKEN, JWT_EXPIRE};
 use actix_web::HttpRequest;
 use hmac::{Hmac, Mac};
 use jwt::{Header, SignWithKey, Token, VerifyWithKey};
@@ -6,11 +7,12 @@ use sha2::Sha256;
 use std::collections::BTreeMap;
 use std::time::SystemTime;
 
-pub const EXPIRATION_INTERVAL: u64 = 24 * 60 * 60;
-pub const SECRET: &'static [u8] = b"some secret";
-
+/// Create a new JWT token with two claims
+/// - `address`
+/// - `iat`
 pub fn create_jwt(address: String) -> Result<String, AccessError> {
-    let key: Hmac<Sha256> = Hmac::new_from_slice(SECRET).map_err(|_| AccessError::InternalError)?;
+    let key: Hmac<Sha256> = Hmac::new_from_slice(JWT_ACCESS_TOKEN.as_bytes())
+        .map_err(|_| AccessError::InternalError)?;
     let mut claims = BTreeMap::new();
     claims.insert("address", address);
     claims.insert("iat", current_time().to_string());
@@ -20,8 +22,10 @@ pub fn create_jwt(address: String) -> Result<String, AccessError> {
     Ok(jwt)
 }
 
+/// Verifies a JWT
 pub fn verify_jwt(jwt: &str) -> Result<(), AccessError> {
-    let key: Hmac<Sha256> = Hmac::new_from_slice(SECRET).map_err(|_| AccessError::InvalidJwt)?;
+    let key: Hmac<Sha256> =
+        Hmac::new_from_slice(JWT_ACCESS_TOKEN.as_bytes()).map_err(|_| AccessError::InvalidJwt)?;
     let token: Token<Header, BTreeMap<String, String>, _> =
         VerifyWithKey::verify_with_key(jwt, &key).map_err(|_| AccessError::InvalidJwt)?;
     let claims = token.claims();
@@ -30,13 +34,14 @@ pub fn verify_jwt(jwt: &str) -> Result<(), AccessError> {
         .map_err(|_| AccessError::InvalidJwt)?;
 
     let now = current_time();
-    if now - iat > EXPIRATION_INTERVAL {
+    if now - iat > JWT_EXPIRE {
         return Err(AccessError::InvalidJwt);
     }
 
     Ok(())
 }
 
+/// Extract the bearer token from the `authorization` header
 pub fn get_token_from_header(req: &HttpRequest) -> Result<&str, AccessError> {
     match req
         .headers()
@@ -49,6 +54,7 @@ pub fn get_token_from_header(req: &HttpRequest) -> Result<&str, AccessError> {
     }
 }
 
+/// Returns the current unix timestamp in seconds
 pub fn current_time() -> u64 {
     let now = SystemTime::now();
     now.duration_since(SystemTime::UNIX_EPOCH)

@@ -12,17 +12,24 @@ use solana_program::sysvar::Sysvar;
 use std::cell::RefMut;
 use std::mem::size_of;
 
-// Just a random mint for now
-pub const MEDIA_MINT: Pubkey =
+/// ACCESS token mint
+pub const ACCESS_MINT: Pubkey =
     solana_program::pubkey!("EchesyfXePKdLtoiZSL8pBe8Myagyy8ZRqsACNCFGnvp");
 
+#[allow(missing_docs)]
 pub const SECONDS_IN_DAY: u64 = 3600 * 24;
 
+/// Percentage of the staking rewards going to stakers
 pub const STAKER_MULTIPLIER: u64 = 80;
+
+/// Percentage of the staking rewards going to the pool owner
 pub const OWNER_MULTIPLIER: u64 = 100 - STAKER_MULTIPLIER;
+
+/// Length of the circular buffer (stores balances for 1 year)
 pub const STAKE_BUFFER_LEN: u64 = 365;
 
 #[derive(BorshSerialize, BorshDeserialize, BorshSize, PartialEq)]
+#[allow(missing_docs)]
 pub enum Tag {
     Uninitialized,
     StakePool,
@@ -36,47 +43,47 @@ pub enum Tag {
 
 #[derive(BorshSerialize, BorshDeserialize, BorshSize, Copy, Clone, Pod, Zeroable)]
 #[repr(C)]
+#[allow(missing_docs)]
 pub struct StakePoolHeader {
-    // Tag
+    /// Tag
     pub tag: u8,
 
-    // Stake pool nonce
+    /// Stake pool nonce
     pub nonce: u8,
 
-    // Updated by a trustless cranker
+    /// Updated by a trustless cranker
     pub current_day_idx: u16,
 
-    // Padding
+    /// Padding
     pub _padding: [u8; 4],
 
-    // Minimum amount to stake to get access to the pool
+    /// Minimum amount to stake to get access to the pool
     pub minimum_stake_amount: u64,
 
-    // Total amount staked in the pool
+    /// Total amount staked in the pool
     pub total_staked: u64,
 
-    // Last unix timestamp when rewards were paid to the pool owner
-    // through a permissionless crank
+    /// Last unix timestamp when rewards were paid to the pool owner
+    /// through a permissionless crank
     pub last_crank_time: i64,
 
-    // Last time the stake pool owner claimed
+    /// Last time the stake pool owner claimed
     pub last_claimed_time: i64,
 
-    // Owner of the stake pool
+    /// Owner of the stake pool
     pub owner: [u8; 32],
 
-    // Address to which rewards are sent
-    pub rewards_destination: [u8; 32],
-
-    // Stake pool vault
+    /// Stake pool vault
     pub vault: [u8; 32],
 }
 
+#[allow(missing_docs)]
 pub struct StakePool<'a> {
     pub header: RefMut<'a, StakePoolHeader>,
     pub balances: RefMut<'a, [u128]>, // of length STAKE_BUFFER_LEN
 }
 
+#[allow(missing_docs)]
 impl<'a> StakePool<'a> {
     pub fn get_checked<'b: 'a>(account_info: &'a AccountInfo<'b>) -> Result<Self, ProgramError> {
         let (header, balances) = RefMut::map_split(account_info.data.borrow_mut(), |s| {
@@ -114,16 +121,11 @@ impl<'a> StakePool<'a> {
     }
 }
 
+#[allow(missing_docs)]
 impl StakePoolHeader {
     pub const SEED: &'static str = "stake_pool";
 
-    pub fn new(
-        owner: Pubkey,
-        rewards_destination: Pubkey,
-        nonce: u8,
-        vault: Pubkey,
-        minimum_stake_amount: u64,
-    ) -> Self {
+    pub fn new(owner: Pubkey, nonce: u8, vault: Pubkey, minimum_stake_amount: u64) -> Self {
         Self {
             tag: Tag::StakePool as u8,
             total_staked: 0,
@@ -132,25 +134,11 @@ impl StakePoolHeader {
             last_crank_time: Clock::get().unwrap().unix_timestamp,
             last_claimed_time: Clock::get().unwrap().unix_timestamp,
             owner: owner.to_bytes(),
-            rewards_destination: rewards_destination.to_bytes(),
             nonce,
             vault: vault.to_bytes(),
             minimum_stake_amount,
         }
     }
-
-    // pub fn save(&self, mut dst: &mut [u8]) {
-    //     self.serialize(&mut dst).unwrap()
-    // }
-
-    // pub fn from_account_info(a: &AccountInfo) -> Result<StakePool, ProgramError> {
-    //     let mut data = &a.data.borrow() as &[u8];
-    //     if data[0] != Tag::StakePool as u8 && data[0] != Tag::Uninitialized as u8 {
-    //         return Err(AccessError::DataTypeMismatch.into());
-    //     }
-    //     let result = StakePool::deserialize(&mut data)?;
-    //     Ok(result)
-    // }
 
     pub fn close(&mut self) {
         self.tag = Tag::Deleted as u8
@@ -168,27 +156,29 @@ impl StakePoolHeader {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, BorshSize)]
+#[allow(missing_docs)]
 pub struct StakeAccount {
-    // Tag
+    /// Tag
     pub tag: Tag,
 
-    // Owner of the stake account
+    /// Owner of the stake account
     pub owner: Pubkey,
 
-    // Amount staked in the account
+    /// Amount staked in the account
     pub stake_amount: u64,
 
-    // Stake pool to which the account belongs to
+    /// Stake pool to which the account belongs to
     pub stake_pool: Pubkey,
 
-    // Last unix timestamp where rewards were claimed
+    /// Last unix timestamp where rewards were claimed
     pub last_claimed_time: i64,
 
-    // Minimum stakeable amount of the pool when the account
-    // was created
+    /// Minimum stakeable amount of the pool when the account
+    /// was created
     pub pool_minimum_at_creation: u64,
 }
 
+#[allow(missing_docs)]
 impl StakeAccount {
     pub const SEED: &'static str = "stake_account";
 
@@ -260,27 +250,28 @@ impl StakeAccount {
     }
 }
 #[derive(BorshSerialize, BorshDeserialize, BorshSize)]
-/// Describes the current state of the event queue
+#[allow(missing_docs)]
 pub struct CentralState {
-    // Tag
+    /// Tag
     pub tag: Tag,
 
-    // Central state nonce
+    /// Central state nonce
     pub signer_nonce: u8,
 
-    // Daily inflation in token amount, inflation is paid from
-    // the reserve owned by the central state
+    /// Daily inflation in token amount, inflation is paid from
+    /// the reserve owned by the central state
     pub daily_inflation: u64,
 
-    // Mint of the token being emitted
+    /// Mint of the token being emitted
     pub token_mint: Pubkey,
 
-    // Authority
-    // The public key that can change the inflation
+    /// Authority
+    /// The public key that can change the inflation
     pub authority: Pubkey,
 }
 
 impl CentralState {
+    #[allow(missing_docs)]
     pub fn new(
         signer_nonce: u8,
         daily_inflation: u64,
@@ -295,20 +286,20 @@ impl CentralState {
             authority,
         }
     }
-
+    #[allow(missing_docs)]
     pub fn create_key(signer_nonce: &u8, program_id: &Pubkey) -> Pubkey {
         let signer_seeds: &[&[u8]] = &[&program_id.to_bytes(), &[*signer_nonce]];
         Pubkey::create_program_address(signer_seeds, program_id).unwrap()
     }
-
+    #[allow(missing_docs)]
     pub fn find_key(program_id: &Pubkey) -> (Pubkey, u8) {
         Pubkey::find_program_address(&[&program_id.to_bytes()], program_id)
     }
-
+    #[allow(missing_docs)]
     pub fn save(&self, mut dst: &mut [u8]) {
         self.serialize(&mut dst).unwrap()
     }
-
+    #[allow(missing_docs)]
     pub fn from_account_info(a: &AccountInfo) -> Result<CentralState, ProgramError> {
         let mut data = &a.data.borrow() as &[u8];
         if data[0] != Tag::CentralState as u8 && data[0] != Tag::Uninitialized as u8 {
@@ -319,12 +310,16 @@ impl CentralState {
     }
 }
 
+/// Number of sellers who need to agree for a bond to be sold
 pub const BOND_SIGNER_THRESHOLD: u64 = 1;
+
+/// List of authorized bond sellers
 pub const AUTHORIZED_BOND_SELLERS: [Pubkey; 1] = [solana_program::pubkey!(
     "ERNVcTG8sGynQjy6BKr3qotMusv3Zo1pJsbGdBgy9eQQ"
 )];
 
 #[derive(BorshSerialize, BorshDeserialize, BorshSize)]
+#[allow(missing_docs)]
 pub struct BondAccount {
     // Tag
     pub tag: Tag,
@@ -378,6 +373,7 @@ pub struct BondAccount {
     pub sellers: Vec<Pubkey>,
 }
 
+#[allow(missing_docs)]
 impl BondAccount {
     pub const SEED: &'static str = "bond_account";
 
@@ -385,12 +381,11 @@ impl BondAccount {
         let seeds: &[&[u8]] = &[
             BondAccount::SEED.as_bytes(),
             &owner.to_bytes(),
-            &total_amount_sold.to_be_bytes(),
+            &total_amount_sold.to_le_bytes(),
         ];
         Pubkey::find_program_address(seeds, program_id)
     }
 
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
         owner: Pubkey,
         total_amount_sold: u64,

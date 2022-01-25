@@ -5,6 +5,7 @@ use solana_program::{
     account_info::{next_account_info, AccountInfo},
     clock::Clock,
     entrypoint::ProgramResult,
+    msg,
     program::invoke_signed,
     program_error::ProgramError,
     program_pack::Pack,
@@ -158,6 +159,8 @@ pub fn process_claim_bond_rewards(
         .checked_div(stake_pool.header.total_staked as u128)
         .and_then(safe_downcast)
         .ok_or(AccessError::Overflow)?;
+
+    msg!("Claiming bond rewards {}", rewards);
 
     // Transfer rewards
     let transfer_ix = mint_to(

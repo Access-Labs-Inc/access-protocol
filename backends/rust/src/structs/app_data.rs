@@ -1,3 +1,4 @@
+use crate::utils::settings::REDIS_URL;
 use redis::Client;
 
 pub struct AppData {
@@ -7,7 +8,7 @@ pub struct AppData {
 impl AppData {
     pub fn new() -> AppData {
         Self {
-            redis_client: Client::open("redis://127.0.0.1/").unwrap(),
+            redis_client: Client::open(REDIS_URL).unwrap(),
         }
     }
 }

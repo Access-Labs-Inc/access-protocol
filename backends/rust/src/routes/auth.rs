@@ -11,24 +11,15 @@ use solana_program::pubkey::Pubkey;
 use std::str::FromStr;
 
 use crate::errors::AccessError;
+use crate::structs::auth::{LoginRequest, LoginResponse, NonceRequest, NonceResponse};
+use crate::utils::settings::REDIS_EXPIRE;
 use crate::utils::{
     jwt::create_jwt,
     pubkey::is_valid_pubkey,
     request::{deserialize_body, load_body},
 };
 use redis::Commands;
-use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-
-#[derive(Serialize, Deserialize)]
-pub struct NonceResponse {
-    nonce: String,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct NonceRequest {
-    address: String,
-}
 
 #[post("/auth/nonce")]
 pub async fn handle_get_nonce(
@@ -52,23 +43,11 @@ pub async fn handle_get_nonce(
         .map_err(|_| AccessError::InternalError)?;
 
     let _: () = connection
-        .set(format!("nonce:{}", &address), &nonce)
+        .set_ex(format!("nonce:{}", &address), &nonce, REDIS_EXPIRE)
         .map_err(|_| AccessError::InternalError)?;
 
     let result = NonceResponse { nonce };
     Ok(HttpResponse::Ok().json(ApiResponse::new(true, result)))
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct LoginResponse {
-    token: String,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct LoginRequest {
-    address: String,
-    #[serde(rename = "signedNonce")]
-    signed_nonce: String,
 }
 
 #[post("/auth/login")]

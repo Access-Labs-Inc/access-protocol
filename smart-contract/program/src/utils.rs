@@ -1,6 +1,6 @@
 use crate::error::AccessError;
 use crate::state::{BondAccount, AUTHORIZED_BOND_SELLERS};
-use crate::state::{StakeAccount, StakePool, MEDIA_MINT, SECONDS_IN_DAY, STAKE_BUFFER_LEN};
+use crate::state::{StakeAccount, StakePool, ACCESS_MINT, SECONDS_IN_DAY, STAKE_BUFFER_LEN};
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
     program_pack::Pack, pubkey::Pubkey,
@@ -83,7 +83,7 @@ pub fn assert_valid_vault(account: &AccountInfo, vault_signer: &Pubkey) -> Progr
         msg!("Invalid vault account provided");
         return Err(ProgramError::InvalidArgument);
     }
-    if acc.mint != MEDIA_MINT {
+    if acc.mint != ACCESS_MINT {
         msg!("Invalid ACCESS mint");
         #[cfg(not(feature = "no-mint-check"))]
         return Err(ProgramError::InvalidArgument);

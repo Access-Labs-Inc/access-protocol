@@ -145,8 +145,6 @@ async fn test_staking() {
             vault: &pool_vault,
         },
         create_stake_pool::Params {
-            nonce: stake_pool_nonce,
-            name: "stake_pool".to_string(),
             owner: stake_pool_owner.pubkey(),
             destination: stake_pool_owner_token_acc,
             minimum_stake_amount: 10_000_000,

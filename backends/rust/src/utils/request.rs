@@ -5,6 +5,7 @@ use serde::Deserialize;
 
 const MAX_SIZE: usize = 262_144; // max payload size is 256k
 
+/// Loads the body of an incoming request
 pub async fn load_body(mut payload: Payload) -> Result<BytesMut, AccessError> {
     // payload is a stream of Bytes objects
     let mut body = BytesMut::new();
@@ -20,6 +21,7 @@ pub async fn load_body(mut payload: Payload) -> Result<BytesMut, AccessError> {
     Ok(body)
 }
 
+/// Deserializes a request body in a struct T
 pub fn deserialize_body<'a, T: Deserialize<'a>>(bytes: &'a BytesMut) -> T {
     serde_json::from_slice::<T>(bytes).unwrap()
 }
