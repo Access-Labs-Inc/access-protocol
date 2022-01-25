@@ -486,9 +486,11 @@ export const stake = async (
 ) => {
   const stake = await StakeAccount.retrieve(connection, stakeAccount);
   const stakePool = await StakePool.retrieve(connection, stake.stakePool);
+  const [centralKey] = await CentralState.getKey(programId);
 
   const ix = new stakeInstruction({ amount: new BN(amount) }).getInstruction(
     programId,
+    centralKey,
     stakeAccount,
     stake.stakePool,
     stake.owner,
@@ -549,11 +551,13 @@ export const unstake = async (
 ) => {
   const stake = await StakeAccount.retrieve(connection, stakeAccount);
   const stakePool = await StakePool.retrieve(connection, stake.stakePool);
+  const [centralKey] = await CentralState.getKey(programId);
 
   const ix = new unstakeInstruction({
     amount: new BN(amount),
   }).getInstruction(
     programId,
+    centralKey,
     stakeAccount,
     stake.stakePool,
     stake.owner,

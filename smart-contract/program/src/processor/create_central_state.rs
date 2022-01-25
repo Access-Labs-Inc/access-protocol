@@ -89,6 +89,7 @@ pub fn process_create_central_state(
         params.daily_inflation,
         *accounts.mint.key,
         params.authority,
+        0,
     );
 
     Cpi::create_account(

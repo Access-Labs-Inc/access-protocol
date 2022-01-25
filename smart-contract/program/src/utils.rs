@@ -29,7 +29,7 @@ pub fn calc_previous_balances_and_inflation(
         last_claimed_day += 1;
     }
 
-    Ok(reward)
+    Ok(reward << 32)
 }
 
 pub fn check_account_key(account: &AccountInfo, key: &Pubkey, error: AccessError) -> ProgramResult {

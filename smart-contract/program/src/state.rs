@@ -80,7 +80,8 @@ pub struct StakePoolHeader {
 #[allow(missing_docs)]
 pub struct StakePool<'a> {
     pub header: RefMut<'a, StakePoolHeader>,
-    pub balances: RefMut<'a, [u128]>, // of length STAKE_BUFFER_LEN
+    /// Circular buffer of length STAKE_BUFFER_LEN storing (inflation * pool_total_staked / total_staked) in FP32 format
+    pub balances: RefMut<'a, [u128]>,
 }
 
 #[allow(missing_docs)]
@@ -268,6 +269,9 @@ pub struct CentralState {
     /// Authority
     /// The public key that can change the inflation
     pub authority: Pubkey,
+
+    /// Total amount of staked tokens
+    pub total_staked: u64,
 }
 
 impl CentralState {
@@ -277,6 +281,7 @@ impl CentralState {
         daily_inflation: u64,
         token_mint: Pubkey,
         authority: Pubkey,
+        total_staked: u64,
     ) -> Self {
         Self {
             tag: Tag::CentralState,
@@ -284,6 +289,7 @@ impl CentralState {
             daily_inflation,
             token_mint,
             authority,
+            total_staked,
         }
     }
     #[allow(missing_docs)]

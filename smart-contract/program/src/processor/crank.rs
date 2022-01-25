@@ -3,6 +3,7 @@
 use crate::error::AccessError;
 use crate::state::{CentralState, StakePool, SECONDS_IN_DAY};
 use crate::utils::check_account_owner;
+use bonfida_utils::fp_math::{fp32_div, fp32_mul};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
@@ -73,8 +74,10 @@ pub fn process_crank(
     msg!("Daily inflation {}", central_state.daily_inflation);
 
     stake_pool.push_balances_buff(
-        (stake_pool.header.total_staked as u128)
+        ((stake_pool.header.total_staked << 32) as u128)
             .checked_mul(central_state.daily_inflation as u128)
+            .ok_or(AccessError::Overflow)?
+            .checked_div(central_state.total_staked as u128)
             .ok_or(AccessError::Overflow)?,
     );
     stake_pool.header.last_crank_time = present_time;

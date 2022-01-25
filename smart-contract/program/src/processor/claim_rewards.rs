@@ -15,11 +15,10 @@ use solana_program::{
     entrypoint::ProgramResult,
     msg,
     program_error::ProgramError,
-    program_pack::Pack,
     pubkey::Pubkey,
     sysvar::Sysvar,
 };
-use spl_token::{instruction::mint_to, state::Mint};
+use spl_token::instruction::mint_to;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `claim_rewards` instruction
@@ -117,8 +116,6 @@ pub fn process_claim_rewards(
     let stake_pool = StakePool::get_checked(accounts.stake_pool)?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
 
-    let mint = Mint::unpack_from_slice(&accounts.mint.data.borrow_mut())?;
-
     check_account_key(
         accounts.stake_pool,
         &stake_account.stake_pool,
@@ -142,9 +139,6 @@ pub fn process_claim_rewards(
     )?;
 
     let rewards = balances_and_inflation
-        // Divide the accumulated total stake balance multiplied by the daily inflation
-        .checked_div(mint.supply as u128)
-        .ok_or(AccessError::Overflow)?
         // Multiply by % stakers receive
         .checked_mul(STAKER_MULTIPLIER as u128)
         .ok_or(AccessError::Overflow)?
