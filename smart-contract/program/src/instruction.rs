@@ -41,23 +41,25 @@ pub enum MediaInstruction {
     ///
     /// | Index | Writable | Signer | Description                            |
     /// | ------------------------------------------------------------------ |
-    /// | 0     | ✅        | ❌      | The stake account                      |
-    /// | 1     | ✅        | ❌      | The stake pool account                 |
-    /// | 2     | ❌        | ✅      | The owner of the stake account         |
-    /// | 3     | ✅        | ❌      | The source account of the stake tokens |
-    /// | 4     | ❌        | ❌      | The SPL token program account          |
-    /// | 5     | ✅        | ❌      | The stake pool vault account           |
+    /// | 0     | ✅        | ❌      | The central state account              |
+    /// | 1     | ✅        | ❌      | The stake account                      |
+    /// | 2     | ✅        | ❌      | The stake pool account                 |
+    /// | 3     | ❌        | ✅      | The owner of the stake account         |
+    /// | 4     | ✅        | ❌      | The source account of the stake tokens |
+    /// | 5     | ❌        | ❌      | The SPL token program account          |
+    /// | 6     | ✅        | ❌      | The stake pool vault account           |
     Stake,
     /// Unstake
     ///
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
-    /// | 0     | ✅        | ❌      | The stake account                    |
-    /// | 1     | ✅        | ❌      | The stake pool account               |
-    /// | 2     | ❌        | ✅      | The owner of the stake account       |
-    /// | 3     | ✅        | ❌      | The destination of the staked tokens |
-    /// | 4     | ❌        | ❌      | The SPL token program account        |
-    /// | 5     | ✅        | ❌      | The stake pool vault                 |
+    /// | 0     | ✅        | ❌      | The central state account            |
+    /// | 1     | ✅        | ❌      | The stake account                    |
+    /// | 2     | ✅        | ❌      | The stake pool account               |
+    /// | 3     | ❌        | ✅      | The owner of the stake account       |
+    /// | 4     | ✅        | ❌      | The destination of the staked tokens |
+    /// | 5     | ❌        | ❌      | The SPL token program account        |
+    /// | 6     | ✅        | ❌      | The stake pool vault                 |
     Unstake,
     /// Claim rewards of a stake pool
     ///

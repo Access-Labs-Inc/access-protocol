@@ -209,6 +209,7 @@ export class CentralState {
   dailyInflation: BN;
   tokenMint: PublicKey;
   authority: PublicKey;
+  totalStaked: BN;
 
   static schema: Schema = new Map([
     [
@@ -221,6 +222,7 @@ export class CentralState {
           ["dailyInflation", "u64"],
           ["tokenMint", [32]],
           ["authority", [32]],
+          ["totalStaked", "u64"],
         ],
       },
     ],
@@ -232,12 +234,14 @@ export class CentralState {
     dailyInflation: BN;
     tokenMint: Uint8Array;
     authority: Uint8Array;
+    totalStaked: BN;
   }) {
     this.tag = obj.tag as Tag;
     this.signerNonce = obj.signerNonce;
     this.dailyInflation = obj.dailyInflation;
     this.tokenMint = new PublicKey(obj.tokenMint);
     this.authority = new PublicKey(obj.authority);
+    this.totalStaked = obj.totalStaked;
   }
 
   static deserialize(data: Buffer) {

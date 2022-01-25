@@ -14,7 +14,7 @@ use solana_program::{
 use spl_token::instruction::transfer;
 
 use crate::{
-    state::SECONDS_IN_DAY,
+    state::{CentralState, SECONDS_IN_DAY},
     utils::{check_account_key, check_account_owner, check_signer},
 };
 use bonfida_utils::{BorshSize, InstructionsAccount};
@@ -32,6 +32,10 @@ pub struct Params {
 #[derive(InstructionsAccount)]
 /// The required accounts for the `stake` instruction
 pub struct Accounts<'a, T> {
+    /// The central state account
+    #[cons(writable)]
+    pub central_state_account: &'a T,
+
     /// The stake account
     #[cons(writable)]
     pub stake_account: &'a T,
@@ -63,6 +67,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     ) -> Result<Self, ProgramError> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
+            central_state_account: next_account_info(accounts_iter)?,
             stake_account: next_account_info(accounts_iter)?,
             stake_pool: next_account_info(accounts_iter)?,
             owner: next_account_info(accounts_iter)?,
@@ -79,6 +84,11 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         )?;
 
         // Check ownership
+        check_account_owner(
+            accounts.central_state_account,
+            program_id,
+            AccessError::WrongOwner,
+        )?;
         check_account_owner(
             accounts.stake_account,
             program_id,
@@ -117,6 +127,7 @@ pub fn process_stake(
 
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool)?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
+    let mut central_state = CentralState::from_account_info(accounts.central_state_account)?;
 
     check_account_key(
         accounts.owner,
@@ -180,8 +191,15 @@ pub fn process_stake(
     stake_account.deposit(amount)?;
     stake_pool.header.deposit(amount)?;
 
+    //Update central state
+    central_state.total_staked = central_state
+        .total_staked
+        .checked_add(amount)
+        .ok_or(AccessError::Overflow)?;
+
     // Save states
     stake_account.save(&mut accounts.stake_account.data.borrow_mut());
+    central_state.save(&mut accounts.central_state_account.data.borrow_mut());
 
     Ok(())
 }

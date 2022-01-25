@@ -273,6 +273,7 @@ async fn test_staking() {
             source_token: &staker_token_acc,
             spl_token_program: &spl_token::ID,
             vault: &pool_vault,
+            central_state_account: &central_state,
         },
         stake::Params {
             amount: token_amount,
@@ -427,6 +428,7 @@ async fn test_staking() {
             destination_token: &staker_token_acc,
             spl_token_program: &spl_token::ID,
             vault: &pool_vault,
+            central_state_account: &central_state,
         },
         unstake::Params {
             amount: token_amount,

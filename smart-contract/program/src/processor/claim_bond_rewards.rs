@@ -8,7 +8,6 @@ use solana_program::{
     msg,
     program::invoke_signed,
     program_error::ProgramError,
-    program_pack::Pack,
     pubkey::Pubkey,
     sysvar::Sysvar,
 };
@@ -16,7 +15,7 @@ use solana_program::{
 use crate::error::AccessError;
 use crate::state::{BondAccount, CentralState, StakePool, STAKER_MULTIPLIER};
 use bonfida_utils::{BorshSize, InstructionsAccount};
-use spl_token::{instruction::mint_to, state::Mint};
+use spl_token::instruction::mint_to;
 
 use crate::utils::{
     calc_previous_balances_and_inflation, check_account_key, check_account_owner, check_signer,
@@ -119,8 +118,6 @@ pub fn process_claim_bond_rewards(
     let stake_pool = StakePool::get_checked(accounts.stake_pool)?;
     let mut bond = BondAccount::from_account_info(accounts.bond_account, false)?;
 
-    let mint = Mint::unpack_from_slice(&accounts.mint.data.borrow_mut())?;
-
     // Safety checks
     check_account_key(
         accounts.stake_pool,
@@ -145,9 +142,6 @@ pub fn process_claim_bond_rewards(
 
     // This can be factoriser
     let rewards = balances_and_inflation
-        // Divide the accumulated total stake balance multiplied by the daily inflation
-        .checked_div(mint.supply as u128) // TODO: Check whether max supply or current supply
-        .ok_or(AccessError::Overflow)?
         // Multiply by % stakers receive
         .checked_mul(STAKER_MULTIPLIER as u128)
         .ok_or(AccessError::Overflow)?
