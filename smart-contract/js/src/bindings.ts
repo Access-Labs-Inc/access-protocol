@@ -161,6 +161,8 @@ export const claimPoolRewards = async (
     centralState.tokenMint,
     TOKEN_PROGRAM_ID
   );
+
+  return ix;
 };
 
 /**
@@ -401,26 +403,21 @@ export const createStakeAccount = async (
  */
 export const createStakePool = async (
   connection: Connection,
-  name: string,
   owner: PublicKey,
   destination: PublicKey,
   minimumStakeAmount: number,
   feePayer: PublicKey,
   programId: PublicKey
 ) => {
-  const [stakePool, nonce] = await StakePool.getKey(
-    programId,
-    owner,
-    destination
-  );
+  const [stakePool] = await StakePool.getKey(programId, owner);
   const [centralKey] = await CentralState.getKey(programId);
   const centralState = await CentralState.retrieve(connection, centralKey);
-
   const vault = await Token.getAssociatedTokenAddress(
     ASSOCIATED_TOKEN_PROGRAM_ID,
     TOKEN_PROGRAM_ID,
     centralState.tokenMint,
-    stakePool
+    stakePool,
+    true
   );
 
   const createVaultIx = Token.createAssociatedTokenAccountInstruction(
@@ -433,8 +430,6 @@ export const createStakePool = async (
   );
 
   const ix = new createStakePoolInstruction({
-    nonce,
-    name,
     owner: owner.toBuffer(),
     minimumStakeAmount: new BN(minimumStakeAmount),
     destination: destination.toBuffer(),

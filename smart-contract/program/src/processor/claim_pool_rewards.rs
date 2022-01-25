@@ -13,6 +13,7 @@ use solana_program::{
     account_info::{next_account_info, AccountInfo},
     clock::Clock,
     entrypoint::ProgramResult,
+    msg,
     program_error::ProgramError,
     program_pack::Pack,
     pubkey::Pubkey,
@@ -125,7 +126,7 @@ pub fn process_claim_pool_rewards(
         &stake_pool,
     )?;
 
-    let rewards = balances_and_inflation
+    let rewards = (balances_and_inflation << 32)
         // Divide the accumulated total stake balance multiplied by the daily inflation
         .checked_div(mint.supply as u128)
         .ok_or(AccessError::Overflow)?
@@ -135,7 +136,7 @@ pub fn process_claim_pool_rewards(
         .checked_div(100)
         .and_then(safe_downcast)
         .ok_or(AccessError::Overflow)?;
-
+    msg!("Claiming pool rewards {}", rewards >> 32);
     // Transfer rewards
     let transfer_ix = mint_to(
         &spl_token::ID,

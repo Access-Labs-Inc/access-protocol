@@ -21,10 +21,6 @@ use crate::utils::{check_account_key, check_account_owner};
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `create_stake_pool` instruction
 pub struct Params {
-    // The PDA nonce
-    pub nonce: u8,
-    // Name of the stake pool
-    pub name: String,
     // Owner of the stake pool
     pub owner: Pubkey,
     // Destination of the rewards
@@ -74,7 +70,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             &system_program::ID,
             AccessError::WrongOwner,
         )?;
-        check_account_owner(accounts.vault, &spl_token::ID, AccessError::WrongOwner)?;
 
         Ok(accounts)
     }
@@ -87,7 +82,7 @@ pub fn process_create_stake_pool(
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts)?;
 
-    let derived_stake_key = StakePool::create_key(&params.nonce, &params.owner, program_id);
+    let (derived_stake_key, nonce) = StakePool::find_key(&params.owner, program_id);
 
     check_account_key(
         accounts.stake_pool_account,
@@ -99,8 +94,7 @@ pub fn process_create_stake_pool(
 
     let stake_pool_header = StakePoolHeader::new(
         params.owner,
-        params.destination,
-        params.nonce,
+        nonce,
         *accounts.vault.key,
         params.minimum_stake_amount,
     );
@@ -111,9 +105,9 @@ pub fn process_create_stake_pool(
         accounts.fee_payer,
         accounts.stake_pool_account,
         &[
-            params.name.as_bytes(),
+            StakePoolHeader::SEED.as_bytes(),
             &params.owner.to_bytes(),
-            &[params.nonce],
+            &[nonce],
         ],
         stake_pool_header.borsh_len() + 16 * STAKE_BUFFER_LEN as usize,
     )?;

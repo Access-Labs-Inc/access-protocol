@@ -26,7 +26,6 @@ export class StakePool {
   lastCrankTime: BN;
   lastClaimedTime: BN;
   owner: PublicKey;
-  rewardsDestination: PublicKey;
   vault: PublicKey;
 
   balances: BN[];
@@ -46,7 +45,6 @@ export class StakePool {
           ["lastCrankTime", "u64"],
           ["lastClaimedTime", "u64"],
           ["owner", [32]],
-          ["rewardsDestination", [32]],
           ["vault", [32]],
           ["balances", ["u128", STAKE_BUFFER_LEN]],
         ],
@@ -62,9 +60,8 @@ export class StakePool {
     minimumStakeAmount: BN;
     totalStaked: BN;
     lastCrankTime: BN;
-    lastClaimed: BN;
+    lastClaimedTime: BN;
     owner: Uint8Array;
-    rewardsDestination: Uint8Array;
     vault: Uint8Array;
     balances: BN[];
   }) {
@@ -75,9 +72,8 @@ export class StakePool {
     this.minimumStakeAmount = obj.minimumStakeAmount;
     this.totalStaked = obj.totalStaked;
     this.lastCrankTime = obj.lastCrankTime;
-    this.lastClaimedTime = obj.lastClaimed;
+    this.lastClaimedTime = obj.lastClaimedTime;
     this.owner = new PublicKey(obj.owner);
-    this.rewardsDestination = new PublicKey(obj.rewardsDestination);
     this.vault = new PublicKey(obj.vault);
     this.balances = obj.balances;
   }
@@ -94,13 +90,9 @@ export class StakePool {
     return this.deserialize(accountInfo.data);
   }
 
-  static async getKey(
-    programId: PublicKey,
-    owner: PublicKey,
-    destination: PublicKey
-  ) {
+  static async getKey(programId: PublicKey, owner: PublicKey) {
     return await PublicKey.findProgramAddress(
-      [Buffer.from("stake_pool"), owner.toBuffer(), destination.toBuffer()],
+      [Buffer.from("stake_pool"), owner.toBuffer()],
       programId
     );
   }
@@ -237,6 +229,7 @@ export class BondAccount {
   sellerTokenAccount: PublicKey;
   unlockStartDate: BN;
   unlockPeriod: BN;
+  unlockAmount: BN;
   lastUnlockTime: BN;
   totalUnlockedAmount: BN;
   poolMinimumAtCreation: BN;
@@ -259,6 +252,7 @@ export class BondAccount {
           ["sellerTokenAccount", [32]],
           ["unlockStartDate", "u64"],
           ["unlockPeriod", "u64"],
+          ["unlockAmount", "u64"],
           ["lastUnlockTime", "u64"],
           ["totalUnlockedAmount", "u64"],
           ["poolMinimumAtCreation", "u64"],
@@ -280,6 +274,7 @@ export class BondAccount {
     sellerTokenAccount: Uint8Array;
     unlockStartDate: BN;
     unlockPeriod: BN;
+    unlockAmount: BN;
     lastUnlockTime: BN;
     totalUnlockedAmount: BN;
     poolMinimumAtCreation: BN;
@@ -296,6 +291,7 @@ export class BondAccount {
     this.sellerTokenAccount = new PublicKey(obj.sellerTokenAccount);
     this.unlockStartDate = obj.unlockStartDate;
     this.unlockPeriod = obj.unlockPeriod;
+    this.unlockAmount = obj.unlockAmount;
     this.lastUnlockTime = obj.lastUnlockTime;
     this.totalUnlockedAmount = obj.totalUnlockedAmount;
     this.poolMinimumAtCreation = obj.poolMinimumAtCreation;

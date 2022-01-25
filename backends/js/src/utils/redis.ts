@@ -1,6 +1,6 @@
 import { createClient } from "redis";
 
-const EXPIRE_TIME = 10 * 60; // in seconds
+const EXPIRE_TIME = parseFloat(process.env.REDIS_EXPIRE_TIME!); // in seconds
 
 export enum RedisKey {
   Nonce = "nonce:",

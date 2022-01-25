@@ -9,7 +9,7 @@ import {
 
 export const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET as string;
 
-const EXPIRATION_INTERVAL = 24 * 60 * 60 * 1000;
+const EXPIRATION_INTERVAL = parseFloat(process.env.ACCESS_TOKEN_SECRET!);
 
 const callback =
   (res: Response, next: NextFunction) =>
