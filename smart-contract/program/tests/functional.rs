@@ -1,3 +1,6 @@
+use core::time;
+use std::thread;
+
 use solana_program::{pubkey, pubkey::Pubkey, system_program};
 use solana_program_test::{processor, ProgramTest};
 use solana_sdk::signer::{keypair::Keypair, Signer};
@@ -299,6 +302,9 @@ async fn test_staking() {
     sign_send_instructions(&mut prg_test_ctx, vec![crank_ix], vec![])
         .await
         .unwrap();
+
+    // Advance in time by a few seconds
+    prg_test_ctx.warp_to_slot(4_000).unwrap();
 
     //
     // Claim stake pool rewards

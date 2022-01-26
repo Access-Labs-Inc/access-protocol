@@ -70,11 +70,12 @@ pub fn process_crank(
         #[cfg(not(feature = "no-lock-time"))]
         return Err(AccessError::NoOp.into());
     }
-    msg!("Total staked {}", stake_pool.header.total_staked);
+    msg!("Total staked in pool {}", stake_pool.header.total_staked);
     msg!("Daily inflation {}", central_state.daily_inflation);
+    msg!("Total staked {}", central_state.total_staked);
 
     stake_pool.push_balances_buff(
-        ((stake_pool.header.total_staked << 32) as u128)
+        ((stake_pool.header.total_staked as u128) << 32)
             .checked_mul(central_state.daily_inflation as u128)
             .ok_or(AccessError::Overflow)?
             .checked_div(central_state.total_staked as u128)

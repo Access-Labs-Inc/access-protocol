@@ -12,24 +12,23 @@ pub fn calc_previous_balances_and_inflation(
     last_claimed_time: i64,
     stake_pool: &StakePool,
 ) -> Result<u128, ProgramError> {
-    let last_full_day = current_time as u64 / SECONDS_IN_DAY;
-    let mut last_claimed_day = last_claimed_time as u64 / SECONDS_IN_DAY;
+    let nb_days_to_claim = (current_time - last_claimed_time) as u64 / SECONDS_IN_DAY;
+    msg!("Nb of days behind {}", nb_days_to_claim);
 
-    let mut i = last_full_day - last_claimed_day;
-    i = (stake_pool.header.current_day_idx as u64 - i) % STAKE_BUFFER_LEN;
-
-    let mut reward: u128 = 0;
+    // Saturating as we don't want to wrap around when there haven't been sufficient cranks
+    let mut i = (stake_pool.header.current_day_idx as u64).saturating_sub(nb_days_to_claim)
+        % STAKE_BUFFER_LEN;
 
     // Compute reward for all past days
-    while last_claimed_day < last_full_day {
+    let mut reward: u128 = 0;
+    while i != stake_pool.header.current_day_idx as u64 {
         reward = reward
             .checked_add(stake_pool.balances[i as usize])
             .ok_or(AccessError::Overflow)?;
         i = (i + 1) % STAKE_BUFFER_LEN;
-        last_claimed_day += 1;
     }
 
-    Ok(reward << 32)
+    Ok(reward >> 32)
 }
 
 pub fn check_account_key(account: &AccountInfo, key: &Pubkey, error: AccessError) -> ProgramResult {
