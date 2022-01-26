@@ -3,10 +3,12 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
+    clock::Clock,
     entrypoint::ProgramResult,
     program_error::ProgramError,
     pubkey::Pubkey,
     system_program,
+    sysvar::Sysvar,
 };
 
 use crate::cpi::Cpi;
@@ -37,8 +39,6 @@ pub struct Params {
     pub unlock_period: i64,
     /// The amount of tokens that unlock at each `unlock_period`
     pub unlock_amount: u64,
-    /// Last time tokens unlocked
-    pub last_unlock_time: i64,
     /// Index of the seller in the [`array`][`crate::state::AUTHORIZED_BOND_SELLERS`] of authorized sellers
     pub seller_index: u64,
 }
@@ -61,7 +61,7 @@ pub struct Accounts<'a, T> {
     pub system_program: &'a T,
 
     /// The fee account
-    /// TODO needs to sign and be writable
+    #[cons(writable, signer)]
     pub fee_payer: &'a T,
 }
 
@@ -92,8 +92,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         // Check signer
         check_signer(accounts.seller, AccessError::BondSellerMustSign)?;
 
-        //TODO (stake pool owner == pgr id) is not checked?
-
         Ok(accounts)
     }
 }
@@ -109,6 +107,7 @@ pub fn process_create_bond(
         BondAccount::create_key(&params.buyer, params.total_amount_sold, program_id);
 
     let stake_pool = StakePool::get_checked(accounts.stake_pool)?;
+    let current_time = Clock::get().unwrap().unix_timestamp;
 
     check_account_key(
         accounts.bond_account,
@@ -129,10 +128,10 @@ pub fn process_create_bond(
         params.unlock_start_date,
         params.unlock_period,
         params.unlock_amount,
-        params.last_unlock_time,
+        current_time,
         stake_pool.header.minimum_stake_amount,
         *accounts.stake_pool.key,
-        params.unlock_start_date,
+        current_time,
         *accounts.seller.key,
     );
 

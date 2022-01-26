@@ -12,7 +12,7 @@ pub fn calc_previous_balances_and_inflation(
     last_claimed_time: i64,
     stake_pool: &StakePool,
 ) -> Result<u128, ProgramError> {
-    let nb_days_to_claim = (current_time - last_claimed_time) as u64 / SECONDS_IN_DAY;
+    let nb_days_to_claim = current_time.saturating_sub(last_claimed_time) as u64 / SECONDS_IN_DAY;
     msg!("Nb of days behind {}", nb_days_to_claim);
 
     // Saturating as we don't want to wrap around when there haven't been sufficient cranks

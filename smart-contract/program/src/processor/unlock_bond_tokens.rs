@@ -114,7 +114,7 @@ pub fn process_unlock_bond_tokens(
     }
 
     let delta = current_time
-        .checked_sub(bond.last_claimed_time)
+        .checked_sub(bond.last_unlock_time)
         .ok_or(AccessError::Overflow)?;
 
     if delta < bond.unlock_period {
@@ -122,9 +122,6 @@ pub fn process_unlock_bond_tokens(
         return Err(ProgramError::InvalidArgument);
     }
 
-    let missed_periods = 1;
-
-    #[cfg(not(feature = "no-lock-time"))]
     let missed_periods = delta
         .checked_div(bond.unlock_period)
         .ok_or(AccessError::Overflow)?;

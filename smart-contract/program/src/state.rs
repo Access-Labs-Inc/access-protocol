@@ -396,6 +396,7 @@ impl BondAccount {
         Pubkey::find_program_address(seeds, program_id)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         owner: Pubkey,
         total_amount_sold: u64,
@@ -463,24 +464,18 @@ impl BondAccount {
 
     pub fn calc_unlock_amount(&self, missed_periods: u64) -> Result<u64, ProgramError> {
         msg!("Missed periods {}", missed_periods);
-        let unlock_amount = missed_periods * self.unlock_amount;
+        let cumulated_unlock_amnt = missed_periods * self.unlock_amount;
         msg!(
-            "unlock amount {} total amount {}",
-            unlock_amount,
+            "Unlock amount {} Total amount {}",
+            cumulated_unlock_amnt,
             self.total_amount_sold
         );
-        if self
-            .total_unlocked_amount
-            .checked_add(unlock_amount)
-            .ok_or(AccessError::Overflow)?
-            > self.total_amount_sold
-        {
-            Ok(self
-                .total_amount_sold
-                .checked_sub(unlock_amount)
-                .ok_or(AccessError::Overflow)?)
-        } else {
-            Ok(unlock_amount)
-        }
+
+        Ok(std::cmp::min(
+            cumulated_unlock_amnt,
+            self.total_amount_sold
+                .checked_sub(self.total_unlocked_amount)
+                .ok_or(AccessError::Overflow)?,
+        ))
     }
 }
