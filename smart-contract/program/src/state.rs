@@ -17,7 +17,11 @@ pub const ACCESS_MINT: Pubkey =
     solana_program::pubkey!("EchesyfXePKdLtoiZSL8pBe8Myagyy8ZRqsACNCFGnvp");
 
 #[allow(missing_docs)]
-pub const SECONDS_IN_DAY: u64 = 3600 * 24;
+pub const SECONDS_IN_DAY: u64 = if cfg!(feature = "no-lock-time") {
+    1
+} else {
+    3600 * 24
+};
 
 /// Percentage of the staking rewards going to stakers
 pub const STAKER_MULTIPLIER: u64 = 80;
@@ -458,7 +462,7 @@ impl BondAccount {
     }
 
     pub fn calc_unlock_amount(&self, missed_periods: u64) -> Result<u64, ProgramError> {
-        msg!("{}", missed_periods);
+        msg!("Missed periods {}", missed_periods);
         let unlock_amount = missed_periods * self.unlock_amount;
         msg!(
             "unlock amount {} total amount {}",
