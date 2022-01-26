@@ -1,6 +1,3 @@
-use core::time;
-use std::thread;
-
 use solana_program::{pubkey, pubkey::Pubkey, system_program};
 use solana_program_test::{processor, ProgramTest};
 use solana_sdk::signer::{keypair::Keypair, Signer};
@@ -12,8 +9,8 @@ use access_protocol::{
     instruction::{
         admin_mint, change_inflation, change_pool_minimum, claim_bond, claim_bond_rewards,
         claim_pool_rewards, claim_rewards, close_stake_account, close_stake_pool, crank,
-        create_bond, create_central_state, create_stake_account, create_stake_pool, sign_bond,
-        stake, unlock_bond_tokens, unstake,
+        create_bond, create_central_state, create_stake_account, create_stake_pool, stake,
+        unlock_bond_tokens, unstake,
     },
     state::BondAccount,
 };
@@ -120,7 +117,7 @@ async fn test_staking() {
     // Create stake pool
     //
 
-    let (stake_pool_key, stake_pool_nonce) = Pubkey::find_program_address(
+    let (stake_pool_key, _) = Pubkey::find_program_address(
         &[
             "stake_pool".as_bytes(),
             &stake_pool_owner.pubkey().to_bytes(),
@@ -183,7 +180,6 @@ async fn test_staking() {
             unlock_period: 1,
             unlock_amount: bond_amount,
             unlock_start_date: 0,
-            last_unlock_time: 1,
             seller_index: 0,
         },
     );
@@ -209,27 +205,6 @@ async fn test_staking() {
     );
 
     sign_send_instructions(&mut prg_test_ctx, vec![claim_bond_ix], vec![&staker])
-        .await
-        .unwrap();
-
-    //
-    // Unlock bond tokens
-    //
-
-    let unlock_ix = unlock_bond_tokens(
-        program_id,
-        unlock_bond_tokens::Accounts {
-            bond_account: &bond_key,
-            bond_owner: &staker.pubkey(),
-            mint: &mint,
-            access_token_destination: &staker_token_acc,
-            central_state: &central_state,
-            spl_token_program: &spl_token::ID,
-        },
-        unlock_bond_tokens::Params {},
-    );
-
-    sign_send_instructions(&mut prg_test_ctx, vec![unlock_ix], vec![&staker])
         .await
         .unwrap();
 
@@ -376,6 +351,27 @@ async fn test_staking() {
     );
 
     sign_send_instructions(&mut prg_test_ctx, vec![claim_ix], vec![&staker])
+        .await
+        .unwrap();
+
+    //
+    // Unlock bond tokens
+    //
+
+    let unlock_ix = unlock_bond_tokens(
+        program_id,
+        unlock_bond_tokens::Accounts {
+            bond_account: &bond_key,
+            bond_owner: &staker.pubkey(),
+            mint: &mint,
+            access_token_destination: &staker_token_acc,
+            central_state: &central_state,
+            spl_token_program: &spl_token::ID,
+        },
+        unlock_bond_tokens::Params {},
+    );
+
+    sign_send_instructions(&mut prg_test_ctx, vec![unlock_ix], vec![&staker])
         .await
         .unwrap();
 

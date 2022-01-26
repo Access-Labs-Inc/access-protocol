@@ -293,7 +293,6 @@ export const createBond = async (
   unlockStartDate: number,
   unlockPeriod: number,
   unlockAmount: number,
-  lastUnlockTime: number,
   stakePool: PublicKey,
   sellerIndex: number,
   programId: PublicKey
@@ -313,7 +312,6 @@ export const createBond = async (
     unlockStartDate: new BN(unlockStartDate),
     unlockPeriod: new BN(unlockPeriod),
     unlockAmount: new BN(unlockAmount),
-    lastUnlockTime: new BN(lastUnlockTime),
     sellerIndex: new BN(sellerIndex),
   }).getInstruction(
     programId,

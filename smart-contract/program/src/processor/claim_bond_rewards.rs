@@ -135,8 +135,6 @@ pub fn process_claim_bond_rewards(
         AccessError::WrongMint,
     )?;
 
-    let balances_and_inflation: u128 = 100;
-    #[cfg(not(feature = "no-lock-time"))]
     let balances_and_inflation =
         calc_previous_balances_and_inflation(current_time, bond.last_claimed_time, &stake_pool)?;
 

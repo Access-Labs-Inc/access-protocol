@@ -475,7 +475,6 @@ export class createBondInstruction {
   unlockStartDate: BN;
   unlockPeriod: BN;
   unlockAmount: BN;
-  lastUnlockTime: BN;
   sellerIndex: BN;
   static schema: Schema = new Map([
     [
@@ -492,7 +491,6 @@ export class createBondInstruction {
           ["unlockStartDate", "u64"],
           ["unlockPeriod", "u64"],
           ["unlockAmount", "u64"],
-          ["lastUnlockTime", "u64"],
           ["sellerIndex", "u64"],
         ],
       },
@@ -507,7 +505,6 @@ export class createBondInstruction {
     unlockStartDate: BN;
     unlockPeriod: BN;
     unlockAmount: BN;
-    lastUnlockTime: BN;
     sellerIndex: BN;
   }) {
     this.tag = 11;
@@ -519,7 +516,6 @@ export class createBondInstruction {
     this.unlockStartDate = obj.unlockStartDate.fromTwos(64);
     this.unlockPeriod = obj.unlockPeriod.fromTwos(64);
     this.unlockAmount = obj.unlockAmount;
-    this.lastUnlockTime = obj.lastUnlockTime.fromTwos(64);
     this.sellerIndex = obj.sellerIndex;
   }
   serialize(): Uint8Array {
@@ -557,8 +553,8 @@ export class createBondInstruction {
     });
     keys.push({
       pubkey: feePayer,
-      isSigner: false,
-      isWritable: false,
+      isSigner: true,
+      isWritable: true,
     });
     return new TransactionInstruction({
       keys,
