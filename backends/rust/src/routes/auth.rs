@@ -17,6 +17,7 @@ use crate::utils::{
     jwt::create_jwt,
     pubkey::is_valid_pubkey,
     request::{deserialize_body, load_body},
+    stake::check_stake_account,
 };
 use redis::Commands;
 use std::sync::Arc;
@@ -80,7 +81,9 @@ pub async fn handle_login(
     )
     .map_err(|_| AccessError::InvalidNonce)?;
 
-    // TODO check staked amount
+    let staker_key = Pubkey::from_str(address.as_str()).map_err(|_| AccessError::InvalidPubkey)?;
+
+    check_stake_account(staker_key).await?;
 
     // Create JWT
     let jwt = create_jwt(address)?;

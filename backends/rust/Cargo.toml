@@ -20,3 +20,7 @@ actix-cors = "0.5.4"
 hmac = "0.12.0"
 sha2 = "0.10.1"
 derive_more = "0.99.17"
+access-protocol = { path = "../../smart-contract/program", features = ["no-entrypoint"] }
+solana-client = "1.8"
+solana-sdk = "1.6.6"
+borsh = "0.9.1"
