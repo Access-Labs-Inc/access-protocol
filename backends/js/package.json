@@ -12,6 +12,7 @@
     "monit": "pm2 monit"
   },
   "dependencies": {
+    "@access-protocol": "file:../../smart-contract/js",
     "@solana/web3.js": "^1.31.0",
     "@types/cors": "^2.8.12",
     "@types/jsonwebtoken": "^8.5.6",

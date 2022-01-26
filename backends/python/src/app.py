@@ -7,7 +7,7 @@ from flask_jwt_extended import JWTManager, get_jwt_identity, jwt_required
 from redis_client import redis_get_nonce, redis_set_nonce
 from utils import (ACCESS_TOKEN_SECRET, encode_jwt, generate_nonce,
                    json_response, validate_login, validate_pubkey,
-                   verify_nonce, verify_stake)
+                   verify_nonce, check_stake)
 
 app = Flask(__name__)
 
@@ -69,7 +69,7 @@ def auth_login():
             401
         )
 
-    if not (verify_stake()):
+    if not (check_stake(address)):
         return json_response(
             False,
             ErrorMessage[ErrorType.InvalidStake],

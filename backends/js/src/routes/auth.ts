@@ -12,7 +12,7 @@ import {
 import jwt from "jsonwebtoken";
 import { ACCESS_TOKEN_SECRET } from "../utils/jwt";
 import { getNonce, setNonce } from "../utils/redis";
-import { verifyStake } from "../access-staking";
+import { checkStake } from "../utils/stake";
 
 const router = Router();
 
@@ -64,7 +64,7 @@ router.post(
       }
 
       // Check amount staked
-      const isValidStake = await verifyStake(address);
+      const isValidStake = await checkStake(address);
       if (!isValidStake) {
         return res
           .status(401)

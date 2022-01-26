@@ -53,6 +53,11 @@ func HandleLogin(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, types.NewApiResonse(false, "Invalid signature"))
 	}
 
+	// Check stake amount
+	if !utils.CheckStake(parsedBody.Address){
+		return c.JSON(http.StatusBadRequest, types.NewApiResonse(false, "Not enough stake"))
+	}
+
 	// Sign JWT
 	claims := types.JWT{Address: parsedBody.Address, Iat: time.Now().Unix()}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
