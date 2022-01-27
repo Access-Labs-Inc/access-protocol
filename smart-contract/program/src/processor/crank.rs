@@ -3,7 +3,6 @@
 use crate::error::AccessError;
 use crate::state::{CentralState, StakePool, SECONDS_IN_DAY};
 use crate::utils::check_account_owner;
-use bonfida_utils::fp_math::{fp32_div, fp32_mul};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
