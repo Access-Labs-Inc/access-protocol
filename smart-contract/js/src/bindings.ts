@@ -125,6 +125,9 @@ export const claimBond = async (
   programId: PublicKey
 ) => {
   const bond = await BondAccount.retrieve(connection, bondAccount);
+  const stakePool = await StakePool.retrieve(connection, bond.stakePool);
+  const [centralKey] = await CentralState.getKey(programId);
+  const centralState = await CentralState.retrieve(connection, centralKey);
 
   const ix = new claimBondInstruction().getInstruction(
     programId,
@@ -132,6 +135,10 @@ export const claimBond = async (
     buyer,
     quoteTokenSource,
     bond.sellerTokenAccount,
+    TOKEN_PROGRAM_ID,
+    centralState.tokenMint,
+    stakePool.vault,
+    centralKey,
     TOKEN_PROGRAM_ID
   );
 
@@ -517,6 +524,7 @@ export const unlockBondTokens = async (
   const [centralKey] = await CentralState.getKey(programId);
   const centralState = await CentralState.retrieve(connection, centralKey);
   const bond = await BondAccount.retrieve(connection, bondAccount);
+  const stakePool = await StakePool.retrieve(connection, bond.stakePool);
 
   const ix = new unlockBondTokensInstruction().getInstruction(
     programId,
@@ -525,6 +533,8 @@ export const unlockBondTokens = async (
     centralState.tokenMint,
     destinationToken,
     centralKey,
+    TOKEN_PROGRAM_ID,
+    stakePool.vault,
     TOKEN_PROGRAM_ID
   );
 
