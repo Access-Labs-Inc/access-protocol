@@ -285,6 +285,8 @@ export class unlockBondTokensInstruction {
     mint: PublicKey,
     accessTokenDestination: PublicKey,
     centralState: PublicKey,
+    stakePool: PublicKey,
+    poolVault: PublicKey,
     splTokenProgram: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
@@ -302,7 +304,7 @@ export class unlockBondTokensInstruction {
     keys.push({
       pubkey: mint,
       isSigner: false,
-      isWritable: true,
+      isWritable: false,
     });
     keys.push({
       pubkey: accessTokenDestination,
@@ -312,7 +314,17 @@ export class unlockBondTokensInstruction {
     keys.push({
       pubkey: centralState,
       isSigner: false,
-      isWritable: false,
+      isWritable: true,
+    });
+    keys.push({
+      pubkey: stakePool,
+      isSigner: false,
+      isWritable: true,
+    });
+    keys.push({
+      pubkey: poolVault,
+      isSigner: false,
+      isWritable: true,
     });
     keys.push({
       pubkey: splTokenProgram,
@@ -931,6 +943,10 @@ export class claimBondInstruction {
     buyer: PublicKey,
     quoteTokenSource: PublicKey,
     quoteTokenDestination: PublicKey,
+    stakePool: PublicKey,
+    accessMint: PublicKey,
+    poolVault: PublicKey,
+    centralState: PublicKey,
     splTokenProgram: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
@@ -952,6 +968,26 @@ export class claimBondInstruction {
     });
     keys.push({
       pubkey: quoteTokenDestination,
+      isSigner: false,
+      isWritable: true,
+    });
+    keys.push({
+      pubkey: stakePool,
+      isSigner: false,
+      isWritable: true,
+    });
+    keys.push({
+      pubkey: accessMint,
+      isSigner: false,
+      isWritable: true,
+    });
+    keys.push({
+      pubkey: poolVault,
+      isSigner: false,
+      isWritable: true,
+    });
+    keys.push({
+      pubkey: centralState,
       isSigner: false,
       isWritable: true,
     });

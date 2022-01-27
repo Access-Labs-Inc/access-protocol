@@ -110,6 +110,11 @@ pub fn process_unlock_bond_tokens(
         program_id,
     )?;
     check_account_key(
+        accounts.stake_pool,
+        &bond.stake_pool,
+        AccessError::WrongStakePool,
+    )?;
+    check_account_key(
         accounts.mint,
         &central_state.token_mint,
         AccessError::WrongMint,
@@ -187,7 +192,7 @@ pub fn process_unlock_bond_tokens(
     // Update central state
     central_state.total_staked = central_state
         .total_staked
-        .checked_add(unlock_amount)
+        .checked_sub(unlock_amount)
         .ok_or(AccessError::Overflow)?;
     central_state.save(&mut accounts.central_state.data.borrow_mut());
 

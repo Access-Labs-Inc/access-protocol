@@ -53,6 +53,7 @@ pub struct Accounts<'a, T> {
     pub pool_vault: &'a T,
 
     /// The central state account
+    #[cons(writable)]
     pub central_state: &'a T,
 
     /// The SPL token program account
@@ -103,7 +104,7 @@ pub fn process_claim_bond(
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
     let mut bond = BondAccount::from_account_info(accounts.bond_account, true)?;
-    let central_state = CentralState::from_account_info(accounts.central_state)?;
+    let mut central_state = CentralState::from_account_info(accounts.central_state)?;
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool)?;
 
     assert_bond_derivation(
@@ -113,6 +114,11 @@ pub fn process_claim_bond(
         program_id,
     )?;
 
+    check_account_key(
+        accounts.stake_pool,
+        &bond.stake_pool,
+        AccessError::WrongStakePool,
+    )?;
     check_account_key(
         accounts.access_mint,
         &central_state.token_mint,
@@ -180,6 +186,13 @@ pub fn process_claim_bond(
     )?;
 
     stake_pool.header.deposit(bond.total_amount_sold)?;
+
+    // Update central state
+    central_state.total_staked = central_state
+        .total_staked
+        .checked_add(bond.total_amount_sold)
+        .ok_or(AccessError::Overflow)?;
+    central_state.save(&mut accounts.central_state.data.borrow_mut());
 
     Ok(())
 }
