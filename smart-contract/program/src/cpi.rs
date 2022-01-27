@@ -3,9 +3,11 @@ use solana_program::{
     rent::Rent, system_instruction::create_account, sysvar::Sysvar,
 };
 
+#[allow(missing_docs)]
 pub struct Cpi {}
 
 impl Cpi {
+    #[allow(missing_docs)]
     pub fn create_account<'a>(
         program_id: &Pubkey,
         system_program: &AccountInfo<'a>,

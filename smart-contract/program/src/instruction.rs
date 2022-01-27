@@ -8,6 +8,8 @@ use bonfida_utils::InstructionsAccount;
 use borsh::{BorshDeserialize, BorshSerialize};
 use num_derive::FromPrimitive;
 use solana_program::{instruction::Instruction, pubkey::Pubkey};
+
+#[allow(missing_docs)]
 #[derive(BorshDeserialize, BorshSerialize, FromPrimitive)]
 pub enum MediaInstruction {
     /// Create central state
@@ -180,6 +182,8 @@ pub enum MediaInstruction {
     /// | 4     | ❌        | ❌      | The SPL token program account       |
     AdminMint,
 }
+
+#[allow(missing_docs)]
 pub fn create_central_state(
     program_id: Pubkey,
     accounts: create_central_state::Accounts<Pubkey>,
@@ -191,6 +195,8 @@ pub fn create_central_state(
         params,
     )
 }
+
+#[allow(missing_docs)]
 pub fn create_stake_pool(
     program_id: Pubkey,
     accounts: create_stake_pool::Accounts<Pubkey>,
@@ -198,6 +204,8 @@ pub fn create_stake_pool(
 ) -> Instruction {
     accounts.get_instruction(program_id, MediaInstruction::CreateStakePool as u8, params)
 }
+
+#[allow(missing_docs)]
 pub fn create_stake_account(
     program_id: Pubkey,
     accounts: create_stake_account::Accounts<Pubkey>,
@@ -209,6 +217,8 @@ pub fn create_stake_account(
         params,
     )
 }
+
+#[allow(missing_docs)]
 pub fn stake(
     program_id: Pubkey,
     accounts: stake::Accounts<Pubkey>,
@@ -216,6 +226,8 @@ pub fn stake(
 ) -> Instruction {
     accounts.get_instruction(program_id, MediaInstruction::Stake as u8, params)
 }
+
+#[allow(missing_docs)]
 pub fn unstake(
     program_id: Pubkey,
     accounts: unstake::Accounts<Pubkey>,
@@ -223,6 +235,8 @@ pub fn unstake(
 ) -> Instruction {
     accounts.get_instruction(program_id, MediaInstruction::Unstake as u8, params)
 }
+
+#[allow(missing_docs)]
 pub fn claim_pool_rewards(
     program_id: Pubkey,
     accounts: claim_pool_rewards::Accounts<Pubkey>,
@@ -230,6 +244,8 @@ pub fn claim_pool_rewards(
 ) -> Instruction {
     accounts.get_instruction(program_id, MediaInstruction::ClaimPoolRewards as u8, params)
 }
+
+#[allow(missing_docs)]
 pub fn claim_rewards(
     program_id: Pubkey,
     accounts: claim_rewards::Accounts<Pubkey>,
@@ -237,6 +253,8 @@ pub fn claim_rewards(
 ) -> Instruction {
     accounts.get_instruction(program_id, MediaInstruction::ClaimRewards as u8, params)
 }
+
+#[allow(missing_docs)]
 pub fn crank(
     program_id: Pubkey,
     accounts: crank::Accounts<Pubkey>,
@@ -244,6 +262,8 @@ pub fn crank(
 ) -> Instruction {
     accounts.get_instruction(program_id, MediaInstruction::Crank as u8, params)
 }
+
+#[allow(missing_docs)]
 pub fn close_stake_pool(
     program_id: Pubkey,
     accounts: close_stake_pool::Accounts<Pubkey>,
@@ -251,6 +271,8 @@ pub fn close_stake_pool(
 ) -> Instruction {
     accounts.get_instruction(program_id, MediaInstruction::CloseStakePool as u8, params)
 }
+
+#[allow(missing_docs)]
 pub fn close_stake_account(
     program_id: Pubkey,
     accounts: close_stake_account::Accounts<Pubkey>,
@@ -262,6 +284,8 @@ pub fn close_stake_account(
         params,
     )
 }
+
+#[allow(missing_docs)]
 pub fn change_inflation(
     program_id: Pubkey,
     accounts: change_inflation::Accounts<Pubkey>,
@@ -269,6 +293,8 @@ pub fn change_inflation(
 ) -> Instruction {
     accounts.get_instruction(program_id, MediaInstruction::ChangeInflation as u8, params)
 }
+
+#[allow(missing_docs)]
 pub fn create_bond(
     program_id: Pubkey,
     accounts: create_bond::Accounts<Pubkey>,
@@ -276,6 +302,8 @@ pub fn create_bond(
 ) -> Instruction {
     accounts.get_instruction(program_id, MediaInstruction::CreateBond as u8, params)
 }
+
+#[allow(missing_docs)]
 pub fn sign_bond(
     program_id: Pubkey,
     accounts: sign_bond::Accounts<Pubkey>,
@@ -283,6 +311,8 @@ pub fn sign_bond(
 ) -> Instruction {
     accounts.get_instruction(program_id, MediaInstruction::SignBond as u8, params)
 }
+
+#[allow(missing_docs)]
 pub fn unlock_bond_tokens(
     program_id: Pubkey,
     accounts: unlock_bond_tokens::Accounts<Pubkey>,
@@ -290,6 +320,8 @@ pub fn unlock_bond_tokens(
 ) -> Instruction {
     accounts.get_instruction(program_id, MediaInstruction::UnlockBondTokens as u8, params)
 }
+
+#[allow(missing_docs)]
 pub fn claim_bond(
     program_id: Pubkey,
     accounts: claim_bond::Accounts<Pubkey>,
@@ -297,6 +329,8 @@ pub fn claim_bond(
 ) -> Instruction {
     accounts.get_instruction(program_id, MediaInstruction::ClaimBond as u8, params)
 }
+
+#[allow(missing_docs)]
 pub fn claim_bond_rewards(
     program_id: Pubkey,
     accounts: claim_bond_rewards::Accounts<Pubkey>,
@@ -304,6 +338,8 @@ pub fn claim_bond_rewards(
 ) -> Instruction {
     accounts.get_instruction(program_id, MediaInstruction::ClaimBondRewards as u8, params)
 }
+
+#[allow(missing_docs)]
 pub fn change_pool_minimum(
     program_id: Pubkey,
     accounts: change_pool_minimum::Accounts<Pubkey>,
@@ -315,6 +351,8 @@ pub fn change_pool_minimum(
         params,
     )
 }
+
+#[allow(missing_docs)]
 pub fn admin_mint(
     program_id: Pubkey,
     accounts: admin_mint::Accounts<Pubkey>,

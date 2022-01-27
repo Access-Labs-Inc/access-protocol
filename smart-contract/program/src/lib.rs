@@ -55,6 +55,7 @@ pub mod state;
 pub(crate) mod processor;
 pub(crate) mod utils;
 
+#[allow(missing_docs)]
 pub mod cpi;
 
 declare_id!("FuGuhWkaMCWfk2sg3VsxTL39zurSNQgtCV5zjFcVaTio");
