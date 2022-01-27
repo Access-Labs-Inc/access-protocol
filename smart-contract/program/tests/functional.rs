@@ -200,6 +200,10 @@ async fn test_staking() {
             quote_token_source: &staker_token_acc,
             quote_token_destination: &stake_pool_owner_token_acc,
             spl_token_program: &spl_token::ID,
+            stake_pool: &stake_pool_key,
+            access_mint: &mint,
+            pool_vault: &pool_vault,
+            central_state: &central_state,
         },
         claim_bond::Params {},
     );
@@ -367,6 +371,8 @@ async fn test_staking() {
             access_token_destination: &staker_token_acc,
             central_state: &central_state,
             spl_token_program: &spl_token::ID,
+            stake_pool: &stake_pool_key,
+            pool_vault: &pool_vault,
         },
         unlock_bond_tokens::Params {},
     );

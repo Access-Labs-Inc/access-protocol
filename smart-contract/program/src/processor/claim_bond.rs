@@ -5,13 +5,13 @@ use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
     msg,
-    program::invoke,
+    program::{invoke, invoke_signed},
     program_error::ProgramError,
     pubkey::Pubkey,
 };
 
 use crate::error::AccessError;
-use crate::state::{BondAccount, BOND_SIGNER_THRESHOLD};
+use crate::state::{BondAccount, CentralState, StakePool, BOND_SIGNER_THRESHOLD};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use spl_token;
 
@@ -40,6 +40,21 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub quote_token_destination: &'a T,
 
+    /// The stake pool account
+    #[cons(writable)]
+    pub stake_pool: &'a T,
+
+    /// The mint of the ACCESS token
+    #[cons(writable)]
+    pub access_mint: &'a T,
+
+    /// The vault of the stake pool
+    #[cons(writable)]
+    pub pool_vault: &'a T,
+
+    /// The central state account
+    pub central_state: &'a T,
+
     /// The SPL token program account
     pub spl_token_program: &'a T,
 }
@@ -55,6 +70,10 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             buyer: next_account_info(accounts_iter)?,
             quote_token_source: next_account_info(accounts_iter)?,
             quote_token_destination: next_account_info(accounts_iter)?,
+            stake_pool: next_account_info(accounts_iter)?,
+            access_mint: next_account_info(accounts_iter)?,
+            pool_vault: next_account_info(accounts_iter)?,
+            central_state: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
         };
 
@@ -67,6 +86,8 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
         // Check ownership
         check_account_owner(accounts.bond_account, program_id, AccessError::WrongOwner)?;
+        check_account_owner(accounts.stake_pool, program_id, AccessError::WrongOwner)?;
+        check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
 
         // Check signer
         check_signer(accounts.buyer, AccessError::BuyerMustSign)?;
@@ -82,6 +103,8 @@ pub fn process_claim_bond(
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
     let mut bond = BondAccount::from_account_info(accounts.bond_account, true)?;
+    let central_state = CentralState::from_account_info(accounts.central_state)?;
+    let mut stake_pool = StakePool::get_checked(accounts.stake_pool)?;
 
     assert_bond_derivation(
         accounts.bond_account,
@@ -91,9 +114,19 @@ pub fn process_claim_bond(
     )?;
 
     check_account_key(
+        accounts.access_mint,
+        &central_state.token_mint,
+        AccessError::WrongMint,
+    )?;
+    check_account_key(
         accounts.quote_token_destination,
         &bond.seller_token_account,
         AccessError::WrongQuoteDestination,
+    )?;
+    check_account_key(
+        accounts.pool_vault,
+        &Pubkey::new(&stake_pool.header.vault),
+        AccessError::StakePoolVaultMismatch,
     )?;
 
     if bond.sellers.len() < BOND_SIGNER_THRESHOLD as usize {
@@ -124,6 +157,29 @@ pub fn process_claim_bond(
     bond.activate();
 
     bond.save(&mut accounts.bond_account.data.borrow_mut());
+
+    // Mint ACCESS tokens into the pool vault
+    let mint_ix = spl_token::instruction::mint_to(
+        &spl_token::ID,
+        accounts.access_mint.key,
+        accounts.pool_vault.key,
+        accounts.central_state.key,
+        &[],
+        bond.total_amount_sold,
+    )?;
+
+    invoke_signed(
+        &mint_ix,
+        &[
+            accounts.spl_token_program.clone(),
+            accounts.access_mint.clone(),
+            accounts.pool_vault.clone(),
+            accounts.central_state.clone(),
+        ],
+        &[&[&program_id.to_bytes(), &[central_state.signer_nonce]]],
+    )?;
+
+    stake_pool.header.deposit(bond.total_amount_sold)?;
 
     Ok(())
 }
