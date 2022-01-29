@@ -100,7 +100,7 @@ pub fn process_unlock_bond_tokens(
     let accounts = Accounts::parse(accounts, program_id)?;
     let mut central_state = CentralState::from_account_info(accounts.central_state)?;
     let mut bond = BondAccount::from_account_info(accounts.bond_account, false)?;
-    let mut stake_pool = StakePool::get_checked(accounts.stake_pool)?;
+    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, false)?;
     let current_time = Clock::get()?.unix_timestamp;
 
     assert_bond_derivation(
@@ -154,7 +154,7 @@ pub fn process_unlock_bond_tokens(
     stake_pool.header.withdraw(unlock_amount)?;
 
     let signer_seeds: &[&[u8]] = &[
-        StakePoolHeader::SEED.as_bytes(),
+        StakePoolHeader::SEED,
         &stake_pool.header.owner.clone(),
         &[stake_pool.header.nonce],
     ];
@@ -183,9 +183,24 @@ pub fn process_unlock_bond_tokens(
     )?;
 
     // Update bond state
-    bond.last_unlock_time += missed_periods * bond.unlock_period;
-    bond.total_unlocked_amount += unlock_amount;
-    bond.total_staked -= unlock_amount;
+    // bond.last_unlock_time += missed_periods * bond.unlock_period;
+    bond.last_unlock_time = missed_periods
+        .checked_mul(bond.unlock_period)
+        .ok_or(AccessError::Overflow)?
+        .checked_add(bond.last_unlock_time)
+        .ok_or(AccessError::Overflow)?;
+
+    // bond.total_unlocked_amount += unlock_amount;
+    bond.total_unlocked_amount = bond
+        .total_unlocked_amount
+        .checked_add(unlock_amount)
+        .ok_or(AccessError::Overflow)?;
+
+    // bond.total_staked -= unlock_amount;
+    bond.total_staked = bond
+        .total_staked
+        .checked_sub(unlock_amount)
+        .ok_or(AccessError::Overflow)?;
 
     bond.save(&mut accounts.bond_account.data.borrow_mut());
 

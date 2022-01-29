@@ -62,7 +62,7 @@ pub fn process_crank(
 
     let present_time = Clock::get()?.unix_timestamp;
 
-    let mut stake_pool = StakePool::get_checked(accounts.stake_pool)?;
+    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, false)?;
     let central_state = CentralState::from_account_info(accounts.central_state)?;
 
     if present_time - stake_pool.header.last_crank_time < SECONDS_IN_DAY as i64 {

@@ -71,6 +71,10 @@ pub enum AccessError {
     WrongQuoteDestination,
     #[error("Rewards must be claimed first")]
     UnclaimedRewards,
+    #[error("Unstake period not over")]
+    CannotUnstake,
+    #[error("Inactive stake pool not allowed")]
+    InactiveStakePoolNotAllowed,
 }
 
 impl From<AccessError> for ProgramError {

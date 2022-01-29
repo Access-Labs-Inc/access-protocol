@@ -104,15 +104,11 @@ pub fn process_create_stake_pool(
         accounts.system_program,
         accounts.fee_payer,
         accounts.stake_pool_account,
-        &[
-            StakePoolHeader::SEED.as_bytes(),
-            &params.owner.to_bytes(),
-            &[nonce],
-        ],
+        &[StakePoolHeader::SEED, &params.owner.to_bytes(), &[nonce]],
         stake_pool_header.borsh_len() + 16 * STAKE_BUFFER_LEN as usize,
     )?;
 
-    let mut stake_pool = StakePool::get_checked(accounts.stake_pool_account).unwrap();
+    let mut stake_pool = StakePool::get_checked(accounts.stake_pool_account, false).unwrap();
 
     *stake_pool.header = stake_pool_header;
 

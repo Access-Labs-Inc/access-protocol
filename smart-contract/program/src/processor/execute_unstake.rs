@@ -1,20 +1,19 @@
-//! Stake
+//! Execute the token transfer after the unstake outbounding period
 use borsh::{BorshDeserialize, BorshSerialize};
+use solana_program::clock::Clock;
+use solana_program::sysvar::Sysvar;
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
-    clock::Clock,
     entrypoint::ProgramResult,
-    msg,
-    program::invoke,
+    program::invoke_signed,
     program_error::ProgramError,
     pubkey::Pubkey,
-    sysvar::Sysvar,
 };
 
 use spl_token::instruction::transfer;
 
 use crate::{
-    state::{CentralState, SECONDS_IN_DAY},
+    state::StakePoolHeader,
     utils::{check_account_key, check_account_owner, check_signer},
 };
 use bonfida_utils::{BorshSize, InstructionsAccount};
@@ -23,19 +22,12 @@ use crate::error::AccessError;
 use crate::state::{StakeAccount, StakePool};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
-/// The required parameters for the `stake` instruction
-pub struct Params {
-    // Amount to stake
-    pub amount: u64,
-}
+/// The required parameters for the `unstake` instruction
+pub struct Params {}
 
 #[derive(InstructionsAccount)]
-/// The required accounts for the `stake` instruction
+/// The required accounts for the `unstake` instruction
 pub struct Accounts<'a, T> {
-    /// The central state account
-    #[cons(writable)]
-    pub central_state_account: &'a T,
-
     /// The stake account
     #[cons(writable)]
     pub stake_account: &'a T,
@@ -48,14 +40,14 @@ pub struct Accounts<'a, T> {
     #[cons(signer)]
     pub owner: &'a T,
 
-    /// The source account of the stake tokens
+    /// The destination of the staked tokens
     #[cons(writable)]
-    pub source_token: &'a T,
+    pub destination_token: &'a T,
 
     /// The SPL token program account
     pub spl_token_program: &'a T,
 
-    /// The stake pool vault account
+    /// The stake pool vault
     #[cons(writable)]
     pub vault: &'a T,
 }
@@ -67,11 +59,10 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     ) -> Result<Self, ProgramError> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
-            central_state_account: next_account_info(accounts_iter)?,
             stake_account: next_account_info(accounts_iter)?,
             stake_pool: next_account_info(accounts_iter)?,
             owner: next_account_info(accounts_iter)?,
-            source_token: next_account_info(accounts_iter)?,
+            destination_token: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
             vault: next_account_info(accounts_iter)?,
         };
@@ -85,11 +76,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
         // Check ownership
         check_account_owner(
-            accounts.central_state_account,
-            program_id,
-            AccessError::WrongOwner,
-        )?;
-        check_account_owner(
             accounts.stake_account,
             program_id,
             AccessError::WrongStakeAccountOwner,
@@ -100,7 +86,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             AccessError::WrongStakePoolAccountOwner,
         )?;
         check_account_owner(
-            accounts.source_token,
+            accounts.destination_token,
             &spl_token::ID,
             AccessError::WrongTokenAccountOwner,
         )?;
@@ -117,17 +103,20 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     }
 }
 
-pub fn process_stake(
-    program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    params: Params,
-) -> ProgramResult {
+pub fn process_execute_unstake(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
-    let Params { amount } = params;
 
-    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, false)?;
+    let stake_pool = StakePool::get_checked(accounts.stake_pool, false)?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
-    let mut central_state = CentralState::from_account_info(accounts.central_state_account)?;
+    let current_time = Clock::get()?.unix_timestamp;
+
+    if current_time
+        .checked_sub(stake_account.unstake_request_time)
+        .ok_or(AccessError::Overflow)?
+        < stake_pool.header.unstake_period
+    {
+        return Err(AccessError::CannotUnstake.into());
+    }
 
     check_account_key(
         accounts.owner,
@@ -145,61 +134,39 @@ pub fn process_stake(
         AccessError::StakePoolVaultMismatch,
     )?;
 
-    let current_time = Clock::get().unwrap().unix_timestamp;
-    if stake_account.stake_amount > 0
-        && stake_account.last_claimed_time < current_time - (SECONDS_IN_DAY as i64)
-    {
-        return Err(AccessError::UnclaimedRewards.into());
-    }
-
     // Transfer tokens
+    let signer_seeds: &[&[u8]] = &[
+        StakePoolHeader::SEED,
+        &stake_pool.header.owner.clone(),
+        &[stake_pool.header.nonce],
+    ];
     let transfer_instruction = transfer(
         &spl_token::ID,
-        accounts.source_token.key,
         accounts.vault.key,
-        accounts.owner.key,
+        accounts.destination_token.key,
+        accounts.stake_pool.key,
         &[],
-        amount,
+        stake_account.unstake_request_amount,
     )?;
-    invoke(
+
+    drop(stake_pool);
+
+    invoke_signed(
         &transfer_instruction,
         &[
             accounts.spl_token_program.clone(),
-            accounts.source_token.clone(),
             accounts.vault.clone(),
-            accounts.owner.clone(),
+            accounts.destination_token.clone(),
+            accounts.stake_pool.clone(),
         ],
+        &[signer_seeds],
     )?;
 
-    if stake_account
-        .stake_amount
-        .checked_add(amount)
-        .ok_or(AccessError::Overflow)?
-        < std::cmp::min(
-            stake_account.pool_minimum_at_creation,
-            stake_pool.header.minimum_stake_amount,
-        )
-    {
-        msg!(
-            "The minimum stake amount must be > {}",
-            stake_account.pool_minimum_at_creation
-        );
-        return Err(ProgramError::InvalidArgument);
-    }
-
     // Update stake account
-    stake_account.deposit(amount)?;
-    stake_pool.header.deposit(amount)?;
-
-    //Update central state
-    central_state.total_staked = central_state
-        .total_staked
-        .checked_add(amount)
-        .ok_or(AccessError::Overflow)?;
+    stake_account.execute_unstake()?;
 
     // Save states
     stake_account.save(&mut accounts.stake_account.data.borrow_mut());
-    central_state.save(&mut accounts.central_state_account.data.borrow_mut());
 
     Ok(())
 }

@@ -7,12 +7,12 @@ use crate::common::utils::{mint_bootstrap, sign_send_instructions};
 use access_protocol::{
     entrypoint::process_instruction,
     instruction::{
-        admin_mint, change_inflation, change_pool_minimum, claim_bond, claim_bond_rewards,
-        claim_pool_rewards, claim_rewards, close_stake_account, close_stake_pool, crank,
-        create_bond, create_central_state, create_stake_account, create_stake_pool, stake,
-        unlock_bond_tokens, unstake,
+        activate_stake_pool, admin_freeze, admin_mint, change_inflation, change_pool_minimum,
+        claim_bond, claim_bond_rewards, claim_pool_rewards, claim_rewards, close_stake_account,
+        close_stake_pool, crank, create_bond, create_central_state, create_stake_account,
+        create_stake_pool, stake, unlock_bond_tokens, unstake,
     },
-    state::BondAccount,
+    state::{BondAccount, Tag},
 };
 
 #[tokio::test]
@@ -151,6 +151,24 @@ async fn test_staking() {
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![create_stake_pool_ix], vec![])
+        .await
+        .unwrap();
+
+    //
+    // Activate stake pool
+    //
+
+    let activate_stake_pool_ix = activate_stake_pool(
+        program_id,
+        activate_stake_pool::Accounts {
+            authority: &prg_test_ctx.payer.pubkey(),
+            stake_pool: &stake_pool_key,
+            central_state: &central_state,
+        },
+        activate_stake_pool::Params {},
+    );
+
+    sign_send_instructions(&mut prg_test_ctx, vec![activate_stake_pool_ix], vec![])
         .await
         .unwrap();
 
@@ -433,9 +451,6 @@ async fn test_staking() {
             stake_account: &stake_acc_key,
             stake_pool: &stake_pool_key,
             owner: &staker.pubkey(),
-            destination_token: &staker_token_acc,
-            spl_token_program: &spl_token::ID,
-            vault: &pool_vault,
             central_state_account: &central_state,
         },
         unstake::Params {
@@ -446,6 +461,65 @@ async fn test_staking() {
     sign_send_instructions(&mut prg_test_ctx, vec![unstake_ix], vec![&staker])
         .await
         .unwrap();
+
+    //
+    // Freeze account
+    //
+
+    let freeze_stake_acc_ix = admin_freeze(
+        program_id,
+        admin_freeze::Accounts {
+            central_state: &central_state,
+            account_to_freeze: &stake_pool_key,
+            authority: &prg_test_ctx.payer.pubkey(),
+        },
+        admin_freeze::Params { tag: Tag::Frozen },
+    );
+
+    sign_send_instructions(&mut prg_test_ctx, vec![freeze_stake_acc_ix], vec![])
+        .await
+        .unwrap();
+
+    //
+    // Unfreeze account
+    //
+
+    let freeze_stake_acc_ix = admin_freeze(
+        program_id,
+        admin_freeze::Accounts {
+            central_state: &central_state,
+            account_to_freeze: &stake_pool_key,
+            authority: &prg_test_ctx.payer.pubkey(),
+        },
+        admin_freeze::Params {
+            tag: Tag::StakePool,
+        },
+    );
+
+    sign_send_instructions(&mut prg_test_ctx, vec![freeze_stake_acc_ix], vec![])
+        .await
+        .unwrap();
+
+    //
+    // Try to freeze the central state (expected to fail)
+    //
+
+    let freeze_stake_acc_ix = admin_freeze(
+        program_id,
+        admin_freeze::Accounts {
+            central_state: &central_state,
+            account_to_freeze: &central_state,
+            authority: &prg_test_ctx.payer.pubkey(),
+        },
+        admin_freeze::Params { tag: Tag::Frozen },
+    );
+
+    assert_eq!(
+        sign_send_instructions(&mut prg_test_ctx, vec![freeze_stake_acc_ix], vec![])
+            .await
+            .is_err(),
+        true
+    );
 
     //
     // Close stake account

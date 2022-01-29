@@ -5,8 +5,10 @@ use solana_program::{
     pubkey::Pubkey,
 };
 
-use crate::instruction::MediaInstruction;
+use crate::instruction::ProgramInstruction;
 
+pub mod activate_stake_pool;
+pub mod admin_freeze;
 pub mod admin_mint;
 pub mod change_inflation;
 pub mod change_pool_minimum;
@@ -21,6 +23,7 @@ pub mod create_bond;
 pub mod create_central_state;
 pub mod create_stake_account;
 pub mod create_stake_pool;
+pub mod execute_unstake;
 pub mod sign_bond;
 pub mod stake;
 pub mod unlock_bond_tokens;
@@ -41,111 +44,125 @@ impl Processor {
         msg!("Instruction unpacked");
 
         match instruction {
-            MediaInstruction::CreateCentralState => {
+            ProgramInstruction::CreateCentralState => {
                 msg!("Instruction: Create central state");
                 let params = create_central_state::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 create_central_state::process_create_central_state(program_id, accounts, params)?;
             }
-            MediaInstruction::CreateStakePool => {
+            ProgramInstruction::CreateStakePool => {
                 msg!("Instruction: Create stake pool");
                 let params = create_stake_pool::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 create_stake_pool::process_create_stake_pool(program_id, accounts, params)?;
             }
-            MediaInstruction::CreateStakeAccount => {
+            ProgramInstruction::ActivateStakePool => {
+                msg!("Instruction: Activate stake pool");
+                activate_stake_pool::process_activate_stake_pool(program_id, accounts)?;
+            }
+            ProgramInstruction::CreateStakeAccount => {
                 msg!("Instruction: Create stake account");
                 let params = create_stake_account::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 create_stake_account::process_create_stake_account(program_id, accounts, params)?;
             }
-            MediaInstruction::Stake => {
+            ProgramInstruction::Stake => {
                 msg!("Instruction: Stake");
                 let params = stake::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 stake::process_stake(program_id, accounts, params)?;
             }
-            MediaInstruction::Unstake => {
+            ProgramInstruction::Unstake => {
                 msg!("Instruction: Unstake");
                 let params = unstake::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 unstake::process_unstake(program_id, accounts, params)?;
             }
-            MediaInstruction::ClaimPoolRewards => {
+            ProgramInstruction::ExecuteUnstake => {
+                msg!("Instruction: Execute unstake");
+                execute_unstake::process_execute_unstake(program_id, accounts)?;
+            }
+            ProgramInstruction::ClaimPoolRewards => {
                 msg!("Instruction: Claim pool rewards");
                 let params = claim_pool_rewards::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 claim_pool_rewards::process_claim_pool_rewards(program_id, accounts, params)?;
             }
-            MediaInstruction::ClaimRewards => {
+            ProgramInstruction::ClaimRewards => {
                 msg!("Instruction: Claim rewards");
                 let params = claim_rewards::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 claim_rewards::process_claim_rewards(program_id, accounts, params)?;
             }
-            MediaInstruction::Crank => {
+            ProgramInstruction::Crank => {
                 msg!("Instruction: Crank");
                 let params = crank::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 crank::process_crank(program_id, accounts, params)?;
             }
-            MediaInstruction::CloseStakePool => {
+            ProgramInstruction::CloseStakePool => {
                 msg!("Instruction: Close stake pool");
                 let params = close_stake_pool::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 close_stake_pool::process_close_stake_pool(program_id, accounts, params)?;
             }
-            MediaInstruction::CloseStakeAccount => {
+            ProgramInstruction::CloseStakeAccount => {
                 msg!("Instruction: Close stake account");
                 close_stake_account::process_close_stake_account(program_id, accounts)?;
             }
-            MediaInstruction::ChangeInflation => {
+            ProgramInstruction::ChangeInflation => {
                 msg!("Instruction: Change inflation rate");
                 let params = change_inflation::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 change_inflation::process_change_inflation(program_id, accounts, params)?;
             }
-            MediaInstruction::CreateBond => {
+            ProgramInstruction::CreateBond => {
                 msg!("Instruction: create bond");
                 let params = create_bond::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 create_bond::process_create_bond(program_id, accounts, params)?;
             }
-            MediaInstruction::SignBond => {
+            ProgramInstruction::SignBond => {
                 msg!("Instruction: sign bond");
                 let params = sign_bond::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 sign_bond::process_sign_bond(program_id, accounts, params)?;
             }
-            MediaInstruction::UnlockBondTokens => {
+            ProgramInstruction::UnlockBondTokens => {
                 msg!("Instruction: unlock bond token");
                 let params = unlock_bond_tokens::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 unlock_bond_tokens::process_unlock_bond_tokens(program_id, accounts, params)?;
             }
-            MediaInstruction::ClaimBond => {
+            ProgramInstruction::ClaimBond => {
                 msg!("Instruction: claim bond");
                 let params = claim_bond::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 claim_bond::process_claim_bond(program_id, accounts, params)?;
             }
-            MediaInstruction::ClaimBondRewards => {
+            ProgramInstruction::ClaimBondRewards => {
                 msg!("Instruction: claim bond rewards");
                 let params = claim_bond_rewards::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 claim_bond_rewards::process_claim_bond_rewards(program_id, accounts, params)?;
             }
-            MediaInstruction::ChangePoolMinimum => {
+            ProgramInstruction::ChangePoolMinimum => {
                 msg!("Instruction: Change pool minimum");
                 let params = change_pool_minimum::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 change_pool_minimum::process_change_pool_minimum(program_id, accounts, params)?;
             }
-            MediaInstruction::AdminMint => {
+            ProgramInstruction::AdminMint => {
                 msg!("Instruction: Mint ACCESS tokens");
                 let params = admin_mint::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 admin_mint::process_admin_mint(program_id, accounts, params)?;
+            }
+            ProgramInstruction::AdminFreeze => {
+                msg!("Instruction: Admin freeze");
+                let params = admin_freeze::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                admin_freeze::process_admin_freeze(program_id, accounts, params)?;
             }
         }
 

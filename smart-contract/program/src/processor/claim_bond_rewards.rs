@@ -13,7 +13,7 @@ use solana_program::{
 };
 
 use crate::error::AccessError;
-use crate::state::{BondAccount, CentralState, StakePool, STAKER_MULTIPLIER};
+use crate::state::{BondAccount, CentralState, StakePool};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use spl_token::instruction::mint_to;
 
@@ -115,7 +115,7 @@ pub fn process_claim_bond_rewards(
     let current_time = Clock::get().unwrap().unix_timestamp;
 
     let central_state = CentralState::from_account_info(accounts.central_state)?;
-    let stake_pool = StakePool::get_checked(accounts.stake_pool)?;
+    let stake_pool = StakePool::get_checked(accounts.stake_pool, false)?;
     let mut bond = BondAccount::from_account_info(accounts.bond_account, false)?;
 
     // Safety checks
@@ -141,7 +141,7 @@ pub fn process_claim_bond_rewards(
     // This can be factoriser
     let rewards = balances_and_inflation
         // Multiply by % stakers receive
-        .checked_mul(STAKER_MULTIPLIER as u128)
+        .checked_mul(stake_pool.header.stakers_multiplier as u128)
         .ok_or(AccessError::Overflow)?
         .checked_div(100)
         .ok_or(AccessError::Overflow)?

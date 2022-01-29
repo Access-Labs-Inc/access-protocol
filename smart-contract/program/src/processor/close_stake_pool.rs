@@ -64,7 +64,7 @@ pub fn process_close_stake_pool(
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let mut stake_pool = StakePool::get_checked(accounts.stake_pool_account).unwrap();
+    let mut stake_pool = StakePool::get_checked(accounts.stake_pool_account, false).unwrap();
 
     check_account_key(
         accounts.owner,

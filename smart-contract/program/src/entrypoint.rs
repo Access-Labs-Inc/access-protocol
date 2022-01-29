@@ -128,6 +128,12 @@ impl PrintProgramError for AccessError {
             AccessError::UnclaimedRewards => {
                 msg!("Error: Some rewards need to be claimed first")
             }
+            AccessError::CannotUnstake => {
+                msg!("Error: Unstake period not over")
+            }
+            AccessError::InactiveStakePoolNotAllowed => {
+                msg!("Error: Inactive stake pool not allowed")
+            }
         }
     }
 }

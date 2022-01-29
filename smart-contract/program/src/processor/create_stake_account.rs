@@ -82,7 +82,7 @@ pub fn process_create_stake_account(
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let stake_pool = StakePool::get_checked(accounts.stake_pool)?;
+    let stake_pool = StakePool::get_checked(accounts.stake_pool, false)?;
 
     let derived_stake_key = StakeAccount::create_key(
         &params.nonce,
@@ -111,7 +111,7 @@ pub fn process_create_stake_account(
         accounts.fee_payer,
         accounts.stake_account,
         &[
-            StakeAccount::SEED.as_bytes(),
+            StakeAccount::SEED,
             &params.owner.to_bytes(),
             &accounts.stake_pool.key.to_bytes(),
             &[params.nonce],
