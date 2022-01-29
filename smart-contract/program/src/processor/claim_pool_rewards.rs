@@ -1,7 +1,7 @@
 //! Claim rewards of a stake pool
 //! This instruction is used by stake pool owner for claiming their staking rewards
 use crate::error::AccessError;
-use crate::state::{CentralState, StakePool, OWNER_MULTIPLIER};
+use crate::state::{CentralState, StakePool};
 use crate::utils::{
     calc_previous_balances_and_inflation, check_account_key, check_account_owner, check_signer,
     safe_downcast,
@@ -103,7 +103,7 @@ pub fn process_claim_pool_rewards(
     let current_time = Clock::get().unwrap().unix_timestamp;
 
     let central_state = CentralState::from_account_info(accounts.central_state)?;
-    let mut stake_pool = StakePool::get_checked(accounts.stake_pool)?;
+    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, false)?;
 
     // Safety checks
     check_account_key(
@@ -125,7 +125,7 @@ pub fn process_claim_pool_rewards(
 
     let rewards = balances_and_inflation
         // Multiply by % stake pool owner receives
-        .checked_mul(OWNER_MULTIPLIER as u128)
+        .checked_mul((100 - stake_pool.header.stakers_multiplier) as u128)
         .ok_or(AccessError::Overflow)?
         .checked_div(100)
         .and_then(safe_downcast)

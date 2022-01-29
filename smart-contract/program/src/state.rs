@@ -32,17 +32,23 @@ pub const OWNER_MULTIPLIER: u64 = 100 - STAKER_MULTIPLIER;
 /// Length of the circular buffer (stores balances for 1 year)
 pub const STAKE_BUFFER_LEN: u64 = 365;
 
+/// Default unstake period set to 7 days
+pub const UNSTAKE_PERIOD: i64 = 604800;
+
 #[derive(BorshSerialize, BorshDeserialize, BorshSize, PartialEq)]
 #[allow(missing_docs)]
 pub enum Tag {
     Uninitialized,
     StakePool,
+    InactiveStakePool,
     StakeAccount,
     // Bond accounts are inactive until the buyer transfered the funds
     InactiveBondAccount,
     BondAccount,
     CentralState,
     Deleted,
+    // Accounts frozen by the central state authority
+    Frozen,
 }
 
 #[derive(BorshSerialize, BorshDeserialize, BorshSize, Copy, Clone, Pod, Zeroable)]
@@ -74,6 +80,12 @@ pub struct StakePoolHeader {
     /// Last time the stake pool owner claimed
     pub last_claimed_time: i64,
 
+    // The % of rewards going to stakers
+    pub stakers_multiplier: u64,
+
+    // The unstake period
+    pub unstake_period: i64,
+
     /// Owner of the stake pool
     pub owner: [u8; 32],
 
@@ -90,7 +102,10 @@ pub struct StakePool<'a> {
 
 #[allow(missing_docs)]
 impl<'a> StakePool<'a> {
-    pub fn get_checked<'b: 'a>(account_info: &'a AccountInfo<'b>) -> Result<Self, ProgramError> {
+    pub fn get_checked<'b: 'a>(
+        account_info: &'a AccountInfo<'b>,
+        allow_inactive: bool,
+    ) -> Result<Self, ProgramError> {
         let (header, balances) = RefMut::map_split(account_info.data.borrow_mut(), |s| {
             let (hd, rem) = s.split_at_mut(size_of::<StakePoolHeader>());
             (
@@ -99,7 +114,14 @@ impl<'a> StakePool<'a> {
             )
         });
 
-        if header.tag != Tag::StakePool as u8 && header.tag != Tag::Uninitialized as u8 {
+        if header.tag == Tag::InactiveStakePool as u8 && !allow_inactive {
+            return Err(AccessError::InactiveStakePoolNotAllowed.into());
+        }
+
+        if header.tag != Tag::StakePool as u8
+            && header.tag != Tag::Uninitialized as u8
+            && header.tag != Tag::InactiveStakePool as u8
+        {
             return Err(AccessError::DataTypeMismatch.into());
         }
 
@@ -112,27 +134,23 @@ impl<'a> StakePool<'a> {
     }
 
     pub fn create_key(nonce: &u8, owner: &Pubkey, program_id: &Pubkey) -> Pubkey {
-        let seeds: &[&[u8]] = &[
-            StakePoolHeader::SEED.as_bytes(),
-            &owner.to_bytes(),
-            &[*nonce],
-        ];
+        let seeds: &[&[u8]] = &[StakePoolHeader::SEED, &owner.to_bytes(), &[*nonce]];
         Pubkey::create_program_address(seeds, program_id).unwrap()
     }
 
     pub fn find_key(owner: &Pubkey, program_id: &Pubkey) -> (Pubkey, u8) {
-        let seeds: &[&[u8]] = &[StakePoolHeader::SEED.as_bytes(), &owner.to_bytes()];
+        let seeds: &[&[u8]] = &[StakePoolHeader::SEED, &owner.to_bytes()];
         Pubkey::find_program_address(seeds, program_id)
     }
 }
 
 #[allow(missing_docs)]
 impl StakePoolHeader {
-    pub const SEED: &'static str = "stake_pool";
+    pub const SEED: &'static [u8; 10] = b"stake_pool";
 
     pub fn new(owner: Pubkey, nonce: u8, vault: Pubkey, minimum_stake_amount: u64) -> Self {
         Self {
-            tag: Tag::StakePool as u8,
+            tag: Tag::InactiveStakePool as u8,
             total_staked: 0,
             current_day_idx: 0,
             _padding: [0; 4],
@@ -142,6 +160,8 @@ impl StakePoolHeader {
             nonce,
             vault: vault.to_bytes(),
             minimum_stake_amount,
+            stakers_multiplier: STAKER_MULTIPLIER,
+            unstake_period: UNSTAKE_PERIOD,
         }
     }
 
@@ -181,11 +201,15 @@ pub struct StakeAccount {
     /// Minimum stakeable amount of the pool when the account
     /// was created
     pub pool_minimum_at_creation: u64,
+
+    pub unstake_request_time: i64,
+
+    pub unstake_request_amount: u64,
 }
 
 #[allow(missing_docs)]
 impl StakeAccount {
-    pub const SEED: &'static str = "stake_account";
+    pub const SEED: &'static [u8; 13] = b"stake_account";
 
     pub fn new(
         owner: Pubkey,
@@ -200,6 +224,8 @@ impl StakeAccount {
             stake_pool,
             last_claimed_time: current_time,
             pool_minimum_at_creation,
+            unstake_request_time: i64::MAX,
+            unstake_request_amount: 0,
         }
     }
 
@@ -210,7 +236,7 @@ impl StakeAccount {
         program_id: &Pubkey,
     ) -> Pubkey {
         let seeds: &[&[u8]] = &[
-            StakeAccount::SEED.as_bytes(),
+            StakeAccount::SEED,
             &owner.to_bytes(),
             &stake_pool.to_bytes(),
             &[*nonce],
@@ -220,7 +246,7 @@ impl StakeAccount {
 
     pub fn find_key(owner: &Pubkey, stake_pool: &Pubkey, program_id: &Pubkey) -> (Pubkey, u8) {
         let seeds: &[&[u8]] = &[
-            StakeAccount::SEED.as_bytes(),
+            StakeAccount::SEED,
             &owner.to_bytes(),
             &stake_pool.to_bytes(),
         ];
@@ -251,6 +277,14 @@ impl StakeAccount {
 
     pub fn withdraw(&mut self, amount: u64) -> ProgramResult {
         self.stake_amount = self.stake_amount.checked_sub(amount).unwrap();
+        self.unstake_request_amount = self.unstake_request_amount.checked_add(amount).unwrap();
+        self.unstake_request_time = Clock::get()?.unix_timestamp;
+        Ok(())
+    }
+
+    pub fn execute_unstake(&mut self) -> ProgramResult {
+        self.unstake_request_amount = 0;
+        self.unstake_request_time = i64::MAX;
         Ok(())
     }
 }
@@ -385,11 +419,11 @@ pub struct BondAccount {
 
 #[allow(missing_docs)]
 impl BondAccount {
-    pub const SEED: &'static str = "bond_account";
+    pub const SEED: &'static [u8; 12] = b"bond_account";
 
     pub fn create_key(owner: &Pubkey, total_amount_sold: u64, program_id: &Pubkey) -> (Pubkey, u8) {
         let seeds: &[&[u8]] = &[
-            BondAccount::SEED.as_bytes(),
+            BondAccount::SEED,
             &owner.to_bytes(),
             &total_amount_sold.to_le_bytes(),
         ];

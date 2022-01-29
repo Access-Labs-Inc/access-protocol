@@ -106,7 +106,7 @@ pub fn process_create_bond(
     let (derived_key, nonce) =
         BondAccount::create_key(&params.buyer, params.total_amount_sold, program_id);
 
-    let stake_pool = StakePool::get_checked(accounts.stake_pool)?;
+    let stake_pool = StakePool::get_checked(accounts.stake_pool, false)?;
     let current_time = Clock::get().unwrap().unix_timestamp;
 
     check_account_key(
@@ -137,7 +137,7 @@ pub fn process_create_bond(
 
     // Create bond account
     let seeds: &[&[u8]] = &[
-        BondAccount::SEED.as_bytes(),
+        BondAccount::SEED,
         &params.buyer.to_bytes(),
         &params.total_amount_sold.to_le_bytes(),
         &[nonce],
