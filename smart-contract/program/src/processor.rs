@@ -160,9 +160,7 @@ impl Processor {
             }
             ProgramInstruction::AdminFreeze => {
                 msg!("Instruction: Admin freeze");
-                let params = admin_freeze::Params::try_from_slice(instruction_data)
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
-                admin_freeze::process_admin_freeze(program_id, accounts, params)?;
+                admin_freeze::process_admin_freeze(program_id, accounts)?;
             }
         }
 

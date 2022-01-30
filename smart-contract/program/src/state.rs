@@ -2,6 +2,7 @@ use crate::error::AccessError;
 use bonfida_utils::BorshSize;
 use borsh::{BorshDeserialize, BorshSerialize};
 use bytemuck::{from_bytes_mut, try_cast_slice_mut, Pod, Zeroable};
+use num_derive::{FromPrimitive, ToPrimitive};
 use solana_program::account_info::AccountInfo;
 use solana_program::clock::Clock;
 use solana_program::entrypoint::ProgramResult;
@@ -35,7 +36,8 @@ pub const STAKE_BUFFER_LEN: u64 = 365;
 /// Default unstake period set to 7 days
 pub const UNSTAKE_PERIOD: i64 = 604800;
 
-#[derive(BorshSerialize, BorshDeserialize, BorshSize, PartialEq)]
+#[derive(BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive)]
+#[repr(u8)]
 #[allow(missing_docs)]
 pub enum Tag {
     Uninitialized,
@@ -48,7 +50,25 @@ pub enum Tag {
     CentralState,
     Deleted,
     // Accounts frozen by the central state authority
-    Frozen,
+    FrozenStakePool,
+    FrozenStakeAccount,
+    FrozenBondAccount,
+}
+
+impl Tag {
+    pub fn opposite(&self) -> Result<Tag, ProgramError> {
+        let tag = match self {
+            Tag::StakePool => Tag::FrozenStakePool,
+            Tag::StakeAccount => Tag::FrozenStakeAccount,
+            Tag::BondAccount => Tag::FrozenBondAccount,
+            Tag::FrozenStakePool => Tag::StakePool,
+            Tag::FrozenStakeAccount => Tag::StakeAccount,
+            Tag::FrozenBondAccount => Tag::BondAccount,
+            _ => return Err(AccessError::InvalidTagChange.into()),
+        };
+
+        Ok(tag)
+    }
 }
 
 #[derive(BorshSerialize, BorshDeserialize, BorshSize, Copy, Clone, Pod, Zeroable)]

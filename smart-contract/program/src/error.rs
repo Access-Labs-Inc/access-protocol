@@ -75,6 +75,8 @@ pub enum AccessError {
     CannotUnstake,
     #[error("Inactive stake pool not allowed")]
     InactiveStakePoolNotAllowed,
+    #[error("Invalid tag change")]
+    InvalidTagChange,
 }
 
 impl From<AccessError> for ProgramError {

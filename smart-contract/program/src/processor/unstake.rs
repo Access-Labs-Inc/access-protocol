@@ -3,15 +3,12 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
-    program::invoke_signed,
     program_error::ProgramError,
     pubkey::Pubkey,
 };
 
-use spl_token::instruction::transfer;
-
 use crate::{
-    state::{CentralState, StakePoolHeader},
+    state::CentralState,
     utils::{check_account_key, check_account_owner, check_signer},
 };
 use bonfida_utils::{BorshSize, InstructionsAccount};
