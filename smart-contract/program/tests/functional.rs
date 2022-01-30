@@ -473,12 +473,15 @@ async fn test_staking() {
             account_to_freeze: &stake_pool_key,
             authority: &prg_test_ctx.payer.pubkey(),
         },
-        admin_freeze::Params { tag: Tag::Frozen },
+        admin_freeze::Params {},
     );
 
     sign_send_instructions(&mut prg_test_ctx, vec![freeze_stake_acc_ix], vec![])
         .await
         .unwrap();
+
+    // Advance in time by a few seconds
+    prg_test_ctx.warp_to_slot(10_000).unwrap();
 
     //
     // Unfreeze account
@@ -491,9 +494,7 @@ async fn test_staking() {
             account_to_freeze: &stake_pool_key,
             authority: &prg_test_ctx.payer.pubkey(),
         },
-        admin_freeze::Params {
-            tag: Tag::StakePool,
-        },
+        admin_freeze::Params {},
     );
 
     sign_send_instructions(&mut prg_test_ctx, vec![freeze_stake_acc_ix], vec![])
@@ -511,7 +512,7 @@ async fn test_staking() {
             account_to_freeze: &central_state,
             authority: &prg_test_ctx.payer.pubkey(),
         },
-        admin_freeze::Params { tag: Tag::Frozen },
+        admin_freeze::Params {},
     );
 
     assert_eq!(

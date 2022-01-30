@@ -4,10 +4,10 @@ use crate::error::AccessError;
 use crate::state::{CentralState, Tag};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
+use num_traits::FromPrimitive;
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
-    msg,
     program_error::ProgramError,
     pubkey::Pubkey,
 };
@@ -15,10 +15,7 @@ use solana_program::{
 use crate::utils::{check_account_key, check_account_owner, check_signer};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
-pub struct Params {
-    /// The account tag to assign to the account
-    pub tag: Tag,
-}
+pub struct Params {}
 
 #[derive(InstructionsAccount)]
 pub struct Accounts<'a, T> {
@@ -64,13 +61,8 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     }
 }
 
-pub fn process_admin_freeze(
-    program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    params: Params,
-) -> ProgramResult {
+pub fn process_admin_freeze(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
-    let Params { tag } = params;
 
     let central_state = CentralState::from_account_info(accounts.central_state)?;
 
@@ -82,13 +74,10 @@ pub fn process_admin_freeze(
 
     let mut data = accounts.account_to_freeze.data.borrow_mut();
 
-    if data[0] == Tag::CentralState as u8 || tag == Tag::CentralState {
-        // Make sure to never edit the central state
-        msg!("Central state cannot be modified");
-        return Err(AccessError::DataTypeMismatch.into());
-    }
+    let current_tag = Tag::from_u8(data[0]).ok_or(ProgramError::InvalidAccountData)?;
+    let new_tag = Tag::opposite(&current_tag)?;
 
-    data[0] = tag as u8;
+    data[0] = new_tag as u8;
 
     Ok(())
 }

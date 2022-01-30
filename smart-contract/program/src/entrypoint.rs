@@ -134,6 +134,9 @@ impl PrintProgramError for AccessError {
             AccessError::InactiveStakePoolNotAllowed => {
                 msg!("Error: Inactive stake pool not allowed")
             }
+            AccessError::InvalidTagChange => {
+                msg!("Error: Invalid tag change")
+            }
         }
     }
 }
