@@ -18,6 +18,7 @@ import {
   unstakeInstruction,
   adminMintInstruction,
   executeUnstakeInstruction,
+  activateStakePoolInstruction,
 } from "./raw_instructions";
 import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
 import { CentralState, StakePool, BondAccount, StakeAccount } from "./state";
@@ -72,6 +73,31 @@ export const changePoolMinimum = async (
   const ix = new changePoolMinimumInstruction({
     newMinimum: new BN(newMinimum),
   }).getInstruction(programId, stakePoolKey, stakePool.owner);
+
+  return ix;
+};
+
+/**
+ * This function can be used activate a created stake pool with the signing authority
+ * @param connection The Solana RPC connection
+ * @param stakePoolKey The key of the stake pool
+ * @param programId The ACCESS program ID
+ * @returns
+ */
+export const activateStakePool = async (
+  connection: Connection,
+  stakePoolKey: PublicKey,
+  programId: PublicKey
+) => {
+  const [centralKey] = await CentralState.getKey(programId);
+  const centralState = await CentralState.retrieve(connection, centralKey);
+
+  const ix = new activateStakePoolInstruction().getInstruction(
+    programId,
+    centralState.authority,
+    stakePoolKey,
+    centralKey
+  );
 
   return ix;
 };
@@ -136,7 +162,7 @@ export const claimBond = async (
     buyer,
     quoteTokenSource,
     bond.sellerTokenAccount,
-    TOKEN_PROGRAM_ID,
+    bond.stakePool,
     centralState.tokenMint,
     stakePool.vault,
     centralKey,
@@ -533,7 +559,7 @@ export const unlockBondTokens = async (
     centralState.tokenMint,
     destinationToken,
     centralKey,
-    TOKEN_PROGRAM_ID,
+    bond.stakePool,
     stakePool.vault,
     TOKEN_PROGRAM_ID
   );

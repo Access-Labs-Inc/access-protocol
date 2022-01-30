@@ -14,12 +14,16 @@ const STAKE_BUFFER_LEN = 365;
 export enum Tag {
   Uninitialized = 0,
   StakePool = 1,
-  StakeAccount = 2,
+  InactiveStakePool = 2,
+  StakeAccount = 3,
   // Bond accounts are inactive until the buyer transfered the funds
-  InactiveBondAccount = 3,
-  BondAccount = 4,
-  CentralState = 5,
-  Deleted = 6,
+  InactiveBondAccount = 4,
+  BondAccount = 5,
+  CentralState = 6,
+  Deleted = 7,
+  FrozenStakePool = 8,
+  FrozenStakeAccount = 9,
+  FrozenBondAccount = 10,
 }
 
 /**
@@ -34,6 +38,8 @@ export class StakePool {
   totalStaked: BN;
   lastCrankTime: BN;
   lastClaimedTime: BN;
+  stakersMultiplier: BN;
+  unstakePeriod: BN;
   owner: PublicKey;
   vault: PublicKey;
 
@@ -53,6 +59,8 @@ export class StakePool {
           ["totalStaked", "u64"],
           ["lastCrankTime", "u64"],
           ["lastClaimedTime", "u64"],
+          ["stakersMultiplier", "u64"],
+          ["unstakePeriod", "u64"],
           ["owner", [32]],
           ["vault", [32]],
           ["balances", ["u128", STAKE_BUFFER_LEN]],
@@ -70,6 +78,8 @@ export class StakePool {
     totalStaked: BN;
     lastCrankTime: BN;
     lastClaimedTime: BN;
+    stakersMultiplier: BN;
+    unstakePeriod: BN;
     owner: Uint8Array;
     vault: Uint8Array;
     balances: BN[];
@@ -82,6 +92,8 @@ export class StakePool {
     this.totalStaked = obj.totalStaked;
     this.lastCrankTime = obj.lastCrankTime;
     this.lastClaimedTime = obj.lastClaimedTime;
+    this.stakersMultiplier = obj.stakersMultiplier;
+    this.unstakePeriod = obj.unstakePeriod;
     this.owner = new PublicKey(obj.owner);
     this.vault = new PublicKey(obj.vault);
     this.balances = obj.balances;
@@ -129,6 +141,8 @@ export class StakeAccount {
   stakePool: PublicKey;
   lastClaimedTime: BN;
   poolMinimumAtCreation: BN;
+  unstakeRequestTime: BN;
+  unstakeRequestAmount: BN;
 
   static schema: Schema = new Map([
     [
@@ -142,6 +156,8 @@ export class StakeAccount {
           ["stakePool", [32]],
           ["lastClaimedTime", "u64"],
           ["poolMinimumAtCreation", "u64"],
+          ["unstakeRequestTime", "u64"],
+          ["unstakeRequestAmount", "u64"],
         ],
       },
     ],
@@ -154,6 +170,8 @@ export class StakeAccount {
     stakePool: Uint8Array;
     lastClaimedTime: BN;
     poolMinimumAtCreation: BN;
+    unstakeRequestTime: BN;
+    unstakeRequestAmount: BN;
   }) {
     this.tag = obj.tag;
     this.owner = new PublicKey(obj.owner);
@@ -161,6 +179,8 @@ export class StakeAccount {
     this.stakePool = new PublicKey(obj.stakePool);
     this.lastClaimedTime = obj.lastClaimedTime;
     this.poolMinimumAtCreation = obj.poolMinimumAtCreation;
+    this.unstakeRequestTime = obj.unstakeRequestTime;
+    this.unstakeRequestAmount = obj.unstakeRequestAmount;
   }
 
   static deserialize(data: Buffer) {
