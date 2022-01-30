@@ -148,21 +148,3 @@ export class TokenMint {
     return this.token.mintTo(tokenAccount, this.signer, [], amount);
   }
 }
-
-export const getTokenAccountBalance = async (
-  connection: Connection,
-  key: PublicKey
-) => {
-  const { value } = await connection.getParsedAccountInfo(key);
-  // @ts-ignore
-  return value.data.parsed.info.tokenAmount.uiAmount;
-};
-
-export const getTokenSupply = async (
-  connection: Connection,
-  mint: PublicKey
-) => {
-  const { value } = await connection.getParsedAccountInfo(mint);
-  // @ts-ignore
-  return parseFloat(value.data.parsed.info.supply);
-};

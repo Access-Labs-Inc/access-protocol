@@ -135,7 +135,7 @@ export const claimBond = async (
     buyer,
     quoteTokenSource,
     bond.sellerTokenAccount,
-    TOKEN_PROGRAM_ID,
+    bond.stakePool,
     centralState.tokenMint,
     stakePool.vault,
     centralKey,
@@ -533,7 +533,7 @@ export const unlockBondTokens = async (
     centralState.tokenMint,
     destinationToken,
     centralKey,
-    TOKEN_PROGRAM_ID,
+    bond.stakePool,
     stakePool.vault,
     TOKEN_PROGRAM_ID
   );

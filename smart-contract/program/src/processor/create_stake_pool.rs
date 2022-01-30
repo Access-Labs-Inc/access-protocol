@@ -24,7 +24,7 @@ pub struct Params {
     // Owner of the stake pool
     pub owner: Pubkey,
     // Destination of the rewards
-    pub destination: Pubkey,
+    pub destination: Pubkey, //TODO remove
     // Minimum amount to stake
     pub minimum_stake_amount: u64,
 }
