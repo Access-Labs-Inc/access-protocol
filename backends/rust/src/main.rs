@@ -3,12 +3,13 @@ mod routes;
 mod structs;
 mod utils;
 
-use actix_cors::Cors;
-use std::sync::Arc;
-
-use actix_web::{middleware, web, App, HttpServer};
-use routes::{article, auth};
-use structs::app_data::AppData;
+use {
+    actix_cors::Cors,
+    actix_web::{middleware, web, App, HttpServer},
+    routes::{article, auth},
+    std::sync::Arc,
+    structs::app_data::AppData,
+};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

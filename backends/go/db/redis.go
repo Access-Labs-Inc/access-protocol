@@ -7,8 +7,10 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
+// Redis client
 var RedisClient *redis.Client
 
+// Set a nonce for a user with a TTL of 10 minutes
 func SetNonce(address string, nonce string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -16,6 +18,7 @@ func SetNonce(address string, nonce string) error {
 	return err
 }
 
+// Get the latest nonce generated for a user
 func GetNonce(address string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

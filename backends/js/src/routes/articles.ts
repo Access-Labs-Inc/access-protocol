@@ -4,6 +4,9 @@ import path from "path";
 
 const router = Router();
 
+/**
+ * Example of a route protected by JWT
+ */
 router.get("/", validateToken, (req, res) => {
   res.sendStatus(200);
 });

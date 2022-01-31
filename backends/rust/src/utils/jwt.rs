@@ -1,11 +1,14 @@
-use crate::errors::AccessError;
-use crate::utils::settings::{JWT_ACCESS_TOKEN, JWT_EXPIRE};
-use actix_web::HttpRequest;
-use hmac::{Hmac, Mac};
-use jwt::{Header, SignWithKey, Token, VerifyWithKey};
-use sha2::Sha256;
-use std::collections::BTreeMap;
-use std::time::SystemTime;
+use crate::{
+    errors::AccessError,
+    utils::settings::{JWT_ACCESS_TOKEN, JWT_EXPIRE},
+};
+use {
+    actix_web::HttpRequest,
+    hmac::{Hmac, Mac},
+    jwt::{Header, SignWithKey, Token, VerifyWithKey},
+    sha2::Sha256,
+    std::{collections::BTreeMap, time::SystemTime},
+};
 
 /// Create a new JWT token with two claims
 /// - `address`

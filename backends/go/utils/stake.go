@@ -15,7 +15,7 @@ const MINIMUM_STAKE uint64 = 1_000 // TODO CHANGE
 const PROGRAM_ID = ""
 const STAKE_POOL = ""
 
-
+// Verifies that a user has enough tokens staked
 func CheckStake(owner string) bool {
 	c := client.NewClient(rpc.DevnetRPCEndpoint)
 

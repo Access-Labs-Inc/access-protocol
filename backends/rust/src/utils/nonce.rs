@@ -1,5 +1,4 @@
-use hex;
-use rand::Rng;
+use {hex, rand::Rng};
 
 /// Generates a random 32 bytes nonce encoded as hex string
 pub fn generate_nonce() -> String {

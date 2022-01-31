@@ -16,6 +16,9 @@ import { checkStake } from "../utils/stake";
 
 const router = Router();
 
+/**
+ * Generates a nonce for a user and stores it in redis
+ */
 router.post(
   "/nonce",
   validaRequestBody(NonceRequestSchema),
@@ -42,6 +45,9 @@ router.post(
   }
 );
 
+/**
+ * Verifies the signed nonce returned by the user and returns a JWT
+ */
 router.post(
   "/login",
   validaRequestBody(LoginRequestSchema),

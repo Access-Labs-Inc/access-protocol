@@ -9,6 +9,7 @@ import (
 	"github.com/mazen160/go-random"
 )
 
+// Generates a randomly secure 32 bytes nonce
 func GenerateNonce() (string, error) {
 	var nonce string
 	bytes, err := random.Bytes(32)
@@ -19,6 +20,7 @@ func GenerateNonce() (string, error) {
 	return nonce, nil
 }
 
+// Verifies if a string is a valid 32 bytes nonce
 func IsValidNonce(nonce string) bool {
 	bytes, err := hex.DecodeString(nonce)
 	if err != nil {
@@ -29,7 +31,10 @@ func IsValidNonce(nonce string) bool {
 	}
 	return true
 }
-
+// Verifies a signed nonce
+// - nonce: hex encoded nonce
+// - signedNonce: signed nonce (i.e signature to verify)
+// - pubkeyString: Public key used to sign the nonce
 func VerifyNonce(nonce string, signedNonce string, pubkeyString string) bool {
 	bytes, err := base58.Decode(pubkeyString)
 	if err != nil {

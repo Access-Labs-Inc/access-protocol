@@ -24,11 +24,11 @@ STAKE_POOL = ""
 OFFSET = 1 + 32
 POOL_MINIMUM = 100
 
-
+# Generates a randomly secure 32 bytes nonce
 def generate_nonce() -> str:
-    return secrets.token_hex(16)
+    return secrets.token_hex(32)
 
-
+# Verifies a signed nonce
 def verify_nonce(nonce: bytes, signed_nonce: str, address: str) -> bool:
     address_bytes = base58.b58decode(address)
     vk = VerifyKey(address_bytes)
@@ -38,7 +38,7 @@ def verify_nonce(nonce: bytes, signed_nonce: str, address: str) -> bool:
     except:
         return False
 
-
+# Encode a JWT that expires after JWT_EXPIRE
 def encode_jwt(address: str) -> bytes:
     now = datetime.now(timezone.utc)
     exp_timestamp = datetime.timestamp(now + timedelta(hours=JWT_EXPIRE))
@@ -50,7 +50,7 @@ def encode_jwt(address: str) -> bytes:
         ACCESS_TOKEN_SECRET,
     )
 
-
+# Verifies if a string is a valid base58 encoded public key
 def validate_pubkey(address: str) -> bool:
     try:
         publickey.PublicKey(address)
@@ -58,7 +58,7 @@ def validate_pubkey(address: str) -> bool:
     except:
         return False
 
-
+# Validates the login request body
 def validate_login(data: Dict[str, str]) -> bool:
     try:
         address = data["address"]
@@ -70,10 +70,7 @@ def validate_login(data: Dict[str, str]) -> bool:
     except:
         return False
 
-
-def json_response(success: bool, result: any, status_code: int) -> any:
-    return jsonify({"success": success, "result": result}), status_code
-
+# Verifies that a user has enough tokens staked
 def check_stake(owner: str) -> bool:
     solana_client = Client(RPC_URL)
 
@@ -87,3 +84,7 @@ def check_stake(owner: str) -> bool:
     stake = numpy.uint64(raw_bytes)
 
     return stake > POOL_MINIMUM
+
+# Jsonify a response
+def json_response(success: bool, result: any, status_code: int) -> any:
+    return jsonify({"success": success, "result": result}), status_code

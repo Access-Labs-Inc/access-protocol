@@ -16,6 +16,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// Generates a nonce for a user and stores it in redis
 func HandleNonce(c echo.Context) error {
 	var parsedBody types.NonceRequestBody
 	err := json.NewDecoder(c.Request().Body).Decode(&parsedBody)
@@ -35,6 +36,7 @@ func HandleNonce(c echo.Context) error {
 	return c.JSON(http.StatusOK, types.NewApiResonse(true, types.NonceResult{Nonce: nonce}))
 }
 
+// Verifies the signed nonce returned by the user and returns a JWT
 func HandleLogin(c echo.Context) error {
 	var parsedBody types.LoginRequestBody
 	err := json.NewDecoder(c.Request().Body).Decode(&parsedBody)

@@ -13,6 +13,7 @@ ajv.addFormat("pubkey", {
   type: "string",
   validate: (x: string) => isValidPubkey(x),
 });
+
 ajv.addFormat("nonce", {
   type: "string",
   validate: (x: string) => isValidNonce(x),

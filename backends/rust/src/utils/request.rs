@@ -1,7 +1,9 @@
 use crate::errors::AccessError;
-use actix_web::web::{BytesMut, Payload};
-use futures::StreamExt;
-use serde::Deserialize;
+use {
+    actix_web::web::{BytesMut, Payload},
+    futures::StreamExt,
+    serde::Deserialize,
+};
 
 const MAX_SIZE: usize = 262_144; // max payload size is 256k
 

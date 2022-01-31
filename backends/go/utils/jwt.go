@@ -11,6 +11,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// Returns the signing key of the JWT
 func keyFunc(t *jwt.Token) (interface{}, error) {
 	signingKey := []byte(os.Getenv("ACCESS_TOKEN"))
 	if t.Method.Alg() != "HS256" {
@@ -19,6 +20,7 @@ func keyFunc(t *jwt.Token) (interface{}, error) {
 	return signingKey, nil
 }
 
+// Echo middleware used to validate a JWT
 func ValidateToken(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		authToken := c.Request().Header.Get("authorization")

@@ -22,9 +22,9 @@ CORS(app)
 
 @app.route("/", methods=["GET"])
 def home():
-    return "visit https://bonfida.org"
+    return "Unprotected homepage"
 
-
+# Generates a nonce for a user and stores it in redis
 @app.route("/auth/nonce", methods=["POST"])
 def auth_nonce():
     address = request.get_json()['address']
@@ -46,7 +46,7 @@ def auth_nonce():
             500
         )
 
-
+# Verifies the signed nonce returned by the user and returns a JWT
 @app.route("/auth/login", methods=["POST"])
 def auth_login():
     data = request.get_json()
@@ -89,7 +89,7 @@ def auth_login():
             500
         )
 
-
+# Example of a route protected by JWT
 @app.route("/article", methods=["GET"])
 @jwt_required()
 def articles():

@@ -1,6 +1,8 @@
 use crate::structs::api_response::ApiResponse;
-use actix_web::{dev::HttpResponseBuilder, error, http::StatusCode, HttpResponse};
-use derive_more::{Display, Error};
+use {
+    actix_web::{dev::HttpResponseBuilder, error, http::StatusCode, HttpResponse},
+    derive_more::{Display, Error},
+};
 
 #[derive(Debug, Display, Error)]
 pub enum AccessError {

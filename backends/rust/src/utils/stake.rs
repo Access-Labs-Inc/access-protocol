@@ -1,8 +1,10 @@
 use crate::errors::AccessError;
-use access_protocol::state::StakeAccount;
-use borsh::BorshDeserialize;
-use solana_client::rpc_client::RpcClient;
-use solana_program::{pubkey, pubkey::Pubkey};
+use {
+    access_protocol::state::StakeAccount,
+    borsh::BorshDeserialize,
+    solana_client::rpc_client::RpcClient,
+    solana_program::{pubkey, pubkey::Pubkey},
+};
 
 const ENDPOINT: &str = "https://devnet.solana.com"; // TODO change
 const STAKE_POOL: Pubkey = pubkey!("6gbWg2YqjCwzsBYwepCxeaJdy5x4BmXRAhSN9QoMsrbH"); // TODO change

@@ -1,27 +1,36 @@
-use crate::structs::{api_response::ApiResponse, app_data::AppData};
-use crate::utils::nonce::generate_nonce;
-use actix_web::{
-    post,
-    web::{Data, Payload},
-    Error, HttpResponse,
+use crate::{
+    errors::AccessError,
+    structs::{
+        api_response::ApiResponse,
+        app_data::AppData,
+        auth::{LoginRequest, LoginResponse, NonceRequest, NonceResponse},
+    },
+    utils::{
+        jwt::create_jwt,
+        nonce::generate_nonce,
+        pubkey::is_valid_pubkey,
+        request::{deserialize_body, load_body},
+        settings::REDIS_EXPIRE,
+        stake::check_stake_account,
+    },
 };
-use hex;
-use nacl::sign::verify;
-use solana_program::pubkey::Pubkey;
-use std::str::FromStr;
-
-use crate::errors::AccessError;
-use crate::structs::auth::{LoginRequest, LoginResponse, NonceRequest, NonceResponse};
-use crate::utils::settings::REDIS_EXPIRE;
-use crate::utils::{
-    jwt::create_jwt,
-    pubkey::is_valid_pubkey,
-    request::{deserialize_body, load_body},
-    stake::check_stake_account,
+use {
+    actix_web::{
+        post,
+        web::{Data, Payload},
+        Error, HttpResponse,
+    },
+    hex,
+    nacl::sign::verify,
+    redis::Commands,
+    solana_program::pubkey::Pubkey,
+    std::str::FromStr,
+    std::sync::Arc,
 };
-use redis::Commands;
-use std::sync::Arc;
 
+/**
+ * Generates a nonce for a user and stores it in redis
+ */
 #[post("/auth/nonce")]
 pub async fn handle_get_nonce(
     data: Data<Arc<AppData>>,
@@ -51,6 +60,9 @@ pub async fn handle_get_nonce(
     Ok(HttpResponse::Ok().json(ApiResponse::new(true, result)))
 }
 
+/**
+ * Verifies the signed nonce returned by the user and returns a JWT
+ */
 #[post("/auth/login")]
 pub async fn handle_login(
     data: Data<Arc<AppData>>,
