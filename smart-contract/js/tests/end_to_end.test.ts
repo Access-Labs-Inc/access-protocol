@@ -25,6 +25,7 @@ import {
   unstake,
   adminMint,
   activateStakePool,
+  adminFreeze,
 } from "../src/bindings";
 import {
   CentralState,
@@ -32,6 +33,7 @@ import {
   StakePool,
   StakeAccount,
   BondAccount,
+  UnstakeRequest,
 } from "../src/state";
 import {
   Token,
@@ -50,6 +52,7 @@ let feePayer: Keypair;
 let payerKeyFile: string;
 let programId: PublicKey;
 const delay = 30_000;
+const MAX_i64 = "9223372036854775807";
 
 beforeAll(async () => {
   solana = await spawnLocalSolana();
@@ -74,7 +77,7 @@ afterAll(() => {
   }
 });
 
-jest.setTimeout(800_000);
+jest.setTimeout(1_500_000);
 
 test("End to end test", async () => {
   /**
@@ -261,6 +264,21 @@ test("End to end test", async () => {
   expect(stakeAccountObj.lastClaimedTime.toNumber()).toBeLessThan(now);
   expect(stakeAccountObj.poolMinimumAtCreation.toNumber()).toBe(
     minimumStakeAmount
+  );
+  expect(stakeAccountObj.pendingUnstakeRequests).toBe(0);
+  expect(JSON.stringify(stakeAccountObj.unstakeRequests)).toBe(
+    JSON.stringify([
+      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
+      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
+      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
+      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
+      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
+      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
+      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
+      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
+      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
+      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
+    ])
   );
 
   /**
@@ -676,7 +694,7 @@ test("End to end test", async () => {
   let supply = (await connection.getTokenSupply(accessToken.token.publicKey))
     .value.amount;
   expect(supply).toBe(
-    // A full daily inflation as pool owner and staker have claimed + bond amount as bon was claimed
+    // A full daily inflation as pool owner and staker have claimed + bond amount as bond was claimed
     new BN(dailyInflation).add(new BN(bondAmount)).toString()
   );
 
@@ -897,6 +915,26 @@ test("End to end test", async () => {
   expect(stakedAccountObj.poolMinimumAtCreation.toNumber()).toBe(
     minimumStakeAmount
   );
+  expect(stakedAccountObj.pendingUnstakeRequests).toBe(1);
+  expect(stakedAccountObj.unstakeRequests[0].amount.toNumber()).toBe(
+    stakeAmount
+  );
+  expect(stakedAccountObj.unstakeRequests[0].time.toNumber()).toBeLessThan(
+    now + 7 * 24 * 60 * 60
+  );
+  expect(JSON.stringify(stakedAccountObj.unstakeRequests.slice(1))).toBe(
+    JSON.stringify([
+      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
+      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
+      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
+      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
+      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
+      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
+      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
+      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
+      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
+    ])
+  );
 
   /**
    * Admin mint
@@ -937,4 +975,52 @@ test("End to end test", async () => {
   expect(postBalancesReceiver).toBe(new BN(adminMintAmount).toString());
 
   // Check current new supply
+
+  await sleep(delay);
+  const currentSupply = (
+    await connection.getTokenSupply(accessToken.token.publicKey)
+  ).value.amount;
+  // Initial bond amount + admin mint + 2 days for inflation
+  const expectedSupply = new BN(bondAmount)
+    .add(new BN(adminMintAmount))
+    .add(new BN(dailyInflation))
+    .add(new BN(dailyInflation))
+    .add(new BN(stakeAmount * 500_000)); // Changed inflation
+  expect(currentSupply).toBe(expectedSupply.toString());
+
+  /**
+   * Freeze the stake pool account
+   */
+
+  const ix_freeze_pool = await adminFreeze(connection, stakePoolKey, programId);
+  tx = await signAndSendTransactionInstructions(
+    connection,
+    [centralStateAuthority],
+    feePayer,
+    [ix_freeze_pool]
+  );
+
+  // Verifications
+  await sleep(delay);
+  stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
+  expect(stakePoolObj.tag).toBe(Tag.FrozenStakePool);
+
+  /**
+   * Unfreeze stake pool account
+   */
+
+  const ix_unfreeze_pool = await adminFreeze(
+    connection,
+    stakePoolKey,
+    programId
+  );
+  tx = await signAndSendTransactionInstructions(
+    connection,
+    [centralStateAuthority],
+    feePayer,
+    [ix_unfreeze_pool]
+  );
+  await sleep(delay);
+  stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
+  expect(stakePoolObj.tag).toBe(Tag.StakePool);
 });

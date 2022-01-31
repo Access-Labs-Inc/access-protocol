@@ -106,8 +106,7 @@ pub fn process_create_stake_pool(
         stake_pool_header.borsh_len() + 16 * STAKE_BUFFER_LEN as usize,
     )?;
 
-    let mut stake_pool =
-        StakePool::get_checked(accounts.stake_pool_account, Tag::Uninitialized).unwrap();
+    let mut stake_pool = StakePool::get_checked(accounts.stake_pool_account, Tag::Uninitialized)?;
 
     *stake_pool.header = stake_pool_header;
 

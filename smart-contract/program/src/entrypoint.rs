@@ -137,6 +137,9 @@ impl PrintProgramError for AccessError {
             AccessError::InvalidTagChange => {
                 msg!("Error: Invalid tag change")
             }
+            AccessError::TooManyUnstakeRequests => {
+                msg!("Error: Too many unstake requests")
+            }
         }
     }
 }
