@@ -57,7 +57,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 pub fn process_close_stake_account(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let mut stake_account = StakeAccount::from_account_info(accounts.stake_account).unwrap();
+    let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
 
     check_account_key(
         accounts.owner,

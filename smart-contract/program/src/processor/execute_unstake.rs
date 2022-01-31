@@ -110,14 +110,6 @@ pub fn process_execute_unstake(program_id: &Pubkey, accounts: &[AccountInfo]) ->
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
     let current_time = Clock::get()?.unix_timestamp;
 
-    if current_time
-        .checked_sub(stake_account.unstake_request_time)
-        .ok_or(AccessError::Overflow)?
-        < stake_pool.header.unstake_period
-    {
-        return Err(AccessError::CannotUnstake.into());
-    }
-
     check_account_key(
         accounts.owner,
         &stake_account.owner,
@@ -134,6 +126,17 @@ pub fn process_execute_unstake(program_id: &Pubkey, accounts: &[AccountInfo]) ->
         AccessError::StakePoolVaultMismatch,
     )?;
 
+    let pending_request = stake_account.pop_unstake_request()?;
+
+    if current_time
+        .checked_sub(pending_request.time)
+        .ok_or(AccessError::Overflow)?
+        < stake_pool.header.unstake_period
+        || pending_request.amount == 0
+    {
+        return Err(AccessError::CannotUnstake.into());
+    }
+
     // Transfer tokens
     let signer_seeds: &[&[u8]] = &[
         StakePoolHeader::SEED,
@@ -146,7 +149,7 @@ pub fn process_execute_unstake(program_id: &Pubkey, accounts: &[AccountInfo]) ->
         accounts.destination_token.key,
         accounts.stake_pool.key,
         &[],
-        stake_account.unstake_request_amount,
+        pending_request.amount,
     )?;
 
     drop(stake_pool);
@@ -161,9 +164,6 @@ pub fn process_execute_unstake(program_id: &Pubkey, accounts: &[AccountInfo]) ->
         ],
         &[signer_seeds],
     )?;
-
-    // Update stake account
-    stake_account.execute_unstake()?;
 
     // Save states
     stake_account.save(&mut accounts.stake_account.data.borrow_mut());

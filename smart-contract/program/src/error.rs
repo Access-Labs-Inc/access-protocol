@@ -77,6 +77,8 @@ pub enum AccessError {
     InactiveStakePoolNotAllowed,
     #[error("Invalid tag change")]
     InvalidTagChange,
+    #[error("Too many unstake requests")]
+    TooManyUnstakeRequests,
 }
 
 impl From<AccessError> for ProgramError {

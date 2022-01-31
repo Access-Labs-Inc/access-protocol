@@ -19,6 +19,7 @@ import {
   adminMintInstruction,
   executeUnstakeInstruction,
   activateStakePoolInstruction,
+  adminFreezeInstruction,
 } from "./raw_instructions";
 import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
 import { CentralState, StakePool, BondAccount, StakeAccount } from "./state";
@@ -605,7 +606,7 @@ export const unstake = async (
  * @param programId The ACCESS program ID
  * @returns
  */
-export const execute_unstake = async (
+export const executeunstake = async (
   connection: Connection,
   stakeAccount: PublicKey,
   destinationToken: PublicKey,
@@ -653,6 +654,31 @@ export const adminMint = async (
     destinationToken,
     centralKey,
     TOKEN_PROGRAM_ID
+  );
+
+  return ix;
+};
+
+/**
+ * This instruction can be used by the central state authority to freeze or unfreeze an account
+ * @param connection The Solana RPC connection
+ * @param accountToFreeze The account to freeze
+ * @param programId The ACCESS program ID
+ * @returns
+ */
+export const adminFreeze = async (
+  connection: Connection,
+  accountToFreeze: PublicKey,
+  programId: PublicKey
+) => {
+  const [centralKey] = await CentralState.getKey(programId);
+  const centralState = await CentralState.retrieve(connection, centralKey);
+
+  const ix = new adminFreezeInstruction().getInstruction(
+    programId,
+    centralState.authority,
+    accountToFreeze,
+    centralKey
   );
 
   return ix;

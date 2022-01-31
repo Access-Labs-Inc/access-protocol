@@ -1,5 +1,12 @@
 //! Unstake
+use crate::{
+    state::{CentralState, Tag},
+    utils::{check_account_key, check_account_owner, check_signer},
+};
+use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
+use solana_program::clock::Clock;
+use solana_program::sysvar::Sysvar;
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
@@ -7,14 +14,8 @@ use solana_program::{
     pubkey::Pubkey,
 };
 
-use crate::{
-    state::{CentralState, Tag},
-    utils::{check_account_key, check_account_owner, check_signer},
-};
-use bonfida_utils::{BorshSize, InstructionsAccount};
-
 use crate::error::AccessError;
-use crate::state::{StakeAccount, StakePool};
+use crate::state::{StakeAccount, StakePool, UnstakeRequest};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `unstake` instruction
@@ -91,6 +92,7 @@ pub fn process_unstake(
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
     let mut central_state = CentralState::from_account_info(accounts.central_state_account)?;
+    let current_time = Clock::get()?.unix_timestamp;
 
     check_account_key(
         accounts.owner,
@@ -106,6 +108,9 @@ pub fn process_unstake(
     // Update stake account
     stake_account.withdraw(amount)?;
     stake_pool.header.withdraw(amount)?;
+
+    // Add unstake request
+    stake_account.add_unstake_request(UnstakeRequest::new(amount, current_time))?;
 
     // Save states
     stake_account.save(&mut accounts.stake_account.data.borrow_mut());
