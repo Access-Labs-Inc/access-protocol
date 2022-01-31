@@ -14,7 +14,7 @@ use solana_program::{
 use spl_token::instruction::transfer;
 
 use crate::{
-    state::{CentralState, SECONDS_IN_DAY},
+    state::{CentralState, Tag, SECONDS_IN_DAY},
     utils::{check_account_key, check_account_owner, check_signer},
 };
 use bonfida_utils::{BorshSize, InstructionsAccount};
@@ -125,7 +125,7 @@ pub fn process_stake(
     let accounts = Accounts::parse(accounts, program_id)?;
     let Params { amount } = params;
 
-    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, false)?;
+    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
     let mut central_state = CentralState::from_account_info(accounts.central_state_account)?;
 

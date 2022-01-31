@@ -1,7 +1,7 @@
 //! Permissionless crank to update the stake pool rewards
 //! This instructions updates the circular buffer with the pool balances multiplied by the current inflation
 use crate::error::AccessError;
-use crate::state::{CentralState, StakePool, SECONDS_IN_DAY};
+use crate::state::{CentralState, StakePool, Tag, SECONDS_IN_DAY};
 use crate::utils::check_account_owner;
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -62,7 +62,7 @@ pub fn process_crank(
 
     let present_time = Clock::get()?.unix_timestamp;
 
-    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, false)?;
+    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;
     let central_state = CentralState::from_account_info(accounts.central_state)?;
 
     if present_time - stake_pool.header.last_crank_time < SECONDS_IN_DAY as i64 {

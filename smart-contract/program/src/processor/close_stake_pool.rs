@@ -8,7 +8,10 @@ use solana_program::{
     pubkey::Pubkey,
 };
 
-use crate::utils::{assert_empty_stake_pool, check_account_key, check_account_owner, check_signer};
+use crate::{
+    state::Tag,
+    utils::{assert_empty_stake_pool, check_account_key, check_account_owner, check_signer},
+};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
 use crate::error::AccessError;
@@ -64,7 +67,8 @@ pub fn process_close_stake_pool(
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let mut stake_pool = StakePool::get_checked(accounts.stake_pool_account, false).unwrap();
+    let mut stake_pool =
+        StakePool::get_checked(accounts.stake_pool_account, Tag::StakePool).unwrap();
 
     check_account_key(
         accounts.owner,

@@ -1,7 +1,7 @@
 //! Claim rewards of a stake pool
 //! This instruction is used by stake pool owner for claiming their staking rewards
 use crate::error::AccessError;
-use crate::state::{CentralState, StakePool};
+use crate::state::{CentralState, StakePool, Tag};
 use crate::utils::{
     calc_previous_balances_and_inflation, check_account_key, check_account_owner, check_signer,
     safe_downcast,
@@ -103,7 +103,7 @@ pub fn process_claim_pool_rewards(
     let current_time = Clock::get().unwrap().unix_timestamp;
 
     let central_state = CentralState::from_account_info(accounts.central_state)?;
-    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, false)?;
+    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;
 
     // Safety checks
     check_account_key(

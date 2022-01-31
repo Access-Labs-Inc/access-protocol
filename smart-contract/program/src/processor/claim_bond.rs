@@ -10,8 +10,8 @@ use solana_program::{
     pubkey::Pubkey,
 };
 
-use crate::error::AccessError;
 use crate::state::{BondAccount, CentralState, StakePool, BOND_SIGNER_THRESHOLD};
+use crate::{error::AccessError, state::Tag};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use spl_token;
 
@@ -105,7 +105,7 @@ pub fn process_claim_bond(
     let accounts = Accounts::parse(accounts, program_id)?;
     let mut bond = BondAccount::from_account_info(accounts.bond_account, true)?;
     let mut central_state = CentralState::from_account_info(accounts.central_state)?;
-    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, false)?;
+    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;
 
     assert_bond_derivation(
         accounts.bond_account,

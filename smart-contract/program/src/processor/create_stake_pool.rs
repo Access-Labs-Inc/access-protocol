@@ -11,7 +11,7 @@ use solana_program::{
 use crate::{
     cpi::Cpi,
     error::AccessError,
-    state::{StakePoolHeader, STAKE_BUFFER_LEN},
+    state::{StakePoolHeader, Tag, STAKE_BUFFER_LEN},
 };
 use crate::{state::StakePool, utils::assert_valid_vault};
 use bonfida_utils::{BorshSize, InstructionsAccount};
@@ -23,8 +23,6 @@ use crate::utils::{check_account_key, check_account_owner};
 pub struct Params {
     // Owner of the stake pool
     pub owner: Pubkey,
-    // Destination of the rewards
-    pub destination: Pubkey,
     // Minimum amount to stake
     pub minimum_stake_amount: u64,
 }
@@ -108,7 +106,8 @@ pub fn process_create_stake_pool(
         stake_pool_header.borsh_len() + 16 * STAKE_BUFFER_LEN as usize,
     )?;
 
-    let mut stake_pool = StakePool::get_checked(accounts.stake_pool_account, false).unwrap();
+    let mut stake_pool =
+        StakePool::get_checked(accounts.stake_pool_account, Tag::Uninitialized).unwrap();
 
     *stake_pool.header = stake_pool_header;
 

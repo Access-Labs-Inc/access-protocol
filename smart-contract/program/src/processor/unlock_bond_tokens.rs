@@ -12,8 +12,8 @@ use solana_program::{
     sysvar::Sysvar,
 };
 
-use crate::error::AccessError;
 use crate::state::{BondAccount, CentralState, StakePool, StakePoolHeader};
+use crate::{error::AccessError, state::Tag};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
 use crate::utils::{assert_bond_derivation, check_account_key, check_account_owner, check_signer};
@@ -100,7 +100,7 @@ pub fn process_unlock_bond_tokens(
     let accounts = Accounts::parse(accounts, program_id)?;
     let mut central_state = CentralState::from_account_info(accounts.central_state)?;
     let mut bond = BondAccount::from_account_info(accounts.bond_account, false)?;
-    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, false)?;
+    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;
     let current_time = Clock::get()?.unix_timestamp;
 
     assert_bond_derivation(

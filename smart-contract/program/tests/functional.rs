@@ -10,9 +10,9 @@ use access_protocol::{
         activate_stake_pool, admin_freeze, admin_mint, change_inflation, change_pool_minimum,
         claim_bond, claim_bond_rewards, claim_pool_rewards, claim_rewards, close_stake_account,
         close_stake_pool, crank, create_bond, create_central_state, create_stake_account,
-        create_stake_pool, stake, unlock_bond_tokens, unstake,
+        create_stake_pool, execute_unstake, stake, unlock_bond_tokens, unstake,
     },
-    state::{BondAccount, Tag},
+    state::BondAccount,
 };
 
 #[tokio::test]
@@ -146,7 +146,6 @@ async fn test_staking() {
         },
         create_stake_pool::Params {
             owner: stake_pool_owner.pubkey(),
-            destination: stake_pool_owner_token_acc,
             minimum_stake_amount: 10_000_000,
         },
     );
@@ -301,7 +300,7 @@ async fn test_staking() {
         .unwrap();
 
     // Advance in time by a few seconds
-    prg_test_ctx.warp_to_slot(4_000).unwrap();
+    prg_test_ctx.warp_to_slot(5_000).unwrap();
 
     //
     // Claim stake pool rewards
@@ -442,7 +441,7 @@ async fn test_staking() {
     .unwrap();
 
     //
-    // Unstake
+    // Request Unstake
     //
 
     let unstake_ix = unstake(
@@ -457,8 +456,30 @@ async fn test_staking() {
             amount: token_amount,
         },
     );
-
     sign_send_instructions(&mut prg_test_ctx, vec![unstake_ix], vec![&staker])
+        .await
+        .unwrap();
+
+    // Advance in time by a few seconds
+    prg_test_ctx.warp_to_slot(10_000).unwrap();
+
+    //
+    // Execute Unstake
+    //
+
+    let execute_unstake_ix = execute_unstake(
+        program_id,
+        execute_unstake::Accounts {
+            stake_account: &stake_acc_key,
+            stake_pool: &stake_pool_key,
+            owner: &staker.pubkey(),
+            destination_token: &staker_token_acc,
+            spl_token_program: &spl_token::ID,
+            vault: &pool_vault,
+        },
+        execute_unstake::Params {},
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![execute_unstake_ix], vec![&staker])
         .await
         .unwrap();
 
@@ -481,7 +502,7 @@ async fn test_staking() {
         .unwrap();
 
     // Advance in time by a few seconds
-    prg_test_ctx.warp_to_slot(10_000).unwrap();
+    prg_test_ctx.warp_to_slot(15_000).unwrap();
 
     //
     // Unfreeze account
@@ -515,11 +536,10 @@ async fn test_staking() {
         admin_freeze::Params {},
     );
 
-    assert_eq!(
+    assert!(
         sign_send_instructions(&mut prg_test_ctx, vec![freeze_stake_acc_ix], vec![])
             .await
-            .is_err(),
-        true
+            .is_err()
     );
 
     //

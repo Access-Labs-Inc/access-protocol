@@ -19,7 +19,7 @@ use crate::{
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
 use crate::error::AccessError;
-use crate::state::{StakeAccount, StakePool};
+use crate::state::{StakeAccount, StakePool, Tag};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `unstake` instruction
@@ -106,7 +106,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 pub fn process_execute_unstake(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let stake_pool = StakePool::get_checked(accounts.stake_pool, false)?;
+    let stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
     let current_time = Clock::get()?.unix_timestamp;
 

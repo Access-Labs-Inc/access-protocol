@@ -17,6 +17,7 @@ import {
   unlockBondTokensInstruction,
   unstakeInstruction,
   adminMintInstruction,
+  executeUnstakeInstruction,
 } from "./raw_instructions";
 import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
 import { CentralState, StakePool, BondAccount, StakeAccount } from "./state";
@@ -440,7 +441,6 @@ export const createStakePool = async (
   const ix = new createStakePoolInstruction({
     owner: owner.toBuffer(),
     minimumStakeAmount: new BN(minimumStakeAmount),
-    destination: destination.toBuffer(),
   }).getInstruction(
     programId,
     stakePool,
@@ -542,10 +542,9 @@ export const unlockBondTokens = async (
 };
 
 /**
- * This instruction can be used to unstake ACCESS tokens
+ * This instruction can be used to request an unstake of ACCESS tokens
  * @param connection The Solana RPC connection
  * @param stakeAccount The key of the stake account
- * @param destinationToken The token account receiving the ACCESS tokens
  * @param amount The amount of tokens to unstake
  * @param programId The ACCESS program ID
  * @returns
@@ -553,12 +552,10 @@ export const unlockBondTokens = async (
 export const unstake = async (
   connection: Connection,
   stakeAccount: PublicKey,
-  destinationToken: PublicKey,
   amount: number,
   programId: PublicKey
 ) => {
   const stake = await StakeAccount.retrieve(connection, stakeAccount);
-  const stakePool = await StakePool.retrieve(connection, stake.stakePool);
   const [centralKey] = await CentralState.getKey(programId);
 
   const ix = new unstakeInstruction({
@@ -566,6 +563,33 @@ export const unstake = async (
   }).getInstruction(
     programId,
     centralKey,
+    stakeAccount,
+    stake.stakePool,
+    stake.owner
+  );
+
+  return ix;
+};
+
+/**
+ * This instruction can be used to execute an unstake of ACCESS tokens
+ * @param connection The Solana RPC connection
+ * @param stakeAccount The key of the stake account
+ * @param destinationToken The token account receiving the ACCESS tokens
+ * @param programId The ACCESS program ID
+ * @returns
+ */
+export const execute_unstake = async (
+  connection: Connection,
+  stakeAccount: PublicKey,
+  destinationToken: PublicKey,
+  programId: PublicKey
+) => {
+  const stake = await StakeAccount.retrieve(connection, stakeAccount);
+  const stakePool = await StakePool.retrieve(connection, stake.stakePool);
+
+  const ix = new executeUnstakeInstruction().getInstruction(
+    programId,
     stakeAccount,
     stake.stakePool,
     stake.owner,
