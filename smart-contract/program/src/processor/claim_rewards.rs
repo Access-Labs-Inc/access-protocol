@@ -1,7 +1,7 @@
 //! Claim rewards of a stake account
 //! This instruction can be used by stakers to claim their staking rewards
 use crate::error::AccessError;
-use crate::state::{CentralState, StakeAccount, StakePool};
+use crate::state::{CentralState, StakeAccount, StakePool, Tag};
 use crate::utils::{
     calc_previous_balances_and_inflation, check_account_key, check_account_owner, check_signer,
     safe_downcast,
@@ -113,7 +113,7 @@ pub fn process_claim_rewards(
     let current_time = Clock::get().unwrap().unix_timestamp;
 
     let central_state = CentralState::from_account_info(accounts.central_state)?;
-    let stake_pool = StakePool::get_checked(accounts.stake_pool, false)?;
+    let stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
 
     check_account_key(

@@ -10,7 +10,7 @@ use solana_program::{
     sysvar::Sysvar,
 };
 
-use crate::state::{StakeAccount, StakePool};
+use crate::state::{StakeAccount, StakePool, Tag};
 use crate::{cpi::Cpi, error::AccessError};
 
 use bonfida_utils::{BorshSize, InstructionsAccount};
@@ -82,7 +82,7 @@ pub fn process_create_stake_account(
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let stake_pool = StakePool::get_checked(accounts.stake_pool, false)?;
+    let stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;
 
     let derived_stake_key = StakeAccount::create_key(
         &params.nonce,

@@ -12,8 +12,8 @@ use solana_program::{
     sysvar::Sysvar,
 };
 
-use crate::error::AccessError;
 use crate::state::{BondAccount, CentralState, StakePool};
+use crate::{error::AccessError, state::Tag};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use spl_token::instruction::mint_to;
 
@@ -115,7 +115,7 @@ pub fn process_claim_bond_rewards(
     let current_time = Clock::get().unwrap().unix_timestamp;
 
     let central_state = CentralState::from_account_info(accounts.central_state)?;
-    let stake_pool = StakePool::get_checked(accounts.stake_pool, false)?;
+    let stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;
     let mut bond = BondAccount::from_account_info(accounts.bond_account, false)?;
 
     // Safety checks

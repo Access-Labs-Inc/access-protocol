@@ -8,8 +8,8 @@ use solana_program::{
     pubkey::Pubkey,
 };
 
-use crate::error::AccessError;
 use crate::state::StakePool;
+use crate::{error::AccessError, state::Tag};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
 use crate::utils::{check_account_key, check_account_owner, check_signer};
@@ -70,7 +70,7 @@ pub fn process_change_pool_minimum(
     let accounts = Accounts::parse(accounts, program_id)?;
     let Params { new_minimum } = params;
 
-    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, false)?;
+    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;
 
     check_account_key(
         accounts.stake_pool_owner,

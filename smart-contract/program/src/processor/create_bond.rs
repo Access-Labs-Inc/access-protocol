@@ -11,13 +11,13 @@ use solana_program::{
     sysvar::Sysvar,
 };
 
-use crate::cpi::Cpi;
 use crate::error::AccessError;
 use crate::state::{BondAccount, StakePool, BOND_SIGNER_THRESHOLD};
 use crate::utils::{
     assert_authorized_seller, assert_uninitialized, check_account_key, check_account_owner,
     check_signer,
 };
+use crate::{cpi::Cpi, state::Tag};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -106,7 +106,7 @@ pub fn process_create_bond(
     let (derived_key, nonce) =
         BondAccount::create_key(&params.buyer, params.total_amount_sold, program_id);
 
-    let stake_pool = StakePool::get_checked(accounts.stake_pool, false)?;
+    let stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;
     let current_time = Clock::get().unwrap().unix_timestamp;
 
     check_account_key(

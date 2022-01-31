@@ -34,7 +34,11 @@ pub const OWNER_MULTIPLIER: u64 = 100 - STAKER_MULTIPLIER;
 pub const STAKE_BUFFER_LEN: u64 = 365;
 
 /// Default unstake period set to 7 days
-pub const UNSTAKE_PERIOD: i64 = 604800;
+pub const UNSTAKE_PERIOD: i64 = if cfg!(feature = "no-lock-time") {
+    1
+} else {
+    604800
+};
 
 #[derive(BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive)]
 #[repr(u8)]
@@ -56,6 +60,7 @@ pub enum Tag {
 }
 
 impl Tag {
+    /// Freeze or unfreeze an account tag
     pub fn opposite(&self) -> Result<Tag, ProgramError> {
         let tag = match self {
             Tag::StakePool => Tag::FrozenStakePool,
@@ -124,7 +129,7 @@ pub struct StakePool<'a> {
 impl<'a> StakePool<'a> {
     pub fn get_checked<'b: 'a>(
         account_info: &'a AccountInfo<'b>,
-        allow_inactive: bool,
+        check_status: Tag,
     ) -> Result<Self, ProgramError> {
         let (header, balances) = RefMut::map_split(account_info.data.borrow_mut(), |s| {
             let (hd, rem) = s.split_at_mut(size_of::<StakePoolHeader>());
@@ -134,14 +139,7 @@ impl<'a> StakePool<'a> {
             )
         });
 
-        if header.tag == Tag::InactiveStakePool as u8 && !allow_inactive {
-            return Err(AccessError::InactiveStakePoolNotAllowed.into());
-        }
-
-        if header.tag != Tag::StakePool as u8
-            && header.tag != Tag::Uninitialized as u8
-            && header.tag != Tag::InactiveStakePool as u8
-        {
+        if header.tag != check_status as u8 {
             return Err(AccessError::DataTypeMismatch.into());
         }
 
