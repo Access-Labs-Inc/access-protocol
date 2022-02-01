@@ -1,7 +1,7 @@
 use crate::error::AccessError;
 use bonfida_utils::BorshSize;
 use borsh::{BorshDeserialize, BorshSerialize};
-use bytemuck::{from_bytes_mut, try_cast_slice_mut, Pod, Zeroable};
+use bytemuck::{cast_slice, from_bytes, from_bytes_mut, try_cast_slice_mut, Pod, Zeroable};
 use num_derive::{FromPrimitive, ToPrimitive};
 use solana_program::account_info::AccountInfo;
 use solana_program::clock::Clock;
@@ -12,6 +12,7 @@ use solana_program::pubkey::Pubkey;
 use solana_program::sysvar::Sysvar;
 use std::cell::RefMut;
 use std::mem::size_of;
+use std::ops::DerefMut;
 
 /// ACCESS token mint
 pub const ACCESS_MINT: Pubkey =
@@ -122,14 +123,20 @@ pub struct StakePoolHeader {
 }
 
 #[allow(missing_docs)]
-pub struct StakePool<'a> {
-    pub header: RefMut<'a, StakePoolHeader>,
+pub struct StakePool<H, B> {
+    pub header: H,
     /// Circular buffer of length STAKE_BUFFER_LEN storing (inflation * pool_total_staked / total_staked) in FP32 format
-    pub balances: RefMut<'a, [u128]>,
+    pub balances: B,
 }
 
 #[allow(missing_docs)]
-impl<'a> StakePool<'a> {
+pub type StakePoolRef<'a> = StakePool<RefMut<'a, StakePoolHeader>, RefMut<'a, [u128]>>;
+
+#[allow(missing_docs)]
+pub type StakePoolHeaped = StakePool<Box<StakePoolHeader>, Box<[u128]>>;
+
+#[allow(missing_docs)]
+impl<'a> StakePoolRef<'a> {
     pub fn get_checked<'b: 'a>(
         account_info: &'a AccountInfo<'b>,
         check_status: Tag,
@@ -148,7 +155,23 @@ impl<'a> StakePool<'a> {
 
         Ok(StakePool { header, balances })
     }
+}
 
+#[allow(missing_docs)]
+impl StakePoolHeaped {
+    pub fn from_buffer(buf: &[u8]) -> Self {
+        let (header, balances) = buf.split_at(size_of::<StakePoolHeader>());
+        let header = from_bytes::<StakePoolHeader>(header);
+        let balances = cast_slice::<_, u128>(balances);
+        Self {
+            header: Box::new(*header),
+            balances: Box::from(balances),
+        }
+    }
+}
+
+#[allow(missing_docs)]
+impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [u128]>> StakePool<H, B> {
     pub fn push_balances_buff(&mut self, val: u128) {
         self.balances[((self.header.current_day_idx as u64) % STAKE_BUFFER_LEN) as usize] = val;
         self.header.current_day_idx += 1;
@@ -158,7 +181,10 @@ impl<'a> StakePool<'a> {
         let seeds: &[&[u8]] = &[StakePoolHeader::SEED, &owner.to_bytes(), &[*nonce]];
         Pubkey::create_program_address(seeds, program_id).unwrap()
     }
+}
 
+#[allow(missing_docs)]
+impl StakePool<(), ()> {
     pub fn find_key(owner: &Pubkey, program_id: &Pubkey) -> (Pubkey, u8) {
         let seeds: &[&[u8]] = &[StakePoolHeader::SEED, &owner.to_bytes()];
         Pubkey::find_program_address(seeds, program_id)
