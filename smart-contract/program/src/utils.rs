@@ -1,6 +1,6 @@
 use crate::error::AccessError;
 use crate::state::{BondAccount, AUTHORIZED_BOND_SELLERS};
-use crate::state::{StakeAccount, StakePool, ACCESS_MINT, SECONDS_IN_DAY, STAKE_BUFFER_LEN};
+use crate::state::{StakeAccount, StakePoolRef, ACCESS_MINT, SECONDS_IN_DAY, STAKE_BUFFER_LEN};
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
     program_pack::Pack, pubkey::Pubkey,
@@ -10,7 +10,7 @@ use spl_token::state::Account;
 pub fn calc_previous_balances_and_inflation(
     current_time: i64,
     last_claimed_time: i64,
-    stake_pool: &StakePool,
+    stake_pool: &StakePoolRef,
 ) -> Result<u128, ProgramError> {
     let nb_days_to_claim = current_time.saturating_sub(last_claimed_time) as u64 / SECONDS_IN_DAY;
     msg!("Nb of days behind {}", nb_days_to_claim);
@@ -56,7 +56,7 @@ pub fn check_signer(account: &AccountInfo, error: AccessError) -> ProgramResult 
     Ok(())
 }
 
-pub fn assert_empty_stake_pool(stake_pool: &StakePool) -> ProgramResult {
+pub fn assert_empty_stake_pool(stake_pool: &StakePoolRef) -> ProgramResult {
     if stake_pool.header.total_staked != 0 {
         msg!("The stake pool must be empty");
         return Err(AccessError::StakePoolMustBeEmpty.into());
