@@ -54,31 +54,31 @@ impl PrintProgramError for AccessError {
                 msg!("Error: The stake pool owner must sign")
             }
             AccessError::WrongStakePoolOwner => {
-                msg!("Error: The stake pool must be empty")
+                msg!("Error: Wrong stake pool owner")
             }
             AccessError::StakePoolMustBeEmpty => {
-                msg!("Error: The stake account must be empty")
+                msg!("Error: The stake pool must be empty")
             }
             AccessError::StakeAccountMustBeEmpty => {
-                msg!("Error: The stake account owner must sign")
+                msg!("Error: The stake account must be empty")
             }
             AccessError::StakeAccountOwnerMustSign => {
-                msg!("Error: Wrong SPL token program ID")
+                msg!("Error: The stake account owner must sign")
             }
             AccessError::WrongSplTokenProgramId => {
-                msg!("Error: Source token account must be owned to SPL Token")
+                msg!("Error: Wrong SPL token program ID")
             }
             AccessError::WrongTokenAccountOwner => {
-                msg!("Error: Stake account must be program owned")
+                msg!("Error: Source token account must be owned by SPL Token")
             }
             AccessError::WrongStakeAccountOwner => {
-                msg!("Error: Stake pool account must be program owned")
+                msg!("Error: Stake account must be program owned")
             }
             AccessError::WrongStakePoolAccountOwner => {
-                msg!("Error: Stake account owner mismatch")
+                msg!("Error: Stake pool account must be program owned")
             }
             AccessError::StakeAccountOwnerMismatch => {
-                msg!("Error: Stake pool mismatch")
+                msg!("Error: Stake account mismatch")
             }
             AccessError::StakePoolMismatch => {
                 msg!("Error: Stake pool mismatch")

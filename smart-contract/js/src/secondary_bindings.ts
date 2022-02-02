@@ -15,7 +15,7 @@ export const getStakeAccounts = async (
     {
       memcmp: {
         offset: 0,
-        bytes: "3",
+        bytes: "4",
       },
     },
     {
@@ -73,13 +73,51 @@ export const getBondAccounts = async (
     {
       memcmp: {
         offset: 0,
-        bytes: "5",
+        bytes: "6",
       },
     },
     {
       memcmp: {
         offset: 1,
         bytes: owner.toBase58(),
+      },
+    },
+  ];
+  return await connection.getProgramAccounts(ACCESS_PROGRAM_ID, {
+    filters,
+  });
+};
+
+/**
+ * This function can be used to retrieve all the stake pools
+ * @param connection The Solana RPC connection
+ * @returns
+ */
+export const getAllStakePools = async (connection: Connection) => {
+  const filters = [
+    {
+      memcmp: {
+        offset: 0,
+        bytes: "2",
+      },
+    },
+  ];
+  return await connection.getProgramAccounts(ACCESS_PROGRAM_ID, {
+    filters,
+  });
+};
+
+/**
+ * This function can be used to retrieve all the inactive stake pools
+ * @param connection The Solana RPC connection
+ * @returns
+ */
+export const getAllInactiveStakePools = async (connection: Connection) => {
+  const filters = [
+    {
+      memcmp: {
+        offset: 0,
+        bytes: "3",
       },
     },
   ];
