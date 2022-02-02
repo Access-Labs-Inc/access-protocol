@@ -31,11 +31,17 @@ const HomePage = () => {
         <Button onClick={() => navigate("/stake")} variant="contained">
           Stake account
         </Button>
-        <Button onClick={() => navigate("/bond")} variant="contained">
-          Bond
-        </Button>
         <Button onClick={() => navigate("/jwt")} variant="contained">
           JWT example
+        </Button>
+        <Button onClick={() => navigate("/central-state")} variant="contained">
+          Central state
+        </Button>
+        <Button onClick={() => navigate("/all-pools")} variant="contained">
+          All pools
+        </Button>
+        <Button onClick={() => navigate("/admin-mint")} variant="contained">
+          Admin mint
         </Button>
       </Container>
     </Root>

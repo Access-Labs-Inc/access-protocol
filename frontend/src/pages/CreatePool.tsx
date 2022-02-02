@@ -9,7 +9,6 @@ import InputLabel from "@mui/material/InputLabel";
 import OutlinedInput from "@mui/material/OutlinedInput";
 import { Button } from "@mui/material";
 import { PublicKey } from "@solana/web3.js";
-import { useNavigate } from "react-router-dom";
 import { sendTx } from "../utils/send";
 
 const Container = styled("div")({
@@ -45,7 +44,6 @@ const FormControlStyled = styled(FormControl)({
 });
 
 const CreatePool = () => {
-  const navigate = useNavigate();
   const { connection } = useConnection();
   const { publicKey, sendTransaction } = useWallet();
   const [loading, setLoading] = useState(false);
@@ -57,7 +55,6 @@ const CreatePool = () => {
     if (!publicKey || !minimum || !destination) return;
     try {
       setLoading(true);
-      console.log("coucou");
       const ix = await createStakePool(
         connection,
         publicKey,

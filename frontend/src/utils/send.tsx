@@ -21,5 +21,5 @@ export const sendTx = async (
   tx.recentBlockhash = (await connection.getRecentBlockhash()).blockhash;
   tx.feePayer = feePayer;
   const signature = await sendTransaction(tx, connection, options);
-  await connection.confirmTransaction(signature, "confirmed");
+  return await connection.confirmTransaction(signature, "confirmed");
 };
