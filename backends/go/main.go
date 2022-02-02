@@ -18,17 +18,11 @@ var ctx = context.Background()
 
 func main() {
 	err := godotenv.Load()
-
 	db.RedisClient = redis.NewClient(&redis.Options{
 		Addr:     "redis:6379",
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
-
-	err = db.RedisClient.Set(ctx, "key", "value", 0).Err()
-	if err != nil {
-		panic(err)
-	}
 
 	if err != nil {
 		log.Fatal("Error loading .env file")
@@ -47,7 +41,7 @@ func main() {
 	e.POST("/auth/login", routes.HandleLogin)
 
 	/// Endpoint protected by JWT
-	e.GET("/articles", routes.HandleArticle, utils.ValidateToken)
+	e.GET("/article", routes.HandleArticle, utils.ValidateToken)
 
 	e.Logger.Fatal(e.Start(":3001"))
 }

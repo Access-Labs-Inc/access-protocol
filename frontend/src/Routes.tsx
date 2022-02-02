@@ -8,6 +8,7 @@ import CentralState from "./pages/CentralState";
 import AllPools from "./pages/AllPools";
 import InspectPool from "./pages/InspectPool";
 import AdminMint from "./pages/AdminMint";
+import JWT from "./pages/JWT";
 
 export default function RoutesApp() {
   return (
@@ -15,7 +16,7 @@ export default function RoutesApp() {
       <NavigationFrame>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/jwt" element={<HomePage />} />
+          <Route path="/jwt" element={<JWT />} />
           <Route path="/stake" element={<Stake />} />
           <Route path="/create-pool" element={<CreatePool />} />
           <Route path="/central-state" element={<CentralState />} />

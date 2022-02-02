@@ -4,6 +4,11 @@ services:
     build: .
     ports:
       - "3001:3001"
+    environment:
+      - ACCESS_TOKEN_SECRET=112aa152ae41b00d33dc9a0fd522a152b8f2d5af84c450a7804a54b418d84014f96df81ec921a6862a89a4de54b868f48c9ccae525ad02826736b819836385a33532bc70d0263c962735b59eee91cf45d064eed11a350fcf9e982c324e5f3a4a69cb228e5260e1efd096fb45ded29ff7356fb10f40984193191f4de80c3a1eaf
+      - REDIS_EXPIRE_TIME=600
+      - JWT_EXPIRE=86400
+      - RPC_URL=https://api.devnet.solana.com
   redis:
     image: "redis"
     ports:

@@ -12,6 +12,9 @@ from nacl.signing import VerifyKey
 from solana import publickey
 from solana.rpc.api import Client
 import numpy
+import logging
+import base64
+
 
 load_dotenv()
 
@@ -19,9 +22,10 @@ ACCESS_TOKEN_SECRET = os.getenv("ACCESS_TOKEN_SECRET")
 REDIS_EXPIRE_TIME = int(os.getenv("REDIS_EXPIRE_TIME"))
 JWT_EXPIRE = int(os.getenv("JWT_EXPIRE"))
 RPC_URL = os.getenv("RPC_URL")
-PROGRAM_ID = ""
-STAKE_POOL = ""
-OFFSET = 1 + 32
+PROGRAM_ID = "2ZsWiVGXzL4kgMDtSfeEJSV27fBnMptrdcNKKZygUoB8"
+STAKE_POOL = "Hs6emyaDnMSxJmGxnHhSmucJh1Q9jSysuKJ5yycWoUuC"
+OFFSET_STAKE = 1 + 32
+OFFSET_MIN = 1 + 32 + 8 + 32 + 8
 POOL_MINIMUM = 100
 
 # Generates a randomly secure 32 bytes nonce
@@ -74,16 +78,20 @@ def validate_login(data: Dict[str, str]) -> bool:
 def check_stake(owner: str) -> bool:
     solana_client = Client(RPC_URL)
 
-    seeds = ["stake_account".encode(), owner.encode(),  STAKE_POOL.encode()]
+    seeds = ["stake_account".encode(), publickey.PublicKey(owner).__bytes__(),  publickey.PublicKey(STAKE_POOL).__bytes__()]
     key = publickey.PublicKey.find_program_address(seeds, publickey.PublicKey(PROGRAM_ID))
-    
-    account_info = solana_client.get_account_info(key)
 
-    raw_bytes = account_info["result"]["value"]["data"][OFFSET: OFFSET +8]
+    account_info = solana_client.get_account_info(key[0])
 
-    stake = numpy.uint64(raw_bytes)
+    data_bytes = base64.b64decode(account_info["result"]["value"]["data"][0])
 
-    return stake > POOL_MINIMUM
+    raw_bytes_stake = data_bytes[OFFSET_STAKE: OFFSET_STAKE +8]
+    raw_bytes_min = data_bytes[OFFSET_MIN: OFFSET_MIN +8]
+
+    stake = int.from_bytes(raw_bytes_stake, "little")
+    min = int.from_bytes(raw_bytes_min, "little")
+
+    return stake > min
 
 # Jsonify a response
 def json_response(success: bool, result: any, status_code: int) -> any:

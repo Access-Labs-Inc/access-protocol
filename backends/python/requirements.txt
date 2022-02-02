@@ -7,4 +7,5 @@ pyjwt==2.3.0
 flask-cors==3.0.10
 python-dotenv==0.19.2
 Flask-JWT-Extended==4.3.1
-numpy=1.22.1
+numpy==1.22.1
+pwnlib==1.2.1

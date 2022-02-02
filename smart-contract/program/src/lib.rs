@@ -24,7 +24,6 @@ A [`Stake pools`][`state::StakePool`] is made of a header ([`StakePoolHeader`][`
 The circular buffer is updated using a permissionless [`crank`][`fn@instruction::crank`].
 
 
-
 ## Stake accounts
 
 [`Stake accounts`][`state::StakeAccount`] are used to deposit funds in a stake pool. Stake accounts allow users to access the content of the publisher and earn yield in ACCESS tokens at the same time.
