@@ -31,6 +31,19 @@ export enum Tag {
 /**
  * Stake pool state
  */
+export class RewardsTuple {
+  rewards: BN;
+  stakers_part: BN;
+
+  constructor(obj: { rewards: BN; stakers_part: BN }) {
+    this.rewards = obj.rewards;
+    this.stakers_part = obj.stakers_part;
+  }
+}
+
+/**
+ * Stake pool state
+ */
 export class StakePool {
   tag: Tag;
   nonce: number;
@@ -40,14 +53,14 @@ export class StakePool {
   totalStaked: BN;
   lastCrankTime: BN;
   lastClaimedTime: BN;
-  stakersMultiplier: BN;
+  stakersPart: BN;
   unstakePeriod: BN;
   owner: PublicKey;
   vault: PublicKey;
 
-  balances: BN[];
+  balances: RewardsTuple[];
 
-  static schema: Schema = new Map([
+  static schema: Schema = new Map<any, any>([
     [
       StakePool,
       {
@@ -61,11 +74,21 @@ export class StakePool {
           ["totalStaked", "u64"],
           ["lastCrankTime", "u64"],
           ["lastClaimedTime", "u64"],
-          ["stakersMultiplier", "u64"],
+          ["stakersPart", "u64"],
           ["unstakePeriod", "u64"],
           ["owner", [32]],
           ["vault", [32]],
-          ["balances", ["u128", STAKE_BUFFER_LEN]],
+          ["balances", [RewardsTuple, STAKE_BUFFER_LEN]],
+        ],
+      },
+    ],
+    [
+      RewardsTuple,
+      {
+        kind: "struct",
+        fields: [
+          ["rewards", "u128"],
+          ["stakers_part", "u64"],
         ],
       },
     ],
@@ -80,11 +103,11 @@ export class StakePool {
     totalStaked: BN;
     lastCrankTime: BN;
     lastClaimedTime: BN;
-    stakersMultiplier: BN;
+    stakersPart: BN;
     unstakePeriod: BN;
     owner: Uint8Array;
     vault: Uint8Array;
-    balances: BN[];
+    balances: RewardsTuple[];
   }) {
     this.tag = obj.tag as Tag;
     this.nonce = obj.nonce;
@@ -94,7 +117,7 @@ export class StakePool {
     this.totalStaked = obj.totalStaked;
     this.lastCrankTime = obj.lastCrankTime;
     this.lastClaimedTime = obj.lastClaimedTime;
-    this.stakersMultiplier = obj.stakersMultiplier;
+    this.stakersPart = obj.stakersPart;
     this.unstakePeriod = obj.unstakePeriod;
     this.owner = new PublicKey(obj.owner);
     this.vault = new PublicKey(obj.vault);

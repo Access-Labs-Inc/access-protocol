@@ -3,8 +3,7 @@
 use crate::error::AccessError;
 use crate::state::{CentralState, StakePool, Tag};
 use crate::utils::{
-    calc_previous_balances_and_inflation_fp32, check_account_key, check_account_owner,
-    check_signer, safe_downcast,
+    calc_reward_fp32, check_account_key, check_account_owner, check_signer, safe_downcast,
 };
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -117,22 +116,17 @@ pub fn process_claim_pool_rewards(
         AccessError::WrongMint,
     )?;
 
-    let balances_and_inflation_fp32 = calc_previous_balances_and_inflation_fp32(
-        current_time,
-        stake_pool.header.last_claimed_time,
-        &stake_pool,
-    )?;
+    let reward = safe_downcast(
+        calc_reward_fp32(
+            current_time,
+            stake_pool.header.last_claimed_time,
+            &stake_pool,
+            false,
+        )? >> 32,
+    )
+    .ok_or(AccessError::Overflow)?;
 
-    let rewards = balances_and_inflation_fp32
-        // Multiply by % stake pool owner receives
-        .checked_mul((100 - stake_pool.header.stakers_multiplier) as u128)
-        .ok_or(AccessError::Overflow)?
-        .checked_div(100)
-        .map(|r| r >> 32)
-        .and_then(safe_downcast)
-        .ok_or(AccessError::Overflow)?;
-
-    msg!("Claiming pool rewards {}", rewards);
+    msg!("Claiming pool rewards {}", reward);
 
     // Transfer rewards
     let transfer_ix = mint_to(
@@ -141,7 +135,7 @@ pub fn process_claim_pool_rewards(
         accounts.rewards_destination.key,
         accounts.central_state.key,
         &[],
-        rewards,
+        reward,
     )?;
     invoke_signed(
         &transfer_ix,

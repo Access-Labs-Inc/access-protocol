@@ -8,11 +8,14 @@ use solana_program::{
 use spl_token::state::Account;
 
 /// Cumulate the claimable rewards from the last claimed day to the present.
-/// Result is given as FP32.
-pub fn calc_previous_balances_and_inflation_fp32(
+/// Result is in FP32 format.
+///
+/// * `staker` Use the staker or pool owner multiplier
+pub fn calc_reward_fp32(
     current_time: i64,
     last_claimed_time: i64,
     stake_pool: &StakePoolRef,
+    staker: bool,
 ) -> Result<u128, ProgramError> {
     let nb_days_to_claim = current_time.saturating_sub(last_claimed_time) as u64 / SECONDS_IN_DAY;
     msg!("Nb of days behind {}", nb_days_to_claim);
@@ -24,8 +27,20 @@ pub fn calc_previous_balances_and_inflation_fp32(
     // Compute reward for all past days
     let mut reward: u128 = 0;
     while i != stake_pool.header.current_day_idx as u64 {
+        let curr_day_multiplier = if staker {
+            stake_pool.balances[i as usize].stakers_part
+        } else {
+            100u64
+                .checked_sub(stake_pool.balances[i as usize].stakers_part)
+                .ok_or(AccessError::Overflow)?
+        };
         reward = reward
-            .checked_add(stake_pool.balances[i as usize])
+            .checked_add(
+                stake_pool.balances[i as usize]
+                    .rewards
+                    .checked_mul(curr_day_multiplier as u128)
+                    .ok_or(AccessError::Overflow)?,
+            )
             .ok_or(AccessError::Overflow)?;
         i = (i + 1) % STAKE_BUFFER_LEN;
     }

@@ -1,7 +1,8 @@
 //! Permissionless crank to update the stake pool rewards
 //! This instructions updates the circular buffer with the pool balances multiplied by the current inflation
+
 use crate::error::AccessError;
-use crate::state::{CentralState, StakePool, Tag, SECONDS_IN_DAY};
+use crate::state::{CentralState, RewardsTuple, StakePool, Tag, SECONDS_IN_DAY};
 use crate::utils::check_account_owner;
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -73,13 +74,19 @@ pub fn process_crank(
     msg!("Daily inflation {}", central_state.daily_inflation);
     msg!("Total staked {}", central_state.total_staked);
 
-    stake_pool.push_balances_buff(
-        ((stake_pool.header.total_staked as u128) << 32)
-            .checked_mul(central_state.daily_inflation as u128)
-            .ok_or(AccessError::Overflow)?
-            .checked_div(central_state.total_staked as u128)
-            .ok_or(AccessError::Overflow)?,
-    );
+    let common_reward = ((stake_pool.header.total_staked as u128) << 32)
+        .checked_mul(central_state.daily_inflation as u128)
+        .ok_or(AccessError::Overflow)?
+        .checked_div(central_state.total_staked as u128)
+        .ok_or(AccessError::Overflow)?
+        .checked_div(100u128) // Divide by 100 in order to convert the multiplier % to a ratio
+        .ok_or(AccessError::Overflow)?;
+
+    stake_pool.push_balances_buff(RewardsTuple {
+        rewards: common_reward,
+        stakers_part: stake_pool.header.stakers_part,
+    });
+
     stake_pool.header.last_crank_time = present_time;
 
     Ok(())

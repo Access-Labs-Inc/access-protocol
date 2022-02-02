@@ -18,8 +18,7 @@ use bonfida_utils::{BorshSize, InstructionsAccount};
 use spl_token::instruction::mint_to;
 
 use crate::utils::{
-    calc_previous_balances_and_inflation_fp32, check_account_key, check_account_owner,
-    check_signer, safe_downcast,
+    calc_reward_fp32, check_account_key, check_account_owner, check_signer, safe_downcast,
 };
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -135,19 +134,8 @@ pub fn process_claim_bond_rewards(
         AccessError::WrongMint,
     )?;
 
-    let balances_and_inflation_fp32 = calc_previous_balances_and_inflation_fp32(
-        current_time,
-        bond.last_claimed_time,
-        &stake_pool,
-    )?;
-
     // This can be factoriser
-    let rewards = balances_and_inflation_fp32
-        // Multiply by % stakers receive
-        .checked_mul(stake_pool.header.stakers_multiplier as u128)
-        .ok_or(AccessError::Overflow)?
-        .checked_div(100)
-        .ok_or(AccessError::Overflow)?
+    let reward = calc_reward_fp32(current_time, bond.last_claimed_time, &stake_pool, true)?
         // Multiply by the staker shares of the total pool
         .checked_mul(bond.total_staked as u128)
         .ok_or(AccessError::Overflow)?
@@ -156,7 +144,7 @@ pub fn process_claim_bond_rewards(
         .and_then(safe_downcast)
         .ok_or(AccessError::Overflow)?;
 
-    msg!("Claiming bond rewards {}", rewards);
+    msg!("Claiming bond rewards {}", reward);
 
     // Transfer rewards
     let transfer_ix = mint_to(
@@ -165,7 +153,7 @@ pub fn process_claim_bond_rewards(
         accounts.rewards_destination.key,
         accounts.central_state.key,
         &[],
-        rewards,
+        reward,
     )?;
     invoke_signed(
         &transfer_ix,

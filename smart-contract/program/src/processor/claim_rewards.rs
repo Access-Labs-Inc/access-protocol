@@ -3,8 +3,7 @@
 use crate::error::AccessError;
 use crate::state::{CentralState, StakeAccount, StakePool, Tag};
 use crate::utils::{
-    calc_previous_balances_and_inflation_fp32, check_account_key, check_account_owner,
-    check_signer, safe_downcast,
+    calc_reward_fp32, check_account_key, check_account_owner, check_signer, safe_downcast,
 };
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -132,27 +131,21 @@ pub fn process_claim_rewards(
         AccessError::WrongMint,
     )?;
 
-    let balances_and_inflation_fp32 = calc_previous_balances_and_inflation_fp32(
+    let reward = calc_reward_fp32(
         current_time,
         stake_account.last_claimed_time,
         &stake_pool,
-    )?;
+        true,
+    )?
+    // Multiply by the staker shares of the total pool
+    .checked_mul(stake_account.stake_amount as u128)
+    .ok_or(AccessError::Overflow)?
+    .checked_div(stake_pool.header.total_staked as u128)
+    .map(|r| r >> 32)
+    .and_then(safe_downcast)
+    .ok_or(AccessError::Overflow)?;
 
-    let rewards = balances_and_inflation_fp32
-        // Multiply by % stakers receive
-        .checked_mul(stake_pool.header.stakers_multiplier as u128)
-        .ok_or(AccessError::Overflow)?
-        .checked_div(100)
-        .ok_or(AccessError::Overflow)?
-        // Multiply by the staker shares of the total pool
-        .checked_mul(stake_account.stake_amount as u128)
-        .ok_or(AccessError::Overflow)?
-        .checked_div(stake_pool.header.total_staked as u128)
-        .map(|r| r >> 32)
-        .and_then(safe_downcast)
-        .ok_or(AccessError::Overflow)?;
-
-    msg!("Claiming rewards {}", rewards);
+    msg!("Claiming rewards {}", reward);
 
     // Transfer rewards
     let transfer_ix = mint_to(
@@ -161,7 +154,7 @@ pub fn process_claim_rewards(
         accounts.rewards_destination.key,
         accounts.central_state.key,
         &[],
-        rewards,
+        reward,
     )?;
     invoke_signed(
         &transfer_ix,

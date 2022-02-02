@@ -3,12 +3,10 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
-    clock::Clock,
     entrypoint::ProgramResult,
     program_error::ProgramError,
     pubkey::Pubkey,
     system_program,
-    sysvar::Sysvar,
 };
 
 use crate::error::AccessError;
@@ -127,7 +125,7 @@ pub fn process_create_bond(
         params.unlock_start_date,
         params.unlock_period,
         params.unlock_amount,
-        i64::MAX,
+        params.unlock_start_date,
         stake_pool.header.minimum_stake_amount,
         *accounts.stake_pool.key,
         i64::MAX,

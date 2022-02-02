@@ -109,8 +109,8 @@ pub struct StakePoolHeader {
     /// Last time the stake pool owner claimed
     pub last_claimed_time: i64,
 
-    // The % of rewards going to stakers
-    pub stakers_multiplier: u64,
+    // The % of pool rewards going to stakers
+    pub stakers_part: u64,
 
     // The unstake period
     pub unstake_period: i64,
@@ -129,11 +129,22 @@ pub struct StakePool<H, B> {
     pub balances: B,
 }
 
-#[allow(missing_docs)]
-pub type StakePoolRef<'a> = StakePool<RefMut<'a, StakePoolHeader>, RefMut<'a, [u128]>>;
+/// The Rewards structure that is held in the stake pools circular buffer.
+/// The two fields represent the share that is owed to the pool owner and the stakers respectively.
+#[derive(Pod, Clone, Copy, Zeroable)]
+#[repr(C)]
+pub struct RewardsTuple {
+    pub(crate) rewards: u128,
+    /// How much the stakers receive from the reward in %
+    /// The division by 100 is taken into account by the rewards.
+    pub(crate) stakers_part: u64,
+}
 
 #[allow(missing_docs)]
-pub type StakePoolHeaped = StakePool<Box<StakePoolHeader>, Box<[u128]>>;
+pub type StakePoolRef<'a> = StakePool<RefMut<'a, StakePoolHeader>, RefMut<'a, [RewardsTuple]>>;
+
+#[allow(missing_docs)]
+pub type StakePoolHeaped = StakePool<Box<StakePoolHeader>, Box<[RewardsTuple]>>;
 
 #[allow(missing_docs)]
 impl<'a> StakePoolRef<'a> {
@@ -162,7 +173,7 @@ impl StakePoolHeaped {
     pub fn from_buffer(buf: &[u8]) -> Self {
         let (header, balances) = buf.split_at(size_of::<StakePoolHeader>());
         let header = from_bytes::<StakePoolHeader>(header);
-        let balances = cast_slice::<_, u128>(balances);
+        let balances = cast_slice::<_, RewardsTuple>(balances);
         Self {
             header: Box::new(*header),
             balances: Box::from(balances),
@@ -171,9 +182,9 @@ impl StakePoolHeaped {
 }
 
 #[allow(missing_docs)]
-impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [u128]>> StakePool<H, B> {
-    pub fn push_balances_buff(&mut self, val: u128) {
-        self.balances[((self.header.current_day_idx as u64) % STAKE_BUFFER_LEN) as usize] = val;
+impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [RewardsTuple]>> StakePool<H, B> {
+    pub fn push_balances_buff(&mut self, rewards: RewardsTuple) {
+        self.balances[((self.header.current_day_idx as u64) % STAKE_BUFFER_LEN) as usize] = rewards;
         self.header.current_day_idx += 1;
     }
 
@@ -207,7 +218,7 @@ impl StakePoolHeader {
             nonce,
             vault: vault.to_bytes(),
             minimum_stake_amount,
-            stakers_multiplier: STAKER_MULTIPLIER,
+            stakers_part: STAKER_MULTIPLIER,
             unstake_period: UNSTAKE_PERIOD,
         }
     }
@@ -570,7 +581,7 @@ impl BondAccount {
     pub fn activate(&mut self, current_time: i64) {
         self.tag = Tag::BondAccount;
         self.last_claimed_time = current_time;
-        self.last_unlock_time = current_time;
+        self.last_unlock_time = std::cmp::max(current_time, self.unlock_start_date);
     }
 
     pub fn from_account_info(
