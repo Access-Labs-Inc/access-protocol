@@ -3,11 +3,13 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
+    clock::Clock,
     entrypoint::ProgramResult,
     msg,
     program::{invoke, invoke_signed},
     program_error::ProgramError,
     pubkey::Pubkey,
+    sysvar::Sysvar,
 };
 
 use crate::state::{BondAccount, CentralState, StakePool, BOND_SIGNER_THRESHOLD};
@@ -160,7 +162,8 @@ pub fn process_claim_bond(
     )?;
 
     // Activate the bond account
-    bond.activate();
+    let current_time = Clock::get()?.unix_timestamp;
+    bond.activate(current_time);
 
     bond.save(&mut accounts.bond_account.data.borrow_mut());
 

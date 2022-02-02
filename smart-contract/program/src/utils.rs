@@ -7,7 +7,9 @@ use solana_program::{
 };
 use spl_token::state::Account;
 
-pub fn calc_previous_balances_and_inflation(
+/// Cumulate the claimable rewards from the last claimed day to the present.
+/// Result is given as FP32.
+pub fn calc_previous_balances_and_inflation_fp32(
     current_time: i64,
     last_claimed_time: i64,
     stake_pool: &StakePool,
@@ -28,7 +30,7 @@ pub fn calc_previous_balances_and_inflation(
         i = (i + 1) % STAKE_BUFFER_LEN;
     }
 
-    Ok(reward >> 32)
+    Ok(reward)
 }
 
 pub fn check_account_key(account: &AccountInfo, key: &Pubkey, error: AccessError) -> ProgramResult {

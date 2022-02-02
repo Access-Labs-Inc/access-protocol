@@ -107,7 +107,6 @@ pub fn process_create_bond(
         BondAccount::create_key(&params.buyer, params.total_amount_sold, program_id);
 
     let stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;
-    let current_time = Clock::get().unwrap().unix_timestamp;
 
     check_account_key(
         accounts.bond_account,
@@ -128,10 +127,10 @@ pub fn process_create_bond(
         params.unlock_start_date,
         params.unlock_period,
         params.unlock_amount,
-        current_time,
+        i64::MAX,
         stake_pool.header.minimum_stake_amount,
         *accounts.stake_pool.key,
-        current_time,
+        i64::MAX,
         *accounts.seller.key,
     );
 
