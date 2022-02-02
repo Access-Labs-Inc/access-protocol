@@ -367,11 +367,13 @@ test("End to end test", async () => {
   expect(bondObj.unlockStartDate.toNumber()).toBe(0);
   expect(bondObj.unlockPeriod.toNumber()).toBe(1);
   expect(bondObj.unlockAmount.toNumber()).toBe(bondAmount);
-  expect(bondObj.lastUnlockTime.toNumber()).toBeGreaterThan(now);
+  expect(bondObj.lastUnlockTime.toNumber()).toBe(0);
   expect(bondObj.totalUnlockedAmount.toNumber()).toBe(0);
   expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
   expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  expect(bondObj.lastClaimedTime.toNumber()).toBeGreaterThan(now);
+  expect(
+    bondObj.lastClaimedTime.div(new BN(2 ** 11)).toNumber()
+  ).toBeGreaterThan(now);
   expect(bondObj.sellers.length).toBe(1);
   expect(bondObj.sellers[0].toBase58()).toBe(bondSeller.publicKey.toBase58());
 
@@ -535,12 +537,19 @@ test("End to end test", async () => {
   );
   expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
 
-  expect(stakePoolObj.balances.filter((b) => !b.isZero()).length).toBe(1);
-  expect(stakePoolObj.balances.filter((b) => !b.isZero())[0].toString()).toBe(
+  expect(stakePoolObj.balances.filter((b) => !b.rewards.isZero()).length).toBe(
+    1
+  );
+  expect(
+    stakePoolObj.balances
+      .filter((b) => !b.rewards.isZero())[0]
+      .rewards.toString()
+  ).toBe(
     new BN(dailyInflation)
       .mul(new BN(stakeAmount))
       .mul(new BN(2 ** 32))
       .div(centralStateObj.totalStaked)
+      .div(new BN(100))
       .toString()
   );
 
