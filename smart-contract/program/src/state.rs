@@ -347,6 +347,11 @@ impl StakeAccount {
     }
 
     pub fn add_unstake_request(&mut self, request: UnstakeRequest) -> ProgramResult {
+        if request.amount == 0 {
+            msg!("Cannot unstake 0 tokens");
+            return Err(AccessError::CannotUnstake.into());
+        }
+
         if self.pending_unstake_requests as usize >= MAX_UNSTAKE_REQUEST {
             msg!("Too many pending unstake requests");
             return Err(AccessError::TooManyUnstakeRequests.into());
@@ -562,8 +567,10 @@ impl BondAccount {
         self.tag == Tag::BondAccount
     }
 
-    pub fn activate(&mut self) {
-        self.tag = Tag::BondAccount
+    pub fn activate(&mut self, current_time: i64) {
+        self.tag = Tag::BondAccount;
+        self.last_claimed_time = current_time;
+        self.last_unlock_time = current_time;
     }
 
     pub fn from_account_info(

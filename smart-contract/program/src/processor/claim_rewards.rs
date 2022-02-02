@@ -3,8 +3,8 @@
 use crate::error::AccessError;
 use crate::state::{CentralState, StakeAccount, StakePool, Tag};
 use crate::utils::{
-    calc_previous_balances_and_inflation, check_account_key, check_account_owner, check_signer,
-    safe_downcast,
+    calc_previous_balances_and_inflation_fp32, check_account_key, check_account_owner,
+    check_signer, safe_downcast,
 };
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -132,13 +132,13 @@ pub fn process_claim_rewards(
         AccessError::WrongMint,
     )?;
 
-    let balances_and_inflation = calc_previous_balances_and_inflation(
+    let balances_and_inflation_fp32 = calc_previous_balances_and_inflation_fp32(
         current_time,
         stake_account.last_claimed_time,
         &stake_pool,
     )?;
 
-    let rewards = balances_and_inflation
+    let rewards = balances_and_inflation_fp32
         // Multiply by % stakers receive
         .checked_mul(stake_pool.header.stakers_multiplier as u128)
         .ok_or(AccessError::Overflow)?
@@ -148,6 +148,7 @@ pub fn process_claim_rewards(
         .checked_mul(stake_account.stake_amount as u128)
         .ok_or(AccessError::Overflow)?
         .checked_div(stake_pool.header.total_staked as u128)
+        .map(|r| r >> 32)
         .and_then(safe_downcast)
         .ok_or(AccessError::Overflow)?;
 
