@@ -8,7 +8,7 @@ pub struct AppData {
 impl AppData {
     pub fn new() -> AppData {
         Self {
-            redis_client: Client::open(REDIS_URL).unwrap(),
+            redis_client: Client::open(REDIS_URL.as_str()).unwrap(),
         }
     }
 }

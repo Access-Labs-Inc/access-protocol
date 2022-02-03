@@ -6,6 +6,7 @@ mod utils;
 use {
     actix_cors::Cors,
     actix_web::{middleware, web, App, HttpServer},
+    dotenv,
     routes::{article, auth},
     std::sync::Arc,
     structs::app_data::AppData,
@@ -13,6 +14,7 @@ use {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    dotenv::dotenv().ok();
     let data = web::Data::new(Arc::new(AppData::new()));
     HttpServer::new(move || {
         let cors = Cors::permissive();

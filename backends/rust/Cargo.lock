@@ -38,10 +38,12 @@ dependencies = [
  "actix-web",
  "borsh",
  "derive_more",
+ "dotenv",
  "futures",
  "hex",
  "hmac 0.12.0",
  "jwt",
+ "lazy_static",
  "nacl",
  "rand 0.8.4",
  "redis",
@@ -1121,6 +1123,12 @@ dependencies = [
  "quote 0.6.13",
  "syn 0.15.44",
 ]
+
+[[package]]
+name = "dotenv"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
 
 [[package]]
 name = "dtoa"

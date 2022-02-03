@@ -9,12 +9,13 @@ import (
 
 // Redis client
 var RedisClient *redis.Client
+const TTL = 10 // TTL in minutes
 
 // Set a nonce for a user with a TTL of 10 minutes
 func SetNonce(address string, nonce string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	err := RedisClient.Set(ctx, "nonce:"+address, nonce, 10*time.Minute).Err()
+	err := RedisClient.Set(ctx, "nonce:"+address, nonce, TTL*time.Minute).Err()
 	return err
 }
 

@@ -24,3 +24,5 @@ access-protocol = { path = "../../smart-contract/program", features = ["no-entry
 solana-client = "1.8"
 solana-sdk = "1.6.6"
 borsh = "0.9.1"
+dotenv = "0.15.0"
+lazy_static = "1.4.0"

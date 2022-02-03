@@ -1,14 +1,17 @@
 use crate::errors::AccessError;
 use {
-    access_protocol::state::StakeAccount,
-    borsh::BorshDeserialize,
-    solana_client::rpc_client::RpcClient,
-    solana_program::{pubkey, pubkey::Pubkey},
+    access_protocol::state::StakeAccount, borsh::BorshDeserialize, dotenv,
+    lazy_static::lazy_static, solana_client::rpc_client::RpcClient, solana_program::pubkey::Pubkey,
+    std::str::FromStr,
 };
 
-const ENDPOINT: &str = "https://api.devnet.solana.com"; // TODO change
-const STAKE_POOL: Pubkey = pubkey!("Hs6emyaDnMSxJmGxnHhSmucJh1Q9jSysuKJ5yycWoUuC"); // TODO change
-const PROGRAM_ID: Pubkey = pubkey!("2ZsWiVGXzL4kgMDtSfeEJSV27fBnMptrdcNKKZygUoB8"); // TODO change
+lazy_static! {
+    pub static ref ENDPOINT: String = dotenv::var("RPC_URL").unwrap();
+    pub static ref STAKE_POOL: Pubkey =
+        Pubkey::from_str(&dotenv::var("STAKE_POOL_KEY").unwrap().as_str()).unwrap();
+    pub static ref PROGRAM_ID: Pubkey =
+        Pubkey::from_str(&dotenv::var("PROGRAM_ID").unwrap().as_str()).unwrap();
+}
 
 pub async fn check_stake_account(staker: Pubkey) -> Result<(), AccessError> {
     let stake_key = StakeAccount::find_key(&staker, &STAKE_POOL, &PROGRAM_ID).0;

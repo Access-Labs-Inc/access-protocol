@@ -2,6 +2,7 @@ import Ajv from "ajv";
 import { isValidPubkey } from "./pubkey";
 import { isValidNonce } from "./nonce";
 
+// cf https://ajv.js.org/options.html
 export const ajv = new Ajv({ allErrors: true });
 
 ajv.addFormat("bearerToken", {
