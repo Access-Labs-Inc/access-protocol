@@ -11,7 +11,6 @@ from dotenv import load_dotenv
 from nacl.signing import VerifyKey
 from solana import publickey
 from solana.rpc.api import Client
-import numpy
 import logging
 import base64
 
