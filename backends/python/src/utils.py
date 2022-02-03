@@ -26,6 +26,7 @@ STAKE_POOL = "Hs6emyaDnMSxJmGxnHhSmucJh1Q9jSysuKJ5yycWoUuC"
 OFFSET_STAKE = 1 + 32
 OFFSET_MIN = 1 + 32 + 8 + 32 + 8
 POOL_MINIMUM = 100
+U64_LEN = 8
 
 # Generates a randomly secure 32 bytes nonce
 def generate_nonce() -> str:
@@ -84,8 +85,8 @@ def check_stake(owner: str) -> bool:
 
     data_bytes = base64.b64decode(account_info["result"]["value"]["data"][0])
 
-    raw_bytes_stake = data_bytes[OFFSET_STAKE: OFFSET_STAKE +8]
-    raw_bytes_min = data_bytes[OFFSET_MIN: OFFSET_MIN +8]
+    raw_bytes_stake = data_bytes[OFFSET_STAKE: OFFSET_STAKE +U64_LEN]
+    raw_bytes_min = data_bytes[OFFSET_MIN: OFFSET_MIN +U64_LEN]
 
     stake = int.from_bytes(raw_bytes_stake, "little")
     min = int.from_bytes(raw_bytes_min, "little")
