@@ -33,11 +33,11 @@ export enum Tag {
  */
 export class RewardsTuple {
   rewards: BN;
-  stakers_part: BN;
+  stakersPart: BN;
 
-  constructor(obj: { rewards: BN; stakers_part: BN }) {
+  constructor(obj: { rewards: BN; stakersPart: BN }) {
     this.rewards = obj.rewards;
-    this.stakers_part = obj.stakers_part;
+    this.stakersPart = obj.stakersPart;
   }
 }
 
@@ -88,7 +88,7 @@ export class StakePool {
         kind: "struct",
         fields: [
           ["rewards", "u128"],
-          ["stakers_part", "u64"],
+          ["stakersPart", "u64"],
         ],
       },
     ],
