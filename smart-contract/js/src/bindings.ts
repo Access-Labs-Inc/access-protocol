@@ -20,6 +20,7 @@ import {
   executeUnstakeInstruction,
   activateStakePoolInstruction,
   adminFreezeInstruction,
+  changePoolMultiplierInstruction,
 } from "./raw_instructions";
 import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
 import { CentralState, StakePool, BondAccount, StakeAccount } from "./state";
@@ -682,6 +683,29 @@ export const adminFreeze = async (
     accountToFreeze,
     centralKey
   );
+
+  return ix;
+};
+
+/**
+ * This function allows a pool owner to adjust the percentage of the pool rewards that go to the pool stakers.
+ * @param connection The Solana RPC connection
+ * @param stakePoolKey The key of the stake pool
+ * @param newMultiplier The new multiplier (in percent [0-100]). This is the percentage of the pools rewards that go to the stakers.
+ * @param programId The ACCESS program ID
+ * @returns
+ */
+export const changePoolMultiplier = async (
+  connection: Connection,
+  stakePoolKey: PublicKey,
+  newMultiplier: number,
+  programId: PublicKey
+) => {
+  const stakePool = await StakePool.retrieve(connection, stakePoolKey);
+
+  const ix = new changePoolMultiplierInstruction({
+    newMultiplier: new BN(newMultiplier),
+  }).getInstruction(programId, stakePoolKey, stakePool.owner);
 
   return ix;
 };

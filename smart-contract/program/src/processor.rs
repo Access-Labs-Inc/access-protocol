@@ -1,3 +1,4 @@
+use crate::instruction::ProgramInstruction;
 use borsh::BorshDeserialize;
 use num_traits::FromPrimitive;
 use solana_program::{
@@ -5,13 +6,12 @@ use solana_program::{
     pubkey::Pubkey,
 };
 
-use crate::instruction::ProgramInstruction;
-
 pub mod activate_stake_pool;
 pub mod admin_freeze;
 pub mod admin_mint;
 pub mod change_inflation;
 pub mod change_pool_minimum;
+pub mod change_pool_multiplier;
 pub mod claim_bond;
 pub mod claim_bond_rewards;
 pub mod claim_pool_rewards;
@@ -161,6 +161,14 @@ impl Processor {
             ProgramInstruction::AdminFreeze => {
                 msg!("Instruction: Admin freeze");
                 admin_freeze::process_admin_freeze(program_id, accounts)?;
+            }
+            ProgramInstruction::ChangePoolMultiplier => {
+                msg!("Instruction: CHange pool multiplier");
+                let params = change_pool_multiplier::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                change_pool_multiplier::process_change_pool_multiplier(
+                    program_id, accounts, params,
+                )?;
             }
         }
 
