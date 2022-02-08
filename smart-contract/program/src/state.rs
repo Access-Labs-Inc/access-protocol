@@ -11,6 +11,7 @@ use solana_program::program_error::ProgramError;
 use solana_program::pubkey::Pubkey;
 use solana_program::sysvar::Sysvar;
 use std::cell::RefMut;
+use std::convert::TryInto;
 use std::mem::size_of;
 use std::ops::DerefMut;
 
@@ -183,9 +184,33 @@ impl StakePoolHeaped {
 
 #[allow(missing_docs)]
 impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [RewardsTuple]>> StakePool<H, B> {
-    pub fn push_balances_buff(&mut self, rewards: RewardsTuple) {
+    pub fn push_balances_buff(
+        &mut self,
+        present_time: i64,
+        last_crank_time: i64,
+        rewards: RewardsTuple,
+    ) -> Result<(), ProgramError> {
+        let nb_days_passed = (present_time
+            .checked_sub(last_crank_time)
+            .ok_or(AccessError::Overflow)? as u64)
+            .checked_div(SECONDS_IN_DAY)
+            .ok_or(AccessError::Overflow)?;
+        for i in 1..nb_days_passed {
+            self.balances[(((self.header.current_day_idx as u64)
+                .checked_add(i)
+                .ok_or(AccessError::Overflow)?)
+                % STAKE_BUFFER_LEN) as usize] = RewardsTuple {
+                rewards: 0,
+                stakers_part: 0,
+            };
+        }
+        self.header.current_day_idx = self
+            .header
+            .current_day_idx
+            .checked_add(nb_days_passed.try_into().unwrap())
+            .ok_or(AccessError::Overflow)?;
         self.balances[((self.header.current_day_idx as u64) % STAKE_BUFFER_LEN) as usize] = rewards;
-        self.header.current_day_idx += 1;
+        Ok(())
     }
 
     pub fn create_key(nonce: &u8, owner: &Pubkey, program_id: &Pubkey) -> Pubkey {
