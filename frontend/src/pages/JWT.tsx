@@ -1,18 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { BACKEND_URL, useNonce, LoginResponse } from "../hooks/auth";
 import axios from "axios";
 import { Button } from "@mui/material";
-import Snackbar from "@mui/material/Snackbar";
-import Slide, { SlideProps } from "@mui/material/Slide";
+import { notify } from "../utils/notifications";
 import { apiGet } from "../utils/api";
 import { styled } from "@mui/material/styles";
-
-type TransitionProps = Omit<SlideProps, "direction">;
-
-function TransitionLeft(props: TransitionProps) {
-  return <Slide {...props} direction="right" />;
-}
 
 const Container = styled("div")({
   display: "flex",
@@ -23,15 +16,9 @@ const Container = styled("div")({
 });
 
 const HomePage = () => {
-  const { signMessage, connected, publicKey } = useWallet();
+  const { signMessage, publicKey } = useWallet();
   const [nonce] = useNonce();
-  const [notif, setNotif] = useState(false);
   const [result, setResult] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (connected) {
-    }
-  }, [connected]);
 
   const onClick = async () => {
     if (!nonce || !signMessage) {
@@ -49,7 +36,7 @@ const HomePage = () => {
       })
     ).data as LoginResponse;
     localStorage.setItem("token", response.result.token);
-    setNotif(true);
+    notify({ message: "Logged in", variant: "success" });
   };
 
   const handleProtected = async () => {
@@ -61,6 +48,11 @@ const HomePage = () => {
       if (error.response) {
         // @ts-ignore
         setResult(JSON.stringify(error.response.data));
+        notify({
+          // @ts-ignore
+          message: JSON.stringify(error.response.data),
+          variant: "error",
+        });
       }
     }
   };
@@ -81,12 +73,6 @@ const HomePage = () => {
           {result}
         </div>
       )}
-      <Snackbar
-        open={notif}
-        onClose={() => setNotif(false)}
-        TransitionComponent={TransitionLeft}
-        message="Success login"
-      />
     </Container>
   );
 };

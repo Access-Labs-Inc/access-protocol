@@ -16,6 +16,7 @@ import {
 } from "@solana/wallet-adapter-wallets";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { clusterApiUrl } from "@solana/web3.js";
+import { SnackbarProvider } from "notistack";
 
 // Default styles that can be overridden by your app
 require("@solana/wallet-adapter-react-ui/styles.css");
@@ -23,10 +24,11 @@ require("@solana/wallet-adapter-react-ui/styles.css");
 export const App = ({ children }: { children: React.ReactNode }) => {
   // Can be set to 'devnet', 'testnet', or 'mainnet-beta'
   const network = WalletAdapterNetwork.Devnet;
+  console.log("network", network);
 
   // You can also provide a custom RPC endpoint
-  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
-
+  // const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+  const endpoint = "https://api.devnet.rpcpool.com/";
   // @solana/wallet-adapter-wallets includes all the adapters but supports tree shaking and lazy loading --
   // Only the wallets you configure here will be compiled into your application, and only the dependencies
   // of wallets that your users connect to will be loaded
@@ -46,9 +48,11 @@ export const App = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect>
-        <WalletModalProvider>{children}</WalletModalProvider>
-      </WalletProvider>
+      <SnackbarProvider maxSnack={5} autoHideDuration={8000}>
+        <WalletProvider wallets={wallets} autoConnect>
+          <WalletModalProvider>{children}</WalletModalProvider>
+        </WalletProvider>
+      </SnackbarProvider>
     </ConnectionProvider>
   );
 };

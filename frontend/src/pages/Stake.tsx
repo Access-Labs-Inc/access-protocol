@@ -10,6 +10,7 @@ import { Button } from "@mui/material";
 import { PublicKey } from "@solana/web3.js";
 import { sendTx } from "../utils/send";
 import { createStakeAccount, ACCESS_PROGRAM_ID, StakeAccount } from "@access";
+import { notify } from "../utils/notifications";
 
 const Container = styled("div")({
   display: "flex",
@@ -66,8 +67,10 @@ const Stake = () => {
       );
       console.log(tx);
       setStakeAcc(stakeKey.toBase58());
+      notify({ message: `Tokens staked`, variant: "success" });
     } catch (err) {
       console.log(err);
+      notify({ message: `Error ${err}`, variant: "error" });
     } finally {
       setLoading(false);
     }

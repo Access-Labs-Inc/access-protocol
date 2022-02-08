@@ -34,14 +34,11 @@ const HomePage = () => {
         <Button onClick={() => navigate("/jwt")} variant="contained">
           JWT example
         </Button>
-        <Button onClick={() => navigate("/central-state")} variant="contained">
-          Central state
-        </Button>
         <Button onClick={() => navigate("/all-pools")} variant="contained">
           All pools
         </Button>
-        <Button onClick={() => navigate("/admin-mint")} variant="contained">
-          Admin mint
+        <Button onClick={() => navigate("/admin")} variant="contained">
+          Admin
         </Button>
       </Container>
     </Root>

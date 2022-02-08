@@ -7,6 +7,12 @@ const Root = styled("div")({
   "&:hover": {
     boxShadow: "0 8px 16px 0 rgba(0,0,0,0.2)",
   },
+  height: "100%",
+  width: "100%",
+  display: "flex",
+  justifyContent: "space-around",
+  alignItems: "center",
+  flexDirection: "column",
 });
 
 const Card = ({ children }: { children: React.ReactNode }) => {
