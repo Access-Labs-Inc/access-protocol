@@ -82,10 +82,14 @@ pub fn process_crank(
         .checked_div(100u128) // Divide by 100 in order to convert the multiplier % to a ratio
         .ok_or(AccessError::Overflow)?;
 
-    stake_pool.push_balances_buff(RewardsTuple {
-        rewards: common_reward,
-        stakers_part: stake_pool.header.stakers_part,
-    });
+    stake_pool.push_balances_buff(
+        present_time,
+        stake_pool.header.last_crank_time,
+        RewardsTuple {
+            rewards: common_reward,
+            stakers_part: stake_pool.header.stakers_part,
+        },
+    )?;
 
     stake_pool.header.last_crank_time = present_time;
 
