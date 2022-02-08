@@ -1,3 +1,4 @@
+use crate::processor::change_pool_multiplier;
 pub use crate::processor::{
     activate_stake_pool, admin_freeze, admin_mint, change_inflation, change_pool_minimum,
     claim_bond, claim_bond_rewards, claim_pool_rewards, claim_rewards, close_stake_account,
@@ -222,6 +223,14 @@ pub enum ProgramInstruction {
     /// | 1     | ✅        | ❌      | The account to freeze (or unfreeze) |
     /// | 2     | ❌        | ❌      | The account of the central state    |
     AdminFreeze,
+    /// Change the stake part multiplier of a pool
+    /// This instruction allows a pool owner to adjust the percentage of the pool rewards that go to the pool stakers.
+    ///
+    /// | Index | Writable | Signer | Description            |
+    /// | -------------------------------------------------- |
+    /// | 0     | ✅        | ❌      | The stake pool account |
+    /// | 1     | ❌        | ✅      | The bond account       |
+    ChangePoolMultiplier,
 }
 #[allow(missing_docs)]
 pub fn create_central_state(
@@ -428,6 +437,18 @@ pub fn activate_stake_pool(
     accounts.get_instruction(
         program_id,
         ProgramInstruction::ActivateStakePool as u8,
+        params,
+    )
+}
+#[allow(missing_docs)]
+pub fn change_pool_multiplier(
+    program_id: Pubkey,
+    accounts: change_pool_multiplier::Accounts<Pubkey>,
+    params: change_pool_multiplier::Params,
+) -> Instruction {
+    accounts.get_instruction(
+        program_id,
+        ProgramInstruction::ChangePoolMultiplier as u8,
         params,
     )
 }
