@@ -28,7 +28,7 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub stake_pool: &'a T,
 
-    /// The bond account
+    /// The stake pool owner account
     #[cons(signer)]
     pub stake_pool_owner: &'a T,
 }
@@ -88,7 +88,3 @@ pub fn process_change_pool_multiplier(
 
     Ok(())
 }
-
-// This has repercusion on:
-// - unstake.rs
-// -  close_stake_account.rs

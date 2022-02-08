@@ -26,6 +26,7 @@ import {
   adminMint,
   activateStakePool,
   adminFreeze,
+  changePoolMultiplier,
 } from "../src/bindings";
 import {
   CentralState,
@@ -760,6 +761,40 @@ test("End to end test", async () => {
   expect(stakePoolObj.nonce).toBe(stakePoolNonce);
   expect(stakePoolObj.currentDayIdx).toBe(1);
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
+  expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
+  expect(stakePoolObj.lastClaimedTime.toNumber()).toBeGreaterThan(now);
+  expect(stakePoolObj.lastCrankTime.toNumber()).toBeGreaterThan(now);
+  expect(stakePoolObj.owner.toBase58()).toBe(
+    stakePoolOwner.publicKey.toBase58()
+  );
+  expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
+  expect(stakePoolObj.stakersPart.toNumber()).toBe(80);
+
+  // Change pool multiplier
+  const ix_change_pool_multiplier = await changePoolMultiplier(
+    connection,
+    stakePoolKey,
+    50,
+    programId
+  );
+  tx = await signAndSendTransactionInstructions(
+    connection,
+    [stakePoolOwner],
+    feePayer,
+    [ix_change_pool_multiplier]
+  );
+
+  /**
+   * Verifications
+   */
+
+  await sleep(delay);
+  stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
+  expect(stakePoolObj.tag).toBe(Tag.StakePool);
+  expect(stakePoolObj.nonce).toBe(stakePoolNonce);
+  expect(stakePoolObj.currentDayIdx).toBe(1);
+  expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
+  expect(stakePoolObj.stakersPart.toNumber()).toBe(50);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
   expect(stakePoolObj.lastClaimedTime.toNumber()).toBeGreaterThan(now);
   expect(stakePoolObj.lastCrankTime.toNumber()).toBeGreaterThan(now);
