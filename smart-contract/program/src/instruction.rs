@@ -201,8 +201,8 @@ pub enum ProgramInstruction {
     /// 
     /// | Index | Writable | Signer | Description            |
     /// | -------------------------------------------------- |
-    /// | 0     | ✅        | ❌      | The stake pool account |
-    /// | 1     | ❌        | ✅      | The bond account       |
+    /// | 0     | ✅        | ❌      | The stake pool account             |
+    /// | 1     | ❌        | ✅      | The stake pool owner account       |
     ChangePoolMinimum,
     /// Allows central state authority to mint ACCESS tokens
     /// 
@@ -228,8 +228,8 @@ pub enum ProgramInstruction {
     ///
     /// | Index | Writable | Signer | Description            |
     /// | -------------------------------------------------- |
-    /// | 0     | ✅        | ❌      | The stake pool account |
-    /// | 1     | ❌        | ✅      | The bond account       |
+    /// | 0     | ✅        | ❌      | The stake pool account       |
+    /// | 1     | ❌        | ✅      | The stake pool owner account |
     ChangePoolMultiplier,
 }
 #[allow(missing_docs)]
