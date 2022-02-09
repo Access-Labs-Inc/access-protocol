@@ -56,7 +56,7 @@ const Container = styled("div")({
 });
 
 const CardContainer = styled("div")({
-  height: 300,
+  height: 550,
 });
 
 const InnerCard = styled("div")({
@@ -173,7 +173,7 @@ const InspectPool = () => {
             </Row>
             <Row>
               <Label>Stakers multiplier (%)</Label>
-              <Value>{poolInfo?.stakersMultiplier.toNumber()}</Value>
+              <Value>{poolInfo?.stakersPart.toNumber()}</Value>
             </Row>
             <Row>
               <Label>Total staked</Label>

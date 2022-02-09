@@ -125,3 +125,41 @@ export const getAllInactiveStakePools = async (connection: Connection) => {
     filters,
   });
 };
+
+/**
+ * This function can be used to retrieve all the inactive bonds
+ * @param connection The Solana RPC connection
+ * @returns
+ */
+export const getAllInactiveBonds = async (connection: Connection) => {
+  const filters = [
+    {
+      memcmp: {
+        offset: 0,
+        bytes: "5",
+      },
+    },
+  ];
+  return await connection.getProgramAccounts(ACCESS_PROGRAM_ID, {
+    filters,
+  });
+};
+
+/**
+ * This function can be used to retrieve all the active bonds
+ * @param connection The Solana RPC connection
+ * @returns
+ */
+export const getAllActiveBonds = async (connection: Connection) => {
+  const filters = [
+    {
+      memcmp: {
+        offset: 0,
+        bytes: "6",
+      },
+    },
+  ];
+  return await connection.getProgramAccounts(ACCESS_PROGRAM_ID, {
+    filters,
+  });
+};

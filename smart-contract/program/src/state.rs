@@ -462,7 +462,7 @@ pub const BOND_SIGNER_THRESHOLD: u64 = 1;
 
 /// List of authorized bond sellers
 pub const AUTHORIZED_BOND_SELLERS: [Pubkey; 1] = [solana_program::pubkey!(
-    "ERNVcTG8sGynQjy6BKr3qotMusv3Zo1pJsbGdBgy9eQQ"
+    "3Nrq6mCNL5i8Qk4APhggbwXismcsF23gNVDEaKycZBL8"
 )];
 
 #[derive(BorshSerialize, BorshDeserialize, BorshSize)]

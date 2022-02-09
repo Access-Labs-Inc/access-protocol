@@ -9,6 +9,7 @@ import InspectPool from "./pages/InspectPool";
 import JWT from "./pages/JWT";
 import AdminPage from "./pages/AdminPage";
 import { useSnackbar } from "notistack";
+import BondPage from "./pages/BondPage";
 import SnackbarUtils from "./utils/SnackbarUtils";
 
 export default function RoutesApp() {
@@ -26,6 +27,7 @@ export default function RoutesApp() {
           <Route path="/create-pool" element={<CreatePool />} />
           <Route path="/all-pools" element={<AllPools />} />
           <Route path="/pool/:key" element={<InspectPool />} />
+          <Route path="/bond/:key" element={<BondPage />} />
           <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </NavigationFrame>

@@ -47,10 +47,14 @@ const AdminMint = () => {
       );
       const tx = await sendTx(connection, publicKey, [ix], sendTransaction);
       console.log(tx);
-      notify({ message: "Tokens minted", variant: "success" });
+      notify({
+        message: "Tokens minted",
+        variant: "success",
+      });
     } catch (err) {
       console.log(err);
-      notify({ message: `Error ${err}`, variant: "error" });
+      // @ts-ignore
+      notify({ message: `Error ${err.message}`, variant: "error" });
     } finally {
       setLoading(false);
       refreshAllCaches();

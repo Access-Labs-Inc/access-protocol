@@ -10,6 +10,7 @@ import OutlinedInput from "@mui/material/OutlinedInput";
 import { Button } from "@mui/material";
 import { PublicKey } from "@solana/web3.js";
 import { sendTx } from "../utils/send";
+import { notify } from "../utils/notifications";
 
 const Container = styled("div")({
   display: "flex",
@@ -68,8 +69,11 @@ const CreatePool = () => {
       console.log(tx);
       const [key] = await StakePool.getKey(ACCESS_PROGRAM_ID, publicKey);
       setStakePool(key.toBase58());
+      notify({ message: `Success creating stake pool ${key.toBase58()}` });
     } catch (err) {
       console.log(err);
+      // @ts-ignore
+      notify({ message: `Error creating stake pool ${err.message}` });
     } finally {
       setLoading(false);
     }

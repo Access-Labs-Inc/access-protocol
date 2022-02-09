@@ -1,24 +1,24 @@
 import React, { useState } from "react";
-import { useAllActivePools, useAllInactivePools } from "../hooks/useAllPools";
+import { useAllActiveBonds, useAllInactiveBonds } from "../hooks/useAllBonds";
 import { styled } from "@mui/material/styles";
-import { PublicKey } from "@solana/web3.js";
-import { activateStakePool, ACCESS_PROGRAM_ID } from "@access";
+import Card from "./Card";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Button } from "@mui/material";
 import { sendTx } from "../utils/send";
 import CircularProgress from "@mui/material/CircularProgress";
 import { useNavigate } from "react-router-dom";
 import { notify } from "../utils/notifications";
-import Card from "../components/Card";
+import { PublicKey } from "@solana/web3.js";
 import { refreshAllCaches } from "../utils/fetch-loop";
-
-const CardContainer = styled("div")({
-  height: 400,
-});
+import { signBond, ACCESS_PROGRAM_ID } from "@access";
 
 const Section = styled("span")({
   fontSize: 25,
   fontWeight: "bold",
+});
+
+const CardContainer = styled("div")({
+  height: 400,
 });
 
 const Row = styled("div")({
@@ -30,22 +30,21 @@ const Row = styled("div")({
   alignItems: "center",
 });
 
-const AllPools = () => {
+const AllBonds = () => {
   const [loading, setLoading] = useState(false);
   const { publicKey, sendTransaction } = useWallet();
   const { connection } = useConnection();
-  const [pools] = useAllActivePools();
-  const [inactivePools] = useAllInactivePools();
+  const [activeBonds] = useAllActiveBonds();
+  const [inactiveBonds] = useAllInactiveBonds();
   const navigate = useNavigate();
 
-  const handleActivate = (pool: PublicKey) => async () => {
+  const handleSign = (bond: PublicKey) => async () => {
     if (!publicKey) return;
     try {
       setLoading(true);
-      const ix = await activateStakePool(connection, pool, ACCESS_PROGRAM_ID);
+      const ix = await signBond(0, publicKey, bond, ACCESS_PROGRAM_ID);
       const tx = await sendTx(connection, publicKey, [ix], sendTransaction);
       console.log(tx);
-      notify({ message: "Pool activated", variant: "success" });
     } catch (err) {
       console.log(err);
       notify({ message: `Error ${err}`, variant: "error" });
@@ -58,20 +57,22 @@ const AllPools = () => {
   return (
     <CardContainer>
       <Card>
-        <Section>Active stake pools</Section>
-        {pools?.map((p) => {
+        <Section>Active bonds</Section>
+        {activeBonds?.map((b) => {
           return (
-            <Row onClick={() => navigate(`/pool/${p.pubkey.toBase58()}`)}>
-              {p.pubkey.toBase58()}
+            <Row onClick={() => navigate(`/bond/${b.key.toBase58()}`)}>
+              {b.key.toBase58()}
             </Row>
           );
         })}
-        <Section>Inactive stake pools</Section>
-        {inactivePools?.map((p) => {
+        <Section>Inactive bonds</Section>
+        {inactiveBonds?.map((b) => {
           return (
-            <Row onClick={handleActivate(p.pubkey)}>
-              {p.pubkey.toBase58()}
-              <Button>{loading ? <CircularProgress /> : "Activate"}</Button>
+            <Row onClick={() => navigate(`/bond/${b.key.toBase58()}`)}>
+              {b.key.toBase58()}
+              <Button onClick={handleSign(b.key)}>
+                {loading ? <CircularProgress /> : "Sign"}
+              </Button>
             </Row>
           );
         })}
@@ -80,4 +81,4 @@ const AllPools = () => {
   );
 };
 
-export default AllPools;
+export default AllBonds;

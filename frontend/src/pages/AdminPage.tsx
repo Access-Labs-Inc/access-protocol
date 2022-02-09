@@ -3,6 +3,8 @@ import AdmiMintCard from "../components/AdminMintCard";
 import CentralStateCard from "../components/CentralStateCard";
 import AllPoolsCard from "../components/AllPoolsCard";
 import EditInflation from "../components/EditInflation";
+import CreateBondCard from "../components/CreateBondCard";
+import AllBonds from "../components/AllBonds";
 
 const AdminPage = () => {
   return (
@@ -19,7 +21,9 @@ const AdminPage = () => {
       <AdmiMintCard />
       <EditInflation />
       <CentralStateCard />
+      <CreateBondCard />
       <AllPoolsCard />
+      <AllBonds />
     </div>
   );
 };
