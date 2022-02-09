@@ -11,7 +11,6 @@ import { sendTx } from "../utils/send";
 import { Button } from "@mui/material";
 import { notify } from "../utils/notifications";
 import CircularProgress from "@mui/material/CircularProgress";
-import { refreshAllCaches } from "../utils/fetch-loop";
 
 const Title = styled("span")({
   fontSize: 25,

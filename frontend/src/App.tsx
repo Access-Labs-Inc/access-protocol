@@ -15,7 +15,7 @@ import {
   getCloverWallet,
 } from "@solana/wallet-adapter-wallets";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
-import { clusterApiUrl } from "@solana/web3.js";
+// import { clusterApiUrl } from "@solana/web3.js";
 import { SnackbarProvider } from "notistack";
 
 // Default styles that can be overridden by your app
