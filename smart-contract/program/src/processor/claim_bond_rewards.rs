@@ -98,7 +98,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_owner(accounts.mint, &spl_token::ID, AccessError::WrongOwner)?;
 
         // Check signer
-        check_signer(accounts.bond_owner, AccessError::StakePoolOwnerMustSign)?;
+        check_signer(accounts.bond_owner, AccessError::BuyerMustSign)?;
 
         Ok(accounts)
     }

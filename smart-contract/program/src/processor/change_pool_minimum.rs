@@ -82,7 +82,3 @@ pub fn process_change_pool_minimum(
 
     Ok(())
 }
-
-// This has repercusion on:
-// - unstake.rs
-// -  close_stake_account.rs
