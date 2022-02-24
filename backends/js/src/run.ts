@@ -23,7 +23,7 @@ export const run = async () => {
   app.use(helmet() as RequestHandler);
 
   app.get("/", (req, res) => {
-    res.send({ succes: true, message: "visit https://bonfida.org" });
+    res.send({ succes: true, message: "Homepage" });
   });
 
   app.listen(3001);

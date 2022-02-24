@@ -3,8 +3,6 @@ use thiserror::Error;
 
 use solana_program::{decode_error::DecodeError, program_error::ProgramError};
 
-pub type MediaResult<T = ()> = Result<T, AccessError>;
-
 #[derive(Clone, Debug, Error, FromPrimitive)]
 pub enum AccessError {
     #[error("This account is already initialized")]
