@@ -118,7 +118,7 @@ pub fn process_unstake(
     //Update central state
     central_state.total_staked = central_state
         .total_staked
-        .checked_add(amount)
+        .checked_sub(amount)
         .ok_or(AccessError::Overflow)?;
     central_state.save(&mut accounts.central_state_account.data.borrow_mut());
 
