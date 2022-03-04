@@ -94,6 +94,10 @@ pub fn process_unstake(
     let mut central_state = CentralState::from_account_info(accounts.central_state_account)?;
     let current_time = Clock::get()?.unix_timestamp;
 
+    if stake_account.last_claimed_time < stake_pool.header.last_crank_time {
+        return Err(AccessError::UnclaimedRewards.into());
+    }
+
     check_account_key(
         accounts.owner,
         &stake_account.owner,
