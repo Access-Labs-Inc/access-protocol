@@ -12,7 +12,7 @@ use solana_program::{instruction::Instruction, pubkey::Pubkey};
 #[derive(BorshDeserialize, BorshSerialize, FromPrimitive)]
 pub enum ProgramInstruction {
     /// Create central state
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                  |
     /// | -------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake account            |
@@ -21,7 +21,7 @@ pub enum ProgramInstruction {
     /// | 3     | ❌        | ❌      | The mint of the ACCESS token |
     CreateCentralState,
     /// Create stake pool
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                  |
     /// | -------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake pool account       |
@@ -30,7 +30,7 @@ pub enum ProgramInstruction {
     /// | 3     | ❌        | ❌      | The stake pool vault account |
     CreateStakePool,
     /// Activate a stake pool
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                      |
     /// | ------------------------------------------------------------ |
     /// | 0     | ❌        | ✅      | The central state authority      |
@@ -38,7 +38,7 @@ pub enum ProgramInstruction {
     /// | 2     | ❌        | ❌      | The account of the central state |
     ActivateStakePool,
     /// Create stake account
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                |
     /// | ------------------------------------------------------ |
     /// | 0     | ✅        | ❌      | The stake account          |
@@ -47,7 +47,7 @@ pub enum ProgramInstruction {
     /// | 3     | ✅        | ✅      | The fee payer account      |
     CreateStakeAccount,
     /// Stake
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                            |
     /// | ------------------------------------------------------------------ |
     /// | 0     | ✅        | ❌      | The central state account              |
@@ -59,7 +59,7 @@ pub enum ProgramInstruction {
     /// | 6     | ✅        | ❌      | The stake pool vault account           |
     Stake,
     /// Unstake
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                    |
     /// | ---------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The central state account      |
@@ -68,7 +68,7 @@ pub enum ProgramInstruction {
     /// | 3     | ❌        | ✅      | The owner of the stake account |
     Unstake,
     /// Execute the token transfer after the unstake outbounding period
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake account                    |
@@ -80,7 +80,7 @@ pub enum ProgramInstruction {
     ExecuteUnstake,
     /// Claim rewards of a stake pool
     /// This instruction is used by stake pool owner for claiming their staking rewards
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake pool account               |
@@ -92,7 +92,7 @@ pub enum ProgramInstruction {
     ClaimPoolRewards,
     /// Claim rewards of a stake account
     /// This instruction can be used by stakers to claim their staking rewards
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake pool account               |
@@ -105,7 +105,7 @@ pub enum ProgramInstruction {
     ClaimRewards,
     /// Permissionless crank to update the stake pool rewards
     /// This instructions updates the circular buffer with the pool balances multiplied by the current inflation
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                      |
     /// | ------------------------------------------------------------ |
     /// | 0     | ✅        | ❌      | The stake pool account           |
@@ -113,7 +113,7 @@ pub enum ProgramInstruction {
     Crank,
     /// Close a stake pool
     /// This instruction can be used to close an empty stake pool and collect the lamports
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                   |
     /// | --------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The account of the stake pool |
@@ -121,14 +121,14 @@ pub enum ProgramInstruction {
     CloseStakePool,
     /// Close a stake account
     /// This instruction can be used to close an empty stake account and collect the lamports
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                    |
     /// | ---------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake account              |
     /// | 1     | ✅        | ✅      | The owner of the stake account |
     CloseStakeAccount,
     /// Change central state inflation
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                                |
     /// | ---------------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The account of the central state           |
@@ -136,7 +136,7 @@ pub enum ProgramInstruction {
     ChangeInflation,
     /// Create a bond
     /// This instruction can be used by authorized sellers to create a bond
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                |
     /// | ------------------------------------------------------ |
     /// | 0     | ✅        | ✅      | The bond seller account    |
@@ -147,7 +147,7 @@ pub enum ProgramInstruction {
     CreateBond,
     /// Sign a bond
     /// This instruction is used by authorized sellers to approve the creation of a bond
-    ///
+    /// 
     /// | Index | Writable | Signer | Description |
     /// | --------------------------------------- |
     /// | 0     | ❌        | ✅      |             |
@@ -155,7 +155,7 @@ pub enum ProgramInstruction {
     SignBond,
     /// Unlock ACCESS tokens bought through a bond account
     /// When tokens are unlocked they are withdrawn from the pool and are not considered staked anymore
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                      |
     /// | ------------------------------------------------------------ |
     /// | 0     | ✅        | ❌      | The bond account                 |
@@ -169,7 +169,7 @@ pub enum ProgramInstruction {
     UnlockBondTokens,
     /// Claim bond
     /// This instruction allows a buyer to claim a bond once it has been signed by enough DAO members.
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                                      |
     /// | ---------------------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The bond account                                 |
@@ -184,7 +184,7 @@ pub enum ProgramInstruction {
     ClaimBond,
     /// Claim bond rewards
     /// This Instruction allows bond owners to claim their staking rewards
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake pool account               |
@@ -197,14 +197,14 @@ pub enum ProgramInstruction {
     ClaimBondRewards,
     /// Change the minimum stakeable amount of a pool
     /// This instruction allows a pool owner to adjust the price of its subscription for new joiners without impacting people who already subscribed
-    ///
+    /// 
     /// | Index | Writable | Signer | Description            |
     /// | -------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake pool account |
     /// | 1     | ❌        | ✅      | The bond account       |
     ChangePoolMinimum,
-    /// Unlock ACCESS tokens bought through a bond account
-    ///
+    /// Allows central state authority to mint ACCESS tokens
+    /// 
     /// | Index | Writable | Signer | Description                      |
     /// | ------------------------------------------------------------ |
     /// | 0     | ❌        | ✅      | The central state authority      |
@@ -215,7 +215,7 @@ pub enum ProgramInstruction {
     AdminMint,
     /// Freeze and unfreeze a program account
     /// This admin instruction can be dangereous 💀
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                         |
     /// | --------------------------------------------------------------- |
     /// | 0     | ❌        | ✅      | The central state authority         |

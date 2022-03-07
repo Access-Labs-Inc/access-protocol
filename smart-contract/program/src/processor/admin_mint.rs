@@ -1,4 +1,4 @@
-//! Unlock ACCESS tokens bought through a bond account
+//! Allows central state authority to mint ACCESS tokens
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
