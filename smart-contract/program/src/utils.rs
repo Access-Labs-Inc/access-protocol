@@ -20,6 +20,14 @@ pub fn calc_reward_fp32(
     let nb_days_to_claim = current_time.saturating_sub(last_claimed_time) as u64 / SECONDS_IN_DAY;
     msg!("Nb of days behind {}", nb_days_to_claim);
 
+    if current_time
+        .checked_sub(stake_pool.header.last_crank_time)
+        .ok_or(AccessError::Overflow)?
+        > SECONDS_IN_DAY
+    {
+        return Err(AccessError::PoolMustBeCranked);
+    }
+
     // Saturating as we don't want to wrap around when there haven't been sufficient cranks
     let mut i = (stake_pool.header.current_day_idx as u64).saturating_sub(nb_days_to_claim)
         % STAKE_BUFFER_LEN;

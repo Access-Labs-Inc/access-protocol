@@ -77,6 +77,8 @@ pub enum AccessError {
     InvalidTagChange,
     #[error("Too many unstake requests")]
     TooManyUnstakeRequests,
+    #[error("Pool must be cranked")]
+    PoolMustBeCranked,
 }
 
 impl From<AccessError> for ProgramError {
