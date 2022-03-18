@@ -35,7 +35,7 @@ pub fn calc_reward_fp32(
 
     // Compute reward for all past days
     let mut reward: u128 = 0;
-    while i != stake_pool.header.current_day_idx as u64 + 1 {
+    while i != (stake_pool.header.current_day_idx as u64 + 1) % STAKE_BUFFER_LEN {
         let curr_day_multiplier = if staker {
             stake_pool.balances[i as usize].stakers_part
         } else {

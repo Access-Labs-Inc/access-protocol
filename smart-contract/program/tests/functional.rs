@@ -283,7 +283,14 @@ async fn test_staking() {
         .unwrap();
 
     // Advance in time by a few seconds
-    prg_test_ctx.warp_to_slot(5_000).unwrap();
+    let mut current_slot = 5_000;
+    prg_test_ctx.warp_to_slot(current_slot).unwrap();
+    for _ in 0..10 {
+        // Repeat to advance the timestamp by more than a full year.
+        // Repetition is needed, warp_slot arg does not influence the runtime timestamp.
+        current_slot += 5_000;
+        prg_test_ctx.warp_to_slot(current_slot).unwrap();
+    }
 
     //
     // Crank
@@ -303,7 +310,8 @@ async fn test_staking() {
         .unwrap();
 
     // Advance in time by a few seconds
-    prg_test_ctx.warp_to_slot(10_000).unwrap();
+    current_slot += 5_000;
+    prg_test_ctx.warp_to_slot(current_slot).unwrap();
 
     //
     // Claim stake pool rewards
@@ -464,7 +472,8 @@ async fn test_staking() {
         .unwrap();
 
     // Advance in time by a few seconds
-    prg_test_ctx.warp_to_slot(15_000).unwrap();
+    current_slot += 5_000;
+    prg_test_ctx.warp_to_slot(current_slot).unwrap();
 
     //
     // Execute Unstake
@@ -505,7 +514,8 @@ async fn test_staking() {
         .unwrap();
 
     // Advance in time by a few seconds
-    prg_test_ctx.warp_to_slot(20_000).unwrap();
+    current_slot += 5000;
+    prg_test_ctx.warp_to_slot(current_slot).unwrap();
 
     //
     // Unfreeze account
