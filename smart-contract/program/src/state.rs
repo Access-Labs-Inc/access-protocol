@@ -21,7 +21,7 @@ pub const ACCESS_MINT: Pubkey =
 
 #[allow(missing_docs)]
 pub const SECONDS_IN_DAY: u64 = if cfg!(feature = "no-lock-time") {
-    1
+    10
 } else {
     3600 * 24
 };
@@ -81,7 +81,7 @@ impl Tag {
     }
 }
 
-#[derive(BorshSerialize, BorshDeserialize, BorshSize, Copy, Clone, Pod, Zeroable)]
+#[derive(BorshSerialize, BorshDeserialize, BorshSize, Copy, Clone, Pod, Zeroable, Debug)]
 #[repr(C)]
 #[allow(missing_docs)]
 pub struct StakePoolHeader {
@@ -132,7 +132,7 @@ pub struct StakePool<H, B> {
 
 /// The Rewards structure that is held in the stake pools circular buffer.
 /// The two fields represent the share that is owed to the pool owner and the stakers respectively.
-#[derive(Pod, Clone, Copy, Zeroable)]
+#[derive(Pod, Clone, Copy, Zeroable, Debug)]
 #[repr(C)]
 pub struct RewardsTuple {
     pub(crate) rewards: u128,

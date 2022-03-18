@@ -282,6 +282,9 @@ async fn test_staking() {
         .await
         .unwrap();
 
+    // Advance in time by a few seconds
+    prg_test_ctx.warp_to_slot(5_000).unwrap();
+
     //
     // Crank
     //
@@ -300,7 +303,7 @@ async fn test_staking() {
         .unwrap();
 
     // Advance in time by a few seconds
-    prg_test_ctx.warp_to_slot(5_000).unwrap();
+    prg_test_ctx.warp_to_slot(10_000).unwrap();
 
     //
     // Claim stake pool rewards
@@ -461,7 +464,7 @@ async fn test_staking() {
         .unwrap();
 
     // Advance in time by a few seconds
-    prg_test_ctx.warp_to_slot(10_000).unwrap();
+    prg_test_ctx.warp_to_slot(15_000).unwrap();
 
     //
     // Execute Unstake
@@ -502,7 +505,7 @@ async fn test_staking() {
         .unwrap();
 
     // Advance in time by a few seconds
-    prg_test_ctx.warp_to_slot(15_000).unwrap();
+    prg_test_ctx.warp_to_slot(20_000).unwrap();
 
     //
     // Unfreeze account

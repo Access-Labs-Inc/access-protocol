@@ -140,6 +140,9 @@ impl PrintProgramError for AccessError {
             AccessError::TooManyUnstakeRequests => {
                 msg!("Error: Too many unstake requests")
             }
+            AccessError::PoolMustBeCranked => {
+                msg!("Error: Pool must be cranked")
+            }
         }
     }
 }

@@ -23,9 +23,10 @@ pub fn calc_reward_fp32(
     if current_time
         .checked_sub(stake_pool.header.last_crank_time)
         .ok_or(AccessError::Overflow)?
-        > SECONDS_IN_DAY
+        > SECONDS_IN_DAY as i64
     {
-        return Err(AccessError::PoolMustBeCranked);
+        #[cfg(not(feature = "no-lock-time"))]
+        return Err(AccessError::PoolMustBeCranked.into());
     }
 
     // Saturating as we don't want to wrap around when there haven't been sufficient cranks
@@ -34,7 +35,7 @@ pub fn calc_reward_fp32(
 
     // Compute reward for all past days
     let mut reward: u128 = 0;
-    while i != stake_pool.header.current_day_idx as u64 {
+    while i != stake_pool.header.current_day_idx as u64 + 1 {
         let curr_day_multiplier = if staker {
             stake_pool.balances[i as usize].stakers_part
         } else {
