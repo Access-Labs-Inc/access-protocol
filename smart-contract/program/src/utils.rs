@@ -17,8 +17,10 @@ pub fn calc_reward_fp32(
     stake_pool: &StakePoolRef,
     staker: bool,
 ) -> Result<u128, ProgramError> {
-    let nb_days_to_claim = current_time.saturating_sub(last_claimed_time) as u64 / SECONDS_IN_DAY;
+    let mut nb_days_to_claim =
+        current_time.saturating_sub(last_claimed_time) as u64 / SECONDS_IN_DAY;
     msg!("Nb of days behind {}", nb_days_to_claim);
+    nb_days_to_claim = std::cmp::min(nb_days_to_claim, STAKE_BUFFER_LEN - 1);
 
     if current_time
         .checked_sub(stake_pool.header.last_crank_time)
