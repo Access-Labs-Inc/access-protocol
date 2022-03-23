@@ -140,7 +140,7 @@ pub fn process_claim_rewards(
     // Multiply by the staker shares of the total pool
     .checked_mul(stake_account.stake_amount as u128)
     .ok_or(AccessError::Overflow)?
-    .checked_div(stake_pool.header.total_staked as u128)
+    .checked_div(stake_pool.header.total_staked_last_crank as u128)
     .map(|r| r >> 32)
     .and_then(safe_downcast)
     .ok_or(AccessError::Overflow)?;
