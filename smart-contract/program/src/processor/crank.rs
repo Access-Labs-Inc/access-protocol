@@ -92,6 +92,7 @@ pub fn process_crank(
     )?;
 
     stake_pool.header.last_crank_time = present_time;
+    stake_pool.header.total_staked_last_crank = stake_pool.header.total_staked;
 
     Ok(())
 }

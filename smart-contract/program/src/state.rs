@@ -103,6 +103,9 @@ pub struct StakePoolHeader {
     /// Total amount staked in the pool
     pub total_staked: u64,
 
+    /// Total amount staked in the pool at the last crank
+    pub total_staked_last_crank: u64,
+
     /// Last unix timestamp when rewards were paid to the pool owner
     /// through a permissionless crank
     pub last_crank_time: i64,
@@ -245,6 +248,7 @@ impl StakePoolHeader {
             minimum_stake_amount,
             stakers_part: STAKER_MULTIPLIER,
             unstake_period: UNSTAKE_PERIOD,
+            total_staked_last_crank: 0,
         }
     }
 

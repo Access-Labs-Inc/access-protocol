@@ -51,6 +51,7 @@ export class StakePool {
   _padding: Uint8Array;
   minimumStakeAmount: BN;
   totalStaked: BN;
+  totalStakedLastCrank: BN;
   lastCrankTime: BN;
   lastClaimedTime: BN;
   stakersPart: BN;
@@ -72,6 +73,7 @@ export class StakePool {
           ["_padding", [4]],
           ["minimumStakeAmount", "u64"],
           ["totalStaked", "u64"],
+          ["totalStakedLastCrank", "u64"],
           ["lastCrankTime", "u64"],
           ["lastClaimedTime", "u64"],
           ["stakersPart", "u64"],
@@ -101,6 +103,7 @@ export class StakePool {
     _padding: Uint8Array;
     minimumStakeAmount: BN;
     totalStaked: BN;
+    totalStakedLastCrank: BN;
     lastCrankTime: BN;
     lastClaimedTime: BN;
     stakersPart: BN;
@@ -115,6 +118,7 @@ export class StakePool {
     this._padding = obj._padding;
     this.minimumStakeAmount = obj.minimumStakeAmount;
     this.totalStaked = obj.totalStaked;
+    this.totalStakedLastCrank = obj.totalStakedLastCrank
     this.lastCrankTime = obj.lastCrankTime;
     this.lastClaimedTime = obj.lastClaimedTime;
     this.stakersPart = obj.stakersPart;

@@ -154,7 +154,6 @@ test("End to end test", async () => {
   console.log(`Created centrale state ${tx}`);
 
   // Verifications
-  await sleep(delay);
 
   let centralStateObj = await CentralState.retrieve(connection, centralKey);
   expect(centralStateObj.tag).toBe(Tag.CentralState);
@@ -199,14 +198,14 @@ test("End to end test", async () => {
   console.log(`Created stake pool ${tx}`);
 
   // Verifications
-  await sleep(delay);
-  let now = new Date().getTime() / 1_000;
+  let now = Math.floor(new Date().getTime() / 1_000);
   let stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
   expect(stakePoolObj.tag).toBe(Tag.InactiveStakePool);
   expect(stakePoolObj.nonce).toBe(stakePoolNonce);
   expect(stakePoolObj.currentDayIdx).toBe(0);
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(10_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(0);
+  expect(stakePoolObj.totalStakedLastCrank.toNumber()).toBe(0);
   expect(stakePoolObj.lastClaimedTime.toNumber()).toBeLessThan(now);
   expect(stakePoolObj.lastCrankTime.toNumber()).toBeLessThan(now);
   expect(stakePoolObj.owner.toBase58()).toBe(
@@ -231,7 +230,6 @@ test("End to end test", async () => {
   );
 
   //Verification
-  await sleep(delay);
   stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
   expect(stakePoolObj.tag).toBe(Tag.StakePool);
 
@@ -255,8 +253,7 @@ test("End to end test", async () => {
    * Verifications
    */
 
-  await sleep(delay);
-  now = new Date().getTime() / 1_000;
+  now = Math.floor(new Date().getTime() / 1_000);
   const stakeAccountObj = await StakeAccount.retrieve(connection, stakeKey);
   expect(stakeAccountObj.tag).toBe(Tag.StakeAccount);
   expect(stakeAccountObj.owner.toBase58()).toBe(staker.publicKey.toBase58());
@@ -321,11 +318,7 @@ test("End to end test", async () => {
     ix_quote_seller_ata,
   ]);
 
-  await sleep(2 * delay);
-
   await quoteToken.mintInto(quoteBuyerAta, bondAmount);
-
-  await sleep(delay);
 
   const [bondKey, bondNonce] = await BondAccount.getKey(
     programId,
@@ -354,7 +347,6 @@ test("End to end test", async () => {
   );
 
   // Verifications
-  await sleep(delay);
   let bondObj = await BondAccount.retrieve(connection, bondKey);
   expect(bondObj.tag).toBe(Tag.InactiveBondAccount);
   expect(bondObj.owner.toBase58()).toBe(staker.publicKey.toBase58());
@@ -397,7 +389,6 @@ test("End to end test", async () => {
   );
 
   // Verifications
-  await sleep(delay);
   bondObj = await BondAccount.retrieve(connection, bondKey);
   expect(bondObj.tag).toBe(Tag.BondAccount);
   expect(bondObj.owner.toBase58()).toBe(staker.publicKey.toBase58());
@@ -427,7 +418,7 @@ test("End to end test", async () => {
     await connection.getTokenAccountBalance(stakerAta)
   ).value.amount;
   expect(preBalance).toBe("0");
-
+  await sleep(15_000);
   const ix_unlock_bond_tokens = await unlockBondTokens(
     connection,
     bondKey,
@@ -442,8 +433,7 @@ test("End to end test", async () => {
   );
 
   // Verifications
-  await sleep(delay);
-  now = new Date().getTime() / 1_000;
+  now = Math.floor(new Date().getTime() / 1_000);
   bondObj = await BondAccount.retrieve(connection, bondKey);
   let postBalance = await (
     await connection.getTokenAccountBalance(stakerAta)
@@ -494,8 +484,8 @@ test("End to end test", async () => {
    * Verifications
    */
 
-  now = new Date().getTime() / 1_000;
-  await sleep(delay);
+  now = Math.floor(new Date().getTime() / 1_000);
+  await sleep(5_000);
   postBalance = await (
     await connection.getTokenAccountBalance(stakerAta)
   ).value.amount;
@@ -523,7 +513,6 @@ test("End to end test", async () => {
    * Verifications
    */
 
-  await sleep(delay);
   stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
   centralStateObj = await CentralState.retrieve(connection, centralKey);
   expect(stakePoolObj.tag).toBe(Tag.StakePool);
@@ -531,6 +520,7 @@ test("End to end test", async () => {
   expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(10_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
+  expect(stakePoolObj.totalStakedLastCrank.toNumber()).toBe(stakeAmount);
   expect(stakePoolObj.lastClaimedTime.toNumber()).toBeLessThan(now);
   expect(stakePoolObj.lastCrankTime.toNumber()).toBeGreaterThan(now);
   expect(stakePoolObj.owner.toBase58()).toBe(
@@ -572,7 +562,6 @@ test("End to end test", async () => {
   );
 
   // Verifications
-  await sleep(delay);
   bondObj = await BondAccount.retrieve(connection, bondKey);
 
   expect(bondObj.tag).toBe(Tag.BondAccount);
@@ -619,7 +608,6 @@ test("End to end test", async () => {
 
   // Check post balances
 
-  await sleep(delay);
   let totalSupply = bondAmount;
   postBalance = (await connection.getTokenAccountBalance(stakePoolAta)).value
     .amount;
@@ -641,6 +629,7 @@ test("End to end test", async () => {
   expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(10_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
+  expect(stakePoolObj.totalStakedLastCrank.toNumber()).toBe(stakeAmount);
   expect(stakePoolObj.lastClaimedTime.toNumber()).toBeGreaterThan(now);
   expect(stakePoolObj.lastCrankTime.toNumber()).toBeGreaterThan(now);
   expect(stakePoolObj.owner.toBase58()).toBe(
@@ -669,8 +658,6 @@ test("End to end test", async () => {
    * Verifications
    */
 
-  await sleep(delay);
-
   postBalance = (await connection.getTokenAccountBalance(stakerAta)).value
     .amount;
   expect(postBalance).toBe(
@@ -693,6 +680,7 @@ test("End to end test", async () => {
   expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(10_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
+  expect(stakePoolObj.totalStakedLastCrank.toNumber()).toBe(stakeAmount);
   expect(stakePoolObj.lastClaimedTime.toNumber()).toBeGreaterThan(now);
   expect(stakePoolObj.lastCrankTime.toNumber()).toBeGreaterThan(now);
   expect(stakePoolObj.owner.toBase58()).toBe(
@@ -725,7 +713,6 @@ test("End to end test", async () => {
    * Verifications
    */
 
-  await sleep(delay);
   centralStateObj = await CentralState.retrieve(connection, centralKey);
   expect(centralStateObj.tag).toBe(Tag.CentralState);
   expect(centralStateObj.signerNonce).toBe(centralNonce);
@@ -755,7 +742,6 @@ test("End to end test", async () => {
    * Verifications
    */
 
-  await sleep(delay);
   stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
   expect(stakePoolObj.tag).toBe(Tag.StakePool);
   expect(stakePoolObj.nonce).toBe(stakePoolNonce);
@@ -788,7 +774,6 @@ test("End to end test", async () => {
    * Verifications
    */
 
-  await sleep(delay);
   stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
   expect(stakePoolObj.tag).toBe(Tag.StakePool);
   expect(stakePoolObj.nonce).toBe(stakePoolNonce);
@@ -804,7 +789,7 @@ test("End to end test", async () => {
   expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
 
   // Crank
-  now = new Date().getTime() / 1_000;
+  now = Math.floor(new Date().getTime() / 1_000);
   await sleep(delay / 10);
   ix_crank = await crank(stakePoolKey, programId);
   tx = await signAndSendTransactionInstructions(connection, [], feePayer, [
@@ -815,7 +800,6 @@ test("End to end test", async () => {
    * Verifications
    */
 
-  await sleep(delay);
   stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
   expect(stakePoolObj.tag).toBe(Tag.StakePool);
   expect(stakePoolObj.nonce).toBe(stakePoolNonce);
@@ -833,7 +817,7 @@ test("End to end test", async () => {
    * Claim bond rewards
    */
 
-  now = new Date().getTime() / 1_000;
+  now = Math.floor(new Date().getTime() / 1_000);
   await sleep(delay / 3);
   ix_claim_bond_rewards = await claimBondRewards(
     connection,
@@ -849,7 +833,6 @@ test("End to end test", async () => {
   );
 
   // Verifications
-  await sleep(delay);
   bondObj = await BondAccount.retrieve(connection, bondKey);
   expect(bondObj.tag).toBe(Tag.BondAccount);
   expect(bondObj.owner.toBase58()).toBe(staker.publicKey.toBase58());
@@ -890,7 +873,6 @@ test("End to end test", async () => {
    * Verifications
    */
 
-  await sleep(delay);
   stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
   expect(stakePoolObj.tag).toBe(Tag.StakePool);
   expect(stakePoolObj.nonce).toBe(stakePoolNonce);
@@ -921,7 +903,6 @@ test("End to end test", async () => {
   /**
    * Verifications
    */
-  await sleep(delay);
   stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
   expect(stakePoolObj.tag).toBe(Tag.StakePool);
   expect(stakePoolObj.nonce).toBe(stakePoolNonce);
@@ -948,8 +929,7 @@ test("End to end test", async () => {
    * Verifications
    */
 
-  await sleep(delay);
-  now = new Date().getTime() / 1_000;
+  now = Math.floor(new Date().getTime() / 1_000);
   stakedAccountObj = await StakeAccount.retrieve(connection, stakeKey);
   expect(stakedAccountObj.tag).toBe(Tag.StakeAccount);
   expect(stakedAccountObj.owner.toBase58()).toBe(staker.publicKey.toBase58());
@@ -1012,7 +992,6 @@ test("End to end test", async () => {
     feePayer,
     [ix_create_receiver_ata, ix_admin_mint]
   );
-  await sleep(delay);
   const postBalancesReceiver = (
     await connection.getTokenAccountBalance(receiverAta)
   ).value.amount;
@@ -1020,7 +999,6 @@ test("End to end test", async () => {
 
   // Check current new supply
 
-  await sleep(delay);
   const currentSupply = (
     await connection.getTokenSupply(accessToken.token.publicKey)
   ).value.amount;
@@ -1045,7 +1023,6 @@ test("End to end test", async () => {
   );
 
   // Verifications
-  await sleep(delay);
   stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
   expect(stakePoolObj.tag).toBe(Tag.FrozenStakePool);
 
@@ -1064,7 +1041,6 @@ test("End to end test", async () => {
     feePayer,
     [ix_unfreeze_pool]
   );
-  await sleep(delay);
   stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
   expect(stakePoolObj.tag).toBe(Tag.StakePool);
 });
