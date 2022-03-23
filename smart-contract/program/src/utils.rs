@@ -56,6 +56,11 @@ pub fn calc_reward_fp32(
         i = (i + 1) % STAKE_BUFFER_LEN;
     }
 
+    if reward == 0 {
+        msg!("No rewards to claim, no operation.");
+        return Err(AccessError::NoOp.into());
+    }
+
     Ok(reward)
 }
 
