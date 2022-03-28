@@ -2,8 +2,9 @@
 //! This instructions updates the circular buffer with the pool balances multiplied by the current inflation
 
 use crate::error::AccessError;
-use crate::state::{CentralState, RewardsTuple, StakePool, Tag, SECONDS_IN_DAY};
+use crate::state::{CentralState, Rewards, StakePool, Tag, SECONDS_IN_DAY};
 use crate::utils::check_account_owner;
+use bonfida_utils::fp_math::safe_downcast;
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
@@ -74,8 +75,13 @@ pub fn process_crank(
     msg!("Daily inflation {}", central_state.daily_inflation);
     msg!("Total staked {}", central_state.total_staked);
 
+    // The rewards are stored in FP32 as u64 (instead of u128) in order to save memory and stay below the
+    // solana runtime data size realloc limit of 10240 bytes for the stake pool account creation CPI.
+    // The values don't overflow as they are < 1<<32.
     let stakers_reward = ((stake_pool.header.total_staked as u128) << 32)
-        .checked_mul(central_state.daily_inflation as u128)
+        .checked_mul(stake_pool.header.stakers_part as u128)
+        .ok_or(AccessError::Overflow)?
+        .checked_div(100u128)
         .ok_or(AccessError::Overflow)?
         .checked_mul(stake_pool.header.stakers_part as u128)
         .ok_or(AccessError::Overflow)?
@@ -84,11 +90,10 @@ pub fn process_crank(
         .checked_div(central_state.total_staked as u128)
         .ok_or(AccessError::Overflow)?
         .checked_div(stake_pool.header.total_staked as u128)
+        .and_then(safe_downcast)
         .ok_or(AccessError::Overflow)?;
 
     let pool_reward = ((stake_pool.header.total_staked as u128) << 32)
-        .checked_mul(central_state.daily_inflation as u128)
-        .ok_or(AccessError::Overflow)?
         .checked_mul(
             100u64
                 .checked_sub(stake_pool.header.stakers_part)
@@ -98,12 +103,14 @@ pub fn process_crank(
         .checked_div(100u128)
         .ok_or(AccessError::Overflow)?
         .checked_div(central_state.total_staked as u128)
+        .and_then(safe_downcast)
         .ok_or(AccessError::Overflow)?;
 
     stake_pool.push_balances_buff(
         present_time,
         stake_pool.header.last_crank_time,
-        RewardsTuple {
+        Rewards {
+            daily_inflation: central_state.daily_inflation,
             pool_reward,
             stakers_reward,
         },

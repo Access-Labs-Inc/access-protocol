@@ -44,7 +44,11 @@ pub fn calc_reward_fp32(
             stake_pool.balances[i as usize].pool_reward
         };
         reward = reward
-            .checked_add(curr_day_reward)
+            .checked_add(
+                (curr_day_reward as u128)
+                    .checked_mul(stake_pool.balances[i as usize].daily_inflation as u128)
+                    .ok_or(AccessError::Overflow)?,
+            )
             .ok_or(AccessError::Overflow)?;
         i = (i + 1) % STAKE_BUFFER_LEN;
     }

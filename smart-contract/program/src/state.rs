@@ -135,16 +135,19 @@ pub struct StakePool<H, B> {
 /// The values are stored in the FP32 format.
 #[derive(Pod, Clone, Copy, Zeroable, Debug)]
 #[repr(C)]
-pub struct RewardsTuple {
-    pub(crate) pool_reward: u128,
-    pub(crate) stakers_reward: u128,
+pub struct Rewards {
+    pub(crate) daily_inflation: u64,
+    /// Stored in the FP32 format, value is always < 1<<32
+    pub(crate) pool_reward: u64,
+    /// Stored in the FP32 format, value is always < 1<<32
+    pub(crate) stakers_reward: u64,
 }
 
 #[allow(missing_docs)]
-pub type StakePoolRef<'a> = StakePool<RefMut<'a, StakePoolHeader>, RefMut<'a, [RewardsTuple]>>;
+pub type StakePoolRef<'a> = StakePool<RefMut<'a, StakePoolHeader>, RefMut<'a, [Rewards]>>;
 
 #[allow(missing_docs)]
-pub type StakePoolHeaped = StakePool<Box<StakePoolHeader>, Box<[RewardsTuple]>>;
+pub type StakePoolHeaped = StakePool<Box<StakePoolHeader>, Box<[Rewards]>>;
 
 #[allow(missing_docs)]
 impl<'a> StakePoolRef<'a> {
@@ -173,7 +176,7 @@ impl StakePoolHeaped {
     pub fn from_buffer(buf: &[u8]) -> Self {
         let (header, balances) = buf.split_at(size_of::<StakePoolHeader>());
         let header = from_bytes::<StakePoolHeader>(header);
-        let balances = cast_slice::<_, RewardsTuple>(balances);
+        let balances = cast_slice::<_, Rewards>(balances);
         Self {
             header: Box::new(*header),
             balances: Box::from(balances),
@@ -182,12 +185,12 @@ impl StakePoolHeaped {
 }
 
 #[allow(missing_docs)]
-impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [RewardsTuple]>> StakePool<H, B> {
+impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [Rewards]>> StakePool<H, B> {
     pub fn push_balances_buff(
         &mut self,
         present_time: i64,
         last_crank_time: i64,
-        rewards: RewardsTuple,
+        rewards: Rewards,
     ) -> Result<(), ProgramError> {
         let nb_days_passed = (present_time
             .checked_sub(last_crank_time)
@@ -198,7 +201,8 @@ impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [RewardsTuple]>
             self.balances[(((self.header.current_day_idx as u64)
                 .checked_add(i)
                 .ok_or(AccessError::Overflow)?)
-                % STAKE_BUFFER_LEN) as usize] = RewardsTuple {
+                % STAKE_BUFFER_LEN) as usize] = Rewards {
+                daily_inflation: 0,
                 pool_reward: 0,
                 stakers_reward: 0,
             };
