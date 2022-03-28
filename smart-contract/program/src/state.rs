@@ -103,9 +103,6 @@ pub struct StakePoolHeader {
     /// Total amount staked in the pool
     pub total_staked: u64,
 
-    /// Total amount staked in the pool at the last crank
-    pub total_staked_last_crank: u64,
-
     /// Last unix timestamp when rewards were paid to the pool owner
     /// through a permissionless crank
     pub last_crank_time: i64,
@@ -135,13 +132,12 @@ pub struct StakePool<H, B> {
 
 /// The Rewards structure that is held in the stake pools circular buffer.
 /// The two fields represent the share that is owed to the pool owner and the stakers respectively.
+/// The values are stored in the FP32 format.
 #[derive(Pod, Clone, Copy, Zeroable, Debug)]
 #[repr(C)]
 pub struct RewardsTuple {
-    pub(crate) rewards: u128,
-    /// How much the stakers receive from the reward in %
-    /// The division by 100 is taken into account by the rewards.
-    pub(crate) stakers_part: u64,
+    pub(crate) pool_reward: u128,
+    pub(crate) stakers_reward: u128,
 }
 
 #[allow(missing_docs)]
@@ -203,8 +199,8 @@ impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [RewardsTuple]>
                 .checked_add(i)
                 .ok_or(AccessError::Overflow)?)
                 % STAKE_BUFFER_LEN) as usize] = RewardsTuple {
-                rewards: 0,
-                stakers_part: 0,
+                pool_reward: 0,
+                stakers_reward: 0,
             };
         }
         self.header.current_day_idx = self
@@ -248,7 +244,6 @@ impl StakePoolHeader {
             minimum_stake_amount,
             stakers_part: STAKER_MULTIPLIER,
             unstake_period: UNSTAKE_PERIOD,
-            total_staked_last_crank: 0,
         }
     }
 

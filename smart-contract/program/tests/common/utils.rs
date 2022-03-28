@@ -3,10 +3,10 @@ use std::str::FromStr;
 use solana_program::instruction::Instruction;
 use solana_program::program_pack::Pack;
 use solana_program::pubkey::Pubkey;
-use solana_program_test::{ProgramTest, ProgramTestContext};
+use solana_program_test::{BanksClientError, ProgramTest, ProgramTestContext};
 use solana_sdk::account::Account;
 use solana_sdk::signature::Signer;
-use solana_sdk::{signature::Keypair, transaction::Transaction, transport::TransportError};
+use solana_sdk::{signature::Keypair, transaction::Transaction};
 use spl_token::state::Mint;
 
 // Utils
@@ -14,7 +14,7 @@ pub async fn sign_send_instructions(
     ctx: &mut ProgramTestContext,
     instructions: Vec<Instruction>,
     signers: Vec<&Keypair>,
-) -> Result<(), TransportError> {
+) -> Result<(), BanksClientError> {
     let mut transaction = Transaction::new_with_payer(&instructions, Some(&ctx.payer.pubkey()));
     let mut payer_signers = vec![&ctx.payer];
     for s in signers {

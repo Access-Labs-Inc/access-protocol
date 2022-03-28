@@ -74,25 +74,42 @@ pub fn process_crank(
     msg!("Daily inflation {}", central_state.daily_inflation);
     msg!("Total staked {}", central_state.total_staked);
 
-    let common_reward = ((stake_pool.header.total_staked as u128) << 32)
+    let stakers_reward = ((stake_pool.header.total_staked as u128) << 32)
         .checked_mul(central_state.daily_inflation as u128)
+        .ok_or(AccessError::Overflow)?
+        .checked_mul(stake_pool.header.stakers_part as u128)
+        .ok_or(AccessError::Overflow)?
+        .checked_div(100u128)
         .ok_or(AccessError::Overflow)?
         .checked_div(central_state.total_staked as u128)
         .ok_or(AccessError::Overflow)?
-        .checked_div(100u128) // Divide by 100 in order to convert the multiplier % to a ratio
+        .checked_div(stake_pool.header.total_staked as u128)
+        .ok_or(AccessError::Overflow)?;
+
+    let pool_reward = ((stake_pool.header.total_staked as u128) << 32)
+        .checked_mul(central_state.daily_inflation as u128)
+        .ok_or(AccessError::Overflow)?
+        .checked_mul(
+            100u64
+                .checked_sub(stake_pool.header.stakers_part)
+                .ok_or(AccessError::Overflow)? as u128,
+        )
+        .ok_or(AccessError::Overflow)?
+        .checked_div(100u128)
+        .ok_or(AccessError::Overflow)?
+        .checked_div(central_state.total_staked as u128)
         .ok_or(AccessError::Overflow)?;
 
     stake_pool.push_balances_buff(
         present_time,
         stake_pool.header.last_crank_time,
         RewardsTuple {
-            rewards: common_reward,
-            stakers_part: stake_pool.header.stakers_part,
+            pool_reward,
+            stakers_reward,
         },
     )?;
 
     stake_pool.header.last_crank_time = present_time;
-    stake_pool.header.total_staked_last_crank = stake_pool.header.total_staked;
 
     Ok(())
 }

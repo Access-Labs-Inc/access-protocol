@@ -2,9 +2,8 @@
 //! This instruction is used by stake pool owner for claiming their staking rewards
 use crate::error::AccessError;
 use crate::state::{CentralState, StakePool, Tag};
-use crate::utils::{
-    calc_reward_fp32, check_account_key, check_account_owner, check_signer, safe_downcast,
-};
+use crate::utils::{calc_reward_fp32, check_account_key, check_account_owner, check_signer};
+use bonfida_utils::fp_math::safe_downcast;
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::program::invoke_signed;

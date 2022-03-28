@@ -13,7 +13,7 @@ no-lock-time = []
 no-bond-signer = []
 
 [dependencies]
-solana-program = "1.8.0"
+solana-program = "1.10.3"
 num_enum = "0.5.4"
 borsh = "0.9.1"
 thiserror = "1.0.24"
@@ -27,10 +27,10 @@ bytemuck = {version = "1.7.2", features = ["derive"]}
 
 [dev-dependencies]
 hexdump = "0.1.0"
-solana-sdk = "1.8.0"
+solana-sdk = "1.10.3"
 rand = "0.8.4"
 arrayref = "0.3.6"
-solana-program-test = "1.8.0"
+solana-program-test = "1.10.5"
 tokio = {version="1.6", features = ["macros"]}
 
 

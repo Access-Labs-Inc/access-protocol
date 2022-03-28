@@ -32,12 +32,12 @@ export enum Tag {
  * Stake pool state
  */
 export class RewardsTuple {
-  rewards: BN;
-  stakersPart: BN;
+  poolReward: BN;
+  stakersReward: BN;
 
-  constructor(obj: { rewards: BN; stakersPart: BN }) {
-    this.rewards = obj.rewards;
-    this.stakersPart = obj.stakersPart;
+  constructor(obj: { poolReward: BN; stakersReward: BN }) {
+    this.poolReward = obj.poolReward;
+    this.stakersReward = obj.stakersReward;
   }
 }
 
@@ -51,7 +51,6 @@ export class StakePool {
   _padding: Uint8Array;
   minimumStakeAmount: BN;
   totalStaked: BN;
-  totalStakedLastCrank: BN;
   lastCrankTime: BN;
   lastClaimedTime: BN;
   stakersPart: BN;
@@ -73,7 +72,6 @@ export class StakePool {
           ["_padding", [4]],
           ["minimumStakeAmount", "u64"],
           ["totalStaked", "u64"],
-          ["totalStakedLastCrank", "u64"],
           ["lastCrankTime", "u64"],
           ["lastClaimedTime", "u64"],
           ["stakersPart", "u64"],
@@ -89,8 +87,8 @@ export class StakePool {
       {
         kind: "struct",
         fields: [
-          ["rewards", "u128"],
-          ["stakersPart", "u64"],
+          ["poolReward", "u128"],
+          ["stakersReward", "u128"],
         ],
       },
     ],
@@ -118,7 +116,6 @@ export class StakePool {
     this._padding = obj._padding;
     this.minimumStakeAmount = obj.minimumStakeAmount;
     this.totalStaked = obj.totalStaked;
-    this.totalStakedLastCrank = obj.totalStakedLastCrank
     this.lastCrankTime = obj.lastCrankTime;
     this.lastClaimedTime = obj.lastClaimedTime;
     this.stakersPart = obj.stakersPart;
