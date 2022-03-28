@@ -33,7 +33,7 @@ pub const STAKER_MULTIPLIER: u64 = 80;
 pub const OWNER_MULTIPLIER: u64 = 100 - STAKER_MULTIPLIER;
 
 /// Length of the circular buffer (stores balances for 1 year)
-pub const STAKE_BUFFER_LEN: u64 = 365;
+pub const STAKE_BUFFER_LEN: u64 = 274; // 9 Months
 
 /// Default unstake period set to 7 days
 pub const UNSTAKE_PERIOD: i64 = if cfg!(feature = "no-lock-time") {

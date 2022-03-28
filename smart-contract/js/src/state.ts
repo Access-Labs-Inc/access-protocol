@@ -6,7 +6,7 @@ import { u64 } from "./u64";
 /**
  * Lenght of the stake pool circular buffer used to store balances and inflation
  */
-const STAKE_BUFFER_LEN = 365;
+const STAKE_BUFFER_LEN = 274; // 9 Months
 
 export const MAX_UNSTAKE_REQUEST = 10;
 
