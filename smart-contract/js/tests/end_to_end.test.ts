@@ -205,7 +205,6 @@ test("End to end test", async () => {
   expect(stakePoolObj.currentDayIdx).toBe(0);
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(10_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(0);
-  expect(stakePoolObj.totalStakedLastCrank.toNumber()).toBe(0);
   expect(stakePoolObj.lastClaimedTime.toNumber()).toBeLessThan(now);
   expect(stakePoolObj.lastCrankTime.toNumber()).toBeLessThan(now);
   expect(stakePoolObj.owner.toBase58()).toBe(
@@ -520,7 +519,6 @@ test("End to end test", async () => {
   expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(10_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
-  expect(stakePoolObj.totalStakedLastCrank.toNumber()).toBe(stakeAmount);
   expect(stakePoolObj.lastClaimedTime.toNumber()).toBeLessThan(now);
   expect(stakePoolObj.lastCrankTime.toNumber()).toBeGreaterThan(now);
   expect(stakePoolObj.owner.toBase58()).toBe(
@@ -528,17 +526,18 @@ test("End to end test", async () => {
   );
   expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
 
-  expect(stakePoolObj.balances.filter((b) => !b.rewards.isZero()).length).toBe(
-    1
-  );
+  expect(
+    stakePoolObj.balances.filter((b) => !b.poolReward.isZero()).length
+  ).toBe(1);
   expect(
     stakePoolObj.balances
-      .filter((b) => !b.rewards.isZero())[0]
-      .rewards.toString()
+      .filter((b) => !b.poolReward.isZero())[0]
+      .poolReward.toString()
   ).toBe(
     new BN(dailyInflation)
       .mul(new BN(stakeAmount))
       .mul(new BN(2 ** 32))
+      .mul(new BN(100).sub(stakePoolObj.stakersPart))
       .div(centralStateObj.totalStaked)
       .div(new BN(100))
       .toString()
@@ -629,7 +628,6 @@ test("End to end test", async () => {
   expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(10_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
-  expect(stakePoolObj.totalStakedLastCrank.toNumber()).toBe(stakeAmount);
   expect(stakePoolObj.lastClaimedTime.toNumber()).toBeGreaterThan(now);
   expect(stakePoolObj.lastCrankTime.toNumber()).toBeGreaterThan(now);
   expect(stakePoolObj.owner.toBase58()).toBe(
@@ -680,7 +678,6 @@ test("End to end test", async () => {
   expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(10_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
-  expect(stakePoolObj.totalStakedLastCrank.toNumber()).toBe(stakeAmount);
   expect(stakePoolObj.lastClaimedTime.toNumber()).toBeGreaterThan(now);
   expect(stakePoolObj.lastCrankTime.toNumber()).toBeGreaterThan(now);
   expect(stakePoolObj.owner.toBase58()).toBe(

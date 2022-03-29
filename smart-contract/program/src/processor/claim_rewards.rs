@@ -2,9 +2,8 @@
 //! This instruction can be used by stakers to claim their staking rewards
 use crate::error::AccessError;
 use crate::state::{CentralState, StakeAccount, StakePool, Tag};
-use crate::utils::{
-    calc_reward_fp32, check_account_key, check_account_owner, check_signer, safe_downcast,
-};
+use crate::utils::{calc_reward_fp32, check_account_key, check_account_owner, check_signer};
+use bonfida_utils::fp_math::safe_downcast;
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::program::invoke_signed;
@@ -139,8 +138,6 @@ pub fn process_claim_rewards(
     )?
     // Multiply by the staker shares of the total pool
     .checked_mul(stake_account.stake_amount as u128)
-    .ok_or(AccessError::Overflow)?
-    .checked_div(stake_pool.header.total_staked_last_crank as u128)
     .map(|r| r >> 32)
     .and_then(safe_downcast)
     .ok_or(AccessError::Overflow)?;

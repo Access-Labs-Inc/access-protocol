@@ -14,12 +14,10 @@ use solana_program::{
 
 use crate::state::{BondAccount, CentralState, StakePool};
 use crate::{error::AccessError, state::Tag};
-use bonfida_utils::{BorshSize, InstructionsAccount};
+use bonfida_utils::{fp_math::safe_downcast, BorshSize, InstructionsAccount};
 use spl_token::instruction::mint_to;
 
-use crate::utils::{
-    calc_reward_fp32, check_account_key, check_account_owner, check_signer, safe_downcast,
-};
+use crate::utils::{calc_reward_fp32, check_account_key, check_account_owner, check_signer};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `claim_bond_rewards` instruction
@@ -138,8 +136,6 @@ pub fn process_claim_bond_rewards(
     let reward = calc_reward_fp32(current_time, bond.last_claimed_time, &stake_pool, true)?
         // Multiply by the staker shares of the total pool
         .checked_mul(bond.total_staked as u128)
-        .ok_or(AccessError::Overflow)?
-        .checked_div(stake_pool.header.total_staked_last_crank as u128)
         .map(|r| r >> 32)
         .and_then(safe_downcast)
         .ok_or(AccessError::Overflow)?;

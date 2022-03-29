@@ -10,7 +10,7 @@ use spl_token::state::Account;
 /// Cumulate the claimable rewards from the last claimed day to the present.
 /// Result is in FP32 format.
 ///
-/// * `staker` Use the staker or pool owner multiplier
+/// * `staker` Compute the reward for a staker or a pool owner
 pub fn calc_reward_fp32(
     current_time: i64,
     last_claimed_time: i64,
@@ -38,20 +38,13 @@ pub fn calc_reward_fp32(
     // Compute reward for all past days
     let mut reward: u128 = 0;
     while i != (stake_pool.header.current_day_idx as u64 + 1) % STAKE_BUFFER_LEN {
-        let curr_day_multiplier = if staker {
-            stake_pool.balances[i as usize].stakers_part
+        let curr_day_reward = if staker {
+            stake_pool.balances[i as usize].stakers_reward
         } else {
-            100u64
-                .checked_sub(stake_pool.balances[i as usize].stakers_part)
-                .ok_or(AccessError::Overflow)?
+            stake_pool.balances[i as usize].pool_reward
         };
         reward = reward
-            .checked_add(
-                stake_pool.balances[i as usize]
-                    .rewards
-                    .checked_mul(curr_day_multiplier as u128)
-                    .ok_or(AccessError::Overflow)?,
-            )
+            .checked_add(curr_day_reward)
             .ok_or(AccessError::Overflow)?;
         i = (i + 1) % STAKE_BUFFER_LEN;
     }
@@ -149,13 +142,4 @@ pub fn assert_bond_derivation(
     let (key, _nonce) = BondAccount::create_key(owner, total_amount_sold, program_id);
     check_account_key(account, &key, AccessError::AccountNotDeterministic)?;
     Ok(())
-}
-
-pub fn safe_downcast(n: u128) -> Option<u64> {
-    static BOUND: u128 = u64::MAX as u128;
-    if n > BOUND {
-        None
-    } else {
-        Some(n as u64)
-    }
 }
