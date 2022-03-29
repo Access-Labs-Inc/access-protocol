@@ -132,7 +132,6 @@ pub fn process_claim_bond_rewards(
         AccessError::WrongMint,
     )?;
 
-    // This can be factoriser
     let reward = calc_reward_fp32(current_time, bond.last_claimed_time, &stake_pool, true)?
         // Multiply by the staker shares of the total pool
         .checked_mul(bond.total_staked as u128)

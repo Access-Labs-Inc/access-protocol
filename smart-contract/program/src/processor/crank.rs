@@ -100,6 +100,9 @@ pub fn process_crank(
         .checked_div(central_state.total_staked as u128)
         .ok_or(AccessError::Overflow)?;
 
+    msg!("Stakers reward {}", stakers_reward);
+    msg!("Pool reward {}", pool_reward);
+
     stake_pool.push_balances_buff(
         present_time,
         stake_pool.header.last_crank_time,

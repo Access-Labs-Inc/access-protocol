@@ -163,7 +163,7 @@ impl Processor {
                 admin_freeze::process_admin_freeze(program_id, accounts)?;
             }
             ProgramInstruction::ChangePoolMultiplier => {
-                msg!("Instruction: CHange pool multiplier");
+                msg!("Instruction: Change pool multiplier");
                 let params = change_pool_multiplier::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 change_pool_multiplier::process_change_pool_multiplier(
