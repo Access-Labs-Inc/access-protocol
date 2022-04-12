@@ -443,7 +443,6 @@ export const createStakeAccount = async (
 export const createStakePool = async (
   connection: Connection,
   owner: PublicKey,
-  destination: PublicKey,
   minimumStakeAmount: number,
   feePayer: PublicKey,
   programId: PublicKey
