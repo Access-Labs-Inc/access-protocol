@@ -1,4 +1,4 @@
-import { StakeAccount, ACCESS_PROGRAM_ID } from "@access-protocol";
+import { StakeAccount, ACCESS_PROGRAM_ID, StakePool } from "@access-protocol";
 import { connection } from "./connection";
 import { PublicKey } from "@solana/web3.js";
 
@@ -19,8 +19,15 @@ export const checkStake = async (owner: string) => {
     STAKE_POOL_KEY
   );
   const stakeAccount = await StakeAccount.retrieve(connection, key);
-  return (
-    stakeAccount.stakeAmount.toNumber() >
-    stakeAccount.poolMinimumAtCreation.toNumber()
+  const stakePool = await StakePool.retrieve(
+    connection,
+    stakeAccount.stakePool
   );
+
+  const requiredAmount = Math.min(
+    stakeAccount.poolMinimumAtCreation.toNumber(),
+    stakePool.minimumStakeAmount.toNumber()
+  );
+
+  return stakeAccount.stakeAmount.toNumber() > requiredAmount;
 };

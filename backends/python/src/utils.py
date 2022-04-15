@@ -24,9 +24,11 @@ RPC_URL = os.getenv("RPC_URL")
 PROGRAM_ID = "2ZsWiVGXzL4kgMDtSfeEJSV27fBnMptrdcNKKZygUoB8"
 STAKE_POOL = "Hs6emyaDnMSxJmGxnHhSmucJh1Q9jSysuKJ5yycWoUuC"
 OFFSET_STAKE = 1 + 32
-OFFSET_MIN = 1 + 32 + 8 + 32 + 8
+OFFSET_MIN_CREATION = 1 + 32 + 8 + 32 + 8
 POOL_MINIMUM = 100
 U64_LEN = 8
+OFFSET_MIN_CURRENT = 1 + 1 + 2 + 4
+
 
 # Generates a randomly secure 32 bytes nonce
 def generate_nonce() -> str:
@@ -86,12 +88,19 @@ def check_stake(owner: str) -> bool:
     data_bytes = base64.b64decode(account_info["result"]["value"]["data"][0])
 
     raw_bytes_stake = data_bytes[OFFSET_STAKE: OFFSET_STAKE +U64_LEN]
-    raw_bytes_min = data_bytes[OFFSET_MIN: OFFSET_MIN +U64_LEN]
+    raw_bytes_min = data_bytes[OFFSET_MIN_CREATION: OFFSET_MIN_CREATION +U64_LEN]
 
     stake = int.from_bytes(raw_bytes_stake, "little")
     min = int.from_bytes(raw_bytes_min, "little")
 
-    return stake > min
+    # Stake pool info
+    account_info = solana_client.get_account_info(STAKE_POOL)
+    data_bytes = base64.b64decode(account_info["result"]["value"]["data"][0])
+
+    raw_bytes_current_min = data_bytes[OFFSET_MIN_CURRENT: OFFSET_MIN_CURRENT +U64_LEN]
+    current_min = int.from_bytes(raw_bytes_current_min, "little")
+
+    return (stake > min) or (stake > current_min)
 
 # Jsonify a response
 def json_response(success: bool, result: any, status_code: int) -> any:
