@@ -45,6 +45,9 @@ pub const UNSTAKE_PERIOD: i64 = if cfg!(feature = "no-lock-time") {
 /// Max pending unstake requests
 pub const MAX_UNSTAKE_REQUEST: usize = 10;
 
+/// Fees charged on staking instruction in % (i.e FEES = 5 <-> 5% fee charged)
+pub const FEES: u64 = 0;
+
 #[derive(BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive)]
 #[repr(u8)]
 #[allow(missing_docs)]

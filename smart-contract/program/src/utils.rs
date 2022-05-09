@@ -143,3 +143,13 @@ pub fn assert_bond_derivation(
     check_account_key(account, &key, AccessError::AccountNotDeterministic)?;
     Ok(())
 }
+
+pub fn assert_valid_fee(account: &AccountInfo, owner: &Pubkey) -> ProgramResult {
+    check_account_owner(account, &spl_token::ID, AccessError::WrongOwner)?;
+    let acc = Account::unpack(&account.data.borrow())?;
+    if &acc.owner != owner {
+        msg!("Invalid fee account owner");
+        return Err(ProgramError::IllegalOwner);
+    }
+    Ok(())
+}

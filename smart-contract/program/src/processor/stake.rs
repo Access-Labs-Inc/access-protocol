@@ -14,8 +14,8 @@ use solana_program::{
 use spl_token::instruction::transfer;
 
 use crate::{
-    state::{CentralState, Tag, SECONDS_IN_DAY},
-    utils::{check_account_key, check_account_owner, check_signer},
+    state::{CentralState, Tag, FEES, SECONDS_IN_DAY},
+    utils::{assert_valid_fee, check_account_key, check_account_owner, check_signer},
 };
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
@@ -58,6 +58,10 @@ pub struct Accounts<'a, T> {
     /// The stake pool vault account
     #[cons(writable)]
     pub vault: &'a T,
+
+    /// The stake fee account
+    #[cons(writable)]
+    pub fee_account: &'a T,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -74,6 +78,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             source_token: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
             vault: next_account_info(accounts_iter)?,
+            fee_account: next_account_info(accounts_iter)?,
         };
 
         // Check keys
@@ -123,7 +128,7 @@ pub fn process_stake(
     params: Params,
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
-    let Params { amount } = params;
+    let Params { mut amount } = params;
 
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
@@ -144,6 +149,11 @@ pub fn process_stake(
         &Pubkey::new(&stake_pool.header.vault),
         AccessError::StakePoolVaultMismatch,
     )?;
+
+    assert_valid_fee(accounts.fee_account, &central_state.authority)?;
+
+    let fees = (amount * FEES) / 100;
+    amount -= fees;
 
     let current_time = Clock::get().unwrap().unix_timestamp;
     if stake_account.stake_amount > 0
@@ -167,6 +177,25 @@ pub fn process_stake(
             accounts.spl_token_program.clone(),
             accounts.source_token.clone(),
             accounts.vault.clone(),
+            accounts.owner.clone(),
+        ],
+    )?;
+
+    // Transfer fees
+    let transfer_fees = transfer(
+        &spl_token::ID,
+        accounts.source_token.key,
+        accounts.fee_account.key,
+        accounts.owner.key,
+        &[],
+        fees,
+    )?;
+    invoke(
+        &transfer_fees,
+        &[
+            accounts.spl_token_program.clone(),
+            accounts.source_token.clone(),
+            accounts.fee_account.clone(),
             accounts.owner.clone(),
         ],
     )?;

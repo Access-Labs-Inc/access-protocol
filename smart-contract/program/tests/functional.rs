@@ -64,6 +64,19 @@ async fn test_staking() {
         .unwrap();
 
     //
+    // Create authority ACCESS token account
+    //
+    let ix = create_associated_token_account(
+        &prg_test_ctx.payer.pubkey(),
+        &prg_test_ctx.payer.pubkey(),
+        &mint,
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![])
+        .await
+        .unwrap();
+    let authority_ata = get_associated_token_address(&&prg_test_ctx.payer.pubkey(), &mint);
+
+    //
     // Create users
     //
 
@@ -273,6 +286,7 @@ async fn test_staking() {
             spl_token_program: &spl_token::ID,
             vault: &pool_vault,
             central_state_account: &central_state,
+            fee_account: &authority_ata,
         },
         stake::Params {
             amount: token_amount,
