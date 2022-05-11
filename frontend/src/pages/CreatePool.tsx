@@ -59,7 +59,6 @@ const CreatePool = () => {
       const ix = await createStakePool(
         connection,
         publicKey,
-        new PublicKey(destination),
         minimum,
         publicKey,
         ACCESS_PROGRAM_ID
