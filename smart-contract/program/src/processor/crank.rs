@@ -74,6 +74,7 @@ pub fn process_crank(
     msg!("Daily inflation {}", central_state.daily_inflation);
     msg!("Total staked {}", central_state.total_staked);
 
+    // stakers_reward = [(pool_total_staked << 32) * inflation * stakers_part] / (100 * total_staked * pool_total_staked)
     let stakers_reward = ((stake_pool.header.total_staked as u128) << 32)
         .checked_mul(central_state.daily_inflation as u128)
         .ok_or(AccessError::Overflow)?
@@ -86,6 +87,7 @@ pub fn process_crank(
         .checked_div(stake_pool.header.total_staked as u128)
         .ok_or(AccessError::Overflow)?;
 
+    // pool_rewards = [(pool_total_staked << 32) * inflation * (100 - stakers_part)] / (100 * total_staked)
     let pool_reward = ((stake_pool.header.total_staked as u128) << 32)
         .checked_mul(central_state.daily_inflation as u128)
         .ok_or(AccessError::Overflow)?
