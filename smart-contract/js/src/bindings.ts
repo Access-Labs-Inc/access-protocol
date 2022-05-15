@@ -45,14 +45,14 @@ export const ACCESS_PROGRAM_ID = new PublicKey(
  */
 export const changeInflation = async (
   connection: Connection,
-  newInflation: number,
+  newInflation: BN,
   programId: PublicKey
 ) => {
   const [centralKey] = await CentralState.getKey(programId);
   const centralState = await CentralState.retrieve(connection, centralKey);
 
   const ix = new changeInflationInstruction({
-    dailyInflation: new BN(newInflation),
+    dailyInflation: newInflation,
   }).getInstruction(programId, centralKey, centralState.authority);
 
   return ix;
@@ -516,6 +516,7 @@ export const stake = async (
   stakeAccount: PublicKey,
   sourceToken: PublicKey,
   amount: number,
+  feesAddress: PublicKey,
   programId: PublicKey
 ) => {
   const stake = await StakeAccount.retrieve(connection, stakeAccount);
@@ -530,7 +531,8 @@ export const stake = async (
     stake.owner,
     sourceToken,
     TOKEN_PROGRAM_ID,
-    stakePool.vault
+    stakePool.vault,
+    feesAddress
   );
 
   return ix;

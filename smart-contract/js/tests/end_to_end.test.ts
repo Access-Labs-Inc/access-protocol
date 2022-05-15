@@ -93,8 +93,10 @@ test("End to end test", async () => {
   const stakePoolOwner = Keypair.generate();
   const staker = Keypair.generate();
   let minimumStakeAmount = 10_000 * decimals;
-  const bondAmount = 50_000 * decimals;
+  const bondAmount = 5_000_000 * decimals;
   const bondSeller = Keypair.generate();
+  let fees = 0; // Fees collected by the central state
+  let FEES = 5 / 100; // % of fees collected on each stake
 
   await airdropPayer(connection, bondSeller.publicKey);
 
@@ -132,6 +134,23 @@ test("End to end test", async () => {
       accessToken.token.publicKey,
       stakerAta,
       staker.publicKey,
+      feePayer.publicKey
+    ),
+  ]);
+
+  const feesAta = await Token.getAssociatedTokenAddress(
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+    TOKEN_PROGRAM_ID,
+    accessToken.token.publicKey,
+    centralStateAuthority.publicKey
+  );
+  await signAndSendTransactionInstructions(connection, [], feePayer, [
+    Token.createAssociatedTokenAccountInstruction(
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+      TOKEN_PROGRAM_ID,
+      accessToken.token.publicKey,
+      feesAta,
+      centralStateAuthority.publicKey,
       feePayer.publicKey
     ),
   ]);
@@ -183,7 +202,6 @@ test("End to end test", async () => {
   const ix_stake_pool = await createStakePool(
     connection,
     stakePoolOwner.publicKey,
-    stakePoolAta,
     minimumStakeAmount,
     feePayer.publicKey,
     programId
@@ -319,7 +337,7 @@ test("End to end test", async () => {
 
   await quoteToken.mintInto(quoteBuyerAta, bondAmount);
 
-  const [bondKey, bondNonce] = await BondAccount.getKey(
+  const [bondKey] = await BondAccount.getKey(
     programId,
     staker.publicKey,
     bondAmount
@@ -464,12 +482,14 @@ test("End to end test", async () => {
     await connection.getTokenAccountBalance(stakerAta)
   ).value.amount;
 
-  let stakeAmount = 10_000 * decimals;
+  let stakeAmount = 20_000 * decimals;
+
   let ix_stake = await stake(
     connection,
     stakeKey,
     stakerAta,
     stakeAmount,
+    feesAta,
     programId
   );
   tx = await signAndSendTransactionInstructions(
@@ -485,12 +505,14 @@ test("End to end test", async () => {
 
   now = Math.floor(new Date().getTime() / 1_000);
   await sleep(5_000);
-  postBalance = await (
-    await connection.getTokenAccountBalance(stakerAta)
-  ).value.amount;
+  postBalance = (await connection.getTokenAccountBalance(stakerAta)).value
+    .amount;
   expect(postBalance).toBe(
     new BN(new BN(preBalance).sub(new BN(stakeAmount))).toString()
   );
+
+  fees = Math.floor(stakeAmount * FEES);
+  stakeAmount -= fees;
 
   let stakedAccountObj = await StakeAccount.retrieve(connection, stakeKey);
   expect(stakedAccountObj.tag).toBe(Tag.StakeAccount);
@@ -501,6 +523,9 @@ test("End to end test", async () => {
   expect(stakedAccountObj.poolMinimumAtCreation.toNumber()).toBe(
     minimumStakeAmount
   );
+
+  let feesTokenAcc = await connection.getTokenAccountBalance(feesAta);
+  expect(parseInt(feesTokenAcc.value.amount)).toBe(fees);
 
   // Crank
   let ix_crank = await crank(stakePoolKey, programId);
@@ -607,21 +632,19 @@ test("End to end test", async () => {
 
   // Check post balances
 
-  let totalSupply = bondAmount;
   postBalance = (await connection.getTokenAccountBalance(stakePoolAta)).value
     .amount;
   stakedAccountObj = await StakeAccount.retrieve(connection, stakeKey);
   stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
+
+  let pool_rewards = new BN(dailyInflation)
+    .mul(new BN(stakePoolObj.totalStaked))
+    .div(centralStateObj.totalStaked)
+    .mul(new BN(20))
+    .div(new BN(100));
+
   expect(postBalance).toBe(
-    new BN(preBalance as string, 10)
-      .add(
-        new BN(dailyInflation)
-          .mul(new BN(stakePoolObj.totalStaked))
-          .div(centralStateObj.totalStaked)
-          .mul(new BN(20))
-          .div(new BN(100))
-      )
-      .toString()
+    new BN(preBalance as string, 10).add(pool_rewards).toString()
   );
   expect(stakePoolObj.tag).toBe(Tag.StakePool);
   expect(stakePoolObj.nonce).toBe(stakePoolNonce);
@@ -658,18 +681,21 @@ test("End to end test", async () => {
 
   postBalance = (await connection.getTokenAccountBalance(stakerAta)).value
     .amount;
+
+  let staker_rewards = new BN(stakePoolObj.totalStaked)
+    .shln(32)
+    .mul(new BN(dailyInflation))
+    .mul(new BN(80))
+    .div(new BN(100))
+    .div(new BN(centralStateObj.totalStaked))
+    .div(new BN(stakePoolObj.totalStaked));
+
+  let reward = new BN(stakedAccountObj.stakeAmount)
+    .mul(staker_rewards)
+    .shrn(32);
+
   expect(postBalance).toBe(
-    new BN(preBalance as string, 10)
-      .add(
-        new BN(dailyInflation)
-          .mul(new BN(stakePoolObj.totalStaked))
-          .div(centralStateObj.totalStaked)
-          .mul(new BN(stakedAccountObj.stakeAmount))
-          .div(stakePoolObj.totalStaked)
-          .mul(new BN(80))
-          .div(new BN(100))
-      )
-      .toString()
+    new BN(preBalance as string, 10).add(reward).toString()
   );
 
   stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
@@ -688,15 +714,17 @@ test("End to end test", async () => {
   // Check new current supply
   let supply = (await connection.getTokenSupply(accessToken.token.publicKey))
     .value.amount;
+
   expect(supply).toBe(
     // A full daily inflation as pool owner and staker have claimed + bond amount as bond was claimed
-    new BN(dailyInflation).add(new BN(bondAmount)).toString()
+    // Not exactly dailyInflation because of rounding (slightly below)
+    reward.add(pool_rewards).add(new BN(bondAmount)).toString()
   );
 
   // Change inflation
   const ix_change_inflation = await changeInflation(
     connection,
-    stakeAmount * 500_000,
+    new BN(stakeAmount).mul(new BN(500_000)),
     programId
   );
   tx = await signAndSendTransactionInstructions(
@@ -713,7 +741,9 @@ test("End to end test", async () => {
   centralStateObj = await CentralState.retrieve(connection, centralKey);
   expect(centralStateObj.tag).toBe(Tag.CentralState);
   expect(centralStateObj.signerNonce).toBe(centralNonce);
-  expect(centralStateObj.dailyInflation.toNumber()).toBe(stakeAmount * 500_000);
+  expect(centralStateObj.dailyInflation.toString()).toBe(
+    (stakeAmount * 500_000).toString()
+  );
   expect(centralStateObj.tokenMint.toBase58()).toBe(
     accessToken.token.publicKey.toBase58()
   );
@@ -958,6 +988,16 @@ test("End to end test", async () => {
   );
 
   /**
+   * Verifications
+   */
+  stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
+  expect(stakePoolObj.tag).toBe(Tag.StakePool);
+  expect(stakePoolObj.nonce).toBe(stakePoolNonce);
+  expect(stakePoolObj.currentDayIdx).toBeGreaterThan(3);
+  expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
+  expect(stakePoolObj.totalStaked.toNumber()).toBe(0);
+
+  /**
    * Admin mint
    */
   const adminMintAmount = 2_000 * decimals;
@@ -1000,11 +1040,31 @@ test("End to end test", async () => {
     await connection.getTokenSupply(accessToken.token.publicKey)
   ).value.amount;
   // Initial bond amount + admin mint + 2 days for inflation
-  const expectedSupply = new BN(bondAmount)
-    .add(new BN(adminMintAmount))
-    .add(new BN(dailyInflation))
-    .add(new BN(dailyInflation))
-    .add(new BN(stakeAmount * 500_000)); // Changed inflation
+  // Because of rounding it's slightly below
+  let pool_rewards_new_inflation = new BN(stakeAmount)
+    .mul(new BN(500_000))
+    .mul(new BN(stakeAmount))
+    .div(centralStateObj.totalStaked)
+    .mul(new BN(20))
+    .div(new BN(100));
+
+  let staker_rewards_new_inflation = new BN(stakeAmount)
+    .shln(32)
+    .mul(new BN(stakeAmount).mul(new BN(500_000)))
+    .mul(new BN(80))
+    .div(new BN(100))
+    .div(new BN(centralStateObj.totalStaked))
+    .div(new BN(stakeAmount))
+    .mul(new BN(stakeAmount))
+    .shrn(32);
+
+  const expectedSupply = reward
+    .add(pool_rewards)
+    .mul(new BN(2)) // Two days with first inflation value
+    .add(pool_rewards_new_inflation)
+    .add(staker_rewards_new_inflation)
+    .add(new BN(bondAmount))
+    .add(new BN(adminMintAmount));
   expect(currentSupply).toBe(expectedSupply.toString());
 
   /**

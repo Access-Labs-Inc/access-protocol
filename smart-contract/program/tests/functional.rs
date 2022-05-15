@@ -12,7 +12,7 @@ use access_protocol::{
         close_stake_pool, crank, create_bond, create_central_state, create_stake_account,
         create_stake_pool, execute_unstake, stake, unlock_bond_tokens, unstake,
     },
-    state::BondAccount,
+    state::{BondAccount, FEES},
 };
 
 #[tokio::test]
@@ -478,7 +478,7 @@ async fn test_staking() {
             central_state_account: &central_state,
         },
         unstake::Params {
-            amount: token_amount,
+            amount: token_amount - (token_amount * FEES) / 100,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![unstake_ix], vec![&staker])
