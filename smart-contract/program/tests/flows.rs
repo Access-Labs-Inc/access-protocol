@@ -16,7 +16,7 @@ use access_protocol::{
 };
 
 #[tokio::test]
-async fn test_staking() {
+async fn test_stake_flow() {
     // Create program and test environment
     let program_id = pubkey!("hxrotrKwueSFofXvCmCpYyKMjn1BhmwKtPxA1nLcv8m");
 
@@ -106,7 +106,7 @@ async fn test_staking() {
     let stake_pool_owner_token_acc = get_associated_token_address(&staker.pubkey(), &mint);
 
     //
-    // Admin mint
+    // Admin mint => Send money to staker
     //
 
     let admin_mint_ix = admin_mint(
@@ -185,64 +185,6 @@ async fn test_staking() {
         .unwrap();
 
     //
-    // Create bond
-    //
-
-    let bond_amount = 50_000 * 1_000_000;
-    let (bond_key, _bond_nonce) =
-        BondAccount::create_key(&staker.pubkey(), bond_amount, &program_id);
-
-    let create_bond_ix = create_bond(
-        program_id,
-        create_bond::Accounts {
-            stake_pool: &stake_pool_key,
-            seller: &prg_test_ctx.payer.pubkey(),
-            bond_account: &bond_key,
-            system_program: &system_program::ID,
-            fee_payer: &prg_test_ctx.payer.pubkey(),
-        },
-        create_bond::Params {
-            buyer: staker.pubkey(),
-            total_amount_sold: bond_amount,
-            seller_token_account: stake_pool_owner_token_acc,
-            total_quote_amount: 0,
-            quote_mint: Pubkey::default(),
-            unlock_period: 1,
-            unlock_amount: bond_amount,
-            unlock_start_date: 0,
-            seller_index: 0,
-        },
-    );
-
-    sign_send_instructions(&mut prg_test_ctx, vec![create_bond_ix], vec![])
-        .await
-        .unwrap();
-
-    //
-    // Claim bond
-    //
-
-    let claim_bond_ix = claim_bond(
-        program_id,
-        claim_bond::Accounts {
-            bond_account: &bond_key,
-            buyer: &staker.pubkey(),
-            quote_token_source: &staker_token_acc,
-            quote_token_destination: &stake_pool_owner_token_acc,
-            spl_token_program: &spl_token::ID,
-            stake_pool: &stake_pool_key,
-            access_mint: &mint,
-            pool_vault: &pool_vault,
-            central_state: &central_state,
-        },
-        claim_bond::Params {},
-    );
-
-    sign_send_instructions(&mut prg_test_ctx, vec![claim_bond_ix], vec![&staker])
-        .await
-        .unwrap();
-
-    //
     // Create stake account
     //
 
@@ -274,7 +216,7 @@ async fn test_staking() {
     //
     // Stake
     //
-    let token_amount = 10_000 * 1_000_000;
+    let token_amount = 5_000 * 1_000_000;
 
     let stake_ix = stake(
         program_id,
@@ -328,57 +270,6 @@ async fn test_staking() {
     prg_test_ctx.warp_to_slot(current_slot).unwrap();
 
     //
-    // Claim stake pool rewards
-    //
-
-    let claim_stake_pool_ix = claim_pool_rewards(
-        program_id,
-        claim_pool_rewards::Accounts {
-            stake_pool: &stake_pool_key,
-            owner: &stake_pool_owner.pubkey(),
-            rewards_destination: &stake_pool_owner_token_acc,
-            central_state: &central_state,
-            mint: &mint,
-            spl_token_program: &spl_token::ID,
-        },
-        claim_pool_rewards::Params {},
-    );
-
-    sign_send_instructions(
-        &mut prg_test_ctx,
-        vec![claim_stake_pool_ix],
-        vec![&stake_pool_owner],
-    )
-    .await
-    .unwrap();
-
-    //
-    // Claim bond rewards
-    //
-
-    let claim_bond_rewards_ix = claim_bond_rewards(
-        program_id,
-        claim_bond_rewards::Accounts {
-            stake_pool: &stake_pool_key,
-            bond_account: &bond_key,
-            bond_owner: &staker.pubkey(),
-            rewards_destination: &staker_token_acc,
-            central_state: &central_state,
-            mint: &mint,
-            spl_token_program: &spl_token::ID,
-        },
-        claim_bond_rewards::Params {},
-    );
-
-    sign_send_instructions(
-        &mut prg_test_ctx,
-        vec![claim_bond_rewards_ix],
-        vec![&staker],
-    )
-    .await
-    .unwrap();
-
-    //
     // Claim rewards
     //
 
@@ -400,214 +291,31 @@ async fn test_staking() {
         .await
         .unwrap();
 
-    //
-    // Unlock bond tokens
-    //
-
-    let unlock_ix = unlock_bond_tokens(
-        program_id,
-        unlock_bond_tokens::Accounts {
-            bond_account: &bond_key,
-            bond_owner: &staker.pubkey(),
-            mint: &mint,
-            access_token_destination: &staker_token_acc,
-            central_state: &central_state,
-            spl_token_program: &spl_token::ID,
-            stake_pool: &stake_pool_key,
-            pool_vault: &pool_vault,
-        },
-        unlock_bond_tokens::Params {},
-    );
-
-    sign_send_instructions(&mut prg_test_ctx, vec![unlock_ix], vec![&staker])
-        .await
-        .unwrap();
-
-    //
-    // Change inflation
-    //
-    let new_inflation = 2 * daily_inflation;
-    let change_inflation_ix = change_inflation(
-        program_id,
-        change_inflation::Accounts {
-            central_state: &central_state,
-            authority: &prg_test_ctx.payer.pubkey(),
-        },
-        change_inflation::Params {
-            daily_inflation: new_inflation,
-        },
-    );
-
-    sign_send_instructions(&mut prg_test_ctx, vec![change_inflation_ix], vec![])
-        .await
-        .unwrap();
-
-    //
-    // Change minimum stake pool
-    //
-
-    let change_min_ix = change_pool_minimum(
-        program_id,
-        change_pool_minimum::Accounts {
-            stake_pool: &stake_pool_key,
-            stake_pool_owner: &stake_pool_owner.pubkey(),
-        },
-        change_pool_minimum::Params {
-            new_minimum: 10_000_000 / 2,
-        },
-    );
-
-    sign_send_instructions(
-        &mut prg_test_ctx,
-        vec![change_min_ix],
-        vec![&stake_pool_owner],
-    )
-    .await
-    .unwrap();
-
-    //
-    // Request Unstake
-    //
-
-    let unstake_ix = unstake(
-        program_id,
-        unstake::Accounts {
-            stake_account: &stake_acc_key,
-            stake_pool: &stake_pool_key,
-            owner: &staker.pubkey(),
-            central_state_account: &central_state,
-        },
-        unstake::Params {
-            amount: token_amount - (token_amount * FEES) / 100,
-        },
-    );
-    sign_send_instructions(&mut prg_test_ctx, vec![unstake_ix], vec![&staker])
-        .await
-        .unwrap();
-
     // Advance in time by a few seconds
     current_slot += 5_000;
     prg_test_ctx.warp_to_slot(current_slot).unwrap();
 
     //
-    // Execute Unstake
+    // Stake more
     //
 
-    let execute_unstake_ix = execute_unstake(
+    let stake_ix = stake(
         program_id,
-        execute_unstake::Accounts {
+        stake::Accounts {
             stake_account: &stake_acc_key,
             stake_pool: &stake_pool_key,
             owner: &staker.pubkey(),
-            destination_token: &staker_token_acc,
+            source_token: &staker_token_acc,
             spl_token_program: &spl_token::ID,
             vault: &pool_vault,
+            central_state_account: &central_state,
+            fee_account: &authority_ata,
         },
-        execute_unstake::Params {},
+        stake::Params {
+            amount: token_amount,
+        },
     );
-    sign_send_instructions(&mut prg_test_ctx, vec![execute_unstake_ix], vec![&staker])
+    sign_send_instructions(&mut prg_test_ctx, vec![stake_ix], vec![&staker])
         .await
         .unwrap();
-
-    //
-    // Freeze account
-    //
-
-    let freeze_stake_acc_ix = admin_freeze(
-        program_id,
-        admin_freeze::Accounts {
-            central_state: &central_state,
-            account_to_freeze: &stake_pool_key,
-            authority: &prg_test_ctx.payer.pubkey(),
-        },
-        admin_freeze::Params {},
-    );
-
-    sign_send_instructions(&mut prg_test_ctx, vec![freeze_stake_acc_ix], vec![])
-        .await
-        .unwrap();
-
-    // Advance in time by a few seconds
-    current_slot += 5000;
-    prg_test_ctx.warp_to_slot(current_slot).unwrap();
-
-    //
-    // Unfreeze account
-    //
-
-    let freeze_stake_acc_ix = admin_freeze(
-        program_id,
-        admin_freeze::Accounts {
-            central_state: &central_state,
-            account_to_freeze: &stake_pool_key,
-            authority: &prg_test_ctx.payer.pubkey(),
-        },
-        admin_freeze::Params {},
-    );
-
-    sign_send_instructions(&mut prg_test_ctx, vec![freeze_stake_acc_ix], vec![])
-        .await
-        .unwrap();
-
-    //
-    // Try to freeze the central state (expected to fail)
-    //
-
-    let freeze_stake_acc_ix = admin_freeze(
-        program_id,
-        admin_freeze::Accounts {
-            central_state: &central_state,
-            account_to_freeze: &central_state,
-            authority: &prg_test_ctx.payer.pubkey(),
-        },
-        admin_freeze::Params {},
-    );
-
-    assert!(
-        sign_send_instructions(&mut prg_test_ctx, vec![freeze_stake_acc_ix], vec![])
-            .await
-            .is_err()
-    );
-
-    //
-    // Close stake account
-    //
-
-    let close_stake_account_ix = close_stake_account(
-        program_id,
-        close_stake_account::Accounts {
-            stake_account: &stake_acc_key,
-            owner: &staker.pubkey(),
-        },
-        close_stake_account::Params {},
-    );
-
-    sign_send_instructions(
-        &mut prg_test_ctx,
-        vec![close_stake_account_ix],
-        vec![&staker],
-    )
-    .await
-    .unwrap();
-
-    //
-    // Close stake pool
-    //
-
-    let close_stake_pool_ix = close_stake_pool(
-        program_id,
-        close_stake_pool::Accounts {
-            stake_pool_account: &stake_pool_key,
-            owner: &stake_pool_owner.pubkey(),
-        },
-        close_stake_pool::Params {},
-    );
-
-    sign_send_instructions(
-        &mut prg_test_ctx,
-        vec![close_stake_pool_ix],
-        vec![&stake_pool_owner],
-    )
-    .await
-    .unwrap();
 }
