@@ -155,9 +155,8 @@ pub fn process_stake(
     let fees = (amount * FEES) / 100;
     amount -= fees;
 
-    let current_time = Clock::get().unwrap().unix_timestamp;
     if stake_account.stake_amount > 0
-        && stake_account.last_claimed_time < current_time - (SECONDS_IN_DAY as i64)
+        && stake_account.last_claimed_time < stake_pool.header.last_crank_time
     {
         return Err(AccessError::UnclaimedRewards.into());
     }
