@@ -96,7 +96,7 @@ test("End to end test", async () => {
   const bondAmount = 5_000_000 * decimals;
   const bondSeller = Keypair.generate();
   let fees = 0; // Fees collected by the central state
-  let FEES = 5 / 100; // % of fees collected on each stake
+  let FEES = 1 / 100; // % of fees collected on each stake
 
   await airdropPayer(connection, bondSeller.publicKey);
 
