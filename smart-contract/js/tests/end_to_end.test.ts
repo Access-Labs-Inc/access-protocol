@@ -482,14 +482,13 @@ test("End to end test", async () => {
     await connection.getTokenAccountBalance(stakerAta)
   ).value.amount;
 
-  let stakeAmount = 20_000 * decimals;
+  let stakeAmount = 10_000 * decimals;
 
   let ix_stake = await stake(
     connection,
     stakeKey,
     stakerAta,
     stakeAmount,
-    feesAta,
     programId
   );
   tx = await signAndSendTransactionInstructions(

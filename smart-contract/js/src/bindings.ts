@@ -516,12 +516,19 @@ export const stake = async (
   stakeAccount: PublicKey,
   sourceToken: PublicKey,
   amount: number,
-  feesAddress: PublicKey,
   programId: PublicKey
 ) => {
   const stake = await StakeAccount.retrieve(connection, stakeAccount);
   const stakePool = await StakePool.retrieve(connection, stake.stakePool);
   const [centralKey] = await CentralState.getKey(programId);
+  const centralState = await CentralState.retrieve(connection, centralKey);
+
+  const feesAta = await Token.getAssociatedTokenAddress(
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+    TOKEN_PROGRAM_ID,
+    centralState.tokenMint,
+    centralState.authority
+  );
 
   const ix = new stakeInstruction({ amount: new BN(amount) }).getInstruction(
     programId,
@@ -532,7 +539,7 @@ export const stake = async (
     sourceToken,
     TOKEN_PROGRAM_ID,
     stakePool.vault,
-    feesAddress
+    feesAta,
   );
 
   return ix;
