@@ -274,7 +274,7 @@ async fn test_staking() {
     //
     // Stake
     //
-    let token_amount = 10_000 * 1_000_000;
+    let token_amount = 10_000_000;
 
     let stake_ix = stake(
         program_id,
