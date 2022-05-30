@@ -126,7 +126,7 @@ pub fn process_stake(
     params: Params,
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
-    let Params { mut amount } = params;
+    let Params { amount } = params;
 
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
@@ -151,7 +151,6 @@ pub fn process_stake(
     assert_valid_fee(accounts.fee_account, &central_state.authority)?;
 
     let fees = (amount * FEES) / 100;
-    amount -= fees;
 
     if stake_account.stake_amount > 0
         && stake_account.last_claimed_time < stake_pool.header.last_crank_time
@@ -200,8 +199,6 @@ pub fn process_stake(
     if stake_account
         .stake_amount
         .checked_add(amount)
-        .ok_or(AccessError::Overflow)?
-        .checked_add(fees)
         .ok_or(AccessError::Overflow)?
         < std::cmp::min(
             stake_account.pool_minimum_at_creation,

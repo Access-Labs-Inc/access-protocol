@@ -478,7 +478,7 @@ async fn test_staking() {
             central_state_account: &central_state,
         },
         unstake::Params {
-            amount: token_amount - (token_amount * FEES) / 100,
+            amount: token_amount,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![unstake_ix], vec![&staker])

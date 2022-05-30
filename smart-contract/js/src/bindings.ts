@@ -503,7 +503,8 @@ export const signBond = async (
 };
 
 /**
- * This instruction can be used by stakers to deposit ACCESS tokens in their stake account
+ * This instruction can be used by stakers to deposit ACCESS tokens in their stake account.
+ * The staking fee (1%) will be deducted additionaly to the `amount` from the source account.
  * @param connection The Solana RPC connection
  * @param stakeAccount The key of the stake account
  * @param sourceToken The token account from which the ACCESS tokens are sent to the stake account
@@ -539,7 +540,7 @@ export const stake = async (
     sourceToken,
     TOKEN_PROGRAM_ID,
     stakePool.vault,
-    feesAta,
+    feesAta
   );
 
   return ix;
