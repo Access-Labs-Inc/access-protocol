@@ -67,7 +67,7 @@ pub fn process_crank(
     let central_state = CentralState::from_account_info(accounts.central_state)?;
 
     if present_time - stake_pool.header.last_crank_time < SECONDS_IN_DAY as i64 {
-        #[cfg(not(feature = "no-lock-time"))]
+        #[cfg(not(feature = "days-to-sec"))]
         return Err(AccessError::NoOp.into());
     }
     msg!("Total staked in pool {}", stake_pool.header.total_staked);

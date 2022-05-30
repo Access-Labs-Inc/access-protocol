@@ -20,7 +20,7 @@ pub const ACCESS_MINT: Pubkey =
     solana_program::pubkey!("Hc4bdbupCMRkuP3o5gMks77ifACgVuxFAaUYbeuNoxG5");
 
 #[allow(missing_docs)]
-pub const SECONDS_IN_DAY: u64 = if cfg!(feature = "no-lock-time") {
+pub const SECONDS_IN_DAY: u64 = if cfg!(feature = "days-to-sec") {
     10
 } else {
     3600 * 24
@@ -36,11 +36,7 @@ pub const OWNER_MULTIPLIER: u64 = 100 - STAKER_MULTIPLIER;
 pub const STAKE_BUFFER_LEN: u64 = 274; // 9 Months
 
 /// Default unstake period set to 7 days
-pub const UNSTAKE_PERIOD: i64 = if cfg!(feature = "no-lock-time") {
-    1
-} else {
-    604800
-};
+pub const UNSTAKE_PERIOD: i64 = 7 * SECONDS_IN_DAY as i64;
 
 /// Max pending unstake requests
 pub const MAX_UNSTAKE_REQUEST: usize = 10;
