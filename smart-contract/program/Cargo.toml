@@ -9,7 +9,7 @@ edition = "2018"
 no-entrypoint = []
 test-bpf = []
 no-mint-check = []
-no-lock-time = []
+days-to-sec = []
 no-bond-signer = []
 
 [dependencies]

@@ -63,7 +63,7 @@ beforeAll(async () => {
   programId = deployProgram(
     payerKeyFile,
     true,
-    "no-lock-time no-mint-check no-bond-signer",
+    "days-to-sec no-mint-check no-bond-signer",
     true
   );
 });
