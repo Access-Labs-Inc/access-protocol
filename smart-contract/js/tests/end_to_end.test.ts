@@ -503,15 +503,15 @@ test("End to end test", async () => {
    */
 
   now = Math.floor(new Date().getTime() / 1_000);
+  fees = Math.floor(stakeAmount * FEES);
   await sleep(5_000);
   postBalance = (await connection.getTokenAccountBalance(stakerAta)).value
     .amount;
   expect(postBalance).toBe(
-    new BN(new BN(preBalance).sub(new BN(stakeAmount))).toString()
+    new BN(
+      new BN(preBalance).sub(new BN(stakeAmount)).sub(new BN(fees))
+    ).toString()
   );
-
-  fees = Math.floor(stakeAmount * FEES);
-  stakeAmount -= fees;
 
   let stakedAccountObj = await StakeAccount.retrieve(connection, stakeKey);
   expect(stakedAccountObj.tag).toBe(Tag.StakeAccount);
