@@ -21,7 +21,7 @@ pub const ACCESS_MINT: Pubkey =
 
 #[allow(missing_docs)]
 pub const SECONDS_IN_DAY: u64 = if cfg!(feature = "days-to-sec") {
-    10
+    15 * 60
 } else {
     3600 * 24
 };
@@ -35,8 +35,8 @@ pub const OWNER_MULTIPLIER: u64 = 100 - STAKER_MULTIPLIER;
 /// Length of the circular buffer (stores balances for 1 year)
 pub const STAKE_BUFFER_LEN: u64 = 274; // 9 Months
 
-/// Default unstake period set to 7 days
-pub const UNSTAKE_PERIOD: i64 = 7 * SECONDS_IN_DAY as i64;
+/// Default unstake period set to 1 sec
+pub const UNSTAKE_PERIOD: i64 = 1;
 
 /// Max pending unstake requests
 pub const MAX_UNSTAKE_REQUEST: usize = 10;
