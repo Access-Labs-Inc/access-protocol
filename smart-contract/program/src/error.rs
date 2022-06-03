@@ -79,6 +79,8 @@ pub enum AccessError {
     TooManyUnstakeRequests,
     #[error("Pool must be cranked")]
     PoolMustBeCranked,
+    #[error("Pending unstake request")]
+    PendingUnstakeRequests,
 }
 
 impl From<AccessError> for ProgramError {

@@ -28,6 +28,7 @@ export class closeStakePoolInstruction {
   getInstruction(
     programId: PublicKey,
     stakePoolAccount: PublicKey,
+    poolVault: PublicKey,
     owner: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
@@ -36,6 +37,11 @@ export class closeStakePoolInstruction {
       pubkey: stakePoolAccount,
       isSigner: false,
       isWritable: true,
+    });
+    keys.push({
+      pubkey: poolVault,
+      isSigner: false,
+      isWritable: false,
     });
     keys.push({
       pubkey: owner,
