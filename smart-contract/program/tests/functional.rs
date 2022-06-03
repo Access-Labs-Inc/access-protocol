@@ -597,6 +597,7 @@ async fn test_staking() {
     let close_stake_pool_ix = close_stake_pool(
         program_id,
         close_stake_pool::Accounts {
+            pool_vault: &pool_vault,
             stake_pool_account: &stake_pool_key,
             owner: &stake_pool_owner.pubkey(),
         },

@@ -27,6 +27,8 @@ import {
   activateStakePool,
   adminFreeze,
   changePoolMultiplier,
+  closeStakePool,
+  executeUnstake,
 } from "../src/bindings";
 import {
   CentralState,
@@ -478,9 +480,8 @@ test("End to end test", async () => {
   expect(bondObj.sellers[0].toBase58()).toBe(bondSeller.publicKey.toBase58());
 
   // Stake
-  preBalance = await (
-    await connection.getTokenAccountBalance(stakerAta)
-  ).value.amount;
+  preBalance = (await connection.getTokenAccountBalance(stakerAta)).value
+    .amount;
 
   let stakeAmount = 10_000 * decimals;
 
@@ -1099,4 +1100,32 @@ test("End to end test", async () => {
   );
   stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
   expect(stakePoolObj.tag).toBe(Tag.StakePool);
+
+  /**
+   * Execute unstake
+   */
+
+  const ix_execute = await executeUnstake(
+    connection,
+    stakeKey,
+    stakerAta,
+    programId
+  );
+  tx = await signAndSendTransactionInstructions(
+    connection,
+    [staker],
+    feePayer,
+    [ix_execute]
+  );
+
+  /**
+   * Close stake pool
+   */
+  const ix_close = await closeStakePool(connection, stakePoolKey, programId);
+  tx = await signAndSendTransactionInstructions(
+    connection,
+    [stakePoolOwner],
+    feePayer,
+    [ix_close]
+  );
 });

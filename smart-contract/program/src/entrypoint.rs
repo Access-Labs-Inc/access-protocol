@@ -143,6 +143,9 @@ impl PrintProgramError for AccessError {
             AccessError::PoolMustBeCranked => {
                 msg!("Error: Pool must be cranked")
             }
+            AccessError::PendingUnstakeRequests => {
+                msg!("Error: Pending unstake request")
+            }
         }
     }
 }

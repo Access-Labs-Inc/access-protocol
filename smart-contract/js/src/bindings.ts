@@ -278,6 +278,7 @@ export const closeStakePool = async (
   const ix = new closeStakePoolInstruction().getInstruction(
     programId,
     stakePoolAccount,
+    stakePool.vault,
     stakePool.owner
   );
 
@@ -618,7 +619,7 @@ export const unstake = async (
  * @param programId The ACCESS program ID
  * @returns
  */
-export const executeunstake = async (
+export const executeUnstake = async (
   connection: Connection,
   stakeAccount: PublicKey,
   destinationToken: PublicKey,

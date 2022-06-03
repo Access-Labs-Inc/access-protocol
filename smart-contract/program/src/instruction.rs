@@ -58,6 +58,7 @@ pub enum ProgramInstruction {
     /// | 4     | ✅        | ❌      | The source account of the stake tokens |
     /// | 5     | ❌        | ❌      | The SPL token program account          |
     /// | 6     | ✅        | ❌      | The stake pool vault account           |
+    /// | 7     | ✅        | ❌      | The stake fee account                  |
     Stake,
     /// Unstake
     /// 
@@ -118,7 +119,8 @@ pub enum ProgramInstruction {
     /// | Index | Writable | Signer | Description                   |
     /// | --------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The account of the stake pool |
-    /// | 1     | ✅        | ✅      | The owner of the stake pool   |
+    /// | 1     | ❌        | ❌      | Pool vault                    |
+    /// | 2     | ✅        | ✅      | The owner of the stake pool   |
     CloseStakePool,
     /// Close a stake account
     /// This instruction can be used to close an empty stake account and collect the lamports
@@ -199,10 +201,10 @@ pub enum ProgramInstruction {
     /// Change the minimum stakeable amount of a pool
     /// This instruction allows a pool owner to adjust the price of its subscription for new joiners without impacting people who already subscribed
     /// 
-    /// | Index | Writable | Signer | Description            |
-    /// | -------------------------------------------------- |
-    /// | 0     | ✅        | ❌      | The stake pool account             |
-    /// | 1     | ❌        | ✅      | The stake pool owner account       |
+    /// | Index | Writable | Signer | Description                  |
+    /// | -------------------------------------------------------- |
+    /// | 0     | ✅        | ❌      | The stake pool account       |
+    /// | 1     | ❌        | ✅      | The stake pool owner account |
     ChangePoolMinimum,
     /// Allows central state authority to mint ACCESS tokens
     /// 
@@ -223,11 +225,9 @@ pub enum ProgramInstruction {
     /// | 1     | ✅        | ❌      | The account to freeze (or unfreeze) |
     /// | 2     | ❌        | ❌      | The account of the central state    |
     AdminFreeze,
-    /// Change the stake part multiplier of a pool
-    /// This instruction allows a pool owner to adjust the percentage of the pool rewards that go to the pool stakers.
-    ///
-    /// | Index | Writable | Signer | Description            |
-    /// | -------------------------------------------------- |
+    /// 
+    /// | Index | Writable | Signer | Description                  |
+    /// | -------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake pool account       |
     /// | 1     | ❌        | ✅      | The stake pool owner account |
     ChangePoolMultiplier,
