@@ -73,8 +73,8 @@ pub fn process_change_pool_multiplier(
 
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;
 
-    if new_multiplier > 100 {
-        msg!("The pool multiplier is a percentage and needs to be smaller than 100.");
+    if !(1u64..100u64).contains(&new_multiplier) {
+        msg!("The pool multiplier is a percentage and needs to be smaller than 100 and greater than 1");
         return Err(AccessError::Overflow.into());
     }
 
