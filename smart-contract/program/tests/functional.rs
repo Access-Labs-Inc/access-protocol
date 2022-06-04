@@ -8,9 +8,10 @@ use access_protocol::{
     entrypoint::process_instruction,
     instruction::{
         activate_stake_pool, admin_freeze, admin_mint, change_inflation, change_pool_minimum,
-        claim_bond, claim_bond_rewards, claim_pool_rewards, claim_rewards, close_stake_account,
-        close_stake_pool, crank, create_bond, create_central_state, create_stake_account,
-        create_stake_pool, execute_unstake, stake, unlock_bond_tokens, unstake,
+        change_pool_multiplier, claim_bond, claim_bond_rewards, claim_pool_rewards, claim_rewards,
+        close_stake_account, close_stake_pool, crank, create_bond, create_central_state,
+        create_stake_account, create_stake_pool, execute_unstake, stake, unlock_bond_tokens,
+        unstake,
     },
     state::{BondAccount, FEES},
 };
@@ -181,6 +182,21 @@ async fn test_staking() {
     );
 
     sign_send_instructions(&mut prg_test_ctx, vec![activate_stake_pool_ix], vec![])
+        .await
+        .unwrap();
+
+    //
+    // Change pool multiplier
+    //
+    let ix = change_pool_multiplier(
+        program_id,
+        change_pool_multiplier::Accounts {
+            stake_pool: &stake_pool_key,
+            stake_pool_owner: &stake_pool_owner.pubkey(),
+        },
+        change_pool_multiplier::Params { new_multiplier: 2 },
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&stake_pool_owner])
         .await
         .unwrap();
 
