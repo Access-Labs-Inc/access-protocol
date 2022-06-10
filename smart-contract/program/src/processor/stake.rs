@@ -2,11 +2,13 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
+    clock::Clock,
     entrypoint::ProgramResult,
     msg,
     program::invoke,
     program_error::ProgramError,
     pubkey::Pubkey,
+    sysvar::Sysvar,
 };
 
 use spl_token::instruction::transfer;
@@ -156,6 +158,11 @@ pub fn process_stake(
         && stake_account.last_claimed_time < stake_pool.header.last_crank_time
     {
         return Err(AccessError::UnclaimedRewards.into());
+    }
+
+    let current_time = Clock::get().unwrap().unix_timestamp;
+    if stake_account.stake_amount == 0 {
+        stake_account.last_claimed_time = current_time;
     }
 
     // Transfer tokens
