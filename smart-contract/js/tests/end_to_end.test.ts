@@ -585,27 +585,28 @@ test("End to end test", async () => {
     [ix_claim_bond_rewards]
   );
 
+  // Bond rewards are deactivated
   // Verifications
-  bondObj = await BondAccount.retrieve(connection, bondKey);
+  // bondObj = await BondAccount.retrieve(connection, bondKey);
 
-  expect(bondObj.tag).toBe(Tag.BondAccount);
-  expect(bondObj.owner.toBase58()).toBe(staker.publicKey.toBase58());
-  expect(bondObj.totalAmountSold.toNumber()).toBe(bondAmount);
-  expect(bondObj.totalStaked.toNumber()).toBe(0);
-  expect(bondObj.totalQuoteAmount.toNumber()).toBe(bondAmount);
-  expect(bondObj.quoteMint.toBase58()).toBe(
-    quoteToken.token.publicKey.toBase58()
-  );
-  expect(bondObj.sellerTokenAccount.toBase58()).toBe(quoteSellerAta.toBase58());
-  expect(bondObj.unlockStartDate.toNumber()).toBe(0);
-  expect(bondObj.unlockPeriod.toNumber()).toBe(1);
-  expect(bondObj.unlockAmount.toNumber()).toBe(bondAmount);
-  expect(bondObj.lastUnlockTime.toNumber()).toBeLessThan(now);
-  expect(bondObj.totalUnlockedAmount.toNumber()).toBe(bondAmount);
-  expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
-  expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  expect(bondObj.lastClaimedTime.toNumber()).toBeGreaterThan(now);
-  expect(bondObj.sellers.length).toBe(1);
+  // expect(bondObj.tag).toBe(Tag.BondAccount);
+  // expect(bondObj.owner.toBase58()).toBe(staker.publicKey.toBase58());
+  // expect(bondObj.totalAmountSold.toNumber()).toBe(bondAmount);
+  // expect(bondObj.totalStaked.toNumber()).toBe(0);
+  // expect(bondObj.totalQuoteAmount.toNumber()).toBe(bondAmount);
+  // expect(bondObj.quoteMint.toBase58()).toBe(
+  //   quoteToken.token.publicKey.toBase58()
+  // );
+  // expect(bondObj.sellerTokenAccount.toBase58()).toBe(quoteSellerAta.toBase58());
+  // expect(bondObj.unlockStartDate.toNumber()).toBe(0);
+  // expect(bondObj.unlockPeriod.toNumber()).toBe(1);
+  // expect(bondObj.unlockAmount.toNumber()).toBe(bondAmount);
+  // expect(bondObj.lastUnlockTime.toNumber()).toBeLessThan(now);
+  // expect(bondObj.totalUnlockedAmount.toNumber()).toBe(bondAmount);
+  // expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
+  // expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
+  // expect(bondObj.lastClaimedTime.toNumber()).toBeGreaterThan(now);
+  // expect(bondObj.sellers.length).toBe(1);
 
   // Claim pool rewards
 
@@ -859,26 +860,27 @@ test("End to end test", async () => {
     [ix_claim_bond_rewards]
   );
 
-  // Verifications
-  bondObj = await BondAccount.retrieve(connection, bondKey);
-  expect(bondObj.tag).toBe(Tag.BondAccount);
-  expect(bondObj.owner.toBase58()).toBe(staker.publicKey.toBase58());
-  expect(bondObj.totalAmountSold.toNumber()).toBe(bondAmount);
-  expect(bondObj.totalStaked.toNumber()).toBe(0);
-  expect(bondObj.totalQuoteAmount.toNumber()).toBe(bondAmount);
-  expect(bondObj.quoteMint.toBase58()).toBe(
-    quoteToken.token.publicKey.toBase58()
-  );
-  expect(bondObj.sellerTokenAccount.toBase58()).toBe(quoteSellerAta.toBase58());
-  expect(bondObj.unlockStartDate.toNumber()).toBe(0);
-  expect(bondObj.unlockPeriod.toNumber()).toBe(1);
-  expect(bondObj.unlockAmount.toNumber()).toBe(bondAmount);
-  expect(bondObj.lastUnlockTime.toNumber()).toBeLessThan(now);
-  expect(bondObj.totalUnlockedAmount.toNumber()).toBe(bondAmount);
-  expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
-  expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  expect(bondObj.lastClaimedTime.toNumber()).toBeGreaterThan(now);
-  expect(bondObj.sellers.length).toBe(1);
+  // Bond rewards are deactivated
+  // // Verifications
+  // bondObj = await BondAccount.retrieve(connection, bondKey);
+  // expect(bondObj.tag).toBe(Tag.BondAccount);
+  // expect(bondObj.owner.toBase58()).toBe(staker.publicKey.toBase58());
+  // expect(bondObj.totalAmountSold.toNumber()).toBe(bondAmount);
+  // expect(bondObj.totalStaked.toNumber()).toBe(0);
+  // expect(bondObj.totalQuoteAmount.toNumber()).toBe(bondAmount);
+  // expect(bondObj.quoteMint.toBase58()).toBe(
+  //   quoteToken.token.publicKey.toBase58()
+  // );
+  // expect(bondObj.sellerTokenAccount.toBase58()).toBe(quoteSellerAta.toBase58());
+  // expect(bondObj.unlockStartDate.toNumber()).toBe(0);
+  // expect(bondObj.unlockPeriod.toNumber()).toBe(1);
+  // expect(bondObj.unlockAmount.toNumber()).toBe(bondAmount);
+  // expect(bondObj.lastUnlockTime.toNumber()).toBeLessThan(now);
+  // expect(bondObj.totalUnlockedAmount.toNumber()).toBe(bondAmount);
+  // expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
+  // expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
+  // expect(bondObj.lastClaimedTime.toNumber()).toBeGreaterThan(now);
+  // expect(bondObj.sellers.length).toBe(1);
 
   // Claim pool rewards
   await sleep(delay / 10);

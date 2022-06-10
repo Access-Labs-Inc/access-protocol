@@ -107,63 +107,66 @@ pub fn process_claim_bond_rewards(
     accounts: &[AccountInfo],
     _params: Params,
 ) -> ProgramResult {
-    let accounts = Accounts::parse(accounts, program_id)?;
-
-    let current_time = Clock::get().unwrap().unix_timestamp;
-
-    let central_state = CentralState::from_account_info(accounts.central_state)?;
-    let stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;
-    let mut bond = BondAccount::from_account_info(accounts.bond_account, false)?;
-
-    // Safety checks
-    check_account_key(
-        accounts.stake_pool,
-        &bond.stake_pool,
-        AccessError::WrongStakePool,
-    )?;
-    check_account_key(
-        accounts.bond_owner,
-        &bond.owner,
-        AccessError::StakeAccountOwnerMismatch,
-    )?;
-    check_account_key(
-        accounts.mint,
-        &central_state.token_mint,
-        AccessError::WrongMint,
-    )?;
-
-    let reward = calc_reward_fp32(current_time, bond.last_claimed_time, &stake_pool, true)?
-        // Multiply by the staker shares of the total pool
-        .checked_mul(bond.total_staked as u128)
-        .map(|r| r >> 32)
-        .and_then(safe_downcast)
-        .ok_or(AccessError::Overflow)?;
-
-    msg!("Claiming bond rewards {}", reward);
-
-    // Transfer rewards
-    let transfer_ix = mint_to(
-        &spl_token::ID,
-        accounts.mint.key,
-        accounts.rewards_destination.key,
-        accounts.central_state.key,
-        &[],
-        reward,
-    )?;
-    invoke_signed(
-        &transfer_ix,
-        &[
-            accounts.spl_token_program.clone(),
-            accounts.mint.clone(),
-            accounts.central_state.clone(),
-            accounts.rewards_destination.clone(),
-        ],
-        &[&[&program_id.to_bytes(), &[central_state.signer_nonce]]],
-    )?;
-
-    // Update states
-    bond.last_claimed_time = current_time;
-    bond.save(&mut accounts.bond_account.data.borrow_mut());
-
+    msg!("Bond rewards are deactivated.");
     Ok(())
+
+    // let accounts = Accounts::parse(accounts, program_id)?;
+
+    // let current_time = Clock::get().unwrap().unix_timestamp;
+
+    // let central_state = CentralState::from_account_info(accounts.central_state)?;
+    // let stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;
+    // let mut bond = BondAccount::from_account_info(accounts.bond_account, false)?;
+
+    // // Safety checks
+    // check_account_key(
+    //     accounts.stake_pool,
+    //     &bond.stake_pool,
+    //     AccessError::WrongStakePool,
+    // )?;
+    // check_account_key(
+    //     accounts.bond_owner,
+    //     &bond.owner,
+    //     AccessError::StakeAccountOwnerMismatch,
+    // )?;
+    // check_account_key(
+    //     accounts.mint,
+    //     &central_state.token_mint,
+    //     AccessError::WrongMint,
+    // )?;
+
+    // let reward = calc_reward_fp32(current_time, bond.last_claimed_time, &stake_pool, true)?
+    //     // Multiply by the staker shares of the total pool
+    //     .checked_mul(bond.total_staked as u128)
+    //     .map(|r| r >> 32)
+    //     .and_then(safe_downcast)
+    //     .ok_or(AccessError::Overflow)?;
+
+    // msg!("Claiming bond rewards {}", reward);
+
+    // // Transfer rewards
+    // let transfer_ix = mint_to(
+    //     &spl_token::ID,
+    //     accounts.mint.key,
+    //     accounts.rewards_destination.key,
+    //     accounts.central_state.key,
+    //     &[],
+    //     reward,
+    // )?;
+    // invoke_signed(
+    //     &transfer_ix,
+    //     &[
+    //         accounts.spl_token_program.clone(),
+    //         accounts.mint.clone(),
+    //         accounts.central_state.clone(),
+    //         accounts.rewards_destination.clone(),
+    //     ],
+    //     &[&[&program_id.to_bytes(), &[central_state.signer_nonce]]],
+    // )?;
+
+    // // Update states
+    // bond.last_claimed_time = current_time;
+    // bond.save(&mut accounts.bond_account.data.borrow_mut());
+
+    // Ok(())
 }
