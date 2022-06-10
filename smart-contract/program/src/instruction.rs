@@ -1,6 +1,8 @@
 pub use crate::processor::{
     activate_stake_pool, admin_freeze, admin_mint, change_inflation, change_pool_minimum,
-    change_pool_multiplier, claim_bond, claim_bond_rewards, claim_pool_rewards, claim_rewards,
+    change_pool_multiplier, claim_bond, 
+    //claim_bond_rewards, 
+    claim_pool_rewards, claim_rewards,
     close_stake_account, close_stake_pool, crank, create_bond, create_central_state,
     create_stake_account, create_stake_pool, execute_unstake, sign_bond, stake, unlock_bond_tokens,
     unstake,
@@ -197,7 +199,7 @@ pub enum ProgramInstruction {
     /// | 4     | ❌        | ❌      | The central state account            |
     /// | 5     | ✅        | ❌      | The mint address of the ACCESS token |
     /// | 6     | ❌        | ❌      | The SPL token program account        |
-    ClaimBondRewards,
+    // ClaimBondRewards,
     /// Change the minimum stakeable amount of a pool
     /// This instruction allows a pool owner to adjust the price of its subscription for new joiners without impacting people who already subscribed
     ///
@@ -380,18 +382,18 @@ pub fn claim_bond(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::ClaimBond as u8, params)
 }
-#[allow(missing_docs)]
-pub fn claim_bond_rewards(
-    program_id: Pubkey,
-    accounts: claim_bond_rewards::Accounts<Pubkey>,
-    params: claim_bond_rewards::Params,
-) -> Instruction {
-    accounts.get_instruction(
-        program_id,
-        ProgramInstruction::ClaimBondRewards as u8,
-        params,
-    )
-}
+// #[allow(missing_docs)]
+// pub fn claim_bond_rewards(
+//     program_id: Pubkey,
+//     accounts: claim_bond_rewards::Accounts<Pubkey>,
+//     params: claim_bond_rewards::Params,
+// ) -> Instruction {
+//     accounts.get_instruction(
+//         program_id,
+//         ProgramInstruction::ClaimBondRewards as u8,
+//         params,
+//     )
+// }
 #[allow(missing_docs)]
 pub fn change_pool_minimum(
     program_id: Pubkey,

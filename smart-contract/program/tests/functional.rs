@@ -8,7 +8,9 @@ use access_protocol::{
     entrypoint::process_instruction,
     instruction::{
         activate_stake_pool, admin_freeze, admin_mint, change_inflation, change_pool_minimum,
-        change_pool_multiplier, claim_bond, claim_bond_rewards, claim_pool_rewards, claim_rewards,
+        change_pool_multiplier, claim_bond, 
+        // claim_bond_rewards,
+        claim_pool_rewards, claim_rewards,
         close_stake_account, close_stake_pool, crank, create_bond, create_central_state,
         create_stake_account, create_stake_pool, execute_unstake, stake, unlock_bond_tokens,
         unstake,
@@ -372,27 +374,27 @@ async fn test_staking() {
     // Claim bond rewards
     //
 
-    let claim_bond_rewards_ix = claim_bond_rewards(
-        program_id,
-        claim_bond_rewards::Accounts {
-            stake_pool: &stake_pool_key,
-            bond_account: &bond_key,
-            bond_owner: &staker.pubkey(),
-            rewards_destination: &staker_token_acc,
-            central_state: &central_state,
-            mint: &mint,
-            spl_token_program: &spl_token::ID,
-        },
-        claim_bond_rewards::Params {},
-    );
+    // let claim_bond_rewards_ix = claim_bond_rewards(
+    //     program_id,
+    //     claim_bond_rewards::Accounts {
+    //         stake_pool: &stake_pool_key,
+    //         bond_account: &bond_key,
+    //         bond_owner: &staker.pubkey(),
+    //         rewards_destination: &staker_token_acc,
+    //         central_state: &central_state,
+    //         mint: &mint,
+    //         spl_token_program: &spl_token::ID,
+    //     },
+    //     claim_bond_rewards::Params {},
+    // );
 
-    sign_send_instructions(
-        &mut prg_test_ctx,
-        vec![claim_bond_rewards_ix],
-        vec![&staker],
-    )
-    .await
-    .unwrap();
+    // sign_send_instructions(
+    //     &mut prg_test_ctx,
+    //     vec![claim_bond_rewards_ix],
+    //     vec![&staker],
+    // )
+    // .await
+    // .unwrap();
 
     //
     // Claim rewards
