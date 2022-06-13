@@ -20,8 +20,10 @@ pub const ACCESS_MINT: Pubkey =
     solana_program::pubkey!("Hc4bdbupCMRkuP3o5gMks77ifACgVuxFAaUYbeuNoxG5");
 
 #[allow(missing_docs)]
-pub const SECONDS_IN_DAY: u64 = if cfg!(feature = "days-to-sec") {
+pub const SECONDS_IN_DAY: u64 = if cfg!(feature = "days-to-sec-15m") {
     15 * 60
+} else if cfg!(feature = "days-to-sec-10s") {
+    10
 } else {
     3600 * 24
 };

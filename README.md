@@ -42,7 +42,7 @@ cargo doc
 Functional test can be ran using Solana program test
 
 ```
-cargo test-bpf --features no-lock-time no-mint-check no-bond-signer
+cargo test-bpf --features days-to-sec-10s no-mint-check no-bond-signer
 ```
 
 ### JS
