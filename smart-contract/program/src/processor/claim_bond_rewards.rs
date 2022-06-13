@@ -107,8 +107,9 @@ pub fn process_claim_bond_rewards(
     accounts: &[AccountInfo],
     _params: Params,
 ) -> ProgramResult {
-    // Turn off for now.
-    return Err(AccessError::NoOp.into());
+    if cfg!(feature = "claim-bond-rewards-off") {
+        return Err(AccessError::NoOp.into());
+    }
 
     let accounts = Accounts::parse(accounts, program_id)?;
 

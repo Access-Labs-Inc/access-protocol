@@ -385,15 +385,14 @@ async fn test_staking() {
         },
         claim_bond_rewards::Params {},
     );
-    assert!(
-        sign_send_instructions(
-            &mut prg_test_ctx,
-            vec![claim_bond_rewards_ix],
-            vec![&staker],
-        )
-        .await
-        .is_err()
-    );
+
+    sign_send_instructions(
+        &mut prg_test_ctx,
+        vec![claim_bond_rewards_ix],
+        vec![&staker],
+    )
+    .await
+    .unwrap();
 
     //
     // Claim rewards
