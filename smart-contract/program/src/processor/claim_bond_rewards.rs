@@ -107,6 +107,12 @@ pub fn process_claim_bond_rewards(
     accounts: &[AccountInfo],
     _params: Params,
 ) -> ProgramResult {
+
+    // If you don't want to issue rewards to bond holders
+    if cfg!(feature = "claim-bond-rewards-off") {
+        return Err(AccessError::NoOp.into());
+    }
+
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let current_time = Clock::get().unwrap().unix_timestamp;
