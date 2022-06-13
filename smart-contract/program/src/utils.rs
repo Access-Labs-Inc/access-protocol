@@ -27,7 +27,7 @@ pub fn calc_reward_fp32(
         .ok_or(AccessError::Overflow)?
         > SECONDS_IN_DAY as i64
     {
-        #[cfg(not(feature = "days-to-sec"))]
+        #[cfg(not(any(feature = "days-to-sec-10s", feature = "days-to-sec-15m")))]
         return Err(AccessError::PoolMustBeCranked.into());
     }
 

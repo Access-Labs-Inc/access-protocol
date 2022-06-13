@@ -59,7 +59,7 @@ export function deployProgram(
   }
   if (testBpf) {
     execSync(
-      "cargo test-bpf --features days-to-sec no-mint-check no-bond-signer",
+      "cargo test-bpf --features days-to-sec-10s no-mint-check no-bond-signer",
       {
         cwd: programDirectory,
       }
