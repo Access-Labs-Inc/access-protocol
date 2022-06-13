@@ -11,6 +11,7 @@ test-bpf = []
 no-mint-check = []
 days-to-sec = []
 no-bond-signer = []
+claim-bond-rewards-off = []
 
 [dependencies]
 solana-program = "1.10.12"
