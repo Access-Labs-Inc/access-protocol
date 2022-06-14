@@ -117,7 +117,7 @@ export const signAndSendTransactionInstructions = async (
   const sig = await connection.sendTransaction(tx, signers, {
     skipPreflight: false,
   });
-  await connection.confirmTransaction(sig, "finalized");
+  await connection.confirmTransaction(sig, "processed");
   return sig;
 };
 
