@@ -16,13 +16,14 @@ import {
 } from "@solana/web3.js";
 import { CentralState, StakePool, StakeAccount } from "../src/state";
 import { TokenMint } from "./utils";
-import { sleep } from "../src/utils";
 import { airdropPayer, signAndSendTransactionInstructions } from "./utils";
 import {
   Token,
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
+import { sleep } from "../src/utils";
+import { expect } from "@jest/globals";
 
 export const poc = async (
   connection: Connection,
@@ -280,7 +281,6 @@ export const poc = async (
       feePayer,
       ixs
     );
-
   }
   console.log(`All claimed ${tx}`);
 
@@ -294,15 +294,5 @@ export const poc = async (
   // @ts-expect-error
   const aliceAfter = aliceAcc.value.data.parsed.info.tokenAmount.uiAmount;
 
-  console.log(
-    `Bob: before ${bobBefore} - after ${bobAfter} - diff ${bobAfter - bobBefore
-    }`
-  );
-
-  console.log(
-    `Alice: before ${aliceBefore} - after ${aliceAfter} - diff ${aliceAfter - aliceBefore
-    }`
-  );
-
-  await sleep(10 * 60 * 10_0000);
+  expect(aliceAfter).toBeCloseTo(bobAfter);
 };
