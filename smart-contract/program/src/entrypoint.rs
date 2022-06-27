@@ -146,6 +146,7 @@ impl PrintProgramError for AccessError {
             AccessError::PendingUnstakeRequests => {
                 msg!("Error: Pending unstake request")
             }
+            AccessError::CannotStakeZero => { msg!("Cannot stake 0 token")}
         }
     }
 }

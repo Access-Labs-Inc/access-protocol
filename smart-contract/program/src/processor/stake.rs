@@ -154,6 +154,10 @@ pub fn process_stake(
 
     let fees = (amount * FEES) / 100;
 
+    if amount == 0{
+        return Err(AccessError::CannotStakeZero.into())
+    }
+
     if stake_account.stake_amount > 0
         && stake_account.last_claimed_time < stake_pool.header.last_crank_time
     {

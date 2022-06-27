@@ -81,6 +81,8 @@ pub enum AccessError {
     PoolMustBeCranked,
     #[error("Pending unstake request")]
     PendingUnstakeRequests,
+    #[error("Cannot stake 0 token")]
+    CannotStakeZero
 }
 
 impl From<AccessError> for ProgramError {

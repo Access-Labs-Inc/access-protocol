@@ -628,7 +628,9 @@ impl BondAccount {
 
     pub fn calc_unlock_amount(&self, missed_periods: u64) -> Result<u64, ProgramError> {
         msg!("Missed periods {}", missed_periods);
-        let cumulated_unlock_amnt = missed_periods * self.unlock_amount;
+        let cumulated_unlock_amnt = (missed_periods)
+            .checked_mul(self.unlock_amount)
+            .ok_or(AccessError::Overflow)?;
         msg!(
             "Unlock amount {} Total amount {}",
             cumulated_unlock_amnt,
