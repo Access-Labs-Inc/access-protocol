@@ -21,6 +21,7 @@ import {
   activateStakePoolInstruction,
   adminFreezeInstruction,
   changePoolMultiplierInstruction,
+  changeCentralStateAuthorityInstruction,
 } from "./raw_instructions";
 import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
 import { CentralState, StakePool, BondAccount, StakeAccount } from "./state";
@@ -716,6 +717,28 @@ export const changePoolMultiplier = async (
   const ix = new changePoolMultiplierInstruction({
     newMultiplier: new BN(newMultiplier),
   }).getInstruction(programId, stakePoolKey, stakePool.owner);
+
+  return ix;
+};
+
+/**
+ * This function can be used to change the central state authority
+ * @param connection The Solana RPC connection
+ * @param newAuthority The new authority of the central state
+ * @param programId The ACCESS program ID
+ * @returns
+ */
+export const changeCentralStateAuthority = async (
+  connection: Connection,
+  newAuthority: PublicKey,
+  programId: PublicKey
+) => {
+  const [centralKey] = await CentralState.getKey(programId);
+  const centralState = await CentralState.retrieve(connection, centralKey);
+
+  const ix = new changeCentralStateAuthorityInstruction({
+    newAuthority: newAuthority.toBytes(),
+  }).getInstruction(programId, centralKey, centralState.authority);
 
   return ix;
 };

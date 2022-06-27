@@ -7,11 +7,11 @@ use crate::common::utils::{mint_bootstrap, sign_send_instructions};
 use access_protocol::{
     entrypoint::process_instruction,
     instruction::{
-        activate_stake_pool, admin_freeze, admin_mint, change_inflation, change_pool_minimum,
-        change_pool_multiplier, claim_bond, claim_bond_rewards, claim_pool_rewards, claim_rewards,
-        close_stake_account, close_stake_pool, crank, create_bond, create_central_state,
-        create_stake_account, create_stake_pool, execute_unstake, stake, unlock_bond_tokens,
-        unstake,
+        activate_stake_pool, admin_freeze, admin_mint, change_central_state_authority,
+        change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond,
+        claim_bond_rewards, claim_pool_rewards, claim_rewards, close_stake_account,
+        close_stake_pool, crank, create_bond, create_central_state, create_stake_account,
+        create_stake_pool, execute_unstake, stake, unlock_bond_tokens, unstake,
     },
     state::{BondAccount, FEES},
 };
@@ -659,4 +659,21 @@ async fn test_staking() {
     )
     .await
     .unwrap();
+
+    //
+    // Change central state auth
+    //
+    let ix = change_central_state_authority(
+        program_id,
+        change_central_state_authority::Accounts {
+            central_state: &central_state,
+            authority: &prg_test_ctx.payer.pubkey(),
+        },
+        change_central_state_authority::Params {
+            new_authority: Keypair::new().pubkey(),
+        },
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![])
+        .await
+        .unwrap();
 }

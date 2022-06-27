@@ -1,9 +1,9 @@
 pub use crate::processor::{
-    activate_stake_pool, admin_freeze, admin_mint, change_inflation, change_pool_minimum,
-    change_pool_multiplier, claim_bond, claim_bond_rewards, claim_pool_rewards, claim_rewards,
-    close_stake_account, close_stake_pool, crank, create_bond, create_central_state,
-    create_stake_account, create_stake_pool, execute_unstake, sign_bond, stake, unlock_bond_tokens,
-    unstake,
+    activate_stake_pool, admin_freeze, admin_mint, change_central_state_authority,
+    change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards,
+    claim_pool_rewards, claim_rewards, close_stake_account, close_stake_pool, crank, create_bond,
+    create_central_state, create_stake_account, create_stake_pool, execute_unstake, sign_bond,
+    stake, unlock_bond_tokens, unstake,
 };
 use bonfida_utils::InstructionsAccount;
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -231,6 +231,13 @@ pub enum ProgramInstruction {
     /// | 0     | ✅        | ❌      | The stake pool account       |
     /// | 1     | ❌        | ✅      | The stake pool owner account |
     ChangePoolMultiplier,
+    /// Change central state authority
+    ///
+    /// | Index | Writable | Signer | Description                                |
+    /// | ---------------------------------------------------------------------- |
+    /// | 0     | ✅        | ❌      | The account of the central state           |
+    /// | 1     | ❌        | ✅      | The account of the central state authority |
+    ChangeCentralStateAuthority,
 }
 #[allow(missing_docs)]
 pub fn create_central_state(
@@ -449,6 +456,18 @@ pub fn change_pool_multiplier(
     accounts.get_instruction(
         program_id,
         ProgramInstruction::ChangePoolMultiplier as u8,
+        params,
+    )
+}
+#[allow(missing_docs)]
+pub fn change_central_state_authority(
+    program_id: Pubkey,
+    accounts: change_central_state_authority::Accounts<Pubkey>,
+    params: change_central_state_authority::Params,
+) -> Instruction {
+    accounts.get_instruction(
+        program_id,
+        ProgramInstruction::ChangeCentralStateAuthority as u8,
         params,
     )
 }
