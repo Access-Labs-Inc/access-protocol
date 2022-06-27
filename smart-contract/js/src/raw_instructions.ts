@@ -1221,6 +1221,52 @@ export class createStakePoolInstruction {
     });
   }
 }
+export class changeCentralStateAuthorityInstruction {
+  tag: number;
+  newAuthority: Uint8Array;
+  static schema: Schema = new Map([
+    [
+      changeCentralStateAuthorityInstruction,
+      {
+        kind: "struct",
+        fields: [
+          ["tag", "u8"],
+          ["newAuthority", [32]],
+        ],
+      },
+    ],
+  ]);
+  constructor(obj: { newAuthority: Uint8Array }) {
+    this.tag = 22;
+    this.newAuthority = obj.newAuthority;
+  }
+  serialize(): Uint8Array {
+    return serialize(changeCentralStateAuthorityInstruction.schema, this);
+  }
+  getInstruction(
+    programId: PublicKey,
+    centralState: PublicKey,
+    authority: PublicKey
+  ): TransactionInstruction {
+    const data = Buffer.from(this.serialize());
+    let keys: AccountKey[] = [];
+    keys.push({
+      pubkey: centralState,
+      isSigner: false,
+      isWritable: true,
+    });
+    keys.push({
+      pubkey: authority,
+      isSigner: true,
+      isWritable: false,
+    });
+    return new TransactionInstruction({
+      keys,
+      programId,
+      data,
+    });
+  }
+}
 export class adminMintInstruction {
   tag: number;
   amount: BN;

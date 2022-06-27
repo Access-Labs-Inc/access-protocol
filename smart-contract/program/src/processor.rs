@@ -9,6 +9,7 @@ use solana_program::{
 pub mod activate_stake_pool;
 pub mod admin_freeze;
 pub mod admin_mint;
+pub mod change_central_state_authority;
 pub mod change_inflation;
 pub mod change_pool_minimum;
 pub mod change_pool_multiplier;
@@ -167,6 +168,15 @@ impl Processor {
                 let params = change_pool_multiplier::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 change_pool_multiplier::process_change_pool_multiplier(
+                    program_id, accounts, params,
+                )?;
+            }
+            ProgramInstruction::ChangeCentralStateAuthority => {
+                msg!("Instruction: Change central state authority");
+                let params =
+                    change_central_state_authority::Params::try_from_slice(instruction_data)
+                        .map_err(|_| ProgramError::InvalidInstructionData)?;
+                change_central_state_authority::process_change_central_state_auth(
                     program_id, accounts, params,
                 )?;
             }

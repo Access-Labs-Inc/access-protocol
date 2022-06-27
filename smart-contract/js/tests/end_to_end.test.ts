@@ -47,6 +47,7 @@ import { sleep } from "../src/utils";
 import BN from "bn.js";
 import { TokenMint } from "./utils";
 import { poc } from "./poc";
+import { changeCentralStateAuth } from "./change-central-state-auth";
 
 // Global state initialized once in test startup and cleaned up at test
 // teardown.
@@ -1133,4 +1134,8 @@ test("End to end test", async () => {
 
 test("Claim different times", async () => {
   await poc(connection, programId, feePayer);
+});
+
+test("Change central state auth", async () => {
+  await changeCentralStateAuth(connection, programId, feePayer);
 });
