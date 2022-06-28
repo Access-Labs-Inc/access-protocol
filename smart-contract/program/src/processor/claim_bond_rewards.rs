@@ -117,7 +117,7 @@ pub fn process_claim_bond_rewards(
     let current_time = Clock::get()?.unix_timestamp;
 
     let central_state = CentralState::from_account_info(accounts.central_state)?;
-    let stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;
+    let stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut bond = BondAccount::from_account_info(accounts.bond_account, false)?;
 
     // Safety checks

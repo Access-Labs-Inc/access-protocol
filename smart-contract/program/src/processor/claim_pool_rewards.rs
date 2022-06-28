@@ -101,7 +101,7 @@ pub fn process_claim_pool_rewards(
     let current_time = Clock::get()?.unix_timestamp;
 
     let central_state = CentralState::from_account_info(accounts.central_state)?;
-    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;
+    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
 
     // Safety checks
     check_account_key(

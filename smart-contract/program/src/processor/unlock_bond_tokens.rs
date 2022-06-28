@@ -100,7 +100,7 @@ pub fn process_unlock_bond_tokens(
     let accounts = Accounts::parse(accounts, program_id)?;
     let mut central_state = CentralState::from_account_info(accounts.central_state)?;
     let mut bond = BondAccount::from_account_info(accounts.bond_account, false)?;
-    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;
+    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let current_time = Clock::get()?.unix_timestamp;
 
     assert_bond_derivation(
