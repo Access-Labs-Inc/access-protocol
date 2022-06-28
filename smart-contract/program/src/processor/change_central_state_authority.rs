@@ -13,14 +13,14 @@ use bonfida_utils::{BorshSize, InstructionsAccount};
 use crate::utils::{check_account_key, check_account_owner, check_signer};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
-/// The required parameters for the `change_inflation` instruction
+/// The required parameters for the `change_central_state_authority` instruction
 pub struct Params {
     // The new central state authory
     pub new_authority: Pubkey,
 }
 
 #[derive(InstructionsAccount)]
-/// The required accounts for the `change_inflation` instruction
+/// The required accounts for the `change_central_state_authority` instruction
 pub struct Accounts<'a, T> {
     /// The account of the central state
     #[cons(writable)]
