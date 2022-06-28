@@ -116,6 +116,10 @@ pub fn process_create_bond(
     #[cfg(not(feature = "no-bond-signer"))]
     assert_authorized_seller(accounts.seller, params.seller_index as usize)?;
 
+    if params.unlock_period == 0 {
+        return Err(AccessError::ForbiddenUnlockPeriodZero.into());
+    }
+
     let bond = BondAccount::new(
         params.buyer,
         params.total_amount_sold,

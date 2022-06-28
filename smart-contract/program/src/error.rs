@@ -82,7 +82,9 @@ pub enum AccessError {
     #[error("Pending unstake request")]
     PendingUnstakeRequests,
     #[error("Cannot stake 0 token")]
-    CannotStakeZero
+    CannotStakeZero,
+    #[error("Unlock period cannot be 0")]
+    ForbiddenUnlockPeriodZero
 }
 
 impl From<AccessError> for ProgramError {
