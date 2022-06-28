@@ -146,11 +146,12 @@ impl PrintProgramError for AccessError {
             AccessError::PendingUnstakeRequests => {
                 msg!("Error: Pending unstake request")
             }
-            AccessError::CannotStakeZero => { 
+            AccessError::CannotStakeZero => {
                 msg!("Cannot stake 0 token")
             }
-            AccessError::ForbiddenUnlockPeriodZero => { 
+            AccessError::ForbiddenUnlockPeriodZero => {
                 msg!("Unlock period cannot be 0")
             }
+        }
     }
 }

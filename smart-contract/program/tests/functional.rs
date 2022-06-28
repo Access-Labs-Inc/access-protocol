@@ -234,7 +234,7 @@ async fn test_staking() {
         .await
         .unwrap();
 
-    // 
+    //
     // Reject creating bond with unlock period eq to 0
     // as unlocking would not work (division by 0)
     //
@@ -260,11 +260,13 @@ async fn test_staking() {
         },
     );
 
-    assert!(
-        sign_send_instructions(&mut prg_test_ctx, vec![create_bond_with_unlock_period_zero_ix], vec![])
-            .await
-            .is_err()
-    );
+    assert!(sign_send_instructions(
+        &mut prg_test_ctx,
+        vec![create_bond_with_unlock_period_zero_ix],
+        vec![]
+    )
+    .await
+    .is_err());
 
     //
     // Claim bond
