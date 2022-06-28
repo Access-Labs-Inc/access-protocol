@@ -234,6 +234,38 @@ async fn test_staking() {
         .await
         .unwrap();
 
+    // 
+    // Reject creating bond with unlock period eq to 0
+    // as unlocking would not work (division by 0)
+    //
+    let create_bond_with_unlock_period_zero_ix = create_bond(
+        program_id,
+        create_bond::Accounts {
+            stake_pool: &stake_pool_key,
+            seller: &prg_test_ctx.payer.pubkey(),
+            bond_account: &bond_key,
+            system_program: &system_program::ID,
+            fee_payer: &prg_test_ctx.payer.pubkey(),
+        },
+        create_bond::Params {
+            buyer: staker.pubkey(),
+            total_amount_sold: bond_amount,
+            seller_token_account: stake_pool_owner_token_acc,
+            total_quote_amount: 0,
+            quote_mint: Pubkey::default(),
+            unlock_period: 0, // <- not allowed
+            unlock_amount: bond_amount,
+            unlock_start_date: 0,
+            seller_index: 0,
+        },
+    );
+
+    assert!(
+        sign_send_instructions(&mut prg_test_ctx, vec![create_bond_with_unlock_period_zero_ix], vec![])
+            .await
+            .is_err()
+    );
+
     //
     // Claim bond
     //
