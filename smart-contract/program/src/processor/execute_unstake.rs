@@ -106,7 +106,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 pub fn process_execute_unstake(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;
+    let stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
     let current_time = Clock::get()?.unix_timestamp;
 

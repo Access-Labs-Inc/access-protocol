@@ -82,7 +82,7 @@ pub fn process_create_stake_account(
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;
+    let stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
 
     let derived_stake_key = StakeAccount::create_key(
         &params.nonce,

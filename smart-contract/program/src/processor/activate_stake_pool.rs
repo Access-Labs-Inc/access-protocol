@@ -58,7 +58,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 pub fn process_activate_stake_pool(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::InactiveStakePool)?;
+    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::InactiveStakePool])?;
     let central_state = CentralState::from_account_info(accounts.central_state)?;
 
     check_account_key(

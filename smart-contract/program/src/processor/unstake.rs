@@ -89,7 +89,7 @@ pub fn process_unstake(
     let accounts = Accounts::parse(accounts, program_id)?;
     let Params { amount } = params;
 
-    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;
+    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
     let mut central_state = CentralState::from_account_info(accounts.central_state_account)?;
     let current_time = Clock::get()?.unix_timestamp;

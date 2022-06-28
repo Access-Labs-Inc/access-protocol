@@ -3,6 +3,7 @@ use bonfida_utils::BorshSize;
 use borsh::{BorshDeserialize, BorshSerialize};
 use bytemuck::{cast_slice, from_bytes, from_bytes_mut, try_cast_slice_mut, Pod, Zeroable};
 use num_derive::{FromPrimitive, ToPrimitive};
+use num_traits::FromPrimitive;
 use solana_program::account_info::AccountInfo;
 use solana_program::clock::Clock;
 use solana_program::entrypoint::ProgramResult;
@@ -151,7 +152,7 @@ pub type StakePoolHeaped = StakePool<Box<StakePoolHeader>, Box<[RewardsTuple]>>;
 impl<'a> StakePoolRef<'a> {
     pub fn get_checked<'b: 'a>(
         account_info: &'a AccountInfo<'b>,
-        check_status: Tag,
+        allowed_tags: Vec<Tag>,
     ) -> Result<Self, ProgramError> {
         let (header, balances) = RefMut::map_split(account_info.data.borrow_mut(), |s| {
             let (hd, rem) = s.split_at_mut(size_of::<StakePoolHeader>());
@@ -161,7 +162,8 @@ impl<'a> StakePoolRef<'a> {
             )
         });
 
-        if header.tag != check_status as u8 {
+        let tag = FromPrimitive::from_u8(header.tag).ok_or(ProgramError::InvalidAccountData)?;
+        if !allowed_tags.contains(&tag) {
             return Err(AccessError::DataTypeMismatch.into());
         }
 
