@@ -76,7 +76,7 @@ pub fn process_sign_bond(
 
     bond.sellers.push(*accounts.seller.key);
 
-    bond.save(&mut accounts.bond_account.data.borrow_mut());
+    bond.save(&mut accounts.bond_account.data.borrow_mut())?;
 
     Ok(())
 }

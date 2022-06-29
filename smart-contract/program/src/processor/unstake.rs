@@ -121,14 +121,14 @@ pub fn process_unstake(
     stake_account.add_unstake_request(UnstakeRequest::new(amount, current_time))?;
 
     // Save states
-    stake_account.save(&mut accounts.stake_account.data.borrow_mut());
+    stake_account.save(&mut accounts.stake_account.data.borrow_mut())?;
 
     //Update central state
     central_state.total_staked = central_state
         .total_staked
         .checked_sub(amount)
         .ok_or(AccessError::Overflow)?;
-    central_state.save(&mut accounts.central_state_account.data.borrow_mut());
+    central_state.save(&mut accounts.central_state_account.data.borrow_mut())?;
 
     Ok(())
 }

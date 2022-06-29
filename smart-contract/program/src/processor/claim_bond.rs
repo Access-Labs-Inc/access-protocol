@@ -165,7 +165,7 @@ pub fn process_claim_bond(
     let current_time = Clock::get()?.unix_timestamp;
     bond.activate(current_time);
 
-    bond.save(&mut accounts.bond_account.data.borrow_mut());
+    bond.save(&mut accounts.bond_account.data.borrow_mut())?;
 
     // Mint ACCESS tokens into the pool vault
     let mint_ix = spl_token::instruction::mint_to(
@@ -195,7 +195,7 @@ pub fn process_claim_bond(
         .total_staked
         .checked_add(bond.total_amount_sold)
         .ok_or(AccessError::Overflow)?;
-    central_state.save(&mut accounts.central_state.data.borrow_mut());
+    central_state.save(&mut accounts.central_state.data.borrow_mut())?;
 
     Ok(())
 }

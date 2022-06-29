@@ -234,8 +234,8 @@ pub fn process_stake(
         .ok_or(AccessError::Overflow)?;
 
     // Save states
-    stake_account.save(&mut accounts.stake_account.data.borrow_mut());
-    central_state.save(&mut accounts.central_state_account.data.borrow_mut());
+    stake_account.save(&mut accounts.stake_account.data.borrow_mut())?;
+    central_state.save(&mut accounts.central_state_account.data.borrow_mut())?;
 
     Ok(())
 }

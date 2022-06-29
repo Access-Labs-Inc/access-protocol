@@ -202,14 +202,14 @@ pub fn process_unlock_bond_tokens(
         .checked_sub(unlock_amount)
         .ok_or(AccessError::Overflow)?;
 
-    bond.save(&mut accounts.bond_account.data.borrow_mut());
+    bond.save(&mut accounts.bond_account.data.borrow_mut())?;
 
     // Update central state
     central_state.total_staked = central_state
         .total_staked
         .checked_sub(unlock_amount)
         .ok_or(AccessError::Overflow)?;
-    central_state.save(&mut accounts.central_state.data.borrow_mut());
+    central_state.save(&mut accounts.central_state.data.borrow_mut())?;
 
     Ok(())
 }

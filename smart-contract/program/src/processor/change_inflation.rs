@@ -71,7 +71,7 @@ pub fn process_change_inflation(
     )?;
 
     central_state.daily_inflation = params.daily_inflation;
-    central_state.save(&mut accounts.central_state.data.borrow_mut());
+    central_state.save(&mut accounts.central_state.data.borrow_mut())?;
 
     Ok(())
 }

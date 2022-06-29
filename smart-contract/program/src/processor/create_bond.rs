@@ -153,7 +153,7 @@ pub fn process_create_bond(
         bond.borsh_len() + ((BOND_SIGNER_THRESHOLD - 1) * 32) as usize,
     )?;
 
-    bond.save(&mut accounts.bond_account.data.borrow_mut());
+    bond.save(&mut accounts.bond_account.data.borrow_mut())?;
 
     Ok(())
 }

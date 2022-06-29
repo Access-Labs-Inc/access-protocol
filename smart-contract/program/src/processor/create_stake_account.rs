@@ -89,7 +89,7 @@ pub fn process_create_stake_account(
         &params.owner,
         accounts.stake_pool.key,
         program_id,
-    );
+    )?;
 
     check_account_key(
         accounts.stake_account,
@@ -119,7 +119,7 @@ pub fn process_create_stake_account(
         stake_account.borsh_len(),
     )?;
 
-    stake_account.save(&mut accounts.stake_account.data.borrow_mut());
+    stake_account.save(&mut accounts.stake_account.data.borrow_mut())?;
 
     Ok(())
 }

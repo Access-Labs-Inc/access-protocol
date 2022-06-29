@@ -114,7 +114,7 @@ pub fn process_claim_bond_rewards(
 
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let current_time = Clock::get().unwrap().unix_timestamp;
+    let current_time = Clock::get()?.unix_timestamp;
 
     let central_state = CentralState::from_account_info(accounts.central_state)?;
     let stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;
@@ -168,7 +168,7 @@ pub fn process_claim_bond_rewards(
 
     // Update states
     bond.last_claimed_time = current_time;
-    bond.save(&mut accounts.bond_account.data.borrow_mut());
+    bond.save(&mut accounts.bond_account.data.borrow_mut())?;
 
     Ok(())
 }

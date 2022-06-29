@@ -207,15 +207,23 @@ impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [RewardsTuple]>
         self.header.current_day_idx = self
             .header
             .current_day_idx
-            .checked_add(nb_days_passed.try_into().unwrap())
+            .checked_add(
+                nb_days_passed
+                    .try_into()
+                    .map_err(|_| AccessError::Overflow)?,
+            )
             .ok_or(AccessError::Overflow)?;
         self.balances[((self.header.current_day_idx as u64) % STAKE_BUFFER_LEN) as usize] = rewards;
         Ok(())
     }
 
-    pub fn create_key(nonce: &u8, owner: &Pubkey, program_id: &Pubkey) -> Pubkey {
+    pub fn create_key(
+        nonce: &u8,
+        owner: &Pubkey,
+        program_id: &Pubkey,
+    ) -> Result<Pubkey, ProgramError> {
         let seeds: &[&[u8]] = &[StakePoolHeader::SEED, &owner.to_bytes(), &[*nonce]];
-        Pubkey::create_program_address(seeds, program_id).unwrap()
+        Pubkey::create_program_address(seeds, program_id).map_err(|_| ProgramError::InvalidSeeds)
     }
 }
 
@@ -231,21 +239,26 @@ impl StakePool<(), ()> {
 impl StakePoolHeader {
     pub const SEED: &'static [u8; 10] = b"stake_pool";
 
-    pub fn new(owner: Pubkey, nonce: u8, vault: Pubkey, minimum_stake_amount: u64) -> Self {
-        Self {
+    pub fn new(
+        owner: Pubkey,
+        nonce: u8,
+        vault: Pubkey,
+        minimum_stake_amount: u64,
+    ) -> Result<Self, ProgramError> {
+        Ok(Self {
             tag: Tag::InactiveStakePool as u8,
             total_staked: 0,
             current_day_idx: 0,
             _padding: [0; 4],
-            last_crank_time: Clock::get().unwrap().unix_timestamp,
-            last_claimed_time: Clock::get().unwrap().unix_timestamp,
+            last_crank_time: Clock::get()?.unix_timestamp,
+            last_claimed_time: Clock::get()?.unix_timestamp,
             owner: owner.to_bytes(),
             nonce,
             vault: vault.to_bytes(),
             minimum_stake_amount,
             stakers_part: STAKER_MULTIPLIER,
             unstake_period: UNSTAKE_PERIOD,
-        }
+        })
     }
 
     pub fn close(&mut self) {
@@ -253,12 +266,18 @@ impl StakePoolHeader {
     }
 
     pub fn deposit(&mut self, amount: u64) -> ProgramResult {
-        self.total_staked = self.total_staked.checked_add(amount).unwrap();
+        self.total_staked = self
+            .total_staked
+            .checked_add(amount)
+            .ok_or(AccessError::Overflow)?;
         Ok(())
     }
 
     pub fn withdraw(&mut self, amount: u64) -> ProgramResult {
-        self.total_staked = self.total_staked.checked_sub(amount).unwrap();
+        self.total_staked = self
+            .total_staked
+            .checked_sub(amount)
+            .ok_or(AccessError::Overflow)?;
         Ok(())
     }
 }
@@ -336,14 +355,14 @@ impl StakeAccount {
         owner: &Pubkey,
         stake_pool: &Pubkey,
         program_id: &Pubkey,
-    ) -> Pubkey {
+    ) -> Result<Pubkey, ProgramError> {
         let seeds: &[&[u8]] = &[
             StakeAccount::SEED,
             &owner.to_bytes(),
             &stake_pool.to_bytes(),
             &[*nonce],
         ];
-        Pubkey::create_program_address(seeds, program_id).unwrap()
+        Pubkey::create_program_address(seeds, program_id).map_err(|_| ProgramError::InvalidSeeds)
     }
 
     pub fn find_key(owner: &Pubkey, stake_pool: &Pubkey, program_id: &Pubkey) -> (Pubkey, u8) {
@@ -355,8 +374,9 @@ impl StakeAccount {
         Pubkey::find_program_address(seeds, program_id)
     }
 
-    pub fn save(&self, mut dst: &mut [u8]) {
-        self.serialize(&mut dst).unwrap()
+    pub fn save(&self, mut dst: &mut [u8]) -> ProgramResult {
+        self.serialize(&mut dst)
+            .map_err(|_| ProgramError::InvalidAccountData)
     }
 
     pub fn from_account_info(a: &AccountInfo) -> Result<StakeAccount, ProgramError> {
@@ -373,12 +393,18 @@ impl StakeAccount {
     }
 
     pub fn deposit(&mut self, amount: u64) -> ProgramResult {
-        self.stake_amount = self.stake_amount.checked_add(amount).unwrap();
+        self.stake_amount = self
+            .stake_amount
+            .checked_add(amount)
+            .ok_or(AccessError::Overflow)?;
         Ok(())
     }
 
     pub fn withdraw(&mut self, amount: u64) -> ProgramResult {
-        self.stake_amount = self.stake_amount.checked_sub(amount).unwrap();
+        self.stake_amount = self
+            .stake_amount
+            .checked_sub(amount)
+            .ok_or(AccessError::Overflow)?;
         Ok(())
     }
 
@@ -459,17 +485,19 @@ impl CentralState {
         }
     }
     #[allow(missing_docs)]
-    pub fn create_key(signer_nonce: &u8, program_id: &Pubkey) -> Pubkey {
+    pub fn create_key(signer_nonce: &u8, program_id: &Pubkey) -> Result<Pubkey, ProgramError> {
         let signer_seeds: &[&[u8]] = &[&program_id.to_bytes(), &[*signer_nonce]];
-        Pubkey::create_program_address(signer_seeds, program_id).unwrap()
+        Pubkey::create_program_address(signer_seeds, program_id)
+            .map_err(|_| ProgramError::InvalidSeeds)
     }
     #[allow(missing_docs)]
     pub fn find_key(program_id: &Pubkey) -> (Pubkey, u8) {
         Pubkey::find_program_address(&[&program_id.to_bytes()], program_id)
     }
     #[allow(missing_docs)]
-    pub fn save(&self, mut dst: &mut [u8]) {
-        self.serialize(&mut dst).unwrap()
+    pub fn save(&self, mut dst: &mut [u8]) -> ProgramResult {
+        self.serialize(&mut dst)
+            .map_err(|_| ProgramError::InvalidAccountData)
     }
     #[allow(missing_docs)]
     pub fn from_account_info(a: &AccountInfo) -> Result<CentralState, ProgramError> {
@@ -595,8 +623,9 @@ impl BondAccount {
         }
     }
 
-    pub fn save(&self, mut dst: &mut [u8]) {
-        self.serialize(&mut dst).unwrap()
+    pub fn save(&self, mut dst: &mut [u8]) -> ProgramResult {
+        self.serialize(&mut dst)
+            .map_err(|_| ProgramError::InvalidAccountData)
     }
 
     pub fn is_active(&self) -> bool {
