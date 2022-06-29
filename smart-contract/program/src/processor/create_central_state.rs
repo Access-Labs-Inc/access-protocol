@@ -101,7 +101,7 @@ pub fn process_create_central_state(
         state.borsh_len(),
     )?;
 
-    state.save(&mut accounts.state_account.data.borrow_mut());
+    state.save(&mut accounts.state_account.data.borrow_mut())?;
 
     Ok(())
 }

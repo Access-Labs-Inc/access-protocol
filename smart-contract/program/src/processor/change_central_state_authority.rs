@@ -71,7 +71,7 @@ pub fn process_change_central_state_auth(
     )?;
 
     central_state.authority = params.new_authority;
-    central_state.save(&mut accounts.central_state.data.borrow_mut());
+    central_state.save(&mut accounts.central_state.data.borrow_mut())?;
 
     Ok(())
 }

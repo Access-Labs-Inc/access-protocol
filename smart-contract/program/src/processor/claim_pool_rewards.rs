@@ -98,7 +98,7 @@ pub fn process_claim_pool_rewards(
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let current_time = Clock::get().unwrap().unix_timestamp;
+    let current_time = Clock::get()?.unix_timestamp;
 
     let central_state = CentralState::from_account_info(accounts.central_state)?;
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, Tag::StakePool)?;

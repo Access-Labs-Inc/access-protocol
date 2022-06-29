@@ -97,7 +97,7 @@ pub fn process_create_stake_pool(
         nonce,
         *accounts.vault.key,
         params.minimum_stake_amount,
-    );
+    )?;
 
     Cpi::create_account(
         program_id,

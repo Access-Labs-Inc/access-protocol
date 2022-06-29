@@ -166,7 +166,7 @@ pub fn process_execute_unstake(program_id: &Pubkey, accounts: &[AccountInfo]) ->
     )?;
 
     // Save states
-    stake_account.save(&mut accounts.stake_account.data.borrow_mut());
+    stake_account.save(&mut accounts.stake_account.data.borrow_mut())?;
 
     Ok(())
 }
