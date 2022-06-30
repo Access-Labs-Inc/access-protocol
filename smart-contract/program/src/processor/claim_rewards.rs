@@ -20,7 +20,9 @@ use spl_token::instruction::mint_to;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `claim_rewards` instruction
-pub struct Params {}
+pub struct Params {
+    pub nb_days: u8,
+}
 
 #[derive(InstructionsAccount)]
 /// The required accounts for the `claim_rewards` instruction
@@ -114,7 +116,8 @@ pub fn process_claim_rewards(
     let stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
     // let current_time = stake_pool.header.last_crank_time - (4 * SECONDS_IN_DAY as i64);
-    stake_account.last_claimed_time = current_time - (4 * SECONDS_IN_DAY as i64);
+    stake_account.last_claimed_time =
+        current_time - (_params.nb_days as i64 * SECONDS_IN_DAY as i64);
 
     check_account_key(
         accounts.stake_pool,

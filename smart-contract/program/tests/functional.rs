@@ -78,11 +78,11 @@ async fn test_staking() {
     let authority_ata = get_associated_token_address(&&prg_test_ctx.payer.pubkey(), &mint);
 
     //
-    // Create users
+    // Create owner and user A
     //
 
     let stake_pool_owner = Keypair::new();
-    let staker = Keypair::new();
+    let staker_a = Keypair::new();
 
     let create_ata_stake_pool_owner_ix = create_associated_token_account(
         &prg_test_ctx.payer.pubkey(),
@@ -98,16 +98,31 @@ async fn test_staking() {
     .unwrap();
 
     let create_ata_staker_ix =
-        create_associated_token_account(&prg_test_ctx.payer.pubkey(), &staker.pubkey(), &mint);
+        create_associated_token_account(&prg_test_ctx.payer.pubkey(), &staker_a.pubkey(), &mint);
     sign_send_instructions(&mut prg_test_ctx, vec![create_ata_staker_ix], vec![])
         .await
         .unwrap();
 
-    let staker_token_acc = get_associated_token_address(&staker.pubkey(), &mint);
-    let stake_pool_owner_token_acc = get_associated_token_address(&staker.pubkey(), &mint);
+    let staker_token_acc_a = get_associated_token_address(&staker_a.pubkey(), &mint);
+    let stake_pool_owner_token_acc = get_associated_token_address(&staker_a.pubkey(), &mint);
 
     //
-    // Admin mint
+    // Create user B
+    //
+
+    let stake_pool_owner = Keypair::new();
+    let staker_b = Keypair::new();
+
+    let create_ata_staker_ix =
+        create_associated_token_account(&prg_test_ctx.payer.pubkey(), &staker_b.pubkey(), &mint);
+    sign_send_instructions(&mut prg_test_ctx, vec![create_ata_staker_ix], vec![])
+        .await
+        .unwrap();
+
+    let staker_token_acc_b = get_associated_token_address(&staker_b.pubkey(), &mint);
+
+    //
+    // Admin mint A
     //
 
     let admin_mint_ix = admin_mint(
@@ -115,7 +130,28 @@ async fn test_staking() {
         admin_mint::Accounts {
             authority: &prg_test_ctx.payer.pubkey(),
             mint: &mint,
-            access_token_destination: &staker_token_acc,
+            access_token_destination: &staker_token_acc_a,
+            central_state: &central_state,
+            spl_token_program: &spl_token::ID,
+        },
+        admin_mint::Params {
+            amount: 10_000 * 1_000_000,
+        },
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![admin_mint_ix], vec![])
+        .await
+        .unwrap();
+
+    //
+    // Admin mint B
+    //
+
+    let admin_mint_ix = admin_mint(
+        program_id,
+        admin_mint::Accounts {
+            authority: &prg_test_ctx.payer.pubkey(),
+            mint: &mint,
+            access_token_destination: &staker_token_acc_b,
             central_state: &central_state,
             spl_token_program: &spl_token::ID,
         },
@@ -186,13 +222,13 @@ async fn test_staking() {
         .unwrap();
 
     //
-    // Create stake account
+    // Create stake account A
     //
 
-    let (stake_acc_key, stake_nonce) = Pubkey::find_program_address(
+    let (stake_acc_key_a, stake_nonce_a) = Pubkey::find_program_address(
         &[
             "stake_account".as_bytes(),
-            &staker.pubkey().to_bytes(),
+            &staker_a.pubkey().to_bytes(),
             &stake_pool_key.to_bytes(),
         ],
         &program_id,
@@ -200,14 +236,14 @@ async fn test_staking() {
     let create_stake_account_ix = create_stake_account(
         program_id,
         create_stake_account::Accounts {
-            stake_account: &stake_acc_key,
+            stake_account: &stake_acc_key_a,
             system_program: &system_program::ID,
             fee_payer: &prg_test_ctx.payer.pubkey(),
             stake_pool: &stake_pool_key,
         },
         create_stake_account::Params {
-            nonce: stake_nonce,
-            owner: staker.pubkey(),
+            nonce: stake_nonce_a,
+            owner: staker_a.pubkey(),
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![create_stake_account_ix], vec![])
@@ -215,17 +251,46 @@ async fn test_staking() {
         .unwrap();
 
     //
-    // Stake
+    // Create stake account B
+    //
+
+    let (stake_acc_key_b, stake_nonce_b) = Pubkey::find_program_address(
+        &[
+            "stake_account".as_bytes(),
+            &staker_b.pubkey().to_bytes(),
+            &stake_pool_key.to_bytes(),
+        ],
+        &program_id,
+    );
+    let create_stake_account_ix = create_stake_account(
+        program_id,
+        create_stake_account::Accounts {
+            stake_account: &stake_acc_key_b,
+            system_program: &system_program::ID,
+            fee_payer: &prg_test_ctx.payer.pubkey(),
+            stake_pool: &stake_pool_key,
+        },
+        create_stake_account::Params {
+            nonce: stake_nonce_b,
+            owner: staker_b.pubkey(),
+        },
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![create_stake_account_ix], vec![])
+        .await
+        .unwrap();
+
+    //
+    // Stake A
     //
     let token_amount = 12000;
 
     let stake_ix = stake(
         program_id,
         stake::Accounts {
-            stake_account: &stake_acc_key,
+            stake_account: &stake_acc_key_a,
             stake_pool: &stake_pool_key,
-            owner: &staker.pubkey(),
-            source_token: &staker_token_acc,
+            owner: &staker_a.pubkey(),
+            source_token: &staker_token_acc_a,
             spl_token_program: &spl_token::ID,
             vault: &pool_vault,
             central_state_account: &central_state,
@@ -235,7 +300,32 @@ async fn test_staking() {
             amount: token_amount,
         },
     );
-    sign_send_instructions(&mut prg_test_ctx, vec![stake_ix], vec![&staker])
+    sign_send_instructions(&mut prg_test_ctx, vec![stake_ix], vec![&staker_a])
+        .await
+        .unwrap();
+
+    //
+    // Stake B
+    //
+    let token_amount = 12000;
+
+    let stake_ix = stake(
+        program_id,
+        stake::Accounts {
+            stake_account: &stake_acc_key_b,
+            stake_pool: &stake_pool_key,
+            owner: &staker_b.pubkey(),
+            source_token: &staker_token_acc_b,
+            spl_token_program: &spl_token::ID,
+            vault: &pool_vault,
+            central_state_account: &central_state,
+            fee_account: &authority_ata,
+        },
+        stake::Params {
+            amount: token_amount,
+        },
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![stake_ix], vec![&staker_b])
         .await
         .unwrap();
 
@@ -285,24 +375,46 @@ async fn test_staking() {
     println!("{:?}", stakd);
 
     //
-    // Claim rewards
+    // Claim rewards A
     //
 
     let claim_ix = claim_rewards(
         program_id,
         claim_rewards::Accounts {
             stake_pool: &stake_pool_key,
-            stake_account: &stake_acc_key,
-            owner: &staker.pubkey(),
-            rewards_destination: &staker_token_acc,
+            stake_account: &stake_acc_key_a,
+            owner: &staker_a.pubkey(),
+            rewards_destination: &staker_token_acc_a,
             central_state: &central_state,
             mint: &mint,
             spl_token_program: &spl_token::ID,
         },
-        claim_rewards::Params {},
+        claim_rewards::Params { nb_days: 4 },
     );
 
-    sign_send_instructions(&mut prg_test_ctx, vec![claim_ix], vec![&staker])
+    sign_send_instructions(&mut prg_test_ctx, vec![claim_ix], vec![&staker_a])
+        .await
+        .unwrap();
+
+    //
+    // Claim rewards B
+    //
+
+    let claim_ix = claim_rewards(
+        program_id,
+        claim_rewards::Accounts {
+            stake_pool: &stake_pool_key,
+            stake_account: &stake_acc_key_b,
+            owner: &staker_b.pubkey(),
+            rewards_destination: &staker_token_acc_b,
+            central_state: &central_state,
+            mint: &mint,
+            spl_token_program: &spl_token::ID,
+        },
+        claim_rewards::Params { nb_days: 1 },
+    );
+
+    sign_send_instructions(&mut prg_test_ctx, vec![claim_ix], vec![&staker_b])
         .await
         .unwrap();
 }
