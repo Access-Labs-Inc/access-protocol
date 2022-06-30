@@ -125,6 +125,7 @@ pub struct StakePoolHeader {
     pub vault: [u8; 32],
 }
 
+#[derive(Debug)]
 #[allow(missing_docs)]
 pub struct StakePool<H, B> {
     pub header: H,
@@ -201,10 +202,7 @@ impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [RewardsTuple]>
             self.balances[(((self.header.current_day_idx as u64)
                 .checked_add(i)
                 .ok_or(AccessError::Overflow)?)
-                % STAKE_BUFFER_LEN) as usize] = RewardsTuple {
-                pool_reward: 0,
-                stakers_reward: 0,
-            };
+                % STAKE_BUFFER_LEN) as usize] = rewards;
         }
         self.header.current_day_idx = self
             .header

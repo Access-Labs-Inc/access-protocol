@@ -1,7 +1,7 @@
 //! Claim rewards of a stake account
 //! This instruction can be used by stakers to claim their staking rewards
 use crate::error::AccessError;
-use crate::state::{CentralState, StakeAccount, StakePool, Tag};
+use crate::state::{CentralState, StakeAccount, StakePool, Tag, SECONDS_IN_DAY};
 use crate::utils::{calc_reward_fp32, check_account_key, check_account_owner, check_signer};
 use bonfida_utils::fp_math::safe_downcast;
 use bonfida_utils::{BorshSize, InstructionsAccount};
@@ -113,6 +113,8 @@ pub fn process_claim_rewards(
     let central_state = CentralState::from_account_info(accounts.central_state)?;
     let stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
+    // let current_time = stake_pool.header.last_crank_time - (4 * SECONDS_IN_DAY as i64);
+    stake_account.last_claimed_time = current_time - (4 * SECONDS_IN_DAY as i64);
 
     check_account_key(
         accounts.stake_pool,

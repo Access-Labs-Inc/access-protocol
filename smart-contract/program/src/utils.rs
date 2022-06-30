@@ -1,5 +1,8 @@
+use std::borrow::BorrowMut;
+use std::convert::TryInto;
+
 use crate::error::AccessError;
-use crate::state::{BondAccount, AUTHORIZED_BOND_SELLERS};
+use crate::state::{BondAccount, RewardsTuple, StakePoolHeader, Tag, AUTHORIZED_BOND_SELLERS};
 use crate::state::{StakeAccount, StakePoolRef, ACCESS_MINT, SECONDS_IN_DAY, STAKE_BUFFER_LEN};
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
@@ -152,4 +155,81 @@ pub fn assert_valid_fee(account: &AccountInfo, owner: &Pubkey) -> ProgramResult 
         return Err(ProgramError::IllegalOwner);
     }
     Ok(())
+}
+
+pub fn calc_reward_fp32_m(
+    current_time: i64,
+    last_claimed_time: i64,
+    stake_pool_header: crate::state::StakePoolHeader,
+    balances: &Vec<RewardsTuple>,
+    staker: bool,
+) -> Result<u128, ProgramError> {
+    let mut nb_days_to_claim =
+        current_time.saturating_sub(last_claimed_time) as u64 / SECONDS_IN_DAY;
+    msg!("Nb of days behind {}", nb_days_to_claim);
+    nb_days_to_claim = std::cmp::min(nb_days_to_claim, STAKE_BUFFER_LEN - 1);
+
+    if current_time
+        .checked_sub(stake_pool_header.last_crank_time)
+        .ok_or(AccessError::Overflow)?
+        > SECONDS_IN_DAY as i64
+    {
+        #[cfg(not(any(feature = "days-to-sec-10s", feature = "days-to-sec-15m")))]
+        return Err(AccessError::PoolMustBeCranked.into());
+    }
+
+    // Saturating as we don't want to wrap around when there haven't been sufficient cranks
+    let mut i = (stake_pool_header.current_day_idx as u64 + 1).saturating_sub(nb_days_to_claim)
+        % STAKE_BUFFER_LEN;
+
+    // Compute reward for all past days
+    let mut reward: u128 = 0;
+    while i != (stake_pool_header.current_day_idx as u64 + 1) % STAKE_BUFFER_LEN {
+        let curr_day_reward = if staker {
+            balances[i as usize].stakers_reward
+        } else {
+            balances[i as usize].pool_reward
+        };
+        reward = reward
+            .checked_add(curr_day_reward)
+            .ok_or(AccessError::Overflow)?;
+        i = (i + 1) % STAKE_BUFFER_LEN;
+    }
+
+    if reward == 0 {
+        msg!("No rewards to claim, no operation.");
+        return Err(AccessError::NoOp.into());
+    }
+
+    Ok(reward)
+}
+
+#[test]
+pub fn test_reward() {
+    let header = StakePoolHeader {
+        tag: Tag::InactiveStakePool as u8,
+        total_staked: 0,
+        current_day_idx: 4,
+        _padding: [0; 4],
+        last_crank_time: 5 * SECONDS_IN_DAY as i64,
+        last_claimed_time: 0,
+        owner: Pubkey::default().to_bytes(),
+        nonce: 0,
+        vault: Pubkey::default().to_bytes(),
+        minimum_stake_amount: 0,
+        stakers_part: crate::state::STAKER_MULTIPLIER,
+        unstake_period: crate::state::UNSTAKE_PERIOD,
+    };
+    let balances = vec![
+        crate::state::RewardsTuple {
+            pool_reward: 0,
+            stakers_reward: 1,
+        };
+        5
+    ];
+    let a_reward = calc_reward_fp32_m(4 * SECONDS_IN_DAY as i64, 0, header, &balances, true);
+    let b_reward = calc_reward_fp32_m(1 * SECONDS_IN_DAY as i64, 0, header, &balances, true);
+
+    println!("Reward A {:?}", a_reward);
+    println!("Reward B {:?}", b_reward);
 }
