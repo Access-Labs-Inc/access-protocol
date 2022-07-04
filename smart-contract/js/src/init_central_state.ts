@@ -25,6 +25,13 @@ const programId = new PublicKey("");
 // The Solana RPC connection
 const connection = new Connection("");
 
+/**
+ * Token metadata
+ */
+const name = "ACCESS";
+const symbol = "ACCS";
+const uri = "...";
+
 // The wallet used to initialize the central state
 // This wallet will be the central state authority
 const wallet = Keypair.fromSecretKey(
@@ -54,6 +61,9 @@ const initCentralState = async () => {
     wallet.publicKey, // Central state authority
     wallet.publicKey,
     token.publicKey,
+    name,
+    symbol,
+    uri,
     programId
   );
   const tx = await signAndSendTransactionInstructions(connection, [], wallet, [
