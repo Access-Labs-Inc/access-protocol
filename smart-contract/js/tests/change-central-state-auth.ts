@@ -37,6 +37,9 @@ export const changeCentralStateAuth = async (
     centralStateAuthority.publicKey,
     feePayer.publicKey,
     accessToken.token.publicKey,
+    "ACCESS",
+    "ACCS",
+    "..",
     programId
   );
 
