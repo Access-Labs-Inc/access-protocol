@@ -22,8 +22,14 @@ import {
   adminFreezeInstruction,
   changePoolMultiplierInstruction,
   changeCentralStateAuthorityInstruction,
+  editMetadataInstruction,
 } from "./raw_instructions";
-import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
+import {
+  Connection,
+  PublicKey,
+  SystemProgram,
+  SYSVAR_RENT_PUBKEY,
+} from "@solana/web3.js";
 import { CentralState, StakePool, BondAccount, StakeAccount } from "./state";
 import BN from "bn.js";
 import {
@@ -31,6 +37,7 @@ import {
   Token,
   ASSOCIATED_TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
+import { findMetadataPda, TokenMetadataProgram } from "@metaplex-foundation/js";
 
 // TODO Change
 export const ACCESS_PROGRAM_ID = new PublicKey(
@@ -371,6 +378,9 @@ export const createBond = async (
  * @param authority The central state authority (only key that will be able to upgrade the central state)
  * @param feePayer The fee payer of the tx
  * @param mint The ACCESS token mint
+ * @param name The name of the ACCESS token
+ * @param symbol The symbol of the ACCESS token
+ * @param uri The URI of the ACCESS metadata
  * @param programId The ACCESS program ID
  * @returns
  */
@@ -379,19 +389,30 @@ export const createCentralState = async (
   authority: PublicKey,
   feePayer: PublicKey,
   mint: PublicKey,
-  programId: PublicKey
+  name: string,
+  symbol: string,
+  uri: string,
+  programId: PublicKey,
+  tokenMetataProgramId = TokenMetadataProgram.publicKey
 ) => {
   const [centralKey] = await CentralState.getKey(programId);
+  const metadata = findMetadataPda(mint, tokenMetataProgramId);
 
   const ix = new createCentralStateInstruction({
     dailyInflation: new BN(dailyInflation),
     authority: authority.toBuffer(),
+    name,
+    symbol,
+    uri,
   }).getInstruction(
     programId,
     centralKey,
     SystemProgram.programId,
     feePayer,
-    mint
+    mint,
+    metadata,
+    TokenMetadataProgram.publicKey,
+    SYSVAR_RENT_PUBKEY
   );
 
   return ix;
@@ -739,6 +760,42 @@ export const changeCentralStateAuthority = async (
   const ix = new changeCentralStateAuthorityInstruction({
     newAuthority: newAuthority.toBytes(),
   }).getInstruction(programId, centralKey, centralState.authority);
+
+  return ix;
+};
+
+/**
+ * This function can be used to edit the token metadata
+ * @param connection The Solana RPC connection
+ * @param name The new metadata name
+ * @param symbol The new metadata symbol
+ * @param uri The new metadata URI
+ * @param programId The ACCESS program ID
+ * @param tokenMetataProgramId The token metadata program ID (optional)
+ * @returns
+ */
+export const editMetadata = async (
+  connection: Connection,
+  name: string,
+  symbol: string,
+  uri: string,
+  programId: PublicKey,
+  tokenMetataProgramId = TokenMetadataProgram.publicKey
+) => {
+  const [centralKey] = await CentralState.getKey(programId);
+  const centralState = await CentralState.retrieve(connection, centralKey);
+  const metadata = findMetadataPda(
+    centralState.tokenMint,
+    tokenMetataProgramId
+  );
+
+  const ix = new editMetadataInstruction({ name, symbol, uri }).getInstruction(
+    programId,
+    centralKey,
+    centralState.authority,
+    metadata,
+    tokenMetataProgramId
+  );
 
   return ix;
 };

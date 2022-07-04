@@ -152,6 +152,9 @@ impl PrintProgramError for AccessError {
             AccessError::ForbiddenUnlockPeriodZero => {
                 msg!("Unlock period cannot be 0")
             }
+            AccessError::WrongMplProgram => {
+                msg!("Wrong MPL metadata program")
+            }
         }
     }
 }
