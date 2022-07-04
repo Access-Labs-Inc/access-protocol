@@ -24,6 +24,7 @@ pub mod create_bond;
 pub mod create_central_state;
 pub mod create_stake_account;
 pub mod create_stake_pool;
+pub mod edit_metadata;
 pub mod execute_unstake;
 pub mod sign_bond;
 pub mod stake;
@@ -179,6 +180,12 @@ impl Processor {
                 change_central_state_authority::process_change_central_state_auth(
                     program_id, accounts, params,
                 )?;
+            }
+            ProgramInstruction::EditMetadata => {
+                msg!("Instruction: Edit Access token metadata");
+                let params = edit_metadata::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                edit_metadata::process_edit_metadata(program_id, accounts, params)?;
             }
         }
 

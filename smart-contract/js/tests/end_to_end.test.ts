@@ -5,7 +5,6 @@ import {
   airdropPayer,
   deployProgram,
   initializePayer,
-  spawnLocalSolana,
   signAndSendTransactionInstructions,
 } from "./utils";
 import {
@@ -29,6 +28,7 @@ import {
   changePoolMultiplier,
   closeStakePool,
   executeUnstake,
+  editMetadata,
 } from "../src/bindings";
 import {
   CentralState,
@@ -48,6 +48,8 @@ import BN from "bn.js";
 import { TokenMint } from "./utils";
 import { poc } from "./poc";
 import { changeCentralStateAuth } from "./change-central-state-auth";
+import { findMetadataPda } from "@metaplex-foundation/js";
+import { Metadata } from "@metaplex-foundation/mpl-token-metadata";
 
 // Global state initialized once in test startup and cleaned up at test
 // teardown.
@@ -60,10 +62,10 @@ const delay = 30_000;
 const MAX_i64 = "9223372036854775807";
 
 beforeAll(async () => {
-  solana = await spawnLocalSolana();
-  connection = new Connection("http://localhost:8899", "finalized");
+  // solana = await spawnLocalSolana();
+  connection = new Connection("https://api.devnet.solana.com", "finalized");
   [feePayer, payerKeyFile] = initializePayer();
-  await airdropPayer(connection, feePayer.publicKey);
+  // await airdropPayer(connection, feePayer.publicKey);
   programId = deployProgram(
     payerKeyFile,
     true,
@@ -168,6 +170,9 @@ test("End to end test", async () => {
     centralStateAuthority.publicKey,
     feePayer.publicKey,
     accessToken.token.publicKey,
+    "ACCESS",
+    "ACCS",
+    "some_uri",
     programId
   );
 
@@ -179,6 +184,10 @@ test("End to end test", async () => {
   // Verifications
 
   let centralStateObj = await CentralState.retrieve(connection, centralKey);
+
+  const metadatKey = findMetadataPda(accessToken.token.publicKey);
+  let metadata = await Metadata.fromAccountAddress(connection, metadatKey);
+
   expect(centralStateObj.tag).toBe(Tag.CentralState);
   expect(centralStateObj.signerNonce).toBe(centralNonce);
   expect(centralStateObj.dailyInflation.toNumber()).toBe(dailyInflation);
@@ -188,6 +197,34 @@ test("End to end test", async () => {
   expect(centralStateObj.authority.toBase58()).toBe(
     centralStateAuthority.publicKey.toBase58()
   );
+
+  // We slice because the metaplex lib does not remove trailling 0s in the buffer info
+  expect(metadata.data.name.slice(0, 6)).toBe("ACCESS");
+  expect(metadata.data.symbol.slice(0, 4)).toBe("ACCS");
+  expect(metadata.data.uri.slice(0, 8)).toBe("some_uri");
+
+  /**
+   * Edit metadata
+   */
+  const ix_edit_metadata = await editMetadata(
+    connection,
+    "new name",
+    "new symbol",
+    "new uri",
+    programId
+  );
+  tx = await signAndSendTransactionInstructions(
+    connection,
+    [centralStateAuthority],
+    feePayer,
+    [ix_edit_metadata]
+  );
+
+  // Verification
+  metadata = await Metadata.fromAccountAddress(connection, metadatKey);
+  expect(metadata.data.name.slice(0, 8)).toBe("new name");
+  expect(metadata.data.symbol.slice(0, 10)).toBe("new symbol");
+  expect(metadata.data.uri.slice(0, 7)).toBe("new uri");
 
   /**
    * Create stake pool

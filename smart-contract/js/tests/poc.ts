@@ -130,6 +130,9 @@ export const poc = async (
     centralStateAuthority.publicKey,
     feePayer.publicKey,
     accessToken.token.publicKey,
+    "name",
+    "symbol",
+    "uri",
     programId
   );
 

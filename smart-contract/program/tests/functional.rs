@@ -11,10 +11,11 @@ use access_protocol::{
         change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond,
         claim_bond_rewards, claim_pool_rewards, claim_rewards, close_stake_account,
         close_stake_pool, crank, create_bond, create_central_state, create_stake_account,
-        create_stake_pool, execute_unstake, stake, unlock_bond_tokens, unstake,
+        create_stake_pool, edit_metadata, execute_unstake, stake, unlock_bond_tokens, unstake,
     },
     state::{BondAccount, FEES},
 };
+use mpl_token_metadata::pda::find_metadata_account;
 
 #[tokio::test]
 async fn test_staking() {
@@ -26,6 +27,8 @@ async fn test_staking() {
         program_id,
         processor!(process_instruction),
     );
+
+    program_test.add_program("mpl_token_metadata", mpl_token_metadata::ID, None);
 
     //
     // Derive central vault
@@ -43,6 +46,11 @@ async fn test_staking() {
     ////
     let mut prg_test_ctx = program_test.start_with_context().await;
 
+    ////
+    // Metadata account
+    ////
+    let (metadata_key, _) = find_metadata_account(&mint);
+
     //
     // Create central state
     //
@@ -50,17 +58,44 @@ async fn test_staking() {
     let create_central_state_ix = create_central_state(
         program_id,
         create_central_state::Accounts {
-            state_account: &central_state,
+            central_state: &central_state,
             system_program: &system_program::ID,
             fee_payer: &prg_test_ctx.payer.pubkey(),
             mint: &mint,
+            metadata: &metadata_key,
+            metadata_program: &mpl_token_metadata::ID,
+            rent_sysvar: &solana_program::sysvar::rent::ID,
         },
         create_central_state::Params {
             daily_inflation,
             authority: prg_test_ctx.payer.pubkey(),
+            name: "Access protocol token".to_string(),
+            symbol: "ACCESS".to_string(),
+            uri: "uri".to_string(),
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![create_central_state_ix], vec![])
+        .await
+        .unwrap();
+
+    //
+    // Edit metadata
+    //
+    let ix = edit_metadata(
+        program_id,
+        edit_metadata::Accounts {
+            central_state: &central_state,
+            authority: &prg_test_ctx.payer.pubkey(),
+            metadata: &metadata_key,
+            metadata_program: &mpl_token_metadata::ID,
+        },
+        edit_metadata::Params {
+            name: "New name".to_string(),
+            symbol: "New symbol".to_string(),
+            uri: "New uri".to_string(),
+        },
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![])
         .await
         .unwrap();
 

@@ -2,8 +2,8 @@ pub use crate::processor::{
     activate_stake_pool, admin_freeze, admin_mint, change_central_state_authority,
     change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards,
     claim_pool_rewards, claim_rewards, close_stake_account, close_stake_pool, crank, create_bond,
-    create_central_state, create_stake_account, create_stake_pool, execute_unstake, sign_bond,
-    stake, unlock_bond_tokens, unstake,
+    create_central_state, create_stake_account, create_stake_pool, edit_metadata, execute_unstake,
+    sign_bond, stake, unlock_bond_tokens, unstake,
 };
 use bonfida_utils::InstructionsAccount;
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -16,10 +16,13 @@ pub enum ProgramInstruction {
     ///
     /// | Index | Writable | Signer | Description                  |
     /// | -------------------------------------------------------- |
-    /// | 0     | ✅        | ❌      | The stake account            |
+    /// | 0     | ✅        | ❌      | The central state account    |
     /// | 1     | ❌        | ❌      | The system program account   |
     /// | 2     | ✅        | ✅      | The fee payer account        |
     /// | 3     | ❌        | ❌      | The mint of the ACCESS token |
+    /// | 4     | ✅        | ❌      | The metadata account         |
+    /// | 5     | ❌        | ❌      | The metadata program account |
+    /// | 6     | ❌        | ❌      | The rent sysvar account      |
     CreateCentralState,
     /// Create stake pool
     ///
@@ -238,6 +241,15 @@ pub enum ProgramInstruction {
     /// | 0     | ✅        | ❌      | The account of the central state           |
     /// | 1     | ❌        | ✅      | The account of the central state authority |
     ChangeCentralStateAuthority,
+    /// Edit metadata
+    ///
+    /// | Index | Writable | Signer | Description                                |
+    /// | ---------------------------------------------------------------------- |
+    /// | 0     | ❌        | ❌      | The central state account                  |
+    /// | 1     | ❌        | ✅      | The account of the central state authority |
+    /// | 2     | ✅        | ❌      | The metadata account                       |
+    /// | 3     | ❌        | ❌      | The metadata program account               |
+    EditMetadata,
 }
 #[allow(missing_docs)]
 pub fn create_central_state(
@@ -470,4 +482,12 @@ pub fn change_central_state_authority(
         ProgramInstruction::ChangeCentralStateAuthority as u8,
         params,
     )
+}
+#[allow(missing_docs)]
+pub fn edit_metadata(
+    program_id: Pubkey,
+    accounts: edit_metadata::Accounts<Pubkey>,
+    params: edit_metadata::Params,
+) -> Instruction {
+    accounts.get_instruction(program_id, ProgramInstruction::EditMetadata as u8, params)
 }

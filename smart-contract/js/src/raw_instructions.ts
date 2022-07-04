@@ -539,6 +539,9 @@ export class createCentralStateInstruction {
   tag: number;
   dailyInflation: BN;
   authority: Uint8Array;
+  name: string;
+  symbol: string;
+  uri: string;
   static schema: Schema = new Map([
     [
       createCentralStateInstruction,
@@ -548,29 +551,44 @@ export class createCentralStateInstruction {
           ["tag", "u8"],
           ["dailyInflation", "u64"],
           ["authority", [32]],
+          ["name", "string"],
+          ["symbol", "string"],
+          ["uri", "string"],
         ],
       },
     ],
   ]);
-  constructor(obj: { dailyInflation: BN; authority: Uint8Array }) {
+  constructor(obj: {
+    dailyInflation: BN;
+    authority: Uint8Array;
+    name: string;
+    symbol: string;
+    uri: string;
+  }) {
     this.tag = 0;
     this.dailyInflation = obj.dailyInflation;
     this.authority = obj.authority;
+    this.name = obj.name;
+    this.symbol = obj.symbol;
+    this.uri = obj.uri;
   }
   serialize(): Uint8Array {
     return serialize(createCentralStateInstruction.schema, this);
   }
   getInstruction(
     programId: PublicKey,
-    stateAccount: PublicKey,
+    centralState: PublicKey,
     systemProgram: PublicKey,
     feePayer: PublicKey,
-    mint: PublicKey
+    mint: PublicKey,
+    metadata: PublicKey,
+    metadataProgram: PublicKey,
+    rentSysvar: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
     keys.push({
-      pubkey: stateAccount,
+      pubkey: centralState,
       isSigner: false,
       isWritable: true,
     });
@@ -586,6 +604,21 @@ export class createCentralStateInstruction {
     });
     keys.push({
       pubkey: mint,
+      isSigner: false,
+      isWritable: false,
+    });
+    keys.push({
+      pubkey: metadata,
+      isSigner: false,
+      isWritable: true,
+    });
+    keys.push({
+      pubkey: metadataProgram,
+      isSigner: false,
+      isWritable: false,
+    });
+    keys.push({
+      pubkey: rentSysvar,
       isSigner: false,
       isWritable: false,
     });
@@ -862,6 +895,70 @@ export class claimBondInstruction {
     });
     keys.push({
       pubkey: splTokenProgram,
+      isSigner: false,
+      isWritable: false,
+    });
+    return new TransactionInstruction({
+      keys,
+      programId,
+      data,
+    });
+  }
+}
+export class editMetadataInstruction {
+  tag: number;
+  name: string;
+  symbol: string;
+  uri: string;
+  static schema: Schema = new Map([
+    [
+      editMetadataInstruction,
+      {
+        kind: "struct",
+        fields: [
+          ["tag", "u8"],
+          ["name", "string"],
+          ["symbol", "string"],
+          ["uri", "string"],
+        ],
+      },
+    ],
+  ]);
+  constructor(obj: { name: string; symbol: string; uri: string }) {
+    this.tag = 23;
+    this.name = obj.name;
+    this.symbol = obj.symbol;
+    this.uri = obj.uri;
+  }
+  serialize(): Uint8Array {
+    return serialize(editMetadataInstruction.schema, this);
+  }
+  getInstruction(
+    programId: PublicKey,
+    centralState: PublicKey,
+    authority: PublicKey,
+    metadata: PublicKey,
+    metadataProgram: PublicKey
+  ): TransactionInstruction {
+    const data = Buffer.from(this.serialize());
+    let keys: AccountKey[] = [];
+    keys.push({
+      pubkey: centralState,
+      isSigner: false,
+      isWritable: false,
+    });
+    keys.push({
+      pubkey: authority,
+      isSigner: true,
+      isWritable: false,
+    });
+    keys.push({
+      pubkey: metadata,
+      isSigner: false,
+      isWritable: true,
+    });
+    keys.push({
+      pubkey: metadataProgram,
       isSigner: false,
       isWritable: false,
     });

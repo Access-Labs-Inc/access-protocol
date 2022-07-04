@@ -7,11 +7,10 @@ import {
   Transaction,
 } from "@solana/web3.js";
 import * as path from "path";
-import { readFileSync, writeSync, closeSync } from "fs";
+import { readFileSync } from "fs";
 import { ChildProcess, spawn, execSync } from "child_process";
 import tmp from "tmp";
 import { Token, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import BN from "bn.js";
 
 const programName = "access_protocol";
 
@@ -24,11 +23,11 @@ export async function spawnLocalSolana(): Promise<ChildProcess> {
 
 // Returns a keypair and key file name.
 export function initializePayer(): [Keypair, string] {
-  const key = new Keypair();
-  const tmpobj = tmp.fileSync();
-  writeSync(tmpobj.fd, JSON.stringify(Array.from(key.secretKey)));
-  closeSync(tmpobj.fd);
-  return [key, tmpobj.name];
+  const name = "wallet.json";
+  const currentWallet = Keypair.fromSecretKey(
+    new Uint8Array(JSON.parse(readFileSync(name, "utf-8")))
+  );
+  return [currentWallet, name];
 }
 
 // Deploys the agnostic order book program. Fees are paid with the fee payer
@@ -74,13 +73,12 @@ export function deployProgram(
       stakingSo,
       "--program-id",
       keyfile,
-      "-u localhost",
+      "-u https://api.devnet.solana.com",
       "-k",
       payerKeyFile,
       "--commitment finalized",
     ].join(" ")
   );
-  spawn("solana", ["logs", "-u", "localhost"], { stdio: "inherit" });
   return keypair.publicKey;
 }
 
@@ -90,7 +88,7 @@ export async function airdropPayer(connection: Connection, key: PublicKey) {
     try {
       const signature = await connection.requestAirdrop(
         key,
-        5 * LAMPORTS_PER_SOL
+        2 * LAMPORTS_PER_SOL
       );
       console.log(`Airdrop signature ${signature}`);
       await connection.confirmTransaction(signature, "finalized");

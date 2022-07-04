@@ -85,6 +85,8 @@ pub enum AccessError {
     CannotStakeZero,
     #[error("Unlock period cannot be 0")]
     ForbiddenUnlockPeriodZero,
+    #[error("Wrong MPL metadata program")]
+    WrongMplProgram,
 }
 
 impl From<AccessError> for ProgramError {
