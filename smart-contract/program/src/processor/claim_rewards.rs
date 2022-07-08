@@ -20,7 +20,10 @@ use spl_token::instruction::mint_to;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `claim_rewards` instruction
-pub struct Params {}
+pub struct Params {
+    // Should be false by default
+    pub allow_zero_rewards: bool,
+}
 
 #[derive(InstructionsAccount)]
 /// The required accounts for the `claim_rewards` instruction
@@ -104,7 +107,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 pub fn process_claim_rewards(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
-    _params: Params,
+    params: Params,
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 
@@ -135,6 +138,7 @@ pub fn process_claim_rewards(
         stake_account.last_claimed_time,
         &stake_pool,
         true,
+        params.allow_zero_rewards,
     )?
     // Multiply by the staker shares of the total pool
     .checked_mul(stake_account.stake_amount as u128)

@@ -121,6 +121,7 @@ pub fn process_claim_pool_rewards(
             stake_pool.header.last_claimed_time,
             &stake_pool,
             false,
+            false,
         )? >> 32,
     )
     .ok_or(AccessError::Overflow)?;

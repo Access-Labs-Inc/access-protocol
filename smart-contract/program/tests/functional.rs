@@ -478,7 +478,9 @@ async fn test_staking() {
             mint: &mint,
             spl_token_program: &spl_token::ID,
         },
-        claim_rewards::Params {},
+        claim_rewards::Params {
+            allow_zero_rewards: false,
+        },
     );
 
     sign_send_instructions(&mut prg_test_ctx, vec![claim_ix], vec![&staker])

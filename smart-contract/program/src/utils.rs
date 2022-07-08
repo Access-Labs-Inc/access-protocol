@@ -16,6 +16,7 @@ pub fn calc_reward_fp32(
     last_claimed_time: i64,
     stake_pool: &StakePoolRef,
     staker: bool,
+    allow_zero_rewards: bool,
 ) -> Result<u128, ProgramError> {
     let mut nb_days_to_claim =
         current_time.saturating_sub(last_claimed_time) as u64 / SECONDS_IN_DAY;
@@ -49,7 +50,7 @@ pub fn calc_reward_fp32(
         i = (i + 1) % STAKE_BUFFER_LEN;
     }
 
-    if reward == 0 {
+    if reward == 0 && !allow_zero_rewards {
         msg!("No rewards to claim, no operation.");
         return Err(AccessError::NoOp.into());
     }
