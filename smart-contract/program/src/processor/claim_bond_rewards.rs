@@ -137,12 +137,18 @@ pub fn process_claim_bond_rewards(
         AccessError::WrongMint,
     )?;
 
-    let reward = calc_reward_fp32(current_time, bond.last_claimed_time, &stake_pool, true)?
-        // Multiply by the staker shares of the total pool
-        .checked_mul(bond.total_staked as u128)
-        .map(|r| r >> 32)
-        .and_then(safe_downcast)
-        .ok_or(AccessError::Overflow)?;
+    let reward = calc_reward_fp32(
+        current_time,
+        bond.last_claimed_time,
+        &stake_pool,
+        true,
+        false,
+    )?
+    // Multiply by the staker shares of the total pool
+    .checked_mul(bond.total_staked as u128)
+    .map(|r| r >> 32)
+    .and_then(safe_downcast)
+    .ok_or(AccessError::Overflow)?;
 
     msg!("Claiming bond rewards {}", reward);
 

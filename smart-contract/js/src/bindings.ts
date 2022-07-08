@@ -226,13 +226,16 @@ export const claimRewards = async (
   connection: Connection,
   stakeAccount: PublicKey,
   rewardsDestination: PublicKey,
-  programId: PublicKey
+  programId: PublicKey,
+  allowZeroRewards: boolean
 ) => {
   const stake = await StakeAccount.retrieve(connection, stakeAccount);
   const [centralKey] = await CentralState.getKey(programId);
   const centralState = await CentralState.retrieve(connection, centralKey);
 
-  const ix = new claimRewardsInstruction().getInstruction(
+  const ix = new claimRewardsInstruction({
+    allowZeroRewards: Number(allowZeroRewards),
+  }).getInstruction(
     programId,
     stake.stakePool,
     stakeAccount,

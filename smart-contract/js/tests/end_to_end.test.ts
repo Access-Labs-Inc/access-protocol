@@ -705,7 +705,8 @@ test("End to end test", async () => {
     connection,
     stakeKey,
     stakerAta,
-    programId
+    programId,
+    false
   );
   tx = await signAndSendTransactionInstructions(
     connection,
@@ -957,7 +958,8 @@ test("End to end test", async () => {
     connection,
     stakeKey,
     stakerAta,
-    programId
+    programId,
+    false
   );
   tx = await signAndSendTransactionInstructions(
     connection,
