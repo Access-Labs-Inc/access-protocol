@@ -39,6 +39,7 @@ pub fn get_all_pools() -> Result<Vec<Pubkey>, ProgramError> {
             encoding: Some(UiAccountEncoding::Base64),
             data_slice: None,
             commitment: Some(CommitmentConfig::processed()),
+            min_context_slot: None,
         },
         with_context: Some(false),
     };
