@@ -1,12 +1,12 @@
-import { StakeAccount, ACCESS_PROGRAM_ID, StakePool, BondAccount, getBondAccounts, getAllActiveBonds, getAllInactiveBonds } from "@access-protocol";
+import { StakeAccount, ACCESS_PROGRAM_ID, StakePool, BondAccount, getBondAccounts } from "@access-protocol";
 import { connection } from "./connection";
 import { PublicKey } from "@solana/web3.js";
+import BN from 'bn.js';
 
 /**
  * Public key of the stake pool (must be defined in the .env file)
  */
 const STAKE_POOL_KEY = new PublicKey(process.env.STAKE_POOL_KEY!);
-const BOND_POOL_KEY = process.env.BOND_POOL_KEY!;
 
 /**
  * Verifies that a user has enough tokens staked
@@ -26,16 +26,24 @@ export const checkStake = async (owner: string) => {
   );
 
   const bondAccounts = await getBondAccounts(connection, new PublicKey(owner));
-  let bondTotalStaked = 0;
-  for (const bondAccount of bondAccounts) {
-    const account = BondAccount.deserialize(bondAccount.account.data);
-    bondTotalStaked += account.totalStaked.toNumber();
-  }
+  const bondTotalStaked = bondAccounts
+    .map((bondAccount): BN => {
+      const account = BondAccount.deserialize(bondAccount.account.data);
+      if (account.stakePool.toBase58() === STAKE_POOL_KEY.toBase58()) {
+        return account.totalStaked;
+      }
+      
+      return new BN(0);
+    })
+    .reduce((totalStaked, stakeAmount) => {
+      stakeAmount.add(totalStaked);
+    }, new BN(0));
+
 
   const requiredAmount = Math.min(
     stakeAccount.poolMinimumAtCreation.toNumber(),
     stakePool.minimumStakeAmount.toNumber()
   );
 
-  return stakeAccount.stakeAmount.toNumber() + bondTotalStaked > requiredAmount;
-};
+  return stakeAccount.stakeAmount.add(bondTotalStaked).toNumber() > requiredAmount;
+  };
