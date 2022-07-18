@@ -27,7 +27,7 @@ export const checkStake = async (owner: string) => {
 
   const bondAccounts = await getBondAccounts(connection, new PublicKey(owner));
   const bondTotalStaked = bondAccounts
-    .map((bondAccount): BN => {
+    .map((bondAccount) => {
       const account = BondAccount.deserialize(bondAccount.account.data);
       if (account.stakePool.toBase58() === STAKE_POOL_KEY.toBase58()) {
         return account.totalStaked;
