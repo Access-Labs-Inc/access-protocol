@@ -427,6 +427,7 @@ async fn test_staking() {
             spl_token_program: &spl_token::ID,
         },
         claim_pool_rewards::Params {},
+        true,
     );
 
     sign_send_instructions(
@@ -453,15 +454,12 @@ async fn test_staking() {
             spl_token_program: &spl_token::ID,
         },
         claim_bond_rewards::Params {},
+        false,
     );
 
-    sign_send_instructions(
-        &mut prg_test_ctx,
-        vec![claim_bond_rewards_ix],
-        vec![&staker],
-    )
-    .await
-    .unwrap();
+    sign_send_instructions(&mut prg_test_ctx, vec![claim_bond_rewards_ix], vec![])
+        .await
+        .unwrap();
 
     //
     // Claim rewards
@@ -481,6 +479,7 @@ async fn test_staking() {
         claim_rewards::Params {
             allow_zero_rewards: false,
         },
+        true,
     );
 
     sign_send_instructions(&mut prg_test_ctx, vec![claim_ix], vec![&staker])

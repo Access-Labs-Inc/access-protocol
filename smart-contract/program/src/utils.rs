@@ -152,5 +152,14 @@ pub fn assert_valid_fee(account: &AccountInfo, owner: &Pubkey) -> ProgramResult 
         msg!("Invalid fee account owner");
         return Err(ProgramError::IllegalOwner);
     }
+    assert_no_close_or_delegate(&acc)?;
+    Ok(())
+}
+
+pub fn assert_no_close_or_delegate(token_account: &Account) -> ProgramResult {
+    if token_account.delegate.is_some() || token_account.close_authority.is_some() {
+        msg!("This token account cannot have a delegate or close authority");
+        return Err(ProgramError::InvalidArgument);
+    }
     Ok(())
 }
