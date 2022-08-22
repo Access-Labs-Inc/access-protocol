@@ -8,6 +8,7 @@ use solana_program::{
     msg,
     program::invoke_signed,
     program_error::ProgramError,
+    program_pack::Pack,
     pubkey::Pubkey,
     sysvar::Sysvar,
 };
@@ -15,9 +16,12 @@ use solana_program::{
 use crate::state::{BondAccount, CentralState, StakePool};
 use crate::{error::AccessError, state::Tag};
 use bonfida_utils::{fp_math::safe_downcast, BorshSize, InstructionsAccount};
-use spl_token::instruction::mint_to;
+use spl_token::{instruction::mint_to, state::Account};
 
-use crate::utils::{calc_reward_fp32, check_account_key, check_account_owner, check_signer};
+use crate::utils::{
+    assert_no_close_or_delegate, calc_reward_fp32, check_account_key, check_account_owner,
+    check_signer,
+};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `claim_bond_rewards` instruction
@@ -95,9 +99,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
         check_account_owner(accounts.mint, &spl_token::ID, AccessError::WrongOwner)?;
 
-        // Check signer
-        check_signer(accounts.bond_owner, AccessError::BuyerMustSign)?;
-
         Ok(accounts)
     }
 }
@@ -119,6 +120,15 @@ pub fn process_claim_bond_rewards(
     let central_state = CentralState::from_account_info(accounts.central_state)?;
     let stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut bond = BondAccount::from_account_info(accounts.bond_account, false)?;
+
+    let destination_token_acc = Account::unpack(&accounts.rewards_destination.data.borrow())?;
+
+    if destination_token_acc.owner != bond.owner {
+        // If the destination does not belong to the bond owner he must sign
+        check_signer(accounts.bond_owner, AccessError::BuyerMustSign)?;
+    } else {
+        assert_no_close_or_delegate(&destination_token_acc)?;
+    }
 
     // Safety checks
     check_account_key(

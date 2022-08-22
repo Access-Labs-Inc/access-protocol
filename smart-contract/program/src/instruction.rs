@@ -308,20 +308,35 @@ pub fn claim_pool_rewards(
     program_id: Pubkey,
     accounts: claim_pool_rewards::Accounts<Pubkey>,
     params: claim_pool_rewards::Params,
+    owner_must_sign: bool,
 ) -> Instruction {
-    accounts.get_instruction(
+    let mut ix = accounts.get_instruction(
         program_id,
         ProgramInstruction::ClaimPoolRewards as u8,
         params,
-    )
+    );
+
+    if let Some(acc) = ix.accounts.get_mut(1) {
+        acc.is_signer = owner_must_sign
+    }
+
+    ix
 }
 #[allow(missing_docs)]
 pub fn claim_rewards(
     program_id: Pubkey,
     accounts: claim_rewards::Accounts<Pubkey>,
     params: claim_rewards::Params,
+    owner_must_sign: bool,
 ) -> Instruction {
-    accounts.get_instruction(program_id, ProgramInstruction::ClaimRewards as u8, params)
+    let mut ix =
+        accounts.get_instruction(program_id, ProgramInstruction::ClaimRewards as u8, params);
+
+    if let Some(acc) = ix.accounts.get_mut(2) {
+        acc.is_signer = owner_must_sign
+    }
+
+    ix
 }
 #[allow(missing_docs)]
 pub fn crank(
@@ -404,12 +419,19 @@ pub fn claim_bond_rewards(
     program_id: Pubkey,
     accounts: claim_bond_rewards::Accounts<Pubkey>,
     params: claim_bond_rewards::Params,
+    owner_must_sign: bool,
 ) -> Instruction {
-    accounts.get_instruction(
+    let mut ix = accounts.get_instruction(
         program_id,
         ProgramInstruction::ClaimBondRewards as u8,
         params,
-    )
+    );
+
+    if let Some(acc) = ix.accounts.get_mut(2) {
+        acc.is_signer = owner_must_sign
+    }
+
+    ix
 }
 #[allow(missing_docs)]
 pub fn change_pool_minimum(

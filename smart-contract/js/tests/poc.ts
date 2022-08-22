@@ -267,14 +267,14 @@ export const poc = async (
 
     ixs.push(
       await crank(stakePoolKey, programId),
-      await claimRewards(connection, bobStakeKey, bobAta, programId)
+      await claimRewards(connection, bobStakeKey, bobAta, programId, true)
     );
 
     if (i === 4) {
       console.log("Alice claiming");
       signers.push(Alice);
       ixs.push(
-        await claimRewards(connection, aliceStakeKey, aliceAta, programId)
+        await claimRewards(connection, aliceStakeKey, aliceAta, programId, true)
       );
     }
 

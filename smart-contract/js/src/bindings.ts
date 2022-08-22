@@ -126,7 +126,8 @@ export const claimBondRewards = async (
   connection: Connection,
   bondAccount: PublicKey,
   rewardsDestination: PublicKey,
-  programId: PublicKey
+  programId: PublicKey,
+  ownerMustSign = true
 ) => {
   const [centralKey] = await CentralState.getKey(programId);
   const centralState = await CentralState.retrieve(connection, centralKey);
@@ -143,6 +144,11 @@ export const claimBondRewards = async (
     centralState.tokenMint,
     TOKEN_PROGRAM_ID
   );
+
+  if (!ownerMustSign) {
+    const idx = ix.keys.findIndex((e) => e.pubkey.equals(bond.owner));
+    ix.keys[idx].isSigner = false;
+  }
 
   return ix;
 };
@@ -195,7 +201,8 @@ export const claimPoolRewards = async (
   connection: Connection,
   stakePoolAccount: PublicKey,
   rewardsDestination: PublicKey,
-  programId: PublicKey
+  programId: PublicKey,
+  ownerMustSign = true
 ) => {
   const [centralKey] = await CentralState.getKey(programId);
   const centralState = await CentralState.retrieve(connection, centralKey);
@@ -210,6 +217,11 @@ export const claimPoolRewards = async (
     centralState.tokenMint,
     TOKEN_PROGRAM_ID
   );
+
+  if (!ownerMustSign) {
+    const idx = ix.keys.findIndex((e) => e.pubkey.equals(stakePool.owner));
+    ix.keys[idx].isSigner = false;
+  }
 
   return ix;
 };
@@ -227,7 +239,8 @@ export const claimRewards = async (
   stakeAccount: PublicKey,
   rewardsDestination: PublicKey,
   programId: PublicKey,
-  allowZeroRewards: boolean
+  allowZeroRewards: boolean,
+  ownerMustSign = true
 ) => {
   const stake = await StakeAccount.retrieve(connection, stakeAccount);
   const [centralKey] = await CentralState.getKey(programId);
@@ -245,6 +258,11 @@ export const claimRewards = async (
     centralState.tokenMint,
     TOKEN_PROGRAM_ID
   );
+
+  if (!ownerMustSign) {
+    const idx = ix.keys.findIndex((e) => e.pubkey.equals(stake.owner));
+    ix.keys[idx].isSigner = false;
+  }
 
   return ix;
 };
