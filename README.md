@@ -11,7 +11,6 @@
 3. Smart contract
    - Program
    - Javascript bindings
-4. Frontend
 
 <h2 align="center">Concepts</h2>
 
@@ -69,17 +68,3 @@ This will:
 - Deploy the program
 - Run all the instructions of the protocol
 - Verify the states of each account at each step
-
-<h2 align="center">Frontend</h2>
-
-The frontend folder contains a demonstration web app that implements the following features:
-
-- Create a stake pool
-- Create a stake account
-- Stake ACCESS tokens
-- Unstake ACCESS tokens
-- Create a bond
-- Claim a bond
-- Sign a bond
-- Claim rewards for: stake pools, stake accounts and bonds
-- Unlock bond tokens
