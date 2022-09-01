@@ -30,7 +30,7 @@ pub const SECONDS_IN_DAY: u64 = if cfg!(feature = "days-to-sec-15m") {
 };
 
 /// Percentage of the staking rewards going to stakers
-pub const STAKER_MULTIPLIER: u64 = 80;
+pub const STAKER_MULTIPLIER: u64 = 50;
 
 /// Percentage of the staking rewards going to the pool owner
 pub const OWNER_MULTIPLIER: u64 = 100 - STAKER_MULTIPLIER;
