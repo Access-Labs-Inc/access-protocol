@@ -18,7 +18,7 @@ use std::ops::DerefMut;
 
 /// ACCESS token mint
 pub const ACCESS_MINT: Pubkey =
-    solana_program::pubkey!("Hc4bdbupCMRkuP3o5gMks77ifACgVuxFAaUYbeuNoxG5");
+    solana_program::pubkey!("acsPVZqm4ykxKftWAKtDU7zbBNELffT9k7p5ZCrWJme");
 
 #[allow(missing_docs)]
 pub const SECONDS_IN_DAY: u64 = if cfg!(feature = "days-to-sec-15m") {
@@ -45,7 +45,7 @@ pub const UNSTAKE_PERIOD: i64 = 1;
 pub const MAX_UNSTAKE_REQUEST: usize = 10;
 
 /// Fees charged on staking instruction in % (i.e FEES = 1 <-> 1% fee charged)
-pub const FEES: u64 = 1;
+pub const FEES: u64 = 2;
 
 #[derive(BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive)]
 #[repr(u8)]

@@ -1,7 +1,7 @@
-import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import { Connection, Keypair, PublicKey, Transaction, SystemProgram, sendAndConfirmTransaction } from "@solana/web3.js";
 import { createCentralState } from "./bindings";
 import fs from "fs";
-import { Token, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { Token, TOKEN_PROGRAM_ID, MintLayout } from "@solana/spl-token";
 import { CentralState } from "./state";
 import { signAndSendTransactionInstructions } from "./utils";
 
@@ -19,8 +19,28 @@ import { signAndSendTransactionInstructions } from "./utils";
  * - Token decimals: Decimals of the ACCS token
  */
 
+const createMint = async (connection, payer, mintAuthority, freezeAuthority, decimals, tokenKeypair, programId) => {
+  const token = new Token(connection, tokenKeypair.publicKey, programId, payer); // Allocate memory for the account
+
+  const balanceNeeded = await Token.getMinBalanceRentForExemptMint(connection);
+  const transaction = new Transaction();
+  transaction.add(SystemProgram.createAccount({
+    fromPubkey: payer.publicKey,
+    newAccountPubkey: tokenKeypair.publicKey,
+    lamports: balanceNeeded,
+    space: MintLayout.span,
+    programId
+  }));
+  transaction.add(Token.createInitMintInstruction(programId, tokenKeypair.publicKey, decimals, mintAuthority, freezeAuthority)); // Send the two instructions
+
+  await sendAndConfirmTransaction(connection, transaction, [payer, tokenKeypair], {
+    skipPreflight: false
+  });
+  return token;
+}
+
 // Program ID
-const programId = new PublicKey("");
+const programId = new PublicKey("acp1VPqNoMs5KC5aEH3MzxnyPZNyKQF1TCPouCoNRuX");
 
 // The Solana RPC connection
 const connection = new Connection("");
@@ -34,7 +54,12 @@ const uri = "...";
 
 // The wallet used to initialize the central state
 // This wallet will be the central state authority
-const wallet = Keypair.fromSecretKey(
+const authorityKeypair = Keypair.fromSecretKey(
+  Uint8Array.from(JSON.parse(fs.readFileSync("").toString()))
+);
+
+// The wallet used to for SPL token
+const tokenKeypair = Keypair.fromSecretKey(
   Uint8Array.from(JSON.parse(fs.readFileSync("").toString()))
 );
 
@@ -47,26 +72,27 @@ const tokenDecimals = 6;
 const initCentralState = async () => {
   // Initialize mint
   const [centralKey] = await CentralState.getKey(programId);
-  const token = await Token.createMint(
+  const token = await createMint(
     connection,
-    wallet,
+    authorityKeypair,
     centralKey,
     null,
     tokenDecimals, // Decimals of the token
+    tokenKeypair,
     TOKEN_PROGRAM_ID
   );
   // Create central state
   const ix = await createCentralState(
     dailyInflation,
-    wallet.publicKey, // Central state authority
-    wallet.publicKey,
+    authorityKeypair.publicKey, // Central state authority
+    authorityKeypair.publicKey,
     token.publicKey,
     name,
     symbol,
     uri,
     programId
   );
-  const tx = await signAndSendTransactionInstructions(connection, [], wallet, [
+  const tx = await signAndSendTransactionInstructions(connection, [], authorityKeypair, [
     ix,
   ]);
 
