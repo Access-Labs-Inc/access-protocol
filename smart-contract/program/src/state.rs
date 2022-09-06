@@ -45,7 +45,7 @@ pub const UNSTAKE_PERIOD: i64 = 1;
 pub const MAX_UNSTAKE_REQUEST: usize = 10;
 
 /// Fees charged on staking instruction in % (i.e FEES = 1 <-> 1% fee charged)
-pub const FEES: u64 = 1;
+pub const FEES: u64 = 2;
 
 #[derive(BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive)]
 #[repr(u8)]
