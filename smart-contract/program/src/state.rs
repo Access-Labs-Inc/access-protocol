@@ -18,7 +18,7 @@ use std::ops::DerefMut;
 
 /// ACCESS token mint
 pub const ACCESS_MINT: Pubkey =
-    solana_program::pubkey!("acsPVZqm4ykxKftWAKtDU7zbBNELffT9k7p5ZCrWJme");
+    solana_program::pubkey!("acsT7dFjiyevrBbvpsD7Vqcwj1QN96fbWKdq49wcdWZ");
 
 #[allow(missing_docs)]
 pub const SECONDS_IN_DAY: u64 = if cfg!(feature = "days-to-sec-15m") {
