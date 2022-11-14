@@ -10,7 +10,7 @@ import * as path from "path";
 import { readFileSync } from "fs";
 import { ChildProcess, spawn, execSync } from "child_process";
 import tmp from "tmp";
-import { Token, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { getOrCreateAssociatedTokenAccount, createMint, mintTo } from "@solana/spl-token";
 
 const programName = "access_protocol";
 
@@ -115,36 +115,58 @@ export const signAndSendTransactionInstructions = async (
   const sig = await connection.sendTransaction(tx, signers, {
     skipPreflight: false,
   });
-  await connection.confirmTransaction(sig, "finalized");
+  // await connection.confirmTransaction(sig, "finalized");
   return sig;
 };
 
 export class TokenMint {
-  constructor(public token: Token, public signer: Keypair) {}
+  token: Keypair;
+  connection: Connection;
+  feePayer: Keypair;
+  mintAuthority: PublicKey;
+
+  constructor(token: Keypair, connection: Connection, feePayer: Keypair, mintAuthority: PublicKey) { 
+    this.token = token;
+    this.connection = connection;
+    this.feePayer = feePayer;
+    this.mintAuthority = mintAuthority;
+  }
 
   static async init(
     connection: Connection,
     feePayer: Keypair,
     mintAuthority: PublicKey | null = null
   ) {
-    let signer = new Keypair();
-    let token = await Token.createMint(
+    let tokenKeypair = new Keypair();
+    await createMint(
       connection,
       feePayer,
-      mintAuthority || signer.publicKey,
+      mintAuthority ?? tokenKeypair.publicKey,
       null,
       6,
-      TOKEN_PROGRAM_ID
+      tokenKeypair,
     );
-    return new TokenMint(token, signer);
+    return new TokenMint(tokenKeypair, connection, feePayer, mintAuthority ?? tokenKeypair.publicKey);
   }
 
   async getAssociatedTokenAccount(wallet: PublicKey): Promise<PublicKey> {
-    let acc = await this.token.getOrCreateAssociatedAccountInfo(wallet);
+    let acc = await getOrCreateAssociatedTokenAccount(
+      this.connection,
+      this.feePayer,
+      this.token.publicKey,
+      wallet
+    );
     return acc.address;
   }
 
-  async mintInto(tokenAccount: PublicKey, amount: number): Promise<void> {
-    return this.token.mintTo(tokenAccount, this.signer, [], amount);
+  async mintInto(tokenAccount: PublicKey, amount: number): Promise<any> {
+    return mintTo(
+      this.connection, 
+      this.feePayer,
+      this.token.publicKey,
+      tokenAccount,
+      this.mintAuthority,
+      amount
+    );
   }
 }

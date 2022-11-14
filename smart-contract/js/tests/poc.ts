@@ -18,9 +18,10 @@ import { CentralState, StakePool, StakeAccount } from "../src/state";
 import { TokenMint } from "./utils";
 import { airdropPayer, signAndSendTransactionInstructions } from "./utils";
 import {
-  Token,
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddress,
+  createAssociatedTokenAccountInstruction,
 } from "@solana/spl-token";
 import { sleep } from "../src/utils";
 import { expect } from "@jest/globals";
@@ -54,70 +55,74 @@ export const poc = async (
    * Set up ATA
    */
 
-  const stakePoolAta = await Token.getAssociatedTokenAddress(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
+  const stakePoolAta = await getAssociatedTokenAddress(
     accessToken.token.publicKey,
-    stakePoolOwner.publicKey
+    stakePoolOwner.publicKey,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
   );
   await signAndSendTransactionInstructions(connection, [], feePayer, [
-    Token.createAssociatedTokenAccountInstruction(
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-      TOKEN_PROGRAM_ID,
-      accessToken.token.publicKey,
+    createAssociatedTokenAccountInstruction(
+      feePayer.publicKey,
       stakePoolAta,
       stakePoolOwner.publicKey,
-      feePayer.publicKey
+      accessToken.token.publicKey,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID,
     ),
   ]);
 
-  const bobAta = await Token.getAssociatedTokenAddress(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
+  const bobAta = await getAssociatedTokenAddress(
     accessToken.token.publicKey,
-    Bob.publicKey
+    Bob.publicKey,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
   );
   await signAndSendTransactionInstructions(connection, [], feePayer, [
-    Token.createAssociatedTokenAccountInstruction(
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-      TOKEN_PROGRAM_ID,
-      accessToken.token.publicKey,
+    createAssociatedTokenAccountInstruction(
+      feePayer.publicKey,
       bobAta,
       Bob.publicKey,
-      feePayer.publicKey
+      accessToken.token.publicKey,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID,
     ),
   ]);
-  const aliceAta = await Token.getAssociatedTokenAddress(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
+  const aliceAta = await getAssociatedTokenAddress(
     accessToken.token.publicKey,
-    Alice.publicKey
+    Alice.publicKey,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
   );
   await signAndSendTransactionInstructions(connection, [], feePayer, [
-    Token.createAssociatedTokenAccountInstruction(
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-      TOKEN_PROGRAM_ID,
-      accessToken.token.publicKey,
+    createAssociatedTokenAccountInstruction(
+      feePayer.publicKey,
       aliceAta,
       Alice.publicKey,
-      feePayer.publicKey
+      accessToken.token.publicKey,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID,
     ),
   ]);
 
-  const feesAta = await Token.getAssociatedTokenAddress(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
+  const feesAta = await getAssociatedTokenAddress(
     accessToken.token.publicKey,
-    centralStateAuthority.publicKey
+    centralStateAuthority.publicKey,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
   );
   await signAndSendTransactionInstructions(connection, [], feePayer, [
-    Token.createAssociatedTokenAccountInstruction(
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-      TOKEN_PROGRAM_ID,
-      accessToken.token.publicKey,
+    createAssociatedTokenAccountInstruction(
+      feePayer.publicKey,
       feesAta,
       centralStateAuthority.publicKey,
-      feePayer.publicKey
+      accessToken.token.publicKey,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID,
     ),
   ]);
 
@@ -148,12 +153,12 @@ export const poc = async (
     programId,
     stakePoolOwner.publicKey
   );
-  const vault = await Token.getAssociatedTokenAddress(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
+  const vault = await getAssociatedTokenAddress(
     accessToken.token.publicKey,
     stakePoolKey,
-    true
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
   );
   const ix_stake_pool = await createStakePool(
     connection,

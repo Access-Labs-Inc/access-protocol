@@ -41,7 +41,7 @@ cargo doc
 Functional test can be ran using Solana program test
 
 ```
-cargo test-bpf --features days-to-sec-10s no-mint-check no-bond-signer
+BPF_OUT_DIR=target/deploy cargo test-bpf --features days-to-sec-10s no-mint-check no-bond-signer
 ```
 
 ### JS

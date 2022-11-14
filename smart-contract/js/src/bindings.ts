@@ -34,8 +34,9 @@ import { CentralState, StakePool, BondAccount, StakeAccount } from "./state";
 import BN from "bn.js";
 import {
   TOKEN_PROGRAM_ID,
-  Token,
   ASSOCIATED_TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddress,
+  createAssociatedTokenAccountInstruction,
 } from "@solana/spl-token";
 import { findMetadataPda, TokenMetadataProgram } from "@metaplex-foundation/js";
 
@@ -494,21 +495,21 @@ export const createStakePool = async (
   const [stakePool] = await StakePool.getKey(programId, owner);
   const [centralKey] = await CentralState.getKey(programId);
   const centralState = await CentralState.retrieve(connection, centralKey);
-  const vault = await Token.getAssociatedTokenAddress(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
+  const vault = await getAssociatedTokenAddress(
     centralState.tokenMint,
     stakePool,
-    true
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
   );
 
-  const createVaultIx = Token.createAssociatedTokenAccountInstruction(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
-    centralState.tokenMint,
+  const createVaultIx = createAssociatedTokenAccountInstruction(
+    feePayer,
     vault,
     stakePool,
-    feePayer
+    centralState.tokenMint,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
   );
 
   const ix = new createStakePoolInstruction({
@@ -568,11 +569,12 @@ export const stake = async (
   const [centralKey] = await CentralState.getKey(programId);
   const centralState = await CentralState.retrieve(connection, centralKey);
 
-  const feesAta = await Token.getAssociatedTokenAddress(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
+  const feesAta = await getAssociatedTokenAddress(
     centralState.tokenMint,
-    centralState.authority
+    centralState.authority,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
   );
 
   const ix = new stakeInstruction({ amount: new BN(amount) }).getInstruction(

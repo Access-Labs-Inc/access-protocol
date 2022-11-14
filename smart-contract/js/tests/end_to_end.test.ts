@@ -39,9 +39,10 @@ import {
   UnstakeRequest,
 } from "../src/state";
 import {
-  Token,
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddress,
+  createAssociatedTokenAccountInstruction,
 } from "@solana/spl-token";
 import { sleep } from "../src/utils";
 import BN from "bn.js";
@@ -65,7 +66,8 @@ beforeAll(async () => {
   // solana = await spawnLocalSolana();
   connection = new Connection("https://api.devnet.solana.com", "finalized");
   [feePayer, payerKeyFile] = initializePayer();
-  // await airdropPayer(connection, feePayer.publicKey);
+  await airdropPayer(connection, feePayer.publicKey);
+  await airdropPayer(connection, feePayer.publicKey);
   programId = deployProgram(
     payerKeyFile,
     true,
@@ -110,54 +112,57 @@ test("End to end test", async () => {
    * Set up ATA
    */
 
-  const stakePoolAta = await Token.getAssociatedTokenAddress(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
+  const stakePoolAta = await getAssociatedTokenAddress(
     accessToken.token.publicKey,
-    stakePoolOwner.publicKey
+    stakePoolOwner.publicKey,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
   );
   await signAndSendTransactionInstructions(connection, [], feePayer, [
-    Token.createAssociatedTokenAccountInstruction(
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-      TOKEN_PROGRAM_ID,
-      accessToken.token.publicKey,
+    createAssociatedTokenAccountInstruction(
+      feePayer.publicKey,
       stakePoolAta,
       stakePoolOwner.publicKey,
-      feePayer.publicKey
+      accessToken.token.publicKey,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID,
     ),
   ]);
 
-  const stakerAta = await Token.getAssociatedTokenAddress(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
+  const stakerAta = await getAssociatedTokenAddress(
     accessToken.token.publicKey,
-    staker.publicKey
+    staker.publicKey,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
   );
   await signAndSendTransactionInstructions(connection, [], feePayer, [
-    Token.createAssociatedTokenAccountInstruction(
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-      TOKEN_PROGRAM_ID,
-      accessToken.token.publicKey,
+    createAssociatedTokenAccountInstruction(
+      feePayer.publicKey,
       stakerAta,
       staker.publicKey,
-      feePayer.publicKey
+      accessToken.token.publicKey,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID,
     ),
   ]);
 
-  const feesAta = await Token.getAssociatedTokenAddress(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
+  const feesAta = await getAssociatedTokenAddress(
     accessToken.token.publicKey,
-    centralStateAuthority.publicKey
+    centralStateAuthority.publicKey,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
   );
   await signAndSendTransactionInstructions(connection, [], feePayer, [
-    Token.createAssociatedTokenAccountInstruction(
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-      TOKEN_PROGRAM_ID,
-      accessToken.token.publicKey,
+    createAssociatedTokenAccountInstruction(
+      feePayer.publicKey,
       feesAta,
       centralStateAuthority.publicKey,
-      feePayer.publicKey
+      accessToken.token.publicKey,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID,
     ),
   ]);
 
@@ -233,12 +238,12 @@ test("End to end test", async () => {
     programId,
     stakePoolOwner.publicKey
   );
-  const vault = await Token.getAssociatedTokenAddress(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
+  const vault = await getAssociatedTokenAddress(
     accessToken.token.publicKey,
     stakePoolKey,
-    true
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
   );
   const ix_stake_pool = await createStakePool(
     connection,
@@ -342,33 +347,35 @@ test("End to end test", async () => {
    *
    */
 
-  const quoteBuyerAta = await Token.getAssociatedTokenAddress(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
+  const quoteBuyerAta = await getAssociatedTokenAddress(
     quoteToken.token.publicKey,
-    staker.publicKey
+    staker.publicKey,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
   );
-  const ix_quote_buyer_ata = Token.createAssociatedTokenAccountInstruction(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
-    quoteToken.token.publicKey,
+  const ix_quote_buyer_ata = createAssociatedTokenAccountInstruction(
+    feePayer.publicKey,
     quoteBuyerAta,
     staker.publicKey,
-    feePayer.publicKey
-  );
-  const quoteSellerAta = await Token.getAssociatedTokenAddress(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
     quoteToken.token.publicKey,
-    bondSeller.publicKey
-  );
-  const ix_quote_seller_ata = Token.createAssociatedTokenAccountInstruction(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
     TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+  );
+  const quoteSellerAta = await getAssociatedTokenAddress(
     quoteToken.token.publicKey,
+    bondSeller.publicKey,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+  );
+  const ix_quote_seller_ata = createAssociatedTokenAccountInstruction(
+    feePayer.publicKey,
     quoteSellerAta,
     bondSeller.publicKey,
-    feePayer.publicKey
+    quoteToken.token.publicKey,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
   );
 
   tx = await signAndSendTransactionInstructions(connection, [], feePayer, [
@@ -1043,19 +1050,20 @@ test("End to end test", async () => {
    */
   const adminMintAmount = 2_000 * decimals;
   const receiver = Keypair.generate();
-  const receiverAta = await Token.getAssociatedTokenAddress(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
+  const receiverAta = await getAssociatedTokenAddress(
     accessToken.token.publicKey,
-    receiver.publicKey
+    receiver.publicKey,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
   );
-  const ix_create_receiver_ata = Token.createAssociatedTokenAccountInstruction(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
-    accessToken.token.publicKey,
+  const ix_create_receiver_ata = createAssociatedTokenAccountInstruction(
+    feePayer.publicKey,
     receiverAta,
     receiver.publicKey,
-    feePayer.publicKey
+    accessToken.token.publicKey,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
   );
   const ix_admin_mint = await adminMint(
     connection,
@@ -1171,10 +1179,10 @@ test("End to end test", async () => {
   );
 });
 
-test("Claim different times", async () => {
-  await poc(connection, programId, feePayer);
-});
+// test("Claim different times", async () => {
+//   await poc(connection, programId, feePayer);
+// });
 
-test("Change central state auth", async () => {
-  await changeCentralStateAuth(connection, programId, feePayer);
-});
+// test("Change central state auth", async () => {
+//   await changeCentralStateAuth(connection, programId, feePayer);
+// });
