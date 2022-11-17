@@ -7,27 +7,21 @@ import {
   Transaction,
 } from "@solana/web3.js";
 import * as path from "path";
-import { readFileSync } from "fs";
-import { ChildProcess, spawn, execSync } from "child_process";
+import { readFileSync, writeSync, closeSync } from "fs";
+import { execSync } from "child_process";
 import tmp from "tmp";
-import { getOrCreateAssociatedTokenAccount, createMint, mintTo } from "@solana/spl-token";
+import { getOrCreateAssociatedTokenAccount, createMint, mintTo, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { sleep } from "../src/utils";
 
 const programName = "access_protocol";
 
-// Spawns a local solana test validator. Caller is responsible for killing the
-// process.
-export async function spawnLocalSolana(): Promise<ChildProcess> {
-  const ledger = tmp.dirSync();
-  return spawn("solana-test-validator", ["-l", ledger.name]);
-}
-
 // Returns a keypair and key file name.
 export function initializePayer(): [Keypair, string] {
-  const name = "wallet.json";
-  const currentWallet = Keypair.fromSecretKey(
-    new Uint8Array(JSON.parse(readFileSync(name, "utf-8")))
-  );
-  return [currentWallet, name];
+  const key = new Keypair();
+  const tmpobj = tmp.fileSync();
+  writeSync(tmpobj.fd, JSON.stringify(Array.from(key.secretKey)));
+  closeSync(tmpobj.fd);
+  return [key, tmpobj.name];
 }
 
 // Deploys the agnostic order book program. Fees are paid with the fee payer
@@ -73,7 +67,7 @@ export function deployProgram(
       stakingSo,
       "--program-id",
       keyfile,
-      "-u https://api.devnet.solana.com",
+      "-u localhost",
       "-k",
       payerKeyFile,
       "--commitment finalized",
@@ -88,7 +82,7 @@ export async function airdropPayer(connection: Connection, key: PublicKey) {
     try {
       const signature = await connection.requestAirdrop(
         key,
-        2 * LAMPORTS_PER_SOL
+        5 * LAMPORTS_PER_SOL
       );
       console.log(`Airdrop signature ${signature}`);
       await connection.confirmTransaction(signature, "finalized");
@@ -115,7 +109,21 @@ export const signAndSendTransactionInstructions = async (
   const sig = await connection.sendTransaction(tx, signers, {
     skipPreflight: false,
   });
-  // await connection.confirmTransaction(sig, "finalized");
+
+  // Why? https://github.com/solana-labs/solana/issues/25955
+  try {
+    await connection.confirmTransaction(sig, "finalized");
+  } catch (e) {
+    let status = await connection.getSignatureStatus(sig);
+    console.log("Signature status: ", status.value?.confirmationStatus);
+    let attempt = 1;
+    while (status.value?.confirmationStatus !== 'finalized' && attempt < 5) {
+      sleep(1000);
+      console.log(`waiting for confirmation... (${attempt})`);
+      status = await connection.getSignatureStatus(sig);
+      attempt++;
+    }
+  }
   return sig;
 };
 
@@ -141,12 +149,12 @@ export class TokenMint {
     await createMint(
       connection,
       feePayer,
-      mintAuthority ?? tokenKeypair.publicKey,
+      mintAuthority || tokenKeypair.publicKey,
       null,
       6,
-      tokenKeypair,
+      tokenKeypair
     );
-    return new TokenMint(tokenKeypair, connection, feePayer, mintAuthority ?? tokenKeypair.publicKey);
+    return new TokenMint(tokenKeypair, connection, feePayer, mintAuthority || tokenKeypair.publicKey);
   }
 
   async getAssociatedTokenAccount(wallet: PublicKey): Promise<PublicKey> {
@@ -160,13 +168,16 @@ export class TokenMint {
   }
 
   async mintInto(tokenAccount: PublicKey, amount: number): Promise<any> {
-    return mintTo(
+    return await mintTo(
       this.connection, 
       this.feePayer,
       this.token.publicKey,
       tokenAccount,
-      this.mintAuthority,
-      amount
+      this.token,
+      amount,
+      [],
+      { skipPreflight: false },
+      TOKEN_PROGRAM_ID
     );
   }
 }

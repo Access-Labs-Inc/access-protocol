@@ -142,6 +142,7 @@ pub fn process_create_central_state(
     )?;
 
     state.save(&mut accounts.central_state.data.borrow_mut())?;
+    msg!("+ Metadata program ID: {}", mpl_token_metadata::ID);
 
     // Create Metaplex metadata
     let ix = create_metadata_accounts_v3(

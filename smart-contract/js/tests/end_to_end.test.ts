@@ -1,5 +1,4 @@
 import { afterAll, beforeAll, expect, jest, test } from "@jest/globals";
-import { ChildProcess } from "child_process";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import {
   airdropPayer,
@@ -54,7 +53,6 @@ import { Metadata } from "@metaplex-foundation/mpl-token-metadata";
 
 // Global state initialized once in test startup and cleaned up at test
 // teardown.
-let solana: ChildProcess;
 let connection: Connection;
 let feePayer: Keypair;
 let payerKeyFile: string;
@@ -63,27 +61,18 @@ const delay = 30_000;
 const MAX_i64 = "9223372036854775807";
 
 beforeAll(async () => {
-  // solana = await spawnLocalSolana();
-  connection = new Connection("https://api.devnet.solana.com", "finalized");
+  connection = new Connection("http://localhost:8899", "finalized");
   [feePayer, payerKeyFile] = initializePayer();
-  await airdropPayer(connection, feePayer.publicKey);
   await airdropPayer(connection, feePayer.publicKey);
   programId = deployProgram(
     payerKeyFile,
     true,
     "days-to-sec-10s no-mint-check no-bond-signer",
-    true
+    false
   );
 });
 
 afterAll(() => {
-  if (solana !== undefined) {
-    try {
-      solana.kill();
-    } catch (e) {
-      console.log(e);
-    }
-  }
 });
 
 jest.setTimeout(1_500_000);
@@ -104,7 +93,7 @@ test("End to end test", async () => {
   const bondAmount = 5_000_000 * decimals;
   const bondSeller = Keypair.generate();
   let fees = 0; // Fees collected by the central state
-  let FEES = 1 / 100; // % of fees collected on each stake
+  let FEES = 2 / 100; // % of fees collected on each stake
 
   await airdropPayer(connection, bondSeller.publicKey);
 
@@ -211,6 +200,7 @@ test("End to end test", async () => {
   /**
    * Edit metadata
    */
+  console.log("Edit metadata");
   const ix_edit_metadata = await editMetadata(
     connection,
     "new name",
@@ -224,6 +214,7 @@ test("End to end test", async () => {
     feePayer,
     [ix_edit_metadata]
   );
+  console.log(`Edit metadata ${tx}`);
 
   // Verification
   metadata = await Metadata.fromAccountAddress(connection, metadatKey);
@@ -234,6 +225,7 @@ test("End to end test", async () => {
   /**
    * Create stake pool
    */
+  console.log("Create stake pool");
   const [stakePoolKey, stakePoolNonce] = await StakePool.getKey(
     programId,
     stakePoolOwner.publicKey
@@ -279,6 +271,7 @@ test("End to end test", async () => {
   /**
    * Activate stake pool
    */
+  console.log("Activate stake pool");
   const ix_act_stake_pool = await activateStakePool(
     connection,
     stakePoolKey,
@@ -291,6 +284,7 @@ test("End to end test", async () => {
     feePayer,
     [ix_act_stake_pool]
   );
+  console.log(`Activated stake pool ${tx}`);
 
   //Verification
   stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
@@ -302,6 +296,8 @@ test("End to end test", async () => {
     staker.publicKey,
     stakePoolKey
   );
+
+  console.log("Create stake account");
   const ix_create_stake_acc = await createStakeAccount(
     stakePoolKey,
     staker.publicKey,
@@ -311,6 +307,7 @@ test("End to end test", async () => {
   tx = await signAndSendTransactionInstructions(connection, [], feePayer, [
     ix_create_stake_acc,
   ]);
+  console.log(`Created stake account ${tx}`);
 
   /**
    * Verifications
@@ -347,6 +344,7 @@ test("End to end test", async () => {
    *
    */
 
+  console.log("Create bond account ATAs");
   const quoteBuyerAta = await getAssociatedTokenAddress(
     quoteToken.token.publicKey,
     staker.publicKey,
@@ -382,6 +380,7 @@ test("End to end test", async () => {
     ix_quote_buyer_ata,
     ix_quote_seller_ata,
   ]);
+  console.log("Created bond account ATAs", tx);
 
   await quoteToken.mintInto(quoteBuyerAta, bondAmount);
 
@@ -390,6 +389,7 @@ test("End to end test", async () => {
     staker.publicKey,
     bondAmount
   );
+  console.log("Create bond account");
   const ix_create_bond = await createBond(
     bondSeller.publicKey,
     staker.publicKey,
@@ -410,6 +410,7 @@ test("End to end test", async () => {
     feePayer,
     [ix_create_bond]
   );
+  console.log("Created bond account ", tx);
 
   // Verifications
   let bondObj = await BondAccount.retrieve(connection, bondKey);
@@ -439,6 +440,7 @@ test("End to end test", async () => {
    * Claim bond
    */
 
+  console.log("Claim bond");
   const ix_claim_bond = await claimBond(
     connection,
     bondKey,
@@ -452,6 +454,7 @@ test("End to end test", async () => {
     feePayer,
     [ix_claim_bond]
   );
+  console.log("Claimed bond ", tx);
 
   // Verifications
   bondObj = await BondAccount.retrieve(connection, bondKey);
@@ -479,6 +482,7 @@ test("End to end test", async () => {
    * Unlock bond tokens
    */
 
+  console.log("Unlock bond tokens");
   let preBalance = await (
     await connection.getTokenAccountBalance(stakerAta)
   ).value.amount;
@@ -496,6 +500,7 @@ test("End to end test", async () => {
     feePayer,
     [ix_unlock_bond_tokens]
   );
+  console.log("Unlocked bond tokens", tx);
 
   // Verifications
   now = Math.floor(new Date().getTime() / 1_000);
@@ -686,7 +691,7 @@ test("End to end test", async () => {
   let pool_rewards = new BN(dailyInflation)
     .mul(new BN(stakePoolObj.totalStaked))
     .div(centralStateObj.totalStaked)
-    .mul(new BN(20))
+    .mul(new BN(50))
     .div(new BN(100));
 
   expect(postBalance).toBe(
@@ -732,7 +737,7 @@ test("End to end test", async () => {
   let staker_rewards = new BN(stakePoolObj.totalStaked)
     .shln(32)
     .mul(new BN(dailyInflation))
-    .mul(new BN(80))
+    .mul(new BN(50))
     .div(new BN(100))
     .div(new BN(centralStateObj.totalStaked))
     .div(new BN(stakePoolObj.totalStaked));
@@ -828,7 +833,7 @@ test("End to end test", async () => {
     stakePoolOwner.publicKey.toBase58()
   );
   expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
-  expect(stakePoolObj.stakersPart.toNumber()).toBe(80);
+  expect(stakePoolObj.stakersPart.toNumber()).toBe(50);
 
   // Change pool multiplier
   const ix_change_pool_multiplier = await changePoolMultiplier(
@@ -1094,13 +1099,13 @@ test("End to end test", async () => {
     .mul(new BN(500_000))
     .mul(new BN(stakeAmount))
     .div(centralStateObj.totalStaked)
-    .mul(new BN(20))
+    .mul(new BN(50))
     .div(new BN(100));
 
   let staker_rewards_new_inflation = new BN(stakeAmount)
     .shln(32)
     .mul(new BN(stakeAmount).mul(new BN(500_000)))
-    .mul(new BN(80))
+    .mul(new BN(50))
     .div(new BN(100))
     .div(new BN(centralStateObj.totalStaked))
     .div(new BN(stakeAmount))
