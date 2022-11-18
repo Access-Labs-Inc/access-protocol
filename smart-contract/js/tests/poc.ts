@@ -1,5 +1,4 @@
 import {
-  createCentralState,
   createStakeAccount,
   createStakePool,
   stake,
@@ -13,10 +12,11 @@ import {
   Keypair,
   PublicKey,
   TransactionInstruction,
+  LAMPORTS_PER_SOL
 } from "@solana/web3.js";
-import { CentralState, StakePool, StakeAccount } from "../src/state";
+import { StakePool, StakeAccount } from "../src/state";
 import { TokenMint } from "./utils";
-import { airdropPayer, signAndSendTransactionInstructions } from "./utils";
+import { signAndSendTransactionInstructions, airdropPayer } from "./utils";
 import {
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -29,31 +29,24 @@ import { expect } from "@jest/globals";
 export const poc = async (
   connection: Connection,
   programId: PublicKey,
-  feePayer: Keypair
+  feePayer: Keypair,
+  centralStateAuthority: Keypair,
+  accessToken: TokenMint,
 ) => {
   /**
    * Test variables
    */
-  const [centralKey, centralNonce] = await CentralState.getKey(programId);
   const decimals = Math.pow(10, 6);
-  let dailyInflation = 1_000_000 * decimals;
-  const centralStateAuthority = Keypair.generate();
-  const accessToken = await TokenMint.init(connection, feePayer, centralKey);
-  const quoteToken = await TokenMint.init(connection, feePayer);
   const stakePoolOwner = Keypair.generate();
   const Bob = Keypair.generate();
   const Alice = Keypair.generate();
   let minimumStakeAmount = 10_000 * decimals;
-  const bondAmount = 5_000_000 * decimals;
-  const bondSeller = Keypair.generate();
-  let fees = 0; // Fees collected by the central state
-  let FEES = 1 / 100; // % of fees collected on each stake
-
-  await airdropPayer(connection, bondSeller.publicKey);
 
   /**
    * Set up ATA
    */
+
+  await airdropPayer(connection, feePayer.publicKey);
 
   const stakePoolAta = await getAssociatedTokenAddress(
     accessToken.token.publicKey,
@@ -108,57 +101,12 @@ export const poc = async (
     ),
   ]);
 
-  const feesAta = await getAssociatedTokenAddress(
-    accessToken.token.publicKey,
-    centralStateAuthority.publicKey,
-    true,
-    TOKEN_PROGRAM_ID,
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-  );
-  await signAndSendTransactionInstructions(connection, [], feePayer, [
-    createAssociatedTokenAccountInstruction(
-      feePayer.publicKey,
-      feesAta,
-      centralStateAuthority.publicKey,
-      accessToken.token.publicKey,
-      TOKEN_PROGRAM_ID,
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-    ),
-  ]);
-
-  /**
-   * Create central state
-   */
-
-  const ix_central_state = await createCentralState(
-    dailyInflation,
-    centralStateAuthority.publicKey,
-    feePayer.publicKey,
-    accessToken.token.publicKey,
-    "name",
-    "symbol",
-    "uri",
-    programId
-  );
-
-  let tx = await signAndSendTransactionInstructions(connection, [], feePayer, [
-    ix_central_state,
-  ]);
-  console.log(`Created centrale state ${tx}`);
-
   /**
    * Create stake pool
    */
   const [stakePoolKey] = await StakePool.getKey(
     programId,
     stakePoolOwner.publicKey
-  );
-  const vault = await getAssociatedTokenAddress(
-    accessToken.token.publicKey,
-    stakePoolKey,
-    true,
-    TOKEN_PROGRAM_ID,
-    ASSOCIATED_TOKEN_PROGRAM_ID,
   );
   const ix_stake_pool = await createStakePool(
     connection,
@@ -168,7 +116,7 @@ export const poc = async (
     programId
   );
 
-  tx = await signAndSendTransactionInstructions(
+  let tx = await signAndSendTransactionInstructions(
     connection,
     [],
     feePayer,
@@ -251,6 +199,9 @@ export const poc = async (
 
   console.log(tx);
 
+  const balance = await connection.getBalance(feePayer.publicKey);
+  console.log("Balance", balance / LAMPORTS_PER_SOL);
+
   /**
    * - Crank
    * - Bob claims
@@ -259,11 +210,6 @@ export const poc = async (
    */
   let bobAcc = await connection.getParsedAccountInfo(bobAta);
   let aliceAcc = await connection.getParsedAccountInfo(aliceAta);
-
-  // @ts-expect-error
-  const bobBefore = bobAcc.value.data.parsed.info.tokenAmount.uiAmount;
-  // @ts-expect-error
-  const aliceBefore = aliceAcc.value.data.parsed.info.tokenAmount.uiAmount;
 
   for (let i = 0; i < 5; i++) {
     await sleep(10_500);

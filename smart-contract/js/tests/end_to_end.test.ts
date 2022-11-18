@@ -57,8 +57,10 @@ let connection: Connection;
 let feePayer: Keypair;
 let payerKeyFile: string;
 let programId: PublicKey;
+let accessToken: TokenMint;
 const delay = 30_000;
 const MAX_i64 = "9223372036854775807";
+const centralStateAuthority = Keypair.generate();
 
 beforeAll(async () => {
   connection = new Connection("http://localhost:8899", "finalized");
@@ -70,6 +72,7 @@ beforeAll(async () => {
     "days-to-sec-10s no-mint-check no-bond-signer",
     false
   );
+  console.log("Program ID: ", programId.toBase58());
 });
 
 afterAll(() => {
@@ -84,8 +87,7 @@ test("End to end test", async () => {
   const [centralKey, centralNonce] = await CentralState.getKey(programId);
   const decimals = Math.pow(10, 6);
   let dailyInflation = 1_000_000 * decimals;
-  const centralStateAuthority = Keypair.generate();
-  const accessToken = await TokenMint.init(connection, feePayer, centralKey);
+  accessToken = await TokenMint.init(connection, feePayer, centralKey);
   const quoteToken = await TokenMint.init(connection, feePayer);
   const stakePoolOwner = Keypair.generate();
   const staker = Keypair.generate();
@@ -1184,10 +1186,10 @@ test("End to end test", async () => {
   );
 });
 
-// test("Claim different times", async () => {
-//   await poc(connection, programId, feePayer);
-// });
+test("Claim different times", async () => {
+  await poc(connection, programId, feePayer, centralStateAuthority, accessToken);
+});
 
-// test("Change central state auth", async () => {
-//   await changeCentralStateAuth(connection, programId, feePayer);
-// });
+test("Change central state auth", async () => {
+  await changeCentralStateAuth(connection, programId, feePayer, centralStateAuthority, accessToken);
+});

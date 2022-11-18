@@ -9,6 +9,4 @@ echo "Building metaplex token metadata program..."
 cargo build-sbf --sbf-out-dir $BPF_OUT_DIR --arch bpf
 popd
 
-cp $pwd/../program/target/deploy/* $pwd/programs/
-
-yarn jest --detectOpenHandles --coverage
+cp $pwd/../program/target/deploy/mpl_token_metadata.so $pwd/programs/

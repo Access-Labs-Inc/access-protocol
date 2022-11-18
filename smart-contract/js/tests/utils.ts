@@ -82,7 +82,7 @@ export async function airdropPayer(connection: Connection, key: PublicKey) {
     try {
       const signature = await connection.requestAirdrop(
         key,
-        5 * LAMPORTS_PER_SOL
+        10 * LAMPORTS_PER_SOL
       );
       console.log(`Airdrop signature ${signature}`);
       await connection.confirmTransaction(signature, "finalized");
@@ -107,7 +107,7 @@ export const signAndSendTransactionInstructions = async (
   signers = signers ? [...signers, feePayer] : [];
   tx.add(...txInstructions);
   const sig = await connection.sendTransaction(tx, signers, {
-    skipPreflight: false,
+    skipPreflight: true,
   });
 
   // Why? https://github.com/solana-labs/solana/issues/25955

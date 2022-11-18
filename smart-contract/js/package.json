@@ -11,7 +11,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "test": "sh run-tests.sh",
+    "test": "jest --detectOpenHandles --coverage",
     "dev": "tsc && node dist/test.js",
     "build": "tsc",
     "prepublish": "tsc",
