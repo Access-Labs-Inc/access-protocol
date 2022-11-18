@@ -86,7 +86,7 @@ test("End to end test", async () => {
    */
   const [centralKey, centralNonce] = await CentralState.getKey(programId);
   const decimals = Math.pow(10, 6);
-  let dailyInflation = 1_000_000 * decimals;
+  let dailyInflation = 1_000_000;
   accessToken = await TokenMint.init(connection, feePayer, centralKey);
   const quoteToken = await TokenMint.init(connection, feePayer);
   const stakePoolOwner = Keypair.generate();
@@ -186,7 +186,7 @@ test("End to end test", async () => {
 
   expect(centralStateObj.tag).toBe(Tag.CentralState);
   expect(centralStateObj.signerNonce).toBe(centralNonce);
-  expect(centralStateObj.dailyInflation.toNumber()).toBe(dailyInflation);
+  expect(centralStateObj.dailyInflation.toNumber()).toBe(1_000_000);
   expect(centralStateObj.tokenMint.toBase58()).toBe(
     accessToken.token.publicKey.toBase58()
   );
@@ -778,7 +778,7 @@ test("End to end test", async () => {
   // Change inflation
   const ix_change_inflation = await changeInflation(
     connection,
-    new BN(stakeAmount).mul(new BN(500_000)),
+    new BN(500_000),
     programId
   );
   tx = await signAndSendTransactionInstructions(
@@ -796,7 +796,7 @@ test("End to end test", async () => {
   expect(centralStateObj.tag).toBe(Tag.CentralState);
   expect(centralStateObj.signerNonce).toBe(centralNonce);
   expect(centralStateObj.dailyInflation.toString()).toBe(
-    (stakeAmount * 500_000).toString()
+    (500_000).toString()
   );
   expect(centralStateObj.tokenMint.toBase58()).toBe(
     accessToken.token.publicKey.toBase58()
@@ -1097,8 +1097,7 @@ test("End to end test", async () => {
   ).value.amount;
   // Initial bond amount + admin mint + 2 days for inflation
   // Because of rounding it's slightly below
-  let pool_rewards_new_inflation = new BN(stakeAmount)
-    .mul(new BN(500_000))
+  let pool_rewards_new_inflation = new BN(500_000)
     .mul(new BN(stakeAmount))
     .div(centralStateObj.totalStaked)
     .mul(new BN(50))
@@ -1106,7 +1105,7 @@ test("End to end test", async () => {
 
   let staker_rewards_new_inflation = new BN(stakeAmount)
     .shln(32)
-    .mul(new BN(stakeAmount).mul(new BN(500_000)))
+    .mul(new BN(500_000))
     .mul(new BN(50))
     .div(new BN(100))
     .div(new BN(centralStateObj.totalStaked))

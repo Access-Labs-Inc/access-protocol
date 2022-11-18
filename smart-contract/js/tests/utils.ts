@@ -100,14 +100,15 @@ export const signAndSendTransactionInstructions = async (
   connection: Connection,
   signers: Array<Keypair> | undefined,
   feePayer: Keypair,
-  txInstructions: Array<TransactionInstruction>
+  txInstructions: Array<TransactionInstruction>,
+  skipPreflight?: boolean
 ): Promise<string> => {
   const tx = new Transaction();
   tx.feePayer = feePayer.publicKey;
   signers = signers ? [...signers, feePayer] : [];
   tx.add(...txInstructions);
   const sig = await connection.sendTransaction(tx, signers, {
-    skipPreflight: true,
+    skipPreflight: skipPreflight ?? false,
   });
 
   // Why? https://github.com/solana-labs/solana/issues/25955

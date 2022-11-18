@@ -233,7 +233,7 @@ export const poc = async (
       connection,
       signers,
       feePayer,
-      ixs
+      ixs,
     );
   }
   console.log(`All claimed ${tx}`);
