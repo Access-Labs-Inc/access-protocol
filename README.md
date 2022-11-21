@@ -59,12 +59,13 @@ yarn add @access-protocol/js
 End to end tests are implemented using `jest`, they can be run using
 
 ```
+yarn amman:start
 yarn jest
 ```
 
 This will:
 
-- Spawn a local solana test validator
+- Spawn a local solana test validator via Amman
 - Deploy the program
 - Run all the instructions of the protocol
 - Verify the states of each account at each step
