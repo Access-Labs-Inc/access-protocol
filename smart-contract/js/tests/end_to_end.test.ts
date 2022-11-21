@@ -1,5 +1,4 @@
 import { afterAll, beforeAll, expect, jest, test } from "@jest/globals";
-import { ChildProcess } from "child_process";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import {
   airdropPayer,
@@ -39,9 +38,10 @@ import {
   UnstakeRequest,
 } from "../src/state";
 import {
-  Token,
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddress,
+  createAssociatedTokenAccountInstruction,
 } from "@solana/spl-token";
 import { sleep } from "../src/utils";
 import BN from "bn.js";
@@ -53,35 +53,29 @@ import { Metadata } from "@metaplex-foundation/mpl-token-metadata";
 
 // Global state initialized once in test startup and cleaned up at test
 // teardown.
-let solana: ChildProcess;
 let connection: Connection;
 let feePayer: Keypair;
 let payerKeyFile: string;
 let programId: PublicKey;
+let accessToken: TokenMint;
 const delay = 30_000;
 const MAX_i64 = "9223372036854775807";
+const centralStateAuthority = Keypair.generate();
 
 beforeAll(async () => {
-  // solana = await spawnLocalSolana();
-  connection = new Connection("https://api.devnet.solana.com", "finalized");
+  connection = new Connection("http://localhost:8899", "finalized");
   [feePayer, payerKeyFile] = initializePayer();
-  // await airdropPayer(connection, feePayer.publicKey);
+  await airdropPayer(connection, feePayer.publicKey);
   programId = deployProgram(
     payerKeyFile,
     true,
     "days-to-sec-10s no-mint-check no-bond-signer",
-    true
+    false
   );
+  console.log("Program ID: ", programId.toBase58());
 });
 
 afterAll(() => {
-  if (solana !== undefined) {
-    try {
-      solana.kill();
-    } catch (e) {
-      console.log(e);
-    }
-  }
 });
 
 jest.setTimeout(1_500_000);
@@ -92,9 +86,8 @@ test("End to end test", async () => {
    */
   const [centralKey, centralNonce] = await CentralState.getKey(programId);
   const decimals = Math.pow(10, 6);
-  let dailyInflation = 1_000_000 * decimals;
-  const centralStateAuthority = Keypair.generate();
-  const accessToken = await TokenMint.init(connection, feePayer, centralKey);
+  let dailyInflation = 1_000_000;
+  accessToken = await TokenMint.init(connection, feePayer, centralKey);
   const quoteToken = await TokenMint.init(connection, feePayer);
   const stakePoolOwner = Keypair.generate();
   const staker = Keypair.generate();
@@ -102,7 +95,7 @@ test("End to end test", async () => {
   const bondAmount = 5_000_000 * decimals;
   const bondSeller = Keypair.generate();
   let fees = 0; // Fees collected by the central state
-  let FEES = 1 / 100; // % of fees collected on each stake
+  let FEES = 2 / 100; // % of fees collected on each stake
 
   await airdropPayer(connection, bondSeller.publicKey);
 
@@ -110,54 +103,57 @@ test("End to end test", async () => {
    * Set up ATA
    */
 
-  const stakePoolAta = await Token.getAssociatedTokenAddress(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
+  const stakePoolAta = await getAssociatedTokenAddress(
     accessToken.token.publicKey,
-    stakePoolOwner.publicKey
+    stakePoolOwner.publicKey,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
   );
   await signAndSendTransactionInstructions(connection, [], feePayer, [
-    Token.createAssociatedTokenAccountInstruction(
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-      TOKEN_PROGRAM_ID,
-      accessToken.token.publicKey,
+    createAssociatedTokenAccountInstruction(
+      feePayer.publicKey,
       stakePoolAta,
       stakePoolOwner.publicKey,
-      feePayer.publicKey
+      accessToken.token.publicKey,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID,
     ),
   ]);
 
-  const stakerAta = await Token.getAssociatedTokenAddress(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
+  const stakerAta = await getAssociatedTokenAddress(
     accessToken.token.publicKey,
-    staker.publicKey
+    staker.publicKey,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
   );
   await signAndSendTransactionInstructions(connection, [], feePayer, [
-    Token.createAssociatedTokenAccountInstruction(
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-      TOKEN_PROGRAM_ID,
-      accessToken.token.publicKey,
+    createAssociatedTokenAccountInstruction(
+      feePayer.publicKey,
       stakerAta,
       staker.publicKey,
-      feePayer.publicKey
+      accessToken.token.publicKey,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID,
     ),
   ]);
 
-  const feesAta = await Token.getAssociatedTokenAddress(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
+  const feesAta = await getAssociatedTokenAddress(
     accessToken.token.publicKey,
-    centralStateAuthority.publicKey
+    centralStateAuthority.publicKey,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
   );
   await signAndSendTransactionInstructions(connection, [], feePayer, [
-    Token.createAssociatedTokenAccountInstruction(
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-      TOKEN_PROGRAM_ID,
-      accessToken.token.publicKey,
+    createAssociatedTokenAccountInstruction(
+      feePayer.publicKey,
       feesAta,
       centralStateAuthority.publicKey,
-      feePayer.publicKey
+      accessToken.token.publicKey,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID,
     ),
   ]);
 
@@ -190,7 +186,7 @@ test("End to end test", async () => {
 
   expect(centralStateObj.tag).toBe(Tag.CentralState);
   expect(centralStateObj.signerNonce).toBe(centralNonce);
-  expect(centralStateObj.dailyInflation.toNumber()).toBe(dailyInflation);
+  expect(centralStateObj.dailyInflation.toNumber()).toBe(1_000_000);
   expect(centralStateObj.tokenMint.toBase58()).toBe(
     accessToken.token.publicKey.toBase58()
   );
@@ -206,6 +202,7 @@ test("End to end test", async () => {
   /**
    * Edit metadata
    */
+  console.log("Edit metadata");
   const ix_edit_metadata = await editMetadata(
     connection,
     "new name",
@@ -219,6 +216,7 @@ test("End to end test", async () => {
     feePayer,
     [ix_edit_metadata]
   );
+  console.log(`Edit metadata ${tx}`);
 
   // Verification
   metadata = await Metadata.fromAccountAddress(connection, metadatKey);
@@ -229,16 +227,17 @@ test("End to end test", async () => {
   /**
    * Create stake pool
    */
+  console.log("Create stake pool");
   const [stakePoolKey, stakePoolNonce] = await StakePool.getKey(
     programId,
     stakePoolOwner.publicKey
   );
-  const vault = await Token.getAssociatedTokenAddress(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
+  const vault = await getAssociatedTokenAddress(
     accessToken.token.publicKey,
     stakePoolKey,
-    true
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
   );
   const ix_stake_pool = await createStakePool(
     connection,
@@ -274,6 +273,7 @@ test("End to end test", async () => {
   /**
    * Activate stake pool
    */
+  console.log("Activate stake pool");
   const ix_act_stake_pool = await activateStakePool(
     connection,
     stakePoolKey,
@@ -286,6 +286,7 @@ test("End to end test", async () => {
     feePayer,
     [ix_act_stake_pool]
   );
+  console.log(`Activated stake pool ${tx}`);
 
   //Verification
   stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
@@ -297,6 +298,8 @@ test("End to end test", async () => {
     staker.publicKey,
     stakePoolKey
   );
+
+  console.log("Create stake account");
   const ix_create_stake_acc = await createStakeAccount(
     stakePoolKey,
     staker.publicKey,
@@ -306,6 +309,7 @@ test("End to end test", async () => {
   tx = await signAndSendTransactionInstructions(connection, [], feePayer, [
     ix_create_stake_acc,
   ]);
+  console.log(`Created stake account ${tx}`);
 
   /**
    * Verifications
@@ -342,39 +346,43 @@ test("End to end test", async () => {
    *
    */
 
-  const quoteBuyerAta = await Token.getAssociatedTokenAddress(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
+  console.log("Create bond account ATAs");
+  const quoteBuyerAta = await getAssociatedTokenAddress(
     quoteToken.token.publicKey,
-    staker.publicKey
+    staker.publicKey,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
   );
-  const ix_quote_buyer_ata = Token.createAssociatedTokenAccountInstruction(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
-    quoteToken.token.publicKey,
+  const ix_quote_buyer_ata = createAssociatedTokenAccountInstruction(
+    feePayer.publicKey,
     quoteBuyerAta,
     staker.publicKey,
-    feePayer.publicKey
-  );
-  const quoteSellerAta = await Token.getAssociatedTokenAddress(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
     quoteToken.token.publicKey,
-    bondSeller.publicKey
-  );
-  const ix_quote_seller_ata = Token.createAssociatedTokenAccountInstruction(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
     TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+  );
+  const quoteSellerAta = await getAssociatedTokenAddress(
     quoteToken.token.publicKey,
+    bondSeller.publicKey,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+  );
+  const ix_quote_seller_ata = createAssociatedTokenAccountInstruction(
+    feePayer.publicKey,
     quoteSellerAta,
     bondSeller.publicKey,
-    feePayer.publicKey
+    quoteToken.token.publicKey,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
   );
 
   tx = await signAndSendTransactionInstructions(connection, [], feePayer, [
     ix_quote_buyer_ata,
     ix_quote_seller_ata,
   ]);
+  console.log("Created bond account ATAs", tx);
 
   await quoteToken.mintInto(quoteBuyerAta, bondAmount);
 
@@ -383,6 +391,7 @@ test("End to end test", async () => {
     staker.publicKey,
     bondAmount
   );
+  console.log("Create bond account");
   const ix_create_bond = await createBond(
     bondSeller.publicKey,
     staker.publicKey,
@@ -403,6 +412,7 @@ test("End to end test", async () => {
     feePayer,
     [ix_create_bond]
   );
+  console.log("Created bond account ", tx);
 
   // Verifications
   let bondObj = await BondAccount.retrieve(connection, bondKey);
@@ -432,6 +442,7 @@ test("End to end test", async () => {
    * Claim bond
    */
 
+  console.log("Claim bond");
   const ix_claim_bond = await claimBond(
     connection,
     bondKey,
@@ -445,6 +456,7 @@ test("End to end test", async () => {
     feePayer,
     [ix_claim_bond]
   );
+  console.log("Claimed bond ", tx);
 
   // Verifications
   bondObj = await BondAccount.retrieve(connection, bondKey);
@@ -472,6 +484,7 @@ test("End to end test", async () => {
    * Unlock bond tokens
    */
 
+  console.log("Unlock bond tokens");
   let preBalance = await (
     await connection.getTokenAccountBalance(stakerAta)
   ).value.amount;
@@ -489,6 +502,7 @@ test("End to end test", async () => {
     feePayer,
     [ix_unlock_bond_tokens]
   );
+  console.log("Unlocked bond tokens", tx);
 
   // Verifications
   now = Math.floor(new Date().getTime() / 1_000);
@@ -679,7 +693,7 @@ test("End to end test", async () => {
   let pool_rewards = new BN(dailyInflation)
     .mul(new BN(stakePoolObj.totalStaked))
     .div(centralStateObj.totalStaked)
-    .mul(new BN(20))
+    .mul(new BN(50))
     .div(new BN(100));
 
   expect(postBalance).toBe(
@@ -725,7 +739,7 @@ test("End to end test", async () => {
   let staker_rewards = new BN(stakePoolObj.totalStaked)
     .shln(32)
     .mul(new BN(dailyInflation))
-    .mul(new BN(80))
+    .mul(new BN(50))
     .div(new BN(100))
     .div(new BN(centralStateObj.totalStaked))
     .div(new BN(stakePoolObj.totalStaked));
@@ -764,7 +778,7 @@ test("End to end test", async () => {
   // Change inflation
   const ix_change_inflation = await changeInflation(
     connection,
-    new BN(stakeAmount).mul(new BN(500_000)),
+    new BN(500_000),
     programId
   );
   tx = await signAndSendTransactionInstructions(
@@ -782,7 +796,7 @@ test("End to end test", async () => {
   expect(centralStateObj.tag).toBe(Tag.CentralState);
   expect(centralStateObj.signerNonce).toBe(centralNonce);
   expect(centralStateObj.dailyInflation.toString()).toBe(
-    (stakeAmount * 500_000).toString()
+    (500_000).toString()
   );
   expect(centralStateObj.tokenMint.toBase58()).toBe(
     accessToken.token.publicKey.toBase58()
@@ -821,7 +835,7 @@ test("End to end test", async () => {
     stakePoolOwner.publicKey.toBase58()
   );
   expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
-  expect(stakePoolObj.stakersPart.toNumber()).toBe(80);
+  expect(stakePoolObj.stakersPart.toNumber()).toBe(50);
 
   // Change pool multiplier
   const ix_change_pool_multiplier = await changePoolMultiplier(
@@ -1043,19 +1057,20 @@ test("End to end test", async () => {
    */
   const adminMintAmount = 2_000 * decimals;
   const receiver = Keypair.generate();
-  const receiverAta = await Token.getAssociatedTokenAddress(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
+  const receiverAta = await getAssociatedTokenAddress(
     accessToken.token.publicKey,
-    receiver.publicKey
+    receiver.publicKey,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
   );
-  const ix_create_receiver_ata = Token.createAssociatedTokenAccountInstruction(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
-    accessToken.token.publicKey,
+  const ix_create_receiver_ata = createAssociatedTokenAccountInstruction(
+    feePayer.publicKey,
     receiverAta,
     receiver.publicKey,
-    feePayer.publicKey
+    accessToken.token.publicKey,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
   );
   const ix_admin_mint = await adminMint(
     connection,
@@ -1082,17 +1097,16 @@ test("End to end test", async () => {
   ).value.amount;
   // Initial bond amount + admin mint + 2 days for inflation
   // Because of rounding it's slightly below
-  let pool_rewards_new_inflation = new BN(stakeAmount)
-    .mul(new BN(500_000))
+  let pool_rewards_new_inflation = new BN(500_000)
     .mul(new BN(stakeAmount))
     .div(centralStateObj.totalStaked)
-    .mul(new BN(20))
+    .mul(new BN(50))
     .div(new BN(100));
 
   let staker_rewards_new_inflation = new BN(stakeAmount)
     .shln(32)
-    .mul(new BN(stakeAmount).mul(new BN(500_000)))
-    .mul(new BN(80))
+    .mul(new BN(500_000))
+    .mul(new BN(50))
     .div(new BN(100))
     .div(new BN(centralStateObj.totalStaked))
     .div(new BN(stakeAmount))
@@ -1172,9 +1186,9 @@ test("End to end test", async () => {
 });
 
 test("Claim different times", async () => {
-  await poc(connection, programId, feePayer);
+  await poc(connection, programId, feePayer, centralStateAuthority, accessToken);
 });
 
 test("Change central state auth", async () => {
-  await changeCentralStateAuth(connection, programId, feePayer);
+  await changeCentralStateAuth(connection, programId, feePayer, centralStateAuthority, accessToken);
 });

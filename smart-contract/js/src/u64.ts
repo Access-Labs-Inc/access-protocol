@@ -4,6 +4,10 @@ import BN from "bn.js";
  * 64-bit value
  */
 export class u64 extends BN {
+
+  constructor(input: number | object | string, number?: number) {
+    super(input, number ?? 10);
+  }
   /**
    * Convert to Buffer representation
    */

@@ -20,7 +20,9 @@
     "pretty": "prettier --check 'src/*.[jt]s'",
     "pretty:fix": "prettier --write 'src/*.[jt]s'",
     "doc": "yarn typedoc src/index.ts",
-    "init_central_state": "tsc && node dist/init_central_state.js"
+    "init_central_state": "tsc && node dist/init_central_state.js",
+    "amman:start": "amman start",
+    "amman:stop": "amman stop"
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.1",
@@ -43,9 +45,10 @@
     "typescript": "^4.1.3"
   },
   "dependencies": {
+    "@metaplex-foundation/amman": "^0.12.1",
     "@metaplex-foundation/js": "^0.11.7",
-    "@solana/spl-token": "0.1.8",
-    "@solana/web3.js": "^1.30.2",
+    "@solana/spl-token": "^0.3.5",
+    "@solana/web3.js": "^1.66.2",
     "bn.js": "^5.2.0",
     "borsh": "^0.6.0",
     "bs58": "4.0.1"

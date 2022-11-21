@@ -1,7 +1,7 @@
 import { Connection, Keypair, PublicKey, Transaction, SystemProgram, sendAndConfirmTransaction } from "@solana/web3.js";
 import { createCentralState } from "./bindings";
 import fs from "fs";
-import { Token, TOKEN_PROGRAM_ID, MintLayout } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, MintLayout, getMinimumBalanceForRentExemptMint, createInitializeMintInstruction } from "@solana/spl-token";
 import { CentralState } from "./state";
 import { signAndSendTransactionInstructions } from "./utils";
 
@@ -20,9 +20,7 @@ import { signAndSendTransactionInstructions } from "./utils";
  */
 
 const createMint = async (connection, payer, mintAuthority, freezeAuthority, decimals, tokenKeypair, programId) => {
-  const token = new Token(connection, tokenKeypair.publicKey, programId, payer); // Allocate memory for the account
-
-  const balanceNeeded = await Token.getMinBalanceRentForExemptMint(connection);
+  const balanceNeeded = await getMinimumBalanceForRentExemptMint(connection);
   const transaction = new Transaction();
   transaction.add(SystemProgram.createAccount({
     fromPubkey: payer.publicKey,
@@ -31,12 +29,19 @@ const createMint = async (connection, payer, mintAuthority, freezeAuthority, dec
     space: MintLayout.span,
     programId
   }));
-  transaction.add(Token.createInitMintInstruction(programId, tokenKeypair.publicKey, decimals, mintAuthority, freezeAuthority)); // Send the two instructions
+  transaction.add(
+    createInitializeMintInstruction(
+      tokenKeypair.publicKey,
+      decimals,
+      mintAuthority,
+      freezeAuthority,
+      programId
+    )
+  ); // Send the two instructions
 
   await sendAndConfirmTransaction(connection, transaction, [payer, tokenKeypair], {
     skipPreflight: false
   });
-  return token;
 }
 
 // Program ID
@@ -72,7 +77,7 @@ const tokenDecimals = 6;
 const initCentralState = async () => {
   // Initialize mint
   const [centralKey] = await CentralState.getKey(programId);
-  const token = await createMint(
+  await createMint(
     connection,
     authorityKeypair,
     centralKey,
@@ -86,7 +91,7 @@ const initCentralState = async () => {
     dailyInflation,
     authorityKeypair.publicKey, // Central state authority
     authorityKeypair.publicKey,
-    token.publicKey,
+    tokenKeypair.publicKey,
     name,
     symbol,
     uri,
