@@ -166,9 +166,6 @@ test("End to end test", async () => {
     centralStateAuthority.publicKey,
     feePayer.publicKey,
     accessToken.token.publicKey,
-    "ACCESS",
-    "ACCS",
-    "some_uri",
     programId
   );
 
@@ -181,8 +178,8 @@ test("End to end test", async () => {
 
   let centralStateObj = await CentralState.retrieve(connection, centralKey);
 
-  const metadatKey = findMetadataPda(accessToken.token.publicKey);
-  let metadata = await Metadata.fromAccountAddress(connection, metadatKey);
+  // const metadatKey = findMetadataPda(accessToken.token.publicKey);
+  // let metadata = await Metadata.fromAccountAddress(connection, metadatKey);
 
   expect(centralStateObj.tag).toBe(Tag.CentralState);
   expect(centralStateObj.signerNonce).toBe(centralNonce);
@@ -195,34 +192,34 @@ test("End to end test", async () => {
   );
 
   // We slice because the metaplex lib does not remove trailling 0s in the buffer info
-  expect(metadata.data.name.slice(0, 6)).toBe("ACCESS");
-  expect(metadata.data.symbol.slice(0, 4)).toBe("ACCS");
-  expect(metadata.data.uri.slice(0, 8)).toBe("some_uri");
+  // expect(metadata.data.name.slice(0, 6)).toBe("ACCESS");
+  // expect(metadata.data.symbol.slice(0, 4)).toBe("ACCS");
+  // expect(metadata.data.uri.slice(0, 8)).toBe("some_uri");
 
   /**
    * Edit metadata
    */
-  console.log("Edit metadata");
-  const ix_edit_metadata = await editMetadata(
-    connection,
-    "new name",
-    "new symbol",
-    "new uri",
-    programId
-  );
-  tx = await signAndSendTransactionInstructions(
-    connection,
-    [centralStateAuthority],
-    feePayer,
-    [ix_edit_metadata]
-  );
-  console.log(`Edit metadata ${tx}`);
+  // console.log("Edit metadata");
+  // const ix_edit_metadata = await editMetadata(
+  //   connection,
+  //   "new name",
+  //   "new symbol",
+  //   "new uri",
+  //   programId
+  // );
+  // tx = await signAndSendTransactionInstructions(
+  //   connection,
+  //   [centralStateAuthority],
+  //   feePayer,
+  //   [ix_edit_metadata]
+  // );
+  // console.log(`Edit metadata ${tx}`);
 
-  // Verification
-  metadata = await Metadata.fromAccountAddress(connection, metadatKey);
-  expect(metadata.data.name.slice(0, 8)).toBe("new name");
-  expect(metadata.data.symbol.slice(0, 10)).toBe("new symbol");
-  expect(metadata.data.uri.slice(0, 7)).toBe("new uri");
+  // // Verification
+  // metadata = await Metadata.fromAccountAddress(connection, metadatKey);
+  // expect(metadata.data.name.slice(0, 8)).toBe("new name");
+  // expect(metadata.data.symbol.slice(0, 10)).toBe("new symbol");
+  // expect(metadata.data.uri.slice(0, 7)).toBe("new uri");
 
   /**
    * Create stake pool
