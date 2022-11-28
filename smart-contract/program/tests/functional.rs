@@ -16,6 +16,7 @@ use access_protocol::{
     state::{BondAccount},
 };
 use mpl_token_metadata::{pda::find_metadata_account, instruction::create_metadata_accounts_v3};
+use spl_token::{instruction::set_authority, instruction::AuthorityType};
 
 #[tokio::test]
 async fn test_staking() {
@@ -36,12 +37,12 @@ async fn test_staking() {
     let (central_state, _nonce) =
         Pubkey::find_program_address(&[&program_id.to_bytes()], &program_id);
 
-    // let authority = Keypair::new();
+    let authority = Keypair::new();
 
     //
     // Create mint
     //
-    let (mint, _) = mint_bootstrap(None, 6, &mut program_test, &central_state);
+    let (mint, _) = mint_bootstrap(None, 6, &mut program_test, &authority.pubkey());
 
     ////
     // Create test context
@@ -77,42 +78,52 @@ async fn test_staking() {
     ////
     // Metadata creation
     ////
-    /// TODO: (ladi) To bring back the metadata test we need to initialize the SPL token
-    /// with it's own authority and than change the authority to central_state.
-    /// Because the Mint is created via add_account() I'm not sure if we can actually
-    /// change the authority with set-new-authority equivalent from CLI.
-    /// 
-    // let create_metadata_ix = create_metadata_accounts_v3(
-    //     mpl_token_metadata::ID,
-    //     metadata_key,
-    //     mint,
-    //     authority.pubkey(),
-    //     prg_test_ctx.payer.pubkey(),
-    //     authority.pubkey(),
-    //     "Access Protocol".to_string(),
-    //     "ACS".to_string(),
-    //     "URI".to_string(),
-    //     None,
-    //     0,
-    //     true,
-    //     true,
-    //     None,
-    //     None,
-    //     None,
-    // );
+    let create_metadata_ix = create_metadata_accounts_v3(
+        mpl_token_metadata::ID,
+        metadata_key,
+        mint,
+        authority.pubkey(),
+        prg_test_ctx.payer.pubkey(),
+        authority.pubkey(),
+        "Access Protocol".to_string(),
+        "ACS".to_string(),
+        "URI".to_string(),
+        None,
+        0,
+        true,
+        true,
+        None,
+        None,
+        None,
+    );
 
-    // sign_send_instructions(&mut prg_test_ctx, vec![create_metadata_ix], vec![&authority])
-    //     .await
-    //     .unwrap();
+    sign_send_instructions(&mut prg_test_ctx, vec![create_metadata_ix], vec![&authority])
+        .await
+        .unwrap();
+
+
+    let set_authority_to_cs_ix = set_authority(
+        &spl_token::ID, 
+        &mint,
+        Some(&central_state),
+        AuthorityType::MintTokens,
+        &authority.pubkey(),
+        &[],
+    ).unwrap();
+
+    sign_send_instructions(&mut prg_test_ctx, vec![set_authority_to_cs_ix], vec![&authority])
+        .await
+        .unwrap();
 
     //
+    // TODO(Ladi): Not sure how to make this work
     // Edit metadata
     //
     // let ix = edit_metadata(
     //     program_id,
     //     edit_metadata::Accounts {
     //         central_state: &central_state,
-    //         authority: &authority.pubkey(),
+    //         authority: &prg_test_ctx.payer.pubkey(),
     //         metadata: &metadata_key,
     //         metadata_program: &mpl_token_metadata::ID,
     //     },
@@ -122,7 +133,7 @@ async fn test_staking() {
     //         uri: "New uri".to_string(),
     //     },
     // );
-    // sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&authority])
+    // sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![])
     //     .await
     //     .unwrap();
 
