@@ -118,6 +118,9 @@ pub struct StakePoolHeader {
     // The unstake period
     pub unstake_period: i64,
 
+    // The pool creation time
+    pub pool_creation_time: i64,
+
     /// Owner of the stake pool
     pub owner: [u8; 32],
 
@@ -260,6 +263,7 @@ impl StakePoolHeader {
             minimum_stake_amount,
             stakers_part: STAKER_MULTIPLIER,
             unstake_period: UNSTAKE_PERIOD,
+            pool_creation_time: Clock::get()?.unix_timestamp,
         })
     }
 

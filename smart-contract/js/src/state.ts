@@ -55,6 +55,7 @@ export class StakePool {
   lastClaimedTime: BN;
   stakersPart: BN;
   unstakePeriod: BN;
+  poolCreationTime: BN;
   owner: PublicKey;
   vault: PublicKey;
 
@@ -76,6 +77,7 @@ export class StakePool {
           ["lastClaimedTime", "u64"],
           ["stakersPart", "u64"],
           ["unstakePeriod", "u64"],
+          ["poolCreationTime", "u64"],
           ["owner", [32]],
           ["vault", [32]],
           ["balances", [RewardsTuple, STAKE_BUFFER_LEN]],
@@ -106,6 +108,7 @@ export class StakePool {
     lastClaimedTime: BN;
     stakersPart: BN;
     unstakePeriod: BN;
+    poolCreationTime: BN;
     owner: Uint8Array;
     vault: Uint8Array;
     balances: RewardsTuple[];
@@ -120,6 +123,7 @@ export class StakePool {
     this.lastClaimedTime = obj.lastClaimedTime;
     this.stakersPart = obj.stakersPart;
     this.unstakePeriod = obj.unstakePeriod;
+    this.poolCreationTime = obj.poolCreationTime;
     this.owner = new PublicKey(obj.owner);
     this.vault = new PublicKey(obj.vault);
     this.balances = obj.balances;

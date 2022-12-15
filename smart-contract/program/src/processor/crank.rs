@@ -66,7 +66,11 @@ pub fn process_crank(
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let central_state = CentralState::from_account_info(accounts.central_state)?;
 
-    if present_time - stake_pool.header.last_crank_time < SECONDS_IN_DAY as i64 {
+    if present_time
+        - (stake_pool.header.pool_creation_time
+            + ((stake_pool.header.current_day_idx as i64) * SECONDS_IN_DAY as i64))
+        < SECONDS_IN_DAY as i64
+    {
         #[cfg(not(any(feature = "days-to-sec-10s", feature = "days-to-sec-15m")))]
         return Err(AccessError::NoOp.into());
     }
