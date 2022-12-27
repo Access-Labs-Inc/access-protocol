@@ -15,7 +15,7 @@ use solana_program::{
 };
 
 use crate::error::AccessError;
-use crate::state::{StakeAccount, StakePool, UnstakeRequest};
+use crate::state::{SECONDS_IN_DAY, StakeAccount, StakePool, UnstakeRequest};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `unstake` instruction
@@ -94,7 +94,7 @@ pub fn process_unstake(
     let mut central_state = CentralState::from_account_info(accounts.central_state_account)?;
     let current_time = Clock::get()?.unix_timestamp;
 
-    if stake_account.last_claimed_time < stake_pool.header.last_crank_time {
+    if stake_account.last_claimed_time < stake_pool.header.pool_creation_time + (stake_pool.header.current_day_idx as u64 * SECONDS_IN_DAY) as i64 {
         return Err(AccessError::UnclaimedRewards.into());
     }
 

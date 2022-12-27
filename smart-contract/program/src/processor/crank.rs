@@ -111,14 +111,11 @@ pub fn process_crank(
 
     stake_pool.push_balances_buff(
         present_time,
-        stake_pool.header.last_crank_time,
         RewardsTuple {
             pool_reward,
             stakers_reward,
         },
     )?;
-
-    stake_pool.header.last_crank_time = present_time;
 
     Ok(())
 }

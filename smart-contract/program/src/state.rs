@@ -105,10 +105,6 @@ pub struct StakePoolHeader {
     /// Total amount staked in the pool
     pub total_staked: u64,
 
-    /// Last unix timestamp when rewards were paid to the pool owner
-    /// through a permissionless crank
-    pub last_crank_time: i64,
-
     /// Last time the stake pool owner claimed
     pub last_claimed_time: i64,
 
@@ -192,11 +188,10 @@ impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [RewardsTuple]>
     pub fn push_balances_buff(
         &mut self,
         present_time: i64,
-        last_crank_time: i64,
         rewards: RewardsTuple,
     ) -> Result<(), ProgramError> {
         let nb_days_passed = (present_time
-            .checked_sub(last_crank_time)
+            .checked_sub(self.header.pool_creation_time + ((self.header.current_day_idx) as u64 * SECONDS_IN_DAY) as i64)
             .ok_or(AccessError::Overflow)? as u64)
             .checked_div(SECONDS_IN_DAY)
             .ok_or(AccessError::Overflow)?;
@@ -255,7 +250,6 @@ impl StakePoolHeader {
             total_staked: 0,
             current_day_idx: 0,
             _padding: [0; 4],
-            last_crank_time: Clock::get()?.unix_timestamp,
             last_claimed_time: Clock::get()?.unix_timestamp,
             owner: owner.to_bytes(),
             nonce,

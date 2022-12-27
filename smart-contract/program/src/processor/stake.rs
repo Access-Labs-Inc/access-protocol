@@ -20,7 +20,7 @@ use crate::{
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
 use crate::error::AccessError;
-use crate::state::{StakeAccount, StakePool};
+use crate::state::{SECONDS_IN_DAY, StakeAccount, StakePool};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `stake` instruction
@@ -159,7 +159,7 @@ pub fn process_stake(
     }
 
     if stake_account.stake_amount > 0
-        && stake_account.last_claimed_time < stake_pool.header.last_crank_time
+        && stake_account.last_claimed_time < stake_pool.header.pool_creation_time + (stake_pool.header.current_day_idx as u64 * SECONDS_IN_DAY) as i64
     {
         return Err(AccessError::UnclaimedRewards.into());
     }

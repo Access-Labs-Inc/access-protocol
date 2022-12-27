@@ -6,6 +6,7 @@ use solana_program::{
     program_pack::Pack, pubkey::Pubkey,
 };
 use spl_token::state::Account;
+use crate::instruction::stake;
 
 /// Cumulate the claimable rewards from the last claimed day to the present.
 /// Result is in FP32 format.
@@ -24,7 +25,7 @@ pub fn calc_reward_fp32(
     nb_days_to_claim = std::cmp::min(nb_days_to_claim, STAKE_BUFFER_LEN - 1);
 
     if current_time
-        .checked_sub(stake_pool.header.last_crank_time)
+        .checked_sub((stake_pool.header.pool_creation_time as u64 + (stake_pool.header.current_day_idx as u64 * SECONDS_IN_DAY)) as i64 )
         .ok_or(AccessError::Overflow)?
         > SECONDS_IN_DAY as i64
     {
