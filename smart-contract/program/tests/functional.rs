@@ -13,9 +13,9 @@ use access_protocol::{
         close_stake_pool, crank, create_bond, create_central_state, create_stake_account,
         create_stake_pool, edit_metadata, execute_unstake, stake, unlock_bond_tokens, unstake,
     },
-    state::{BondAccount},
+    state::BondAccount,
 };
-use mpl_token_metadata::{pda::find_metadata_account, instruction::create_metadata_accounts_v3};
+use mpl_token_metadata::{instruction::create_metadata_accounts_v3, pda::find_metadata_account};
 use spl_token::{instruction::set_authority, instruction::AuthorityType};
 
 #[tokio::test]
@@ -84,58 +84,66 @@ async fn test_staking() {
         mint,
         authority.pubkey(),
         prg_test_ctx.payer.pubkey(),
-        authority.pubkey(),
+        central_state,
         "Access Protocol".to_string(),
         "ACS".to_string(),
         "URI".to_string(),
         None,
         0,
-        true,
+        false,
         true,
         None,
         None,
         None,
     );
 
-    sign_send_instructions(&mut prg_test_ctx, vec![create_metadata_ix], vec![&authority])
-        .await
-        .unwrap();
-
+    sign_send_instructions(
+        &mut prg_test_ctx,
+        vec![create_metadata_ix],
+        vec![&authority],
+    )
+    .await
+    .unwrap();
 
     let set_authority_to_cs_ix = set_authority(
-        &spl_token::ID, 
+        &spl_token::ID,
         &mint,
         Some(&central_state),
         AuthorityType::MintTokens,
         &authority.pubkey(),
         &[],
-    ).unwrap();
+    )
+    .unwrap();
 
-    sign_send_instructions(&mut prg_test_ctx, vec![set_authority_to_cs_ix], vec![&authority])
-        .await
-        .unwrap();
+    sign_send_instructions(
+        &mut prg_test_ctx,
+        vec![set_authority_to_cs_ix],
+        vec![&authority],
+    )
+    .await
+    .unwrap();
 
     //
     // TODO(Ladi): Not sure how to make this work
     // Edit metadata
     //
-    // let ix = edit_metadata(
-    //     program_id,
-    //     edit_metadata::Accounts {
-    //         central_state: &central_state,
-    //         authority: &prg_test_ctx.payer.pubkey(),
-    //         metadata: &metadata_key,
-    //         metadata_program: &mpl_token_metadata::ID,
-    //     },
-    //     edit_metadata::Params {
-    //         name: "New name".to_string(),
-    //         symbol: "New symbol".to_string(),
-    //         uri: "New uri".to_string(),
-    //     },
-    // );
-    // sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![])
-    //     .await
-    //     .unwrap();
+    let ix = edit_metadata(
+        program_id,
+        edit_metadata::Accounts {
+            central_state: &central_state,
+            authority: &prg_test_ctx.payer.pubkey(),
+            metadata: &metadata_key,
+            metadata_program: &mpl_token_metadata::ID,
+        },
+        edit_metadata::Params {
+            name: "New name".to_string(),
+            symbol: "New symbol".to_string(),
+            uri: "New uri".to_string(),
+        },
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![])
+        .await
+        .unwrap();
 
     //
     // Create authority ACCESS token account
