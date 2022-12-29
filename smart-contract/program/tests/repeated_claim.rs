@@ -175,6 +175,7 @@ async fn halborn() {
 
     let staker_token_acc = get_associated_token_address(&staker.pubkey(), &mint);
     let stake_pool_owner_token_acc = get_associated_token_address(&stake_pool_owner.pubkey(), &mint);
+    let stake_pool_owner2_token_acc = get_associated_token_address(&stake_pool_owner2.pubkey(), &mint);
 
     //
     // Admin mint
@@ -482,150 +483,150 @@ async fn halborn() {
         .await
         .unwrap();
 
-    // //
-    // // Request Unstake
-    // //
     //
-    // let unstake_ix = unstake(
-    //     program_id,
-    //     unstake::Accounts {
-    //         stake_account: &stake_acc_key,
-    //         stake_pool: &stake_pool_key,
-    //         owner: &staker.pubkey(),
-    //         central_state_account: &central_state,
-    //     },
-    //     unstake::Params {
-    //         amount: 10_000 as u64,
-    //     },
-    // );
-    // sign_send_instructions(&mut prg_test_ctx, vec![unstake_ix], vec![&staker])
-    //     .await
-    //     .unwrap();
+    // Request Unstake
+    //
 
-    //
-    // Stake 2
-    //
-    // let token_amount = 10_000;
-    //
-    // let stake_ix = stake(
-    //     program_id,
-    //     stake::Accounts {
-    //         stake_account: &stake_acc_key2,
-    //         stake_pool: &stake_pool_key2,
-    //         owner: &staker.pubkey(),
-    //         source_token: &staker_token_acc,
-    //         spl_token_program: &spl_token::ID,
-    //         vault: &pool_vault2,
-    //         central_state_account: &central_state,
-    //         fee_account: &authority_ata,
-    //     },
-    //     stake::Params {
-    //         amount: token_amount,
-    //     },
-    // );
-    // sign_send_instructions(&mut prg_test_ctx, vec![stake_ix], vec![&staker])
-    //     .await
-    //     .unwrap();
-    //
-    //     prg_test_ctx.warp_to_timestamp(
-    //         local_env.get_sysvar::<clock::Clock>().await.unwrap().unix_timestamp + 2700 //change time to 13:15 on day 2
-    //     ).await.unwrap();
-
+    let unstake_ix = unstake(
+        program_id,
+        unstake::Accounts {
+            stake_account: &stake_acc_key,
+            stake_pool: &stake_pool_key,
+            owner: &staker.pubkey(),
+            central_state_account: &central_state,
+        },
+        unstake::Params {
+            amount: 10_000 as u64,
+        },
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![unstake_ix], vec![&staker])
+        .await
+        .unwrap();
 
     //
     // Crank 2
     //
 
-    // let crank_ix = crank(
-    //     program_id,
-    //     crank::Accounts {
-    //         stake_pool: &stake_pool_key2,
-    //         central_state: &central_state,
-    //     },
-    //     crank::Params {},
-    // );
+    let crank_ix = crank(
+        program_id,
+        crank::Accounts {
+            stake_pool: &stake_pool_key2,
+            central_state: &central_state,
+        },
+        crank::Params {},
+    );
+
+    sign_send_instructions(&mut prg_test_ctx, vec![crank_ix], vec![])
+        .await
+        .unwrap();
+
     //
-    // sign_send_instructions(&mut prg_test_ctx, vec![crank_ix], vec![])
-    //     .await
-    //     .unwrap();
+    // Stake 2
+    //
+    let token_amount = 10_000;
+
+    let stake_ix = stake(
+        program_id,
+        stake::Accounts {
+            stake_account: &stake_acc_key2,
+            stake_pool: &stake_pool_key2,
+            owner: &staker.pubkey(),
+            source_token: &staker_token_acc,
+            spl_token_program: &spl_token::ID,
+            vault: &pool_vault2,
+            central_state_account: &central_state,
+            fee_account: &authority_ata,
+        },
+        stake::Params {
+            amount: token_amount,
+        },
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![stake_ix], vec![&staker])
+        .await
+        .unwrap();
+
+        prg_test_ctx.warp_to_timestamp(
+            local_env.get_sysvar::<clock::Clock>().await.unwrap().unix_timestamp + 2700 //change time to 13:15 on day 2
+        ).await.unwrap();
 
     //
     // Claim stake pool rewards 2
     //
 
-    // prg_test_ctx.warp_to_timestamp(
-    //     local_env.get_sysvar::<clock::Clock>().await.unwrap().unix_timestamp + 900 //change time to 13:30 on day 2
-    // ).await.unwrap();
-    //
-    // let claim_stake_pool_ix = claim_pool_rewards(
-    //     program_id,
-    //     claim_pool_rewards::Accounts {
-    //         stake_pool: &stake_pool_key2,
-    //         owner: &stake_pool_owner2.pubkey(),
-    //         rewards_destination: &stake_pool_owner_token_acc,
-    //         central_state: &central_state,
-    //         mint: &mint,
-    //         spl_token_program: &spl_token::ID,
-    //     },
-    //     claim_pool_rewards::Params {},
-    //     true,
-    // );
-    //
-    // sign_send_instructions(
-    //     &mut prg_test_ctx,
-    //     vec![claim_stake_pool_ix],
-    //     vec![&stake_pool_owner2],
-    // )
-    // .await
-    // .unwrap();
+    prg_test_ctx.warp_to_timestamp(
+        local_env.get_sysvar::<clock::Clock>().await.unwrap().unix_timestamp + 900 //change time to 13:30 on day 2
+    ).await.unwrap();
+
+    let claim_stake_pool_ix = claim_pool_rewards(
+        program_id,
+        claim_pool_rewards::Accounts {
+            stake_pool: &stake_pool_key2,
+            owner: &stake_pool_owner2.pubkey(),
+            rewards_destination: &stake_pool_owner2_token_acc,
+            central_state: &central_state,
+            mint: &mint,
+            spl_token_program: &spl_token::ID,
+        },
+        claim_pool_rewards::Params {},
+        true,
+    );
+
+    sign_send_instructions(
+        &mut prg_test_ctx,
+        vec![claim_stake_pool_ix],
+        vec![&stake_pool_owner2],
+    )
+    .await
+    .unwrap();
 
     //
     // Claim rewards 2
     //
 
-    // let claim_ix = claim_rewards(
-    //     program_id,
-    //     claim_rewards::Accounts {
-    //         stake_pool: &stake_pool_key2,
-    //         stake_account: &stake_acc_key2,
-    //         owner: &staker.pubkey(),
-    //         rewards_destination: &staker_token_acc,
-    //         central_state: &central_state,
-    //         mint: &mint,
-    //         spl_token_program: &spl_token::ID,
-    //     },
-    //     claim_rewards::Params {
-    //         allow_zero_rewards: true,
-    //     },
-    //     true,
-    // );
-    //
-    // sign_send_instructions(&mut prg_test_ctx, vec![claim_ix], vec![&staker])
-    //     .await
-    //     .unwrap();
+    let claim_ix = claim_rewards(
+        program_id,
+        claim_rewards::Accounts {
+            stake_pool: &stake_pool_key2,
+            stake_account: &stake_acc_key2,
+            owner: &staker.pubkey(),
+            rewards_destination: &staker_token_acc,
+            central_state: &central_state,
+            mint: &mint,
+            spl_token_program: &spl_token::ID,
+        },
+        claim_rewards::Params {
+            allow_zero_rewards: true,
+        },
+        true,
+    );
+
+    sign_send_instructions(&mut prg_test_ctx, vec![claim_ix], vec![&staker])
+        .await
+        .unwrap();
 
     //
     // Request Unstake
     //
 
-    // let unstake_ix = unstake(
-    //     program_id,
-    //     unstake::Accounts {
-    //         stake_account: &stake_acc_key2,
-    //         stake_pool: &stake_pool_key2,
-    //         owner: &staker.pubkey(),
-    //         central_state_account: &central_state,
-    //     },
-    //     unstake::Params {
-    //         amount: 9_000 as u64,
-    //     },
-    // );
-    // sign_send_instructions(&mut prg_test_ctx, vec![unstake_ix], vec![&staker])
-    //     .await
-    //     .unwrap();
+    let unstake_ix = unstake(
+        program_id,
+        unstake::Accounts {
+            stake_account: &stake_acc_key2,
+            stake_pool: &stake_pool_key2,
+            owner: &staker.pubkey(),
+            central_state_account: &central_state,
+        },
+        unstake::Params {
+            amount: 9_000 as u64,
+        },
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![unstake_ix], vec![&staker])
+        .await
+        .unwrap();
 
     println!("[+] staker_token_acc funds--->  {:?}", local_env.get_packed_account_data::<spl_token::state::Account>(staker_token_acc).await.unwrap().amount);
     println!("[+] stake_pool_owner_token_acc funds--->  {:?}", local_env.get_packed_account_data::<spl_token::state::Account>(stake_pool_owner_token_acc).await.unwrap().amount);
+    println!("[+] stake_pool_owner2_token_acc funds--->  {:?}", local_env.get_packed_account_data::<spl_token::state::Account>(stake_pool_owner2_token_acc).await.unwrap().amount);
     println!("[+] pool_vault funds--->  {:?}", local_env.get_packed_account_data::<spl_token::state::Account>(pool_vault).await.unwrap().amount);
     println!("[+] pool_vault2 funds--->  {:?}", local_env.get_packed_account_data::<spl_token::state::Account>(pool_vault2).await.unwrap().amount);
     println!("[+] authority_ata funds--->  {:?}", local_env.get_packed_account_data::<spl_token::state::Account>(authority_ata).await.unwrap().amount);
