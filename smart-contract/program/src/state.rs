@@ -93,7 +93,6 @@ pub struct StakePoolHeader {
     /// Updated by a trustless cranker
     pub current_day_idx: u16,
 
-    // todo maybe pad differently as the fields bellow have changed
     /// Padding
     pub _padding: [u8; 4],
 
@@ -296,27 +295,6 @@ pub struct StakeAccount {
     pub pending_unstake_requests: u8,
 
     pub unstake_requests: [UnstakeRequest; MAX_UNSTAKE_REQUEST],
-}
-
-#[derive(BorshSerialize, BorshDeserialize, BorshSize, Copy, Clone)]
-#[allow(missing_docs)]
-pub struct UnstakeRequest {
-    pub amount: u64,
-    pub time: i64,
-}
-
-impl UnstakeRequest {
-    #[allow(missing_docs)]
-    pub fn new(amount: u64, time: i64) -> Self {
-        Self { amount, time }
-    }
-}
-
-impl Default for UnstakeRequest {
-    #[allow(missing_docs)]
-    fn default() -> Self {
-        UnstakeRequest::new(0, i64::MAX)
-    }
 }
 
 #[allow(missing_docs)]

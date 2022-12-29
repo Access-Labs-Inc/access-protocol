@@ -143,6 +143,7 @@ pub fn process_claim_bond_rewards(
         AccessError::WrongMint,
     )?;
 
+    // todo fix bonds!!!!!!!
     let reward = calc_reward_fp32(
         central_state.last_snapshot_offset,
         bond.last_claimed_offset,
