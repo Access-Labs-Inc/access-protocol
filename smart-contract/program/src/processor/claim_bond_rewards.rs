@@ -3,14 +3,12 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
-    clock::Clock,
     entrypoint::ProgramResult,
     msg,
     program::invoke_signed,
     program_error::ProgramError,
     program_pack::Pack,
     pubkey::Pubkey,
-    sysvar::Sysvar,
 };
 
 use crate::state::{BondAccount, CentralState, StakePool};
@@ -115,8 +113,6 @@ pub fn process_claim_bond_rewards(
 
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let current_time = Clock::get()?.unix_timestamp;
-
     let central_state = CentralState::from_account_info(accounts.central_state)?;
     let stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut bond = BondAccount::from_account_info(accounts.bond_account, false)?;
@@ -147,10 +143,9 @@ pub fn process_claim_bond_rewards(
         AccessError::WrongMint,
     )?;
 
-    // todo fix bonds!!!!!!!
     let reward = calc_reward_fp32(
-        current_time,
-        bond.last_claimed_time,
+        central_state.last_snapshot_offset,
+        bond.last_claimed_offset as i64,
         &stake_pool,
         true,
         false,
@@ -184,7 +179,7 @@ pub fn process_claim_bond_rewards(
     )?;
 
     // Update states
-    bond.last_claimed_time = current_time;
+    bond.last_claimed_offset = central_state.last_snapshot_offset;
     bond.save(&mut accounts.bond_account.data.borrow_mut())?;
 
     Ok(())

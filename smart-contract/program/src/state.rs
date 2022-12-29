@@ -589,8 +589,8 @@ pub struct BondAccount {
     // Stake pool to which the account belongs to
     pub stake_pool: Pubkey,
 
-    // Last unix timestamp where rewards were claimed
-    pub last_claimed_time: i64,
+    // Last offset of the from the contract creation time in days
+    pub last_claimed_offset: i64,
 
     // Sellers who signed for the sell of the bond account
     pub sellers: Vec<Pubkey>,
@@ -622,7 +622,7 @@ impl BondAccount {
         last_unlock_time: i64,
         pool_minimum_at_creation: u64,
         stake_pool: Pubkey,
-        last_claimed_time: i64,
+        last_claimed_offset: i64,
         seller: Pubkey,
     ) -> Self {
         let sellers = vec![seller];
@@ -640,7 +640,7 @@ impl BondAccount {
             last_unlock_time,
             total_unlocked_amount: 0,
             stake_pool,
-            last_claimed_time,
+            last_claimed_offset,
             sellers,
             pool_minimum_at_creation,
         }
@@ -655,9 +655,10 @@ impl BondAccount {
         self.tag == Tag::BondAccount
     }
 
-    pub fn activate(&mut self, current_time: i64) {
+    pub fn activate(&mut self, current_offset: i64) {
         self.tag = Tag::BondAccount;
-        self.last_claimed_time = current_time;
+        self.last_claimed_offset = current_offset;
+        let current_time = Clock::get().unwrap().unix_timestamp;
         self.last_unlock_time = std::cmp::max(current_time, self.unlock_start_date);
     }
 
