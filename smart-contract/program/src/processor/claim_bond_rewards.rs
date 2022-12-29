@@ -147,6 +147,7 @@ pub fn process_claim_bond_rewards(
         AccessError::WrongMint,
     )?;
 
+    // todo fix bonds!!!!!!!
     let reward = calc_reward_fp32(
         current_time,
         bond.last_claimed_time,

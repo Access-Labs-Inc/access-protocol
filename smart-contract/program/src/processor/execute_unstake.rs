@@ -1,7 +1,5 @@
 //! Execute the token transfer after the unstake outbounding period
 use borsh::{BorshDeserialize, BorshSerialize};
-use solana_program::clock::Clock;
-use solana_program::sysvar::Sysvar;
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
@@ -108,7 +106,6 @@ pub fn process_execute_unstake(program_id: &Pubkey, accounts: &[AccountInfo]) ->
 
     let stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
-    let current_time = Clock::get()?.unix_timestamp;
 
     check_account_key(
         accounts.owner,
@@ -128,12 +125,7 @@ pub fn process_execute_unstake(program_id: &Pubkey, accounts: &[AccountInfo]) ->
 
     let pending_request = stake_account.pop_unstake_request()?;
 
-    if current_time
-        .checked_sub(pending_request.time)
-        .ok_or(AccessError::Overflow)?
-        < stake_pool.header.unstake_period
-        || pending_request.amount == 0
-    {
+    if pending_request.amount == 0 {
         return Err(AccessError::CannotUnstake.into());
     }
 

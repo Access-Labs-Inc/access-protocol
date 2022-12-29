@@ -1,6 +1,6 @@
 use crate::error::AccessError;
 use crate::state::{BondAccount, AUTHORIZED_BOND_SELLERS};
-use crate::state::{StakeAccount, StakePoolRef, ACCESS_MINT, SECONDS_IN_DAY, STAKE_BUFFER_LEN};
+use crate::state::{StakeAccount, StakePoolRef, ACCESS_MINT, STAKE_BUFFER_LEN};
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
     program_pack::Pack, pubkey::Pubkey,
@@ -12,21 +12,22 @@ use spl_token::state::Account;
 ///
 /// * `staker` Compute the reward for a staker or a pool owner
 pub fn calc_reward_fp32(
-    current_time: i64,
-    last_claimed_time: i64,
+    current_offset: i64,
+    last_claimed_offset: i64,
     stake_pool: &StakePoolRef,
     staker: bool,
     allow_zero_rewards: bool,
 ) -> Result<u128, ProgramError> {
-    let mut nb_days_to_claim =
-        current_time.saturating_sub(last_claimed_time) as u64 / SECONDS_IN_DAY;
+    let mut nb_days_to_claim = current_offset.saturating_sub(last_claimed_offset) as u64;
     msg!("Nb of days behind {}", nb_days_to_claim);
+    msg!("Last claimed offset {}", last_claimed_offset);
+    msg!("Current offset {}", current_offset);
     nb_days_to_claim = std::cmp::min(nb_days_to_claim, STAKE_BUFFER_LEN - 1);
 
-    if current_time
-        .checked_sub(stake_pool.header.last_crank_time)
+    if current_offset
+        .checked_sub(stake_pool.header.current_day_idx as i64)
         .ok_or(AccessError::Overflow)?
-        > SECONDS_IN_DAY as i64
+        > 0
     {
         #[cfg(not(any(feature = "days-to-sec-10s", feature = "days-to-sec-15m")))]
         return Err(AccessError::PoolMustBeCranked.into());
@@ -49,6 +50,8 @@ pub fn calc_reward_fp32(
             .ok_or(AccessError::Overflow)?;
         i = (i + 1) % STAKE_BUFFER_LEN;
     }
+
+    msg!("Reward is {}", reward);
 
     if reward == 0 && !allow_zero_rewards {
         msg!("No rewards to claim, no operation.");

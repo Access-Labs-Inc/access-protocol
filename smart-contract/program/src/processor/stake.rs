@@ -20,7 +20,7 @@ use crate::{
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
 use crate::error::AccessError;
-use crate::state::{StakeAccount, StakePool};
+use crate::state::{SECONDS_IN_DAY, StakeAccount, StakePool};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `stake` instruction
@@ -159,14 +159,19 @@ pub fn process_stake(
     }
 
     if stake_account.stake_amount > 0
-        && stake_account.last_claimed_time < stake_pool.header.last_crank_time
+        && stake_account.last_claimed_offset < stake_pool.header.current_day_idx as i64
     {
         return Err(AccessError::UnclaimedRewards.into());
     }
 
-    let current_time = Clock::get().unwrap().unix_timestamp;
+    if central_state.last_snapshot_offset > stake_pool.header.current_day_idx as i64 {
+        return Err(AccessError::PoolMustBeCranked.into());
+    }
+
+    let current_time = Clock::get()?.unix_timestamp;
+    let current_offset = (current_time - central_state.creation_time) / SECONDS_IN_DAY as i64;
     if stake_account.stake_amount == 0 {
-        stake_account.last_claimed_time = current_time;
+        stake_account.last_claimed_offset = current_offset;
     }
 
     // Transfer tokens
@@ -225,7 +230,7 @@ pub fn process_stake(
 
     // Update stake account
     stake_account.deposit(amount)?;
-    stake_pool.header.deposit(amount)?;
+    stake_pool.header.deposit(amount, central_state.last_snapshot_offset, central_state.creation_time)?;
 
     //Update central state
     central_state.total_staked = central_state

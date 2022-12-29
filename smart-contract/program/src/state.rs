@@ -38,9 +38,6 @@ pub const OWNER_MULTIPLIER: u64 = 100 - STAKER_MULTIPLIER;
 /// Length of the circular buffer (stores balances for 1 year)
 pub const STAKE_BUFFER_LEN: u64 = 274; // 9 Months
 
-/// Default unstake period set to 1 sec
-pub const UNSTAKE_PERIOD: i64 = 1;
-
 /// Max pending unstake requests
 pub const MAX_UNSTAKE_REQUEST: usize = 10;
 
@@ -96,6 +93,7 @@ pub struct StakePoolHeader {
     /// Updated by a trustless cranker
     pub current_day_idx: u16,
 
+    // todo maybe pad differently as the fields bellow have changed
     /// Padding
     pub _padding: [u8; 4],
 
@@ -105,18 +103,17 @@ pub struct StakePoolHeader {
     /// Total amount staked in the pool
     pub total_staked: u64,
 
-    /// Last unix timestamp when rewards were paid to the pool owner
-    /// through a permissionless crank
-    pub last_crank_time: i64,
+    /// The pool total_staked change since the last system-wide crank (snapshot)
+    pub total_staked_delta: i64,
 
-    /// Last time the stake pool owner claimed
-    pub last_claimed_time: i64,
+    /// The offset of the last total_staked change in this pool from the central state's creation time
+    pub last_delta_update_offset: i64,
 
-    // The % of pool rewards going to stakers
+    /// Last time the stake pool owner claimed as an offset from the central state's creation time
+    pub last_claimed_offset: i64,
+
+    /// The % of pool rewards going to stakers
     pub stakers_part: u64,
-
-    // The unstake period
-    pub unstake_period: i64,
 
     /// Owner of the stake pool
     pub owner: [u8; 32],
@@ -188,15 +185,11 @@ impl StakePoolHeaped {
 impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [RewardsTuple]>> StakePool<H, B> {
     pub fn push_balances_buff(
         &mut self,
-        present_time: i64,
-        last_crank_time: i64,
+        current_offset: i64,
+        last_crank_offset: i64,
         rewards: RewardsTuple,
     ) -> Result<(), ProgramError> {
-        let nb_days_passed = (present_time
-            .checked_sub(last_crank_time)
-            .ok_or(AccessError::Overflow)? as u64)
-            .checked_div(SECONDS_IN_DAY)
-            .ok_or(AccessError::Overflow)?;
+        let nb_days_passed = (current_offset - last_crank_offset) as u64;
         for i in 1..nb_days_passed {
             self.balances[(((self.header.current_day_idx as u64)
                 .checked_add(i)
@@ -250,16 +243,16 @@ impl StakePoolHeader {
         Ok(Self {
             tag: Tag::InactiveStakePool as u8,
             total_staked: 0,
+            total_staked_delta: 0,
             current_day_idx: 0,
             _padding: [0; 4],
-            last_crank_time: Clock::get()?.unix_timestamp,
-            last_claimed_time: Clock::get()?.unix_timestamp,
+            last_claimed_offset: 0,
             owner: owner.to_bytes(),
             nonce,
             vault: vault.to_bytes(),
             minimum_stake_amount,
             stakers_part: STAKER_MULTIPLIER,
-            unstake_period: UNSTAKE_PERIOD,
+            last_delta_update_offset: 0,
         })
     }
 
@@ -267,18 +260,35 @@ impl StakePoolHeader {
         self.tag = Tag::Deleted as u8
     }
 
-    pub fn deposit(&mut self, amount: u64) -> ProgramResult {
+    pub fn deposit(&mut self, amount: u64, system_snapshot_offset: i64, contract_create_time: i64) -> ProgramResult {
         self.total_staked = self
             .total_staked
             .checked_add(amount)
             .ok_or(AccessError::Overflow)?;
-        Ok(())
+        self.update_delta(amount as i64, system_snapshot_offset, contract_create_time)
     }
 
-    pub fn withdraw(&mut self, amount: u64) -> ProgramResult {
+    pub fn withdraw(&mut self, amount: u64, system_snapshot_offset: i64, contract_create_time: i64) -> ProgramResult {
         self.total_staked = self
             .total_staked
             .checked_sub(amount)
+            .ok_or(AccessError::Overflow)?;
+        self.update_delta(-(amount as i64), system_snapshot_offset, contract_create_time)
+    }
+
+    // private
+    fn update_delta(&mut self, amount: i64, system_snapshot_offset: i64, contract_create_time: i64) -> ProgramResult {
+        let current_time = Clock::get()?.unix_timestamp;
+        let current_offset = (current_time - contract_create_time) / SECONDS_IN_DAY as i64;
+        // if this is the first delta change since the last snapshot, we reset it to 0
+        // todo think about this a little bit more
+        if current_offset >= system_snapshot_offset && self.last_delta_update_offset < system_snapshot_offset {
+            self.total_staked_delta = 0;
+        }
+        self.last_delta_update_offset = current_offset;
+        self.total_staked_delta = self
+            .total_staked_delta
+            .checked_add(amount)
             .ok_or(AccessError::Overflow)?;
         Ok(())
     }
@@ -299,8 +309,8 @@ pub struct StakeAccount {
     /// Stake pool to which the account belongs to
     pub stake_pool: Pubkey,
 
-    /// Last unix timestamp where rewards were claimed
-    pub last_claimed_time: i64,
+    /// Offset of a last day where rewards were claimed from the contract creation date
+    pub last_claimed_offset: i64,
 
     /// Minimum stakeable amount of the pool when the account
     /// was created
@@ -337,7 +347,6 @@ impl StakeAccount {
     pub fn new(
         owner: Pubkey,
         stake_pool: Pubkey,
-        current_time: i64,
         pool_minimum_at_creation: u64,
     ) -> Self {
         Self {
@@ -345,7 +354,7 @@ impl StakeAccount {
             owner,
             stake_amount: 0,
             stake_pool,
-            last_claimed_time: current_time,
+            last_claimed_offset: 0,
             pool_minimum_at_creation,
             pending_unstake_requests: 0,
             unstake_requests: [UnstakeRequest::default(); MAX_UNSTAKE_REQUEST],
@@ -464,8 +473,17 @@ pub struct CentralState {
     /// The public key that can change the inflation
     pub authority: Pubkey,
 
+    /// Creation timestamp
+    pub creation_time: i64,
+
     /// Total amount of staked tokens
     pub total_staked: u64,
+
+    /// The daily total_staked snapshot to calculate correctly calculate the pool rewards
+    pub total_staked_snapshot: u64,
+
+    /// The offset of the total_staked_snapshot from the creation_time in days
+    pub last_snapshot_offset: i64,
 }
 
 impl CentralState {
@@ -476,15 +494,18 @@ impl CentralState {
         token_mint: Pubkey,
         authority: Pubkey,
         total_staked: u64,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, ProgramError> {
+        Ok(Self {
             tag: Tag::CentralState,
             signer_nonce,
             daily_inflation,
             token_mint,
             authority,
+            creation_time: Clock::get()?.unix_timestamp,
             total_staked,
-        }
+            total_staked_snapshot: 0,
+            last_snapshot_offset: 0,
+        })
     }
     #[allow(missing_docs)]
     pub fn create_key(signer_nonce: &u8, program_id: &Pubkey) -> Result<Pubkey, ProgramError> {

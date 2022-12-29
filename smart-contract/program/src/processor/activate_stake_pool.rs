@@ -68,6 +68,8 @@ pub fn process_activate_stake_pool(program_id: &Pubkey, accounts: &[AccountInfo]
     )?;
 
     stake_pool.header.tag = Tag::StakePool as u8;
+    stake_pool.header.last_claimed_offset = central_state.last_snapshot_offset;
+    stake_pool.header.last_delta_update_offset = central_state.last_snapshot_offset;
 
     Ok(())
 }

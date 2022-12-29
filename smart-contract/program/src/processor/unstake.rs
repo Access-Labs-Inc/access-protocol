@@ -7,12 +7,7 @@ use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::clock::Clock;
 use solana_program::sysvar::Sysvar;
-use solana_program::{
-    account_info::{next_account_info, AccountInfo},
-    entrypoint::ProgramResult,
-    program_error::ProgramError,
-    pubkey::Pubkey,
-};
+use solana_program::{account_info::{next_account_info, AccountInfo}, entrypoint::ProgramResult, msg, program_error::ProgramError, pubkey::Pubkey};
 
 use crate::error::AccessError;
 use crate::state::{StakeAccount, StakePool, UnstakeRequest};
@@ -94,8 +89,14 @@ pub fn process_unstake(
     let mut central_state = CentralState::from_account_info(accounts.central_state_account)?;
     let current_time = Clock::get()?.unix_timestamp;
 
-    if stake_account.last_claimed_time < stake_pool.header.last_crank_time {
+    if stake_account.last_claimed_offset < stake_pool.header.current_day_idx as i64 {
         return Err(AccessError::UnclaimedRewards.into());
+    }
+
+    msg!("Last snapshot offset: {}", central_state.last_snapshot_offset);
+    if stake_account.stake_amount > 0
+        && stake_account.last_claimed_offset < stake_pool.header.current_day_idx as i64 {
+        return Err(AccessError::PoolMustBeCranked.into());
     }
 
     check_account_key(
@@ -115,7 +116,7 @@ pub fn process_unstake(
 
     // Update stake account
     stake_account.withdraw(amount)?;
-    stake_pool.header.withdraw(amount)?;
+    stake_pool.header.withdraw(amount, central_state.last_snapshot_offset, central_state.creation_time)?;
 
     // Add unstake request
     stake_account.add_unstake_request(UnstakeRequest::new(amount, current_time))?;

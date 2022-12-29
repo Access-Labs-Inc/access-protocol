@@ -28,6 +28,7 @@ pub struct Accounts<'a, T> {
     pub stake_pool: &'a T,
 
     /// The account of the central state
+    #[cons(writable)]
     pub central_state: &'a T,
 }
 
@@ -61,60 +62,85 @@ pub fn process_crank(
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let present_time = Clock::get()?.unix_timestamp;
-
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
-    let central_state = CentralState::from_account_info(accounts.central_state)?;
+    let mut central_state = CentralState::from_account_info(accounts.central_state)?;
 
-    if present_time - stake_pool.header.last_crank_time < SECONDS_IN_DAY as i64 {
+    let current_time = Clock::get()?.unix_timestamp;
+    let current_offset = (current_time - central_state.creation_time) / SECONDS_IN_DAY as i64;
+    // check if we need to do a system wide snapshot
+    if central_state.last_snapshot_offset < current_offset {
+        central_state.total_staked_snapshot = central_state.total_staked;
+        central_state.last_snapshot_offset = current_offset;
+        central_state.save(&mut accounts.central_state.data.borrow_mut())?;
+        // reset the delta for the pool that we are currently cranking. We don't want the history to influence our result
+        stake_pool.header.last_delta_update_offset = current_offset;
+        stake_pool.header.total_staked_delta = 0;
+    }
+
+    if stake_pool.header.current_day_idx as i64 == central_state.last_snapshot_offset {
         #[cfg(not(any(feature = "days-to-sec-10s", feature = "days-to-sec-15m")))]
         return Err(AccessError::NoOp.into());
     }
+
     msg!("Total staked in pool {}", stake_pool.header.total_staked);
     msg!("Daily inflation {}", central_state.daily_inflation);
     msg!("Total staked {}", central_state.total_staked);
+    msg!("Total staked delta {}", stake_pool.header.total_staked_delta);
+    msg!("Total staked snapshot {}", central_state.total_staked_snapshot);
 
-    // stakers_reward = [(pool_total_staked << 32) * inflation * stakers_part] / (100 * total_staked * pool_total_staked)
-    let stakers_reward = ((stake_pool.header.total_staked as u128) << 32)
-        .checked_mul(central_state.daily_inflation as u128)
-        .ok_or(AccessError::Overflow)?
-        .checked_mul(stake_pool.header.stakers_part as u128)
-        .ok_or(AccessError::Overflow)?
-        .checked_div(100u128)
-        .ok_or(AccessError::Overflow)?
-        .checked_div(central_state.total_staked as u128)
-        .ok_or(AccessError::Overflow)?
-        .checked_div(stake_pool.header.total_staked as u128)
-        .ok_or(AccessError::Overflow)?;
+    // get the pool staked amount at the time of last system snapshot
+    let total_staked_snapshot: u128 = (central_state.total_staked_snapshot - stake_pool.header.total_staked_delta as u64) as u128;
+    msg!("Total staked snapshot {}", total_staked_snapshot);
+    let mut stakers_reward: u128 = 0;
+    let mut pool_reward: u128 = 0;
+    if total_staked_snapshot > 0 {
 
-    // pool_rewards = [(pool_total_staked << 32) * inflation * (100 - stakers_part)] / (100 * total_staked)
-    let pool_reward = ((stake_pool.header.total_staked as u128) << 32)
-        .checked_mul(central_state.daily_inflation as u128)
-        .ok_or(AccessError::Overflow)?
-        .checked_mul(
-            100u64
-                .checked_sub(stake_pool.header.stakers_part)
-                .ok_or(AccessError::Overflow)? as u128,
-        )
-        .ok_or(AccessError::Overflow)?
-        .checked_div(100u128)
-        .ok_or(AccessError::Overflow)?
-        .checked_div(central_state.total_staked as u128)
-        .ok_or(AccessError::Overflow)?;
+        // stakers_reward = [(pool_total_staked << 32) * inflation * stakers_part] / (100 * total_staked * pool_total_staked)
+        stakers_reward = (total_staked_snapshot << 32)
+            .checked_mul(central_state.daily_inflation as u128)
+            .ok_or(AccessError::Overflow)?
+            .checked_mul(stake_pool.header.stakers_part as u128)
+            .ok_or(AccessError::Overflow)?
+            .checked_div(100u128)
+            .ok_or(AccessError::Overflow)?
+            .checked_div(central_state.total_staked_snapshot as u128)
+            .ok_or(AccessError::Overflow)?
+            .checked_div(total_staked_snapshot)
+            .ok_or(AccessError::Overflow)?;
 
-    msg!("Stakers reward {}", stakers_reward);
-    msg!("Pool reward {}", pool_reward);
+        msg!("Stakers reward {}", stakers_reward);
 
+        // pool_rewards = [(pool_total_staked << 32) * inflation * (100 - stakers_part)] / (100 * total_staked)
+        pool_reward = (total_staked_snapshot << 32)
+            .checked_mul(central_state.daily_inflation as u128)
+            .ok_or(AccessError::Overflow)?
+            .checked_mul(
+                100u64
+                    .checked_sub(stake_pool.header.stakers_part)
+                    .ok_or(AccessError::Overflow)? as u128,
+            )
+            .ok_or(AccessError::Overflow)?
+            .checked_div(100u128)
+            .ok_or(AccessError::Overflow)?
+            .checked_div(central_state.total_staked_snapshot as u128)
+            .ok_or(AccessError::Overflow)?;
+
+        msg!("Pool reward {}", pool_reward);
+    } else {
+        msg!("Zero rewards");
+    }
+
+
+    let current_time = Clock::get()?.unix_timestamp;
+    let current_offset = (current_time - central_state.creation_time) / SECONDS_IN_DAY as i64;
     stake_pool.push_balances_buff(
-        present_time,
-        stake_pool.header.last_crank_time,
+        current_offset,
+        stake_pool.header.current_day_idx as i64,
         RewardsTuple {
             pool_reward,
             stakers_reward,
         },
     )?;
-
-    stake_pool.header.last_crank_time = present_time;
 
     Ok(())
 }
