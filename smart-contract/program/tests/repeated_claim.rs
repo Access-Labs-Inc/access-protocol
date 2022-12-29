@@ -20,7 +20,7 @@ use access_protocol::{
 use mpl_token_metadata::pda::find_metadata_account;
 
 #[tokio::test]
-async fn halborn() {
+async fn repeated_claim() {
 
     ///Please comment out the content of assert_authorized_seller otherwise this test will fail, src/utils.rs line 127
     /// There's an issue with the seller key created somewhere below
