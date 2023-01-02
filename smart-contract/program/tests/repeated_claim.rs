@@ -41,184 +41,27 @@ async fn repeated_claim() {
     tr.mint(&staker, 10_200).await;
 
     // Create stake pool
-    //
-    // let (stake_pool_key, _) = Pubkey::find_program_address(
-    //     &[
-    //         "stake_pool".as_bytes(),
-    //         &stake_pool_owner.pubkey().to_bytes(),
-    //     ],
-    //     &program_id,
-    // );
-    //
-    // println!("stake_pool_key: {}", stake_pool_key);
-    //
-    // let create_associated_instruction =
-    //     create_associated_token_account(&prg_test_ctx.payer.pubkey(), &stake_pool_key, &mint);
-    // let pool_vault = get_associated_token_address(&stake_pool_key, &mint);
-    // sign_send_instructions(
-    //     &mut prg_test_ctx,
-    //     vec![create_associated_instruction],
-    //     vec![],
-    // )
-    // .await
-    // .unwrap();
-    //
-    // let create_stake_pool_ix = create_stake_pool(
-    //     program_id,
-    //     create_stake_pool::Accounts {
-    //         stake_pool_account: &stake_pool_key,
-    //         system_program: &system_program::ID,
-    //         fee_payer: &prg_test_ctx.payer.pubkey(),
-    //         vault: &pool_vault,
-    //     },
-    //     create_stake_pool::Params {
-    //         owner: stake_pool_owner.pubkey(),
-    //         minimum_stake_amount: 1000,
-    //     },
-    // );
-    // sign_send_instructions(&mut prg_test_ctx, vec![create_stake_pool_ix], vec![])
-    //     .await
-    //     .unwrap();
-    //
-    // //
-    // // Activate stake pool
-    // //
-    //
-    // let activate_stake_pool_ix = activate_stake_pool(
-    //     program_id,
-    //     activate_stake_pool::Accounts {
-    //         authority: &prg_test_ctx.payer.pubkey(),
-    //         stake_pool: &stake_pool_key,
-    //         central_state: &central_state,
-    //     },
-    //     activate_stake_pool::Params {},
-    // );
-    //
-    // sign_send_instructions(&mut prg_test_ctx, vec![activate_stake_pool_ix], vec![])
-    //     .await
-    //     .unwrap();
-    //
-    // //
-    // // Create stake account
-    // //
-    //
-    // let (stake_acc_key, stake_nonce) = Pubkey::find_program_address(
-    //     &[
-    //         "stake_account".as_bytes(),
-    //         &staker.pubkey().to_bytes(),
-    //         &stake_pool_key.to_bytes(),
-    //     ],
-    //     &program_id,
-    // );
-    // println!("Stake account key: {}", stake_acc_key);
-    // let create_stake_account_ix = create_stake_account(
-    //     program_id,
-    //     create_stake_account::Accounts {
-    //         stake_account: &stake_acc_key,
-    //         system_program: &system_program::ID,
-    //         fee_payer: &prg_test_ctx.payer.pubkey(),
-    //         stake_pool: &stake_pool_key,
-    //     },
-    //     create_stake_account::Params {
-    //         nonce: stake_nonce,
-    //         owner: staker.pubkey(),
-    //     },
-    // );
-    // sign_send_instructions(&mut prg_test_ctx, vec![create_stake_account_ix], vec![])
-    //     .await
-    //     .unwrap();
-    //
-    // //
-    // // Create stake pool 2
-    // //
-    //
-    // prg_test_ctx.warp_to_timestamp(
-    //     local_env.get_sysvar::<clock::Clock>().await.unwrap().unix_timestamp + 2600 //+ 1 hour to 13:00 on day 1
-    // ).await.unwrap();
-    //
-    // let (stake_pool_key2, _) = Pubkey::find_program_address(
-    //     &[
-    //         "stake_pool".as_bytes(),
-    //         &stake_pool_owner2.pubkey().to_bytes(),
-    //     ],
-    //     &program_id,
-    // );
-    //
-    // let create_associated_instruction =
-    //     create_associated_token_account(&prg_test_ctx.payer.pubkey(), &stake_pool_key2, &mint);
-    // let pool_vault2 = get_associated_token_address(&stake_pool_key2, &mint);
-    // sign_send_instructions(
-    //     &mut prg_test_ctx,
-    //     vec![create_associated_instruction],
-    //     vec![],
-    // )
-    // .await
-    // .unwrap();
-    //
-    // let create_stake_pool_ix = create_stake_pool(
-    //     program_id,
-    //     create_stake_pool::Accounts {
-    //         stake_pool_account: &stake_pool_key2,
-    //         system_program: &system_program::ID,
-    //         fee_payer: &prg_test_ctx.payer.pubkey(),
-    //         vault: &pool_vault2,
-    //     },
-    //     create_stake_pool::Params {
-    //         owner: stake_pool_owner2.pubkey(),
-    //         minimum_stake_amount: 1000,
-    //     },
-    // );
-    // sign_send_instructions(&mut prg_test_ctx, vec![create_stake_pool_ix], vec![])
-    //     .await
-    //     .unwrap();
-    //
-    // //
-    // // Activate stake pool 2
-    // //
-    //
-    // let activate_stake_pool_ix = activate_stake_pool(
-    //     program_id,
-    //     activate_stake_pool::Accounts {
-    //         authority: &prg_test_ctx.payer.pubkey(),
-    //         stake_pool: &stake_pool_key2,
-    //         central_state: &central_state,
-    //     },
-    //     activate_stake_pool::Params {},
-    // );
-    //
-    // sign_send_instructions(&mut prg_test_ctx, vec![activate_stake_pool_ix], vec![])
-    //     .await
-    //     .unwrap();
-    //
-    // //
-    // // Create stake account 2
-    // //
-    //
-    // let (stake_acc_key2, stake_nonce2) = Pubkey::find_program_address(
-    //     &[
-    //         "stake_account".as_bytes(),
-    //         &staker.pubkey().to_bytes(),
-    //         &stake_pool_key2.to_bytes(),
-    //     ],
-    //     &program_id,
-    // );
-    // let create_stake_account_ix = create_stake_account(
-    //     program_id,
-    //     create_stake_account::Accounts {
-    //         stake_account: &stake_acc_key2,
-    //         system_program: &system_program::ID,
-    //         fee_payer: &prg_test_ctx.payer.pubkey(),
-    //         stake_pool: &stake_pool_key2,
-    //     },
-    //     create_stake_account::Params {
-    //         nonce: stake_nonce2,
-    //         owner: staker.pubkey(),
-    //     },
-    // );
-    // sign_send_instructions(&mut prg_test_ctx, vec![create_stake_account_ix], vec![])
-    //     .await
-    //     .unwrap();
-    //
+    let stake_pool_key = tr.create_stake_pool(&stake_pool_owner).await;
+
+    // Activate stake pool
+    tr.activate_stake_pool(&stake_pool_key).await;
+
+    // Create stake account
+    let stake_acc_key = tr.create_stake_account(&stake_pool_key, &stake_pool_owner).await;
+
+    // Simulate waiting for 2600 seconds
+    tr.sleep(2600).await;
+
+    // Create stake pool 2
+    let stake_pool_key2 = tr.create_stake_pool(&stake_pool_owner2).await;
+
+    // Activate stake pool 2
+    tr.activate_stake_pool(&stake_pool_key2).await;
+
+    // Create stake account 2
+    let stake_acc_key2 = tr.create_stake_account(&stake_pool_key2, &stake_pool_owner2).await;
+
+
     // //
     // // Stake
     // //
@@ -637,5 +480,96 @@ impl TestRunner {
         sign_send_instructions(&mut self.prg_test_ctx, vec![admin_mint_ix], vec![])
             .await
             .unwrap();
+    }
+
+    pub async fn create_stake_pool(&mut self, stake_pool_owner: &Pubkey) -> Pubkey {
+        let (stake_pool_key, _) = Pubkey::find_program_address(
+            &[
+                "stake_pool".as_bytes(),
+                &stake_pool_owner.to_bytes(),
+            ],
+            &self.program_id,
+        );
+
+        let create_associated_instruction =
+            create_associated_token_account(&self.prg_test_ctx.payer.pubkey(), &stake_pool_key, &self.mint);
+        let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
+        sign_send_instructions(
+            &mut self.prg_test_ctx,
+            vec![create_associated_instruction],
+            vec![],
+        )
+            .await
+            .unwrap();
+
+        let create_stake_pool_ix = create_stake_pool(
+            self.program_id,
+            create_stake_pool::Accounts {
+                stake_pool_account: &stake_pool_key,
+                system_program: &system_program::ID,
+                fee_payer: &self.prg_test_ctx.payer.pubkey(),
+                vault: &pool_vault,
+            },
+            create_stake_pool::Params {
+                owner: *stake_pool_owner,
+                minimum_stake_amount: 1000,
+            },
+        );
+        sign_send_instructions(&mut self.prg_test_ctx, vec![create_stake_pool_ix], vec![])
+            .await
+            .unwrap();
+
+        stake_pool_key
+    }
+
+    pub async fn activate_stake_pool(&mut self, stake_pool_key: &Pubkey) {
+        let activate_stake_pool_ix = activate_stake_pool(
+            self.program_id,
+            activate_stake_pool::Accounts {
+                authority: &self.prg_test_ctx.payer.pubkey(),
+                stake_pool: &stake_pool_key,
+                central_state: &self.central_state,
+            },
+            activate_stake_pool::Params {},
+        );
+
+        sign_send_instructions(&mut self.prg_test_ctx, vec![activate_stake_pool_ix], vec![])
+            .await
+            .unwrap();
+    }
+
+    pub async fn create_stake_account(&mut self, stake_pool_key: &Pubkey, staker_key: &Pubkey) -> Pubkey {
+        let (stake_acc_key, stake_nonce) = Pubkey::find_program_address(
+            &[
+                "stake_account".as_bytes(),
+                &staker_key.to_bytes(),
+                &stake_pool_key.to_bytes(),
+            ],
+            &self.program_id,
+        );
+        let create_stake_account_ix = create_stake_account(
+            self.program_id,
+            create_stake_account::Accounts {
+                stake_account: &stake_acc_key,
+                system_program: &system_program::ID,
+                fee_payer: &self.prg_test_ctx.payer.pubkey(),
+                stake_pool: &stake_pool_key,
+            },
+            create_stake_account::Params {
+                nonce: stake_nonce,
+                owner: *staker_key,
+            },
+        );
+        sign_send_instructions(&mut self.prg_test_ctx, vec![create_stake_account_ix], vec![])
+            .await
+            .unwrap();
+
+        stake_acc_key
+    }
+
+    pub async fn sleep(&mut self, duration: u64) {
+        self.prg_test_ctx.warp_to_timestamp(
+            self.local_env.get_sysvar::<clock::Clock>().await.unwrap().unix_timestamp + duration as i64
+        ).await.unwrap();
     }
 }
