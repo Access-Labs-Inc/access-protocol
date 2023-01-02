@@ -25,48 +25,22 @@ async fn repeated_claim() {
     ///Please comment out the content of assert_authorized_seller otherwise this test will fail, src/utils.rs line 127
     /// There's an issue with the seller key created somewhere below
 
+    // Setup the token + basic accounts
     let mut tr = TestRunner::new().await;
 
-    //
     // Create users
-    //
+    let stake_pool_owner = tr.create_ata_account().await;
+    let stake_pool_owner2 = tr.create_ata_account().await;
+    let staker = tr.create_ata_account().await;
 
-    let stake_pool_owner = Keypair::new();
-    let stake_pool_owner2 = Keypair::new();
-    let staker = Keypair::new();
+    println!("stake_pool_owner {:?}", stake_pool_owner);
+    println!("stake_pool_owner2 {:?}", stake_pool_owner2);
+    println!("staker {:?}", staker);
 
-    println!("stake_pool_owner {:?}", stake_pool_owner.pubkey());
-    println!("stake_pool_owner2 {:?}", stake_pool_owner2.pubkey());
-    println!("staker {:?}", staker.pubkey());
+    // Mint
+    tr.mint(&staker, 10_200).await;
 
-    tr.create_ata_account(&stake_pool_owner.pubkey());
-    tr.create_ata_account(&stake_pool_owner2.pubkey());
-    tr.create_ata_account(&staker.pubkey());
-
-    //
-    // Admin mint
-    //
-    //
-    // let admin_mint_ix = admin_mint(
-    //     program_id,
-    //     admin_mint::Accounts {
-    //         authority: &prg_test_ctx.payer.pubkey(),
-    //         mint: &mint,
-    //         access_token_destination: &staker_token_acc,
-    //         central_state: &central_state,
-    //         spl_token_program: &spl_token::ID,
-    //     },
-    //     admin_mint::Params {
-    //         amount: 10_200,
-    //     },
-    // );
-    // sign_send_instructions(&mut prg_test_ctx, vec![admin_mint_ix], vec![])
-    //     .await
-    //     .unwrap();
-    //
-    // //
-    // // Create stake pool
-    // //
+    // Create stake pool
     //
     // let (stake_pool_key, _) = Pubkey::find_program_address(
     //     &[
@@ -527,6 +501,8 @@ pub struct TestRunner {
     pub program_id: Pubkey,
     prg_test_ctx: ProgramTestContext,
     local_env: BanksClient,
+    authority_ata: Pubkey,
+    central_state: Pubkey,
     mint : Pubkey,
 }
 
@@ -620,14 +596,17 @@ impl TestRunner {
             program_id,
             prg_test_ctx,
             local_env,
+            authority_ata,
+            central_state,
             mint
         }
     }
 
-    pub async fn create_ata_account(&mut self, ownerPubkey: &Pubkey) {
+    pub async fn create_ata_account(&mut self) -> Pubkey {
+        let owner = Keypair::new();
         let create_ata_stake_pool_owner_ix = create_associated_token_account(
             &self.prg_test_ctx.payer.pubkey(),
-            &ownerPubkey,
+            &owner.pubkey(),
             &self.mint,
         );
         sign_send_instructions(
@@ -635,6 +614,27 @@ impl TestRunner {
             vec![create_ata_stake_pool_owner_ix],
             vec![],
         )
+            .await
+            .unwrap();
+        owner.pubkey()
+    }
+
+    pub async fn mint(&mut self, destination: &Pubkey, amount: u64) {
+        let destination_ata = get_associated_token_address(&destination, &self.mint);
+        let admin_mint_ix = admin_mint(
+            self.program_id,
+            admin_mint::Accounts {
+                authority: &self.prg_test_ctx.payer.pubkey(),
+                mint: &self.mint,
+                access_token_destination: &destination_ata,
+                central_state: &self.central_state,
+                spl_token_program: &spl_token::ID,
+            },
+            admin_mint::Params {
+                amount,
+            },
+        );
+        sign_send_instructions(&mut self.prg_test_ctx, vec![admin_mint_ix], vec![])
             .await
             .unwrap();
     }
