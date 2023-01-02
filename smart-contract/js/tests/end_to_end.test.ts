@@ -433,7 +433,7 @@ test("End to end test", async () => {
   expect(bondObj.totalUnlockedAmount.toNumber()).toBe(0);
   expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
   expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  expect(bondObj.lastClaimedOffset).toBe(0);
+  expect(bondObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(bondObj.sellers.length).toBe(1);
   expect(bondObj.sellers[0].toBase58()).toBe(bondSeller.publicKey.toBase58());
 

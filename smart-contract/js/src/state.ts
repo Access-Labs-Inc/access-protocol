@@ -72,9 +72,9 @@ export class StakePool {
           ["_padding", [4]],
           ["minimumStakeAmount", "u64"],
           ["totalStaked", "u64"],
-          ["totalStakedDelta", "i64"],
-          ["lastDeltaUpdateOffset", "i64"],
-          ["lastClaimedOffset", "i64"],
+          ["totalStakedDelta", "u64"],
+          ["lastDeltaUpdateOffset", "u64"],
+          ["lastClaimedOffset", "u64"],
           ["stakersPart", "u64"],
           ["owner", [32]],
           ["vault", [32]],
@@ -116,9 +116,9 @@ export class StakePool {
     this._padding = obj._padding;
     this.minimumStakeAmount = obj.minimumStakeAmount;
     this.totalStaked = obj.totalStaked;
-    this.totalStakedDelta = obj.totalStakedDelta;
-    this.lastDeltaUpdateOffset = obj.lastDeltaUpdateOffset;
-    this.lastClaimedOffset = obj.lastClaimedOffset;
+    this.totalStakedDelta = obj.totalStakedDelta.fromTwos(64);
+    this.lastDeltaUpdateOffset = obj.lastDeltaUpdateOffset.fromTwos(64);
+    this.lastClaimedOffset = obj.lastClaimedOffset.fromTwos(64);
     this.stakersPart = obj.stakersPart;
     this.owner = new PublicKey(obj.owner);
     this.vault = new PublicKey(obj.vault);
@@ -203,7 +203,7 @@ export class StakeAccount {
           ["owner", [32]],
           ["stakeAmount", "u64"],
           ["stakePool", [32]],
-          ["lastClaimedOffset", "i64"],
+          ["lastClaimedOffset", "u64"],
           ["poolMinimumAtCreation", "u64"],
           ["pendingUnstakeRequests", "u8"],
           ["unstakeRequests", [UnstakeRequest, MAX_UNSTAKE_REQUEST]],
@@ -226,7 +226,7 @@ export class StakeAccount {
     this.owner = new PublicKey(obj.owner);
     this.stakeAmount = obj.stakeAmount;
     this.stakePool = new PublicKey(obj.stakePool);
-    this.lastClaimedOffset = obj.lastClaimedOffset;
+    this.lastClaimedOffset = obj.lastClaimedOffset.fromTwos(64);
     this.poolMinimumAtCreation = obj.poolMinimumAtCreation;
     this.pendingUnstakeRequests = obj.pendingUnstakeRequests;
     this.unstakeRequests = obj.unstakeRequests;
@@ -294,10 +294,10 @@ export class CentralState {
           ["dailyInflation", "u64"],
           ["tokenMint", [32]],
           ["authority", [32]],
+          ["creationTime", "u64"],
           ["totalStaked", "u64"],
-          ["creationTime", "i64"],
-          ["totalStakedSnapshot", "i64"],
-          ["lastSnapshotOffset", "i64"],
+          ["totalStakedSnapshot", "u64"],
+          ["lastSnapshotOffset", "u64"],
         ],
       },
     ],
@@ -319,10 +319,10 @@ export class CentralState {
     this.dailyInflation = obj.dailyInflation;
     this.tokenMint = new PublicKey(obj.tokenMint);
     this.authority = new PublicKey(obj.authority);
-    this.creationTime = obj.creationTime;
+    this.creationTime = obj.creationTime.fromTwos(64);
     this.totalStaked = obj.totalStaked;
-    this.totalStakedSnapshot = obj.totalStakedSnapshot;
-    this.lastSnapshotOffset = obj.lastSnapshotOffset;
+    this.totalStakedSnapshot = obj.totalStakedSnapshot.fromTwos(64);
+    this.lastSnapshotOffset = obj.lastSnapshotOffset.fromTwos(64);
   }
 
   static deserialize(data: Buffer) {

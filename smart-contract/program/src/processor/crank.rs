@@ -89,7 +89,7 @@ pub fn process_crank(
     msg!("Total staked snapshot {}", central_state.total_staked_snapshot);
 
     // get the pool staked amount at the time of last system snapshot
-    let total_staked_snapshot: u128 = (central_state.total_staked_snapshot - stake_pool.header.total_staked_delta as u64) as u128;
+    let total_staked_snapshot: u128 = (stake_pool.header.total_staked - stake_pool.header.total_staked_delta as u64) as u128;
     msg!("Total staked snapshot {}", total_staked_snapshot);
     let mut stakers_reward: u128 = 0;
     let mut pool_reward: u128 = 0;

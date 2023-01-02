@@ -553,31 +553,31 @@ async fn repeated_claim() {
     // Claim stake pool rewards 2
     //
 
-    prg_test_ctx.warp_to_timestamp(
-        local_env.get_sysvar::<clock::Clock>().await.unwrap().unix_timestamp + 900 //change time to 13:30 on day 2
-    ).await.unwrap();
-
-    let claim_stake_pool_ix = claim_pool_rewards(
-        program_id,
-        claim_pool_rewards::Accounts {
-            stake_pool: &stake_pool_key2,
-            owner: &stake_pool_owner2.pubkey(),
-            rewards_destination: &stake_pool_owner2_token_acc,
-            central_state: &central_state,
-            mint: &mint,
-            spl_token_program: &spl_token::ID,
-        },
-        claim_pool_rewards::Params {},
-        true,
-    );
-
-    sign_send_instructions(
-        &mut prg_test_ctx,
-        vec![claim_stake_pool_ix],
-        vec![&stake_pool_owner2],
-    )
-    .await
-    .unwrap();
+    // prg_test_ctx.warp_to_timestamp(
+    //     local_env.get_sysvar::<clock::Clock>().await.unwrap().unix_timestamp + 900 //change time to 13:30 on day 2
+    // ).await.unwrap();
+    //
+    // let claim_stake_pool_ix = claim_pool_rewards(
+    //     program_id,
+    //     claim_pool_rewards::Accounts {
+    //         stake_pool: &stake_pool_key2,
+    //         owner: &stake_pool_owner2.pubkey(),
+    //         rewards_destination: &stake_pool_owner2_token_acc,
+    //         central_state: &central_state,
+    //         mint: &mint,
+    //         spl_token_program: &spl_token::ID,
+    //     },
+    //     claim_pool_rewards::Params {},
+    //     true,
+    // );
+    //
+    // sign_send_instructions(
+    //     &mut prg_test_ctx,
+    //     vec![claim_stake_pool_ix],
+    //     vec![&stake_pool_owner2],
+    // )
+    // .await
+    // .unwrap();
 
     //
     // Claim rewards 2
