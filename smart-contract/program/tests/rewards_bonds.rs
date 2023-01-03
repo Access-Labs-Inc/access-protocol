@@ -1,4 +1,5 @@
-use solana_program::{ pubkey::Pubkey, system_program};
+use std::os::macos::raw::stat;
+use solana_program::{pubkey::Pubkey, system_program};
 use solana_program_test::{processor, ProgramTest};
 use solana_test_framework::*;
 use solana_sdk::signer::{keypair::Keypair, Signer};
@@ -44,27 +45,37 @@ async fn rewards_bonds() {
     // Stake to pool 1
     let token_amount = 10_000;
     tr.stake(&stake_pool_owner.pubkey(), &staker, token_amount).await.unwrap();
+    let central_state_stats = tr.central_state_stats().await.unwrap();
+    assert_eq!(central_state_stats.total_staked, token_amount);
 
-    // wait until day 2 12:15
+    // Create bond account
+    tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), 10_000).await.unwrap();
+    let central_state_stats = tr.central_state_stats().await.unwrap();
+    assert_eq!(central_state_stats.total_staked, token_amount);
+
+    // Claim bond
+    tr.claim_bond(&stake_pool_owner.pubkey(), &staker, 10_000).await.unwrap();
+    let central_state_stats = tr.central_state_stats().await.unwrap();
+    assert_eq!(central_state_stats.total_staked, 20_000);
+
+    // wait until day 2 12:00
     tr.sleep(86400).await.unwrap();
 
     // Crank pool 1 (+ implicitly the whole system)
     tr.crank_pool(&stake_pool_owner.pubkey()).await.unwrap();
 
     // Claim pool 1 rewards
-    // tr.claim_pool_rewards(&stake_pool_owner).await.unwrap();
+    tr.claim_pool_rewards(&stake_pool_owner).await.unwrap();
+    let pool_stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
+    assert_eq!(pool_stats.balance, 500_000);
 
     // Claim staker rewards in pool 1
-    // tr.claim_staker_rewards(&stake_pool_owner.pubkey(), &staker).await.unwrap();
+    tr.claim_staker_rewards(&stake_pool_owner.pubkey(), &staker).await.unwrap();
+    let stats = tr.staker_stats(staker.pubkey()).await.unwrap();
+    assert_eq!(stats.balance, 250_000);
 
-   // Create bond account
-   //  tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), 10_000, 123456789).await.unwrap();
-
-    // Print results
-    let stats = tr.staker_stats(staker.pubkey()).await;
-    println!("[+] stats--->  {:?}", stats);
-    let pool_stats = tr.pool_stats(stake_pool_owner.pubkey()).await;
-    println!("[+] pool_stats--->  {:?}", pool_stats);
-
-    // todo asserts
+    // Claim bond rewards
+    tr.claim_bond_rewards(&stake_pool_owner.pubkey(), &staker, 10_000).await.unwrap();
+    let stats = tr.staker_stats(staker.pubkey()).await.unwrap();
+    assert_eq!(stats.balance, 500_000);
 }

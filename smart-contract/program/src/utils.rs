@@ -128,6 +128,11 @@ pub fn assert_uninitialized(account: &AccountInfo) -> ProgramResult {
 }
 
 pub fn assert_authorized_seller(seller: &AccountInfo, seller_index: usize) -> ProgramResult {
+    // print all authorized sellers
+    for i in 0..AUTHORIZED_BOND_SELLERS.len() {
+        msg!("Authorized seller {}", i);
+        msg!("{}", AUTHORIZED_BOND_SELLERS[i]);
+    }
     let expected_seller = AUTHORIZED_BOND_SELLERS
         .get(seller_index)
         .ok_or(AccessError::UnauthorizedSeller)?;
