@@ -147,7 +147,7 @@ impl TestRunner {
             vec![create_ata_stake_pool_owner_ix],
             vec![],
         )
-        .await?;
+            .await?;
         Ok(owner)
     }
 
@@ -187,7 +187,7 @@ impl TestRunner {
             vec![create_associated_instruction],
             vec![],
         )
-        .await?;
+            .await?;
 
         let create_stake_pool_ix = create_stake_pool(
             self.program_id,
@@ -272,7 +272,7 @@ impl TestRunner {
             vec![create_stake_account_ix],
             vec![],
         )
-        .await
+            .await
     }
 
     pub async fn sleep(&mut self, duration: u64) -> Result<(), ProgramTestError> {
@@ -361,7 +361,7 @@ impl TestRunner {
             vec![claim_stake_pool_ix],
             vec![&stake_pool_owner],
         )
-        .await
+            .await
     }
 
     pub async fn claim_staker_rewards(
@@ -438,7 +438,7 @@ impl TestRunner {
             vec![execute_unstake_ix],
             vec![&staker],
         )
-        .await
+            .await
     }
 
     pub async fn staker_stats(
@@ -568,7 +568,7 @@ impl TestRunner {
             vec![claim_bond_ix],
             vec![&bond_owner],
         )
-        .await
+            .await
     }
 
     pub async fn claim_bond_rewards(
