@@ -78,4 +78,41 @@ async fn rewards_bonds() {
     tr.claim_bond_rewards(&stake_pool_owner.pubkey(), &staker, 10_000).await.unwrap();
     let stats = tr.staker_stats(staker.pubkey()).await.unwrap();
     assert_eq!(stats.balance, 500_000);
+
+    // 23 hours later
+    tr.sleep(82800).await.unwrap();
+
+    // Crank should fail
+    let crank_result = tr.crank_pool(&stake_pool_owner.pubkey()).await;
+    assert!(crank_result.is_err());
+
+    // Try to claim rewards again
+    let result = tr.claim_bond_rewards(&stake_pool_owner.pubkey(), &staker, 10_000).await;
+    assert!(result.is_err());
+    tr.claim_staker_rewards(&stake_pool_owner.pubkey(), &staker).await.unwrap();
+    let result = tr.claim_pool_rewards(&stake_pool_owner).await;
+    assert!(result.is_err());
+
+    // check balances
+    let stats = tr.staker_stats(staker.pubkey()).await.unwrap();
+    assert_eq!(stats.balance, 500_000);
+    let pool_stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
+    assert_eq!(pool_stats.balance, 500_000);
+
+    // 1 hour later
+    tr.sleep(3600).await.unwrap();
+
+    // Crank should succeed
+    tr.crank_pool(&stake_pool_owner.pubkey()).await.unwrap();
+
+    // Claim rewards again
+    tr.claim_bond_rewards(&stake_pool_owner.pubkey(), &staker, 10_000).await.unwrap();
+    let stats = tr.staker_stats(staker.pubkey()).await.unwrap();
+    assert_eq!(stats.balance, 750_000);
+    tr.claim_staker_rewards(&stake_pool_owner.pubkey(), &staker).await.unwrap();
+    let stats = tr.staker_stats(staker.pubkey()).await.unwrap();
+    assert_eq!(stats.balance, 1_000_000);
+    tr.claim_pool_rewards(&stake_pool_owner).await.unwrap();
+    let pool_stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
+    assert_eq!(pool_stats.balance, 1_000_000);
 }

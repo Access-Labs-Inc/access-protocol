@@ -164,10 +164,6 @@ pub fn process_stake(
         return Err(AccessError::UnclaimedRewards.into());
     }
 
-    if central_state.last_snapshot_offset > stake_pool.header.current_day_idx as i64 {
-        return Err(AccessError::PoolMustBeCranked.into());
-    }
-
     let current_time = Clock::get()?.unix_timestamp;
     let current_offset = (current_time - central_state.creation_time) / SECONDS_IN_DAY as i64;
     if stake_account.stake_amount == 0 {

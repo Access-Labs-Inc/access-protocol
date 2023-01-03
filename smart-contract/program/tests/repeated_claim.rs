@@ -71,11 +71,11 @@ async fn repeated_claim() {
     // Unstake from pool 1
     tr.unstake(&stake_pool_owner.pubkey(), &staker, token_amount).await.unwrap();
 
+    // Stake to pool 2
+    tr.stake(&stake_pool2_owner.pubkey(), &staker, token_amount).await.unwrap();
+
     // Crank pool 2
     tr.crank_pool(&stake_pool2_owner.pubkey()).await.unwrap();
-
-    // Stake 2
-    tr.stake(&stake_pool2_owner.pubkey(), &staker, token_amount).await.unwrap();
 
     // Claim stake pool rewards 2
     assert!(tr.claim_pool_rewards(&stake_pool2_owner).await.is_err());
@@ -84,12 +84,15 @@ async fn repeated_claim() {
     tr.claim_staker_rewards(&stake_pool2_owner.pubkey(), &staker).await.unwrap();
 
     // Print results
-    let stats = tr.staker_stats(staker.pubkey()).await;
-    println!("[+] stats--->  {:?}", stats);
-    let pool_stats = tr.pool_stats(stake_pool_owner.pubkey()).await;
-    println!("[+] pool_stats--->  {:?}", pool_stats);
-    let pool_stats2 = tr.pool_stats(stake_pool2_owner.pubkey()).await;
-    println!("[+] pool_stats2--->  {:?}", pool_stats2);
+    let stats = tr.staker_stats(staker.pubkey()).await.unwrap();
+    assert_eq!(stats.balance, 499_800);
+    let pool_stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
+    assert_eq!(pool_stats.balance, 500_000);
+    assert_eq!(pool_stats.total_pool_staked, 0);
+    let pool_stats2 = tr.pool_stats(stake_pool2_owner.pubkey()).await.unwrap();
+    assert_eq!(pool_stats2.balance, 0);
+    assert_eq!(pool_stats2.total_pool_staked, 10_000);
+
 
     // todo asserts
 }

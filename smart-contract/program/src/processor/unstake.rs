@@ -93,12 +93,6 @@ pub fn process_unstake(
         return Err(AccessError::UnclaimedRewards.into());
     }
 
-    msg!("Last snapshot offset: {}", central_state.last_snapshot_offset);
-    if stake_account.stake_amount > 0
-        && stake_account.last_claimed_offset < stake_pool.header.current_day_idx as i64 {
-        return Err(AccessError::PoolMustBeCranked.into());
-    }
-
     check_account_key(
         accounts.owner,
         &stake_account.owner,
