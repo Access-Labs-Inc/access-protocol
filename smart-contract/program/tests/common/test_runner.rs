@@ -15,6 +15,8 @@ use access_protocol::{
     },
 };
 use mpl_token_metadata::pda::find_metadata_account;
+use access_protocol::instruction::create_bond;
+use access_protocol::state::BondAccount;
 
 pub struct TestRunner {
     pub program_id: Pubkey,
@@ -410,5 +412,39 @@ impl TestRunner {
             balance,
             total_pool_staked,
         })
+    }
+
+    pub async fn create_bond(&mut self, stake_pool_owner: &Pubkey, bond_owner: &Pubkey, bond_amount: u64, bond_maturity: u64) -> Result<(), BanksClientError> {
+        let (bond_key, _bond_nonce) =
+            BondAccount::create_key(&bond_owner, bond_amount, &self.program_id);
+
+        let stake_pool_key = self.get_pool_pda(stake_pool_owner);
+        let seller_token_acc = get_associated_token_address(&bond_owner, &self.mint);
+
+
+        let create_bond_ix = create_bond(
+            self.program_id,
+            create_bond::Accounts {
+                stake_pool: &stake_pool_key,
+                seller: &self.prg_test_ctx.payer.pubkey(),
+                bond_account: &bond_key,
+                system_program: &system_program::ID,
+                fee_payer: &self.prg_test_ctx.payer.pubkey(),
+            },
+            create_bond::Params {
+                buyer: bond_owner.clone(),
+                total_amount_sold: bond_amount,
+                seller_token_account: seller_token_acc,
+                total_quote_amount: 0,
+                quote_mint: Pubkey::default(),
+                unlock_period: 1, // todo: make this a parameter
+                unlock_amount: bond_amount,
+                unlock_start_date: 0,
+                seller_index: 0,
+            },
+        );
+
+        sign_send_instructions(&mut self.prg_test_ctx, vec![create_bond_ix], vec![])
+            .await
     }
 }
