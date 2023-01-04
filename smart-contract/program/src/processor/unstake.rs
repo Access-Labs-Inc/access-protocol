@@ -108,6 +108,13 @@ pub fn process_unstake(
         stake_account.pool_minimum_at_creation = stake_pool.header.minimum_stake_amount
     }
 
+    let new_amount = stake_account.stake_amount.checked_sub(amount).ok_or(AccessError::Overflow)?;
+    msg!("New amount: {}", new_amount);
+    if new_amount != 0 && new_amount < stake_account.pool_minimum_at_creation {
+        msg!("New amount is less than minimum");
+        return Err(AccessError::InvalidUnstakeAmount.into());
+    }
+
     // Update stake account
     stake_account.withdraw(amount)?;
     stake_pool.header.withdraw(amount, central_state.last_snapshot_offset, central_state.creation_time)?;
