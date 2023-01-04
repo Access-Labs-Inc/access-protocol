@@ -19,7 +19,7 @@ use access_protocol::{
 };
 use mpl_token_metadata::pda::find_metadata_account;
 use solana_program::account_info::AccountInfo;
-use access_protocol::instruction::{claim_bond, claim_bond_rewards, create_bond};
+use access_protocol::instruction::{change_pool_minimum, claim_bond, claim_bond_rewards, create_bond};
 use access_protocol::state::{BondAccount, CentralState};
 
 pub struct TestRunner {
@@ -531,6 +531,27 @@ impl TestRunner {
         );
 
         sign_send_instructions(&mut self.prg_test_ctx, vec![claim_bond_rewards_ix], vec![])
+            .await
+    }
+
+    pub async fn change_pool_minimum(&mut self, stake_pool_owner: &Keypair, new_minimum: u64) -> Result<(), BanksClientError> {
+        let stake_pool_key = self.get_pool_pda(&stake_pool_owner.pubkey());
+        let change_min_ix = change_pool_minimum(
+            self.program_id,
+            change_pool_minimum::Accounts {
+                stake_pool: &stake_pool_key,
+                stake_pool_owner: &stake_pool_owner.pubkey(),
+            },
+            change_pool_minimum::Params {
+                new_minimum: new_minimum,
+            },
+        );
+
+        sign_send_instructions(
+            &mut self.prg_test_ctx,
+            vec![change_min_ix],
+            vec![&stake_pool_owner],
+        )
             .await
     }
 }

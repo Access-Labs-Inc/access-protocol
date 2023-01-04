@@ -65,4 +65,14 @@ async fn common_unstake_limit() {
     tr.unstake(&stake_pool_owner.pubkey(), &staker, 1000).await.unwrap();
     let pool_stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
     assert_eq!(pool_stats.total_pool_staked, 0);
+
+    // change the pool minimum
+    tr.change_pool_minimum(&stake_pool_owner, 9000).await.unwrap();
+
+    // try staking under the pool minimum, but above the staker minimum
+    let result = tr.stake(&stake_pool_owner.pubkey(), &staker, 8999).await;
+    assert!(result.is_err());
+
+    // stake above the pool minimum should work
+    tr.stake(&stake_pool_owner.pubkey(), &staker, 9000).await.unwrap();
 }
