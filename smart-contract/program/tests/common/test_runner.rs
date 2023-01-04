@@ -1,27 +1,26 @@
+use std::convert::TryFrom;
+use std::error::Error;
+use borsh::BorshDeserialize;
+use solana_program::{pubkey::Pubkey, system_program};
+use solana_program_test::{processor, ProgramTest};
+use solana_test_framework::*;
+use solana_sdk::signer::{keypair::Keypair, Signer};
+use solana_sdk::sysvar::{clock};
+use spl_associated_token_account::{instruction::create_associated_token_account, get_associated_token_address};
 use crate::common::utils::{mint_bootstrap, sign_send_instructions};
-use access_protocol::instruction::{claim_bond, claim_bond_rewards, create_bond};
-use access_protocol::state::{BondAccount, CentralState};
 use access_protocol::{
     entrypoint::process_instruction,
     instruction::{
-        activate_stake_pool, admin_mint, claim_pool_rewards, claim_rewards, crank,
-        create_central_state, create_stake_account, create_stake_pool, execute_unstake, stake,
-        unstake,
+        activate_stake_pool, admin_mint,
+        claim_pool_rewards, claim_rewards,
+        crank, create_central_state, create_stake_account,
+        create_stake_pool, execute_unstake, stake, unstake,
     },
 };
-use borsh::BorshDeserialize;
 use mpl_token_metadata::pda::find_metadata_account;
 use solana_program::account_info::AccountInfo;
-use solana_program::{pubkey::Pubkey, system_program};
-use solana_program_test::{processor, ProgramTest};
-use solana_sdk::signer::{keypair::Keypair, Signer};
-use solana_sdk::sysvar::clock;
-use solana_test_framework::*;
-use spl_associated_token_account::{
-    get_associated_token_address, instruction::create_associated_token_account,
-};
-use std::convert::TryFrom;
-use std::error::Error;
+use access_protocol::instruction::{change_pool_minimum, claim_bond, claim_bond_rewards, create_bond};
+use access_protocol::state::{BondAccount, CentralState};
 
 pub struct TestRunner {
     pub program_id: Pubkey,
@@ -605,5 +604,26 @@ impl TestRunner {
         );
 
         sign_send_instructions(&mut self.prg_test_ctx, vec![claim_bond_rewards_ix], vec![]).await
+    }
+
+    pub async fn change_pool_minimum(&mut self, stake_pool_owner: &Keypair, new_minimum: u64) -> Result<(), BanksClientError> {
+        let stake_pool_key = self.get_pool_pda(&stake_pool_owner.pubkey());
+        let change_min_ix = change_pool_minimum(
+            self.program_id,
+            change_pool_minimum::Accounts {
+                stake_pool: &stake_pool_key,
+                stake_pool_owner: &stake_pool_owner.pubkey(),
+            },
+            change_pool_minimum::Params {
+                new_minimum: new_minimum,
+            },
+        );
+
+        sign_send_instructions(
+            &mut self.prg_test_ctx,
+            vec![change_min_ix],
+            vec![&stake_pool_owner],
+        )
+            .await
     }
 }

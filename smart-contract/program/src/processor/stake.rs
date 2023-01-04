@@ -184,6 +184,12 @@ pub fn process_stake(
         amount_in_bonds = bond_account.total_staked;
     }
 
+    // if we were previously under the minimum stake limit it gets reset to the pool's one
+    if stake_account.stake_amount + amount_in_bonds < stake_account.pool_minimum_at_creation {
+        stake_account.pool_minimum_at_creation = stake_pool.header.minimum_stake_amount;
+    }
+
+
     assert_valid_fee(accounts.fee_account, &central_state.authority)?;
 
     let fees = (amount * FEES) / 100;
