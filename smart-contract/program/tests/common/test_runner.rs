@@ -29,6 +29,8 @@ pub struct TestRunner {
     authority_ata: Pubkey,
     central_state: Pubkey,
     mint : Pubkey,
+    // hashmap from user pubkey to a bond account
+    bond_accounts: std::collections::HashMap<Pubkey, Pubkey>,
 }
 
 #[derive(Debug)]
@@ -137,6 +139,7 @@ impl TestRunner {
             authority_ata,
             central_state,
             mint,
+            bond_accounts: std::collections::HashMap::new(),
         })
     }
 
@@ -275,6 +278,9 @@ impl TestRunner {
         let (stake_acc_key, _) = self.get_stake_account_pda(&stake_pool_key, &staker_key);
         let staker_token_acc = get_associated_token_address(&staker_key, &self.mint);
         let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
+        // get the staker's bond from the hash map if it exists
+        let staker_bond: Option<&Pubkey> = self.bond_accounts.get(&staker_key);
+
         let stake_ix = stake(
             self.program_id,
             stake::Accounts {
@@ -286,9 +292,11 @@ impl TestRunner {
                 vault: &pool_vault,
                 central_state_account: &self.central_state,
                 fee_account: &self.authority_ata,
+                bond_account: staker_bond,
             },
             stake::Params {
                 amount: token_amount,
+                has_bond_account: !staker_bond.is_none(),
             },
         );
         sign_send_instructions(&mut self.prg_test_ctx, vec![stake_ix], vec![&staker])
@@ -494,7 +502,11 @@ impl TestRunner {
         );
 
         sign_send_instructions(&mut self.prg_test_ctx, vec![claim_bond_ix], vec![&bond_owner])
-            .await
+            .await?;
+
+        // add bond account to the map
+        self.bond_accounts.insert(bond_owner.pubkey(), bond_key);
+        Ok(())
     }
 
     pub async fn claim_bond_rewards(&mut self, stake_pool_owner: &Pubkey, bond_owner: &Keypair, original_bond_amount: u64) -> Result<(), BanksClientError> {
