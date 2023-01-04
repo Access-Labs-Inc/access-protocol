@@ -410,6 +410,9 @@ impl TestRunner {
         let staker_token_acc = get_associated_token_address(&staker.pubkey(), &self.mint);
         let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
 
+        // get the staker's bond from the hash map if it exists
+        let staker_bond: Option<&Pubkey> = self.bond_accounts.get(&staker.pubkey());
+
         // Request Unstake
         let unstake_ix = unstake(
             self.program_id,
@@ -418,9 +421,11 @@ impl TestRunner {
                 stake_pool: &stake_pool_key,
                 owner: &staker.pubkey(),
                 central_state_account: &self.central_state,
+                bond_account: staker_bond,
             },
             unstake::Params {
                 amount: token_amount,
+                has_bond_account: !staker_bond.is_none(),
             },
         );
         // if error, return

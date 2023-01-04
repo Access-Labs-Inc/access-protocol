@@ -75,4 +75,21 @@ async fn common_unstake_limit() {
 
     // stake above the pool minimum should work
     tr.stake(&stake_pool_owner.pubkey(), &staker, 9000).await.unwrap();
+
+    // Create bond account
+    tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), 5_000).await.unwrap();
+
+    // Claim bond
+    tr.claim_bond(&stake_pool_owner.pubkey(), &staker, 5_000).await.unwrap();
+
+    // unstake under the common pool minimum should fail
+    let result = tr.unstake(&stake_pool_owner.pubkey(), &staker, 5001).await;
+    assert!(result.is_err());
+
+    // unstake above the common pool minimum should work
+    tr.unstake(&stake_pool_owner.pubkey(), &staker, 5000).await.unwrap();
+
+    // full unstake should still be possible
+    tr.unstake(&stake_pool_owner.pubkey(), &staker, 4000).await.unwrap();
+
 }
