@@ -27,7 +27,6 @@ async fn common_stake_limit() {
 
     // Create users
     let stake_pool_owner = tr.create_ata_account().await.unwrap();
-    let stake_pool2_owner = tr.create_ata_account().await.unwrap();
     let staker = tr.create_ata_account().await.unwrap();
 
     // Mint
@@ -36,7 +35,7 @@ async fn common_stake_limit() {
     // Create stake pool on day 1 12:00
     tr.create_stake_pool(&stake_pool_owner.pubkey()).await.unwrap();
 
-    // // Activate stake pool
+    // Activate stake pool
     tr.activate_stake_pool(&stake_pool_owner.pubkey()).await.unwrap();
 
     // Create stake account

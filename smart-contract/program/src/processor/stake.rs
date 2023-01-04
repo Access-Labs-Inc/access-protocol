@@ -1,28 +1,33 @@
 //! Stake
-use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
+    clock::Clock,
     entrypoint::ProgramResult,
     msg,
     program::invoke,
     program_error::ProgramError,
     pubkey::Pubkey,
+    sysvar::Sysvar,
 };
+
 use spl_token::instruction::transfer;
 
-use crate::error::AccessError;
-use crate::state::{StakeAccount, StakePool};
 use crate::{
     state::{CentralState, Tag, FEES},
     utils::{assert_valid_fee, check_account_key, check_account_owner, check_signer},
 };
+use bonfida_utils::{BorshSize, InstructionsAccount};
+
+use crate::error::AccessError;
+use crate::state::{BondAccount, SECONDS_IN_DAY, StakeAccount, StakePool};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `stake` instruction
 pub struct Params {
     // Amount to stake
     pub amount: u64,
+    pub has_bond_account: bool,
 }
 
 #[derive(InstructionsAccount)]
@@ -58,12 +63,16 @@ pub struct Accounts<'a, T> {
     /// The stake fee account
     #[cons(writable)]
     pub fee_account: &'a T,
+
+    /// Optional bond account to be able to stake under the minimum
+    pub bond_account: Option<&'a T>,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     pub fn parse(
         accounts: &'a [AccountInfo<'b>],
         program_id: &Pubkey,
+        has_bond_account: bool,
     ) -> Result<Self, ProgramError> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
@@ -75,6 +84,11 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             spl_token_program: next_account_info(accounts_iter)?,
             vault: next_account_info(accounts_iter)?,
             fee_account: next_account_info(accounts_iter)?,
+            bond_account: if has_bond_account {
+                next_account_info(accounts_iter).ok()
+            } else {
+                None
+            },
         };
 
         // Check keys
@@ -110,6 +124,13 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             &spl_token::ID,
             AccessError::WrongTokenAccountOwner,
         )?;
+        if let Some(bond_account) = accounts.bond_account {
+            check_account_owner(
+                bond_account,
+                program_id,
+                AccessError::WrongTokenAccountOwner,
+            )?
+        }
 
         // Check signer
         check_signer(accounts.owner, AccessError::StakeAccountOwnerMustSign)?;
@@ -123,8 +144,8 @@ pub fn process_stake(
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
-    let accounts = Accounts::parse(accounts, program_id)?;
-    let Params { amount } = params;
+    let Params { amount, has_bond_account } = params;
+    let accounts = Accounts::parse(accounts, program_id, has_bond_account)?;
 
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
@@ -145,6 +166,23 @@ pub fn process_stake(
         &Pubkey::new(&stake_pool.header.vault),
         AccessError::StakePoolVaultMismatch,
     )?;
+
+    let mut amount_in_bonds: u64 = 0;
+    if let Some(bond_account) = accounts.bond_account {
+        let bond_account = BondAccount::from_account_info(bond_account, false)?;
+        check_account_key(
+            accounts.owner,
+            &bond_account.owner,
+            AccessError::WrongOwner,
+        )?;
+        check_account_key(
+            accounts.stake_pool,
+            &bond_account.stake_pool,
+            AccessError::StakePoolMismatch,
+        )?;
+
+        amount_in_bonds = bond_account.total_staked;
+    }
 
     assert_valid_fee(accounts.fee_account, &central_state.authority)?;
 
@@ -209,6 +247,8 @@ pub fn process_stake(
     if stake_account
         .stake_amount
         .checked_add(amount)
+        .ok_or(AccessError::Overflow)?
+        .checked_add(amount_in_bonds)
         .ok_or(AccessError::Overflow)?
         < std::cmp::min(
             stake_account.pool_minimum_at_creation,
