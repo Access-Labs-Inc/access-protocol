@@ -397,7 +397,7 @@ export class BondAccount {
           ["totalUnlockedAmount", "u64"],
           ["poolMinimumAtCreation", "u64"],
           ["stakePool", [32]],
-          ["lastClaimedTime", "u64"],
+          ["lastClaimedOffset", "u64"],
           ["sellers", [[32]]],
         ],
       },

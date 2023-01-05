@@ -507,7 +507,7 @@ export class crankInstruction {
     keys.push({
       pubkey: centralState,
       isSigner: false,
-      isWritable: false,
+      isWritable: true,
     });
     return new TransactionInstruction({
       keys,
