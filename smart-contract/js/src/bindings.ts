@@ -572,7 +572,7 @@ export const stake = async (
   const centralState = await CentralState.retrieve(connection, centralKey);
   const bondAccounts = await getBondAccounts(connection, stake.owner);
   let bondAccountKey: PublicKey | undefined;
-  if (bondAccounts.length === 0) {
+  if (bondAccounts.length > 0) {
     bondAccountKey = bondAccounts[0].pubkey;
   }
 
@@ -656,7 +656,7 @@ export const unstake = async (
   const [centralKey] = await CentralState.getKey(programId);
   const bondAccounts = await getBondAccounts(connection, stake.owner);
   let bondAccountKey: PublicKey | undefined;
-  if (bondAccounts.length === 0) {
+  if (bondAccounts.length > 0) {
     bondAccountKey = bondAccounts[0].pubkey;
   }
 
