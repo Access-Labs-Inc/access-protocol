@@ -586,7 +586,7 @@ export const stake = async (
 
   const ix = new stakeInstruction({
     amount: new BN(amount),
-    hasBondAccount: bondAccountKey !== undefined
+    hasBondAccount: Number(bondAccountKey !== undefined),
   }).getInstruction(
     programId,
     centralKey,
@@ -664,7 +664,7 @@ export const unstake = async (
 
   const ix = new unstakeInstruction({
     amount: new BN(amount),
-    hasBondAccount: bondAccountKey !== undefined
+    hasBondAccount: Number(bondAccountKey !== undefined)
   }).getInstruction(
     programId,
     centralKey,

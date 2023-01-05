@@ -79,11 +79,6 @@ impl Processor {
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 unstake::process_unstake(program_id, accounts, params)?;
             }
-            ProgramInstruction::ExecuteUnstake => {
-                // todo remove this instruction
-                // panic as this is not a valid instruction
-                panic!("Execute unstake is not a valid instruction");
-            }
             ProgramInstruction::ClaimPoolRewards => {
                 msg!("Instruction: Claim pool rewards");
                 let params = claim_pool_rewards::Params::try_from_slice(instruction_data)
