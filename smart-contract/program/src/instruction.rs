@@ -71,8 +71,11 @@ pub enum ProgramInstruction {
     /// | 1     | ✅        | ❌      | The stake account              |
     /// | 2     | ✅        | ❌      | The stake pool account         |
     /// | 3     | ❌        | ✅      | The owner of the stake account |
-    /// todo update the documentation - maybe not just here
+    // todo update the documentation - maybe not just here
     Unstake,
+    /// Unused, but removing would cause the shift of all the other instructions indices
+    // todo delete
+    ExecuteUnstake,
     /// Claim rewards of a stake pool
     /// This instruction is used by stake pool owner for claiming their staking rewards
     ///

@@ -17,7 +17,6 @@ import {
   unlockBondTokensInstruction,
   unstakeInstruction,
   adminMintInstruction,
-  executeUnstakeInstruction,
   activateStakePoolInstruction,
   adminFreezeInstruction,
   changePoolMultiplierInstruction,
@@ -642,6 +641,7 @@ export const unlockBondTokens = async (
  * This instruction can be used to request an unstake of ACCESS tokens
  * @param connection The Solana RPC connection
  * @param stakeAccount The key of the stake account
+ * @param destinationToken The token account receiving the ACCESS tokens
  * @param amount The amount of tokens to unstake
  * @param programId The ACCESS program ID
  * @returns
@@ -649,10 +649,12 @@ export const unlockBondTokens = async (
 export const unstake = async (
   connection: Connection,
   stakeAccount: PublicKey,
+  destinationToken: PublicKey,
   amount: number,
   programId: PublicKey
 ) => {
   const stake = await StakeAccount.retrieve(connection, stakeAccount);
+  const stakePool = await StakePool.retrieve(connection, stake.stakePool);
   const [centralKey] = await CentralState.getKey(programId);
   const bondAccounts = await getBondAccounts(connection, stake.owner);
   let bondAccountKey: PublicKey | undefined;
@@ -669,37 +671,10 @@ export const unstake = async (
     stakeAccount,
     stake.stakePool,
     stake.owner,
-    bondAccountKey
-  );
-
-  return ix;
-};
-
-/**
- * This instruction can be used to execute an unstake of ACCESS tokens
- * @param connection The Solana RPC connection
- * @param stakeAccount The key of the stake account
- * @param destinationToken The token account receiving the ACCESS tokens
- * @param programId The ACCESS program ID
- * @returns
- */
-export const executeUnstake = async (
-  connection: Connection,
-  stakeAccount: PublicKey,
-  destinationToken: PublicKey,
-  programId: PublicKey
-) => {
-  const stake = await StakeAccount.retrieve(connection, stakeAccount);
-  const stakePool = await StakePool.retrieve(connection, stake.stakePool);
-
-  const ix = new executeUnstakeInstruction().getInstruction(
-    programId,
-    stakeAccount,
-    stake.stakePool,
-    stake.owner,
     destinationToken,
     TOKEN_PROGRAM_ID,
-    stakePool.vault
+    stakePool.vault,
+    bondAccountKey
   );
 
   return ix;

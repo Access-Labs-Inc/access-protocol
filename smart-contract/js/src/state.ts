@@ -205,8 +205,6 @@ export class StakeAccount {
           ["stakePool", [32]],
           ["lastClaimedOffset", "u64"],
           ["poolMinimumAtCreation", "u64"],
-          ["pendingUnstakeRequests", "u8"],
-          ["unstakeRequests", [UnstakeRequest, MAX_UNSTAKE_REQUEST]],
         ],
       },
     ],

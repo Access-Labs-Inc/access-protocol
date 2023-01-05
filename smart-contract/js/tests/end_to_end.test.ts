@@ -26,7 +26,6 @@ import {
   adminFreeze,
   changePoolMultiplier,
   closeStakePool,
-  executeUnstake,
   editMetadata,
 } from "../src/bindings";
 import {
@@ -325,21 +324,6 @@ test("End to end test", async () => {
   console.log("LCO:", stakePoolObj.lastClaimedOffset.toString());
   expect(stakeAccountObj.poolMinimumAtCreation.toNumber()).toBe(
     minimumStakeAmount
-  );
-  expect(stakeAccountObj.pendingUnstakeRequests).toBe(0);
-  expect(JSON.stringify(stakeAccountObj.unstakeRequests)).toBe(
-    JSON.stringify([
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-    ])
   );
 
   /**
@@ -997,7 +981,7 @@ test("End to end test", async () => {
   expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
 
   // Unstake
-  let ix_unstake = await unstake(connection, stakeKey, stakeAmount, programId);
+  let ix_unstake = await unstake(connection, stakeKey, stakerAta, stakeAmount, programId);
   tx = await signAndSendTransactionInstructions(
     connection,
     [staker],
@@ -1018,26 +1002,6 @@ test("End to end test", async () => {
   console.log("LCO:", stakePoolObj.lastClaimedOffset.toString());
   expect(stakedAccountObj.poolMinimumAtCreation.toNumber()).toBe(
     minimumStakeAmount
-  );
-  expect(stakedAccountObj.pendingUnstakeRequests).toBe(1);
-  expect(stakedAccountObj.unstakeRequests[0].amount.toNumber()).toBe(
-    stakeAmount
-  );
-  expect(stakedAccountObj.unstakeRequests[0].time.toNumber()).toBeLessThan(
-    now + 7 * 24 * 60 * 60
-  );
-  expect(JSON.stringify(stakedAccountObj.unstakeRequests.slice(1))).toBe(
-    JSON.stringify([
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-    ])
   );
 
   /**
@@ -1154,23 +1118,6 @@ test("End to end test", async () => {
   );
   stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
   expect(stakePoolObj.tag).toBe(Tag.StakePool);
-
-  /**
-   * Execute unstake
-   */
-
-  const ix_execute = await executeUnstake(
-    connection,
-    stakeKey,
-    stakerAta,
-    programId
-  );
-  tx = await signAndSendTransactionInstructions(
-    connection,
-    [staker],
-    feePayer,
-    [ix_execute]
-  );
 
   /**
    * Close stake pool

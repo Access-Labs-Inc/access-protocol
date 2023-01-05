@@ -736,71 +736,7 @@ export class createStakePoolInstruction {
     });
   }
 }
-export class executeUnstakeInstruction {
-  tag: number;
-  static schema: Schema = new Map([
-    [
-      executeUnstakeInstruction,
-      {
-        kind: "struct",
-        fields: [["tag", "u8"]],
-      },
-    ],
-  ]);
-  constructor() {
-    this.tag = 6;
-  }
-  serialize(): Uint8Array {
-    return serialize(executeUnstakeInstruction.schema, this);
-  }
-  getInstruction(
-    programId: PublicKey,
-    stakeAccount: PublicKey,
-    stakePool: PublicKey,
-    owner: PublicKey,
-    destinationToken: PublicKey,
-    splTokenProgram: PublicKey,
-    vault: PublicKey
-  ): TransactionInstruction {
-    const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
-    keys.push({
-      pubkey: stakeAccount,
-      isSigner: false,
-      isWritable: true,
-    });
-    keys.push({
-      pubkey: stakePool,
-      isSigner: false,
-      isWritable: true,
-    });
-    keys.push({
-      pubkey: owner,
-      isSigner: true,
-      isWritable: false,
-    });
-    keys.push({
-      pubkey: destinationToken,
-      isSigner: false,
-      isWritable: true,
-    });
-    keys.push({
-      pubkey: splTokenProgram,
-      isSigner: false,
-      isWritable: false,
-    });
-    keys.push({
-      pubkey: vault,
-      isSigner: false,
-      isWritable: true,
-    });
-    return new TransactionInstruction({
-      keys,
-      programId,
-      data,
-    });
-  }
-}
+
 export class signBondInstruction {
   tag: number;
   sellerIndex: BN;
@@ -1055,6 +991,9 @@ export class unstakeInstruction {
     stakeAccount: PublicKey,
     stakePool: PublicKey,
     owner: PublicKey,
+    destinationToken: PublicKey,
+    splTokenProgram: PublicKey,
+    vault: PublicKey,
     bondAccount: PublicKey | undefined,
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
@@ -1079,6 +1018,22 @@ export class unstakeInstruction {
       isSigner: true,
       isWritable: false,
     });
+    keys.push({
+      pubkey: destinationToken,
+      isSigner: false,
+      isWritable: true,
+    });
+    keys.push({
+      pubkey: splTokenProgram,
+      isSigner: false,
+      isWritable: false,
+    });
+    keys.push({
+      pubkey: vault,
+      isSigner: false,
+      isWritable: true,
+    });
+    keys
     if (bondAccount) {
       keys.push({
         pubkey: bondAccount,
