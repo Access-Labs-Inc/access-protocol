@@ -180,8 +180,6 @@ export class StakeAccount {
   stakePool: PublicKey;
   lastClaimedOffset: BN;
   poolMinimumAtCreation: BN;
-  pendingUnstakeRequests: number;
-  unstakeRequests: UnstakeRequest[];
 
   static schema: Schema = new Map<any, any>([
     [
@@ -217,8 +215,6 @@ export class StakeAccount {
     stakePool: Uint8Array;
     lastClaimedOffset: BN;
     poolMinimumAtCreation: BN;
-    pendingUnstakeRequests: number;
-    unstakeRequests: UnstakeRequest[];
   }) {
     this.tag = obj.tag;
     this.owner = new PublicKey(obj.owner);
@@ -226,8 +222,6 @@ export class StakeAccount {
     this.stakePool = new PublicKey(obj.stakePool);
     this.lastClaimedOffset = obj.lastClaimedOffset.fromTwos(64);
     this.poolMinimumAtCreation = obj.poolMinimumAtCreation;
-    this.pendingUnstakeRequests = obj.pendingUnstakeRequests;
-    this.unstakeRequests = obj.unstakeRequests;
   }
 
   static deserialize(data: Buffer) {
