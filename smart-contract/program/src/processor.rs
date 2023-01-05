@@ -25,7 +25,6 @@ pub mod create_central_state;
 pub mod create_stake_account;
 pub mod create_stake_pool;
 pub mod edit_metadata;
-pub mod execute_unstake;
 pub mod sign_bond;
 pub mod stake;
 pub mod unlock_bond_tokens;
@@ -79,10 +78,6 @@ impl Processor {
                 let params = unstake::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 unstake::process_unstake(program_id, accounts, params)?;
-            }
-            ProgramInstruction::ExecuteUnstake => {
-                msg!("Instruction: Execute unstake");
-                execute_unstake::process_execute_unstake(program_id, accounts)?;
             }
             ProgramInstruction::ClaimPoolRewards => {
                 msg!("Instruction: Claim pool rewards");

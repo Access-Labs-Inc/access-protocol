@@ -13,7 +13,7 @@ use access_protocol::{
         activate_stake_pool, admin_mint,
         claim_pool_rewards, claim_rewards,
         crank, create_central_state, create_stake_account,
-        create_stake_pool, execute_unstake, stake, unstake,
+        create_stake_pool, stake, unstake,
     },
 };
 use mpl_token_metadata::pda::find_metadata_account;

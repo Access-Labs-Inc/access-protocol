@@ -315,29 +315,6 @@ pub struct StakeAccount {
     /// Minimum stakeable amount of the pool when the account
     /// was created
     pub pool_minimum_at_creation: u64,
-
-    pub pending_unstake_requests: u8,
-
-    pub unstake_requests: [UnstakeRequest; MAX_UNSTAKE_REQUEST],
-}
-
-#[derive(BorshSerialize, BorshDeserialize, BorshSize, Copy, Clone, Default)]
-#[allow(missing_docs)]
-pub struct UnstakeRequest {
-    pub amount: u64,
-    pub time: i64,
-}
-
-impl UnstakeRequest {
-    #[allow(missing_docs)]
-    pub fn new(amount: u64, time: i64) -> Self {
-        Self { amount, time }
-    }
-
-    #[allow(missing_docs)]
-    pub fn default() -> Self {
-        UnstakeRequest::new(0, i64::MAX)
-    }
 }
 
 #[allow(missing_docs)]
@@ -356,8 +333,6 @@ impl StakeAccount {
             stake_pool,
             last_claimed_offset: 0,
             pool_minimum_at_creation,
-            pending_unstake_requests: 0,
-            unstake_requests: [UnstakeRequest::default(); MAX_UNSTAKE_REQUEST],
         }
     }
 
@@ -418,41 +393,8 @@ impl StakeAccount {
             .ok_or(AccessError::Overflow)?;
         Ok(())
     }
-
-    pub fn add_unstake_request(&mut self, request: UnstakeRequest) -> ProgramResult {
-        if request.amount == 0 {
-            msg!("Cannot unstake 0 tokens");
-            return Err(AccessError::CannotUnstake.into());
-        }
-
-        if self.pending_unstake_requests as usize >= MAX_UNSTAKE_REQUEST {
-            msg!("Too many pending unstake requests");
-            return Err(AccessError::TooManyUnstakeRequests.into());
-        }
-
-        self.unstake_requests[self.pending_unstake_requests as usize] = request;
-        self.pending_unstake_requests = self
-            .pending_unstake_requests
-            .checked_add(1)
-            .ok_or(AccessError::Overflow)?;
-
-        Ok(())
-    }
-
-    pub fn pop_unstake_request(&mut self) -> Result<UnstakeRequest, ProgramError> {
-        let request = self.unstake_requests[0];
-        self.unstake_requests[0] = UnstakeRequest::default();
-
-        self.unstake_requests.rotate_left(1);
-
-        self.pending_unstake_requests = self
-            .pending_unstake_requests
-            .checked_sub(1)
-            .ok_or(AccessError::Overflow)?;
-
-        Ok(request)
-    }
 }
+
 #[derive(BorshSerialize, BorshDeserialize, BorshSize)]
 #[allow(missing_docs)]
 pub struct CentralState {

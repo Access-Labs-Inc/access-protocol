@@ -1,26 +1,28 @@
-use std::convert::TryFrom;
 use std::error::Error;
+
 use borsh::BorshDeserialize;
+use mpl_token_metadata::pda::find_metadata_account;
 use solana_program::{pubkey::Pubkey, system_program};
+use solana_program::account_info::AccountInfo;
 use solana_program_test::{processor, ProgramTest};
-use solana_test_framework::*;
 use solana_sdk::signer::{keypair::Keypair, Signer};
-use solana_sdk::sysvar::{clock};
-use spl_associated_token_account::{instruction::create_associated_token_account, get_associated_token_address};
-use crate::common::utils::{mint_bootstrap, sign_send_instructions};
+use solana_sdk::sysvar::clock;
+use solana_test_framework::*;
+use spl_associated_token_account::{get_associated_token_address, instruction::create_associated_token_account};
+
 use access_protocol::{
     entrypoint::process_instruction,
     instruction::{
         activate_stake_pool, admin_mint,
         claim_pool_rewards, claim_rewards,
         crank, create_central_state, create_stake_account,
-        create_stake_pool, execute_unstake, stake, unstake,
+        create_stake_pool, stake, unstake,
     },
 };
-use mpl_token_metadata::pda::find_metadata_account;
-use solana_program::account_info::AccountInfo;
 use access_protocol::instruction::{change_pool_minimum, claim_bond, claim_bond_rewards, create_bond};
 use access_protocol::state::{BondAccount, CentralState};
+
+use crate::common::utils::{mint_bootstrap, sign_send_instructions};
 
 pub struct TestRunner {
     pub program_id: Pubkey,
@@ -385,7 +387,10 @@ impl TestRunner {
                 stake_account: &stake_acc_key,
                 stake_pool: &stake_pool_key,
                 owner: &staker.pubkey(),
+                destination_token: &staker_token_acc,
+                spl_token_program: &spl_token::ID,
                 central_state_account: &self.central_state,
+                vault: &pool_vault,
                 bond_account: staker_bond,
             },
             unstake::Params {
@@ -395,22 +400,6 @@ impl TestRunner {
         );
         // if error, return
         sign_send_instructions(&mut self.prg_test_ctx, vec![unstake_ix], vec![&staker])
-            .await?;
-
-        // Execute Unstake
-        let execute_unstake_ix = execute_unstake(
-            self.program_id,
-            execute_unstake::Accounts {
-                stake_account: &stake_acc_key,
-                stake_pool: &stake_pool_key,
-                owner: &staker.pubkey(),
-                destination_token: &staker_token_acc,
-                spl_token_program: &spl_token::ID,
-                vault: &pool_vault,
-            },
-            execute_unstake::Params {},
-        );
-        sign_send_instructions(&mut self.prg_test_ctx, vec![execute_unstake_ix], vec![&staker])
             .await
     }
 

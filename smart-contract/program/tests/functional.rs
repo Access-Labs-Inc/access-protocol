@@ -1,9 +1,9 @@
+use mpl_token_metadata::pda::find_metadata_account;
 use solana_program::{pubkey, pubkey::Pubkey, system_program};
 use solana_program_test::{processor, ProgramTest};
 use solana_sdk::signer::{keypair::Keypair, Signer};
-use spl_associated_token_account::{create_associated_token_account, get_associated_token_address};
-pub mod common;
-use crate::common::utils::{mint_bootstrap, sign_send_instructions};
+use spl_associated_token_account::{get_associated_token_address, instruction};
+
 use access_protocol::{
     entrypoint::process_instruction,
     instruction::{
@@ -11,11 +11,14 @@ use access_protocol::{
         change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond,
         claim_bond_rewards, claim_pool_rewards, claim_rewards, close_stake_account,
         close_stake_pool, crank, create_bond, create_central_state, create_stake_account,
-        create_stake_pool, edit_metadata, execute_unstake, stake, unlock_bond_tokens, unstake,
+        create_stake_pool, edit_metadata, stake, unlock_bond_tokens, unstake,
     },
-    state::{BondAccount, FEES},
+    state::BondAccount,
 };
-use mpl_token_metadata::pda::find_metadata_account;
+
+use crate::common::utils::{mint_bootstrap, sign_send_instructions};
+
+pub mod common;
 
 #[tokio::test]
 async fn test_staking() {
@@ -102,7 +105,7 @@ async fn test_staking() {
     //
     // Create authority ACCESS token account
     //
-    let ix = create_associated_token_account(
+    let ix = instruction::create_associated_token_account(
         &prg_test_ctx.payer.pubkey(),
         &prg_test_ctx.payer.pubkey(),
         &mint,
@@ -119,7 +122,7 @@ async fn test_staking() {
     let stake_pool_owner = Keypair::new();
     let staker = Keypair::new();
 
-    let create_ata_stake_pool_owner_ix = create_associated_token_account(
+    let create_ata_stake_pool_owner_ix = instruction::create_associated_token_account(
         &prg_test_ctx.payer.pubkey(),
         &stake_pool_owner.pubkey(),
         &mint,
@@ -133,7 +136,7 @@ async fn test_staking() {
     .unwrap();
 
     let create_ata_staker_ix =
-        create_associated_token_account(&prg_test_ctx.payer.pubkey(), &staker.pubkey(), &mint);
+        instruction::create_associated_token_account(&prg_test_ctx.payer.pubkey(), &staker.pubkey(), &mint);
     sign_send_instructions(&mut prg_test_ctx, vec![create_ata_staker_ix], vec![])
         .await
         .unwrap();
@@ -175,7 +178,7 @@ async fn test_staking() {
     );
 
     let create_associated_instruction =
-        create_associated_token_account(&prg_test_ctx.payer.pubkey(), &stake_pool_key, &mint);
+        instruction::create_associated_token_account(&prg_test_ctx.payer.pubkey(), &stake_pool_key, &mint);
     let pool_vault = get_associated_token_address(&stake_pool_key, &mint);
     sign_send_instructions(
         &mut prg_test_ctx,
@@ -372,9 +375,11 @@ async fn test_staking() {
             vault: &pool_vault,
             central_state_account: &central_state,
             fee_account: &authority_ata,
+            bond_account: None,
         },
         stake::Params {
             amount: token_amount,
+            has_bond_account: false,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![stake_ix], vec![&staker])
@@ -561,10 +566,15 @@ async fn test_staking() {
             stake_account: &stake_acc_key,
             stake_pool: &stake_pool_key,
             owner: &staker.pubkey(),
+            destination_token: &staker_token_acc,
+            spl_token_program: &spl_token::ID,
+            vault: &pool_vault,
             central_state_account: &central_state,
+            bond_account: None,
         },
         unstake::Params {
             amount: token_amount,
+            has_bond_account: false,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![unstake_ix], vec![&staker])
@@ -574,26 +584,6 @@ async fn test_staking() {
     // Advance in time by a few seconds
     current_slot += 5_000;
     prg_test_ctx.warp_to_slot(current_slot).unwrap();
-
-    //
-    // Execute Unstake
-    //
-
-    let execute_unstake_ix = execute_unstake(
-        program_id,
-        execute_unstake::Accounts {
-            stake_account: &stake_acc_key,
-            stake_pool: &stake_pool_key,
-            owner: &staker.pubkey(),
-            destination_token: &staker_token_acc,
-            spl_token_program: &spl_token::ID,
-            vault: &pool_vault,
-        },
-        execute_unstake::Params {},
-    );
-    sign_send_instructions(&mut prg_test_ctx, vec![execute_unstake_ix], vec![&staker])
-        .await
-        .unwrap();
 
     //
     // Freeze account
