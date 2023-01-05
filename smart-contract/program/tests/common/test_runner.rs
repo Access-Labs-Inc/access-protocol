@@ -3,7 +3,7 @@ use std::error::Error;
 use borsh::BorshDeserialize;
 use mpl_token_metadata::pda::find_metadata_account;
 use solana_program::{pubkey::Pubkey, system_program};
-use solana_program::account_info::AccountInfo;
+
 use solana_program_test::{processor, ProgramTest};
 use solana_sdk::signer::{keypair::Keypair, Signer};
 use solana_sdk::sysvar::clock;

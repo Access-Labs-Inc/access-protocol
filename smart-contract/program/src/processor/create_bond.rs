@@ -12,7 +12,7 @@ use solana_program::{
 use crate::error::AccessError;
 use crate::state::{BondAccount, StakePool, BOND_SIGNER_THRESHOLD};
 use crate::utils::{
-    assert_uninitialized, check_account_key, check_account_owner,
+    assert_authorized_seller, assert_uninitialized, check_account_key, check_account_owner,
     check_signer,
 };
 use crate::{cpi::Cpi, state::Tag};
