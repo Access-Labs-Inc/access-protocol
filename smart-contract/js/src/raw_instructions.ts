@@ -850,6 +850,8 @@ export class signBondInstruction {
 export class stakeInstruction {
   tag: number;
   amount: BN;
+  hasBondAccount: boolean;
+  has
   static schema: Schema = new Map([
     [
       stakeInstruction,
@@ -858,13 +860,18 @@ export class stakeInstruction {
         fields: [
           ["tag", "u8"],
           ["amount", "u64"],
+          ["has_bond_account", "u8"],
         ],
       },
     ],
   ]);
-  constructor(obj: { amount: BN }) {
+  constructor(obj: {
+    amount: BN
+    hasBondAccount: boolean
+  }) {
     this.tag = 4;
     this.amount = obj.amount;
+    this.hasBondAccount = obj.hasBondAccount;
   }
   serialize(): Uint8Array {
     return serialize(stakeInstruction.schema, this);
@@ -878,7 +885,8 @@ export class stakeInstruction {
     sourceToken: PublicKey,
     splTokenProgram: PublicKey,
     vault: PublicKey,
-    feeAccount: PublicKey
+    feeAccount: PublicKey,
+    bondAccount: PublicKey | undefined,
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -922,6 +930,13 @@ export class stakeInstruction {
       isSigner: false,
       isWritable: true,
     });
+    if (bondAccount) {
+      keys.push({
+        pubkey: bondAccount,
+        isSigner: false,
+        isWritable: false,
+      });
+    }
     return new TransactionInstruction({
       keys,
       programId,
@@ -1009,6 +1024,7 @@ export class unlockBondTokensInstruction {
 export class unstakeInstruction {
   tag: number;
   amount: BN;
+  hasBondAccount: boolean;
   static schema: Schema = new Map([
     [
       unstakeInstruction,
@@ -1017,13 +1033,18 @@ export class unstakeInstruction {
         fields: [
           ["tag", "u8"],
           ["amount", "u64"],
+          ["has_bond_account", "u8"],
         ],
       },
     ],
   ]);
-  constructor(obj: { amount: BN }) {
+  constructor(obj: {
+    amount: BN,
+    hasBondAccount: boolean
+  }) {
     this.tag = 5;
     this.amount = obj.amount;
+    this.hasBondAccount = obj.hasBondAccount;
   }
   serialize(): Uint8Array {
     return serialize(unstakeInstruction.schema, this);
@@ -1033,7 +1054,8 @@ export class unstakeInstruction {
     centralStateAccount: PublicKey,
     stakeAccount: PublicKey,
     stakePool: PublicKey,
-    owner: PublicKey
+    owner: PublicKey,
+    bondAccount: PublicKey | undefined,
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -1057,6 +1079,13 @@ export class unstakeInstruction {
       isSigner: true,
       isWritable: false,
     });
+    if (bondAccount) {
+      keys.push({
+        pubkey: bondAccount,
+        isSigner: false,
+        isWritable: false,
+      });
+    }
     return new TransactionInstruction({
       keys,
       programId,
