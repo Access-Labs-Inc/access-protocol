@@ -44,7 +44,7 @@ pub const MAX_UNSTAKE_REQUEST: usize = 10;
 /// Fees charged on staking instruction in % (i.e FEES = 1 <-> 1% fee charged)
 pub const FEES: u64 = 2;
 
-#[derive(BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive)]
+#[derive(BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive, Debug)]
 #[repr(u8)]
 #[allow(missing_docs)]
 pub enum Tag {
@@ -564,7 +564,6 @@ impl BondAccount {
         last_unlock_time: i64,
         pool_minimum_at_creation: u64,
         stake_pool: Pubkey,
-        last_claimed_offset: i64,
         seller: Pubkey,
     ) -> Self {
         let sellers = vec![seller];
@@ -582,7 +581,7 @@ impl BondAccount {
             last_unlock_time,
             total_unlocked_amount: 0,
             stake_pool,
-            last_claimed_offset,
+            last_claimed_offset: 0,
             sellers,
             pool_minimum_at_creation,
         }

@@ -325,7 +325,7 @@ test("End to end test", async () => {
   expect(stakeAccountObj.owner.toBase58()).toBe(staker.publicKey.toBase58());
   expect(stakeAccountObj.stakeAmount.toNumber()).toBe(0);
   expect(stakeAccountObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
+  expect(stakeAccountObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(stakeAccountObj.poolMinimumAtCreation.toNumber()).toBe(
     minimumStakeAmount
   );
@@ -420,7 +420,9 @@ test("End to end test", async () => {
   expect(bondObj.totalUnlockedAmount.toNumber()).toBe(0);
   expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
   expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
+  console.log("LCO:", bondObj.lastClaimedOffset.toString());
+
+  expect(bondObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(bondObj.sellers.length).toBe(1);
   expect(bondObj.sellers[0].toBase58()).toBe(bondSeller.publicKey.toBase58());
 
@@ -462,7 +464,7 @@ test("End to end test", async () => {
   expect(bondObj.totalUnlockedAmount.toNumber()).toBe(0);
   expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
   expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
+  expect(bondObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(bondObj.sellers.length).toBe(1);
   expect(bondObj.sellers[0].toBase58()).toBe(bondSeller.publicKey.toBase58());
 
@@ -514,7 +516,7 @@ test("End to end test", async () => {
   expect(bondObj.totalUnlockedAmount.toNumber()).toBe(bondAmount);
   expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
   expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(1);
+  expect(bondObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(bondObj.sellers.length).toBe(1);
   expect(bondObj.sellers[0].toBase58()).toBe(bondSeller.publicKey.toBase58());
 
@@ -640,7 +642,9 @@ test("End to end test", async () => {
   expect(bondObj.totalUnlockedAmount.toNumber()).toBe(bondAmount);
   expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
   expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
+  console.log("LCO:", bondObj.lastClaimedOffset.toString());
+
+  expect(bondObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(bondObj.sellers.length).toBe(1);
 
   // Claim pool rewards
@@ -914,7 +918,9 @@ test("End to end test", async () => {
   expect(bondObj.totalUnlockedAmount.toNumber()).toBe(bondAmount);
   expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
   expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
+  console.log("LCO:", bondObj.lastClaimedOffset.toString());
+
+  expect(bondObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(bondObj.sellers.length).toBe(1);
 
   // Claim pool rewards
@@ -999,7 +1005,7 @@ test("End to end test", async () => {
   expect(stakedAccountObj.owner.toBase58()).toBe(staker.publicKey.toBase58());
   expect(stakedAccountObj.stakeAmount.toNumber()).toBe(0);
   expect(stakedAccountObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
+  expect(stakedAccountObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(stakedAccountObj.poolMinimumAtCreation.toNumber()).toBe(
     minimumStakeAmount
   );
