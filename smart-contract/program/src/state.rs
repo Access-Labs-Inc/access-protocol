@@ -208,7 +208,7 @@ impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [RewardsTuple]>
                     .map_err(|_| AccessError::Overflow)?,
             )
             .ok_or(AccessError::Overflow)?;
-        self.balances[((self.header.current_day_idx as u64) % STAKE_BUFFER_LEN) as usize] = rewards;
+        self.balances[(((self.header.current_day_idx - 1) as u64) % STAKE_BUFFER_LEN) as usize] = rewards;
         Ok(())
     }
 

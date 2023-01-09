@@ -34,12 +34,12 @@ pub fn calc_reward_fp32(
     }
 
     // Saturating as we don't want to wrap around when there haven't been sufficient cranks
-    let mut i = (stake_pool.header.current_day_idx as u64 + 1).saturating_sub(nb_days_to_claim)
+    let mut i = (stake_pool.header.current_day_idx as u64).saturating_sub(nb_days_to_claim)
         % STAKE_BUFFER_LEN;
 
     // Compute reward for all past days
     let mut reward: u128 = 0;
-    while i != (stake_pool.header.current_day_idx as u64 + 1) % STAKE_BUFFER_LEN {
+    while i != (stake_pool.header.current_day_idx as u64) % STAKE_BUFFER_LEN {
         let curr_day_reward = if staker {
             stake_pool.balances[i as usize].stakers_reward
         } else {
