@@ -72,6 +72,10 @@ beforeAll(async () => {
     false
   );
   console.log("Program ID: ", programId.toBase58());
+  // get the timestamp of the blockchain
+  const slot = await connection.getSlot();
+  const timestamp = await connection.getBlockTime(slot);
+  console.log("Timestamp: ", timestamp);
 });
 
 afterAll(() => {
@@ -545,6 +549,10 @@ test("End to end test", async () => {
   // print time since start
   console.log("Time since start: ", (new Date().getTime() - start) / 1000, "s");
 
+  const slot = await connection.getSlot();
+  const timestamp = await connection.getBlockTime(slot);
+  console.log("Timestamp 2: ", timestamp);
+
   /**
    * Verifications
    */
@@ -820,7 +828,6 @@ test("End to end test", async () => {
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
   expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
-  // todo delta checks
   expect(stakePoolObj.owner.toBase58()).toBe(
     stakePoolOwner.publicKey.toBase58()
   );

@@ -61,7 +61,7 @@ async fn common_unstake_limit() {
     tr.stake(&stake_pool_owner.pubkey(), &staker, 9000).await.unwrap();
 
     // Create bond account
-    tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), 5_000).await.unwrap();
+    tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), 5_000, 1).await.unwrap();
 
     // Claim bond
     tr.claim_bond(&stake_pool_owner.pubkey(), &staker).await.unwrap();

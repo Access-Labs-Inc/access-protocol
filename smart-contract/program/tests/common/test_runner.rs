@@ -21,7 +21,7 @@ use access_protocol::{
         create_stake_pool, stake, unstake,
     },
 };
-use access_protocol::instruction::{change_pool_minimum, claim_bond, claim_bond_rewards, create_bond, unlock_bond_tokens};
+use access_protocol::instruction::{change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards, create_bond, unlock_bond_tokens};
 use access_protocol::state::{BondAccount, CentralState, StakeAccount, StakePoolHeader, Tag};
 
 use crate::common::utils::{mint_bootstrap, sign_send_instructions};
@@ -665,6 +665,43 @@ impl TestRunner {
             vec![change_min_ix],
             vec![&stake_pool_owner],
         )
+            .await
+    }
+
+    pub async fn change_pool_multiplier(&mut self, stake_pool_owner: &Keypair, new_multiplier: u64) -> Result<(), BanksClientError> {
+        let stake_pool_key = self.get_pool_pda(&stake_pool_owner.pubkey());
+        let change_min_ix = change_pool_multiplier(
+            self.program_id,
+            change_pool_multiplier::Accounts {
+                stake_pool: &stake_pool_key,
+                stake_pool_owner: &stake_pool_owner.pubkey(),
+            },
+            change_pool_multiplier::Params {
+                new_multiplier: new_multiplier,
+            },
+        );
+
+        sign_send_instructions(
+            &mut self.prg_test_ctx,
+            vec![change_min_ix],
+            vec![&stake_pool_owner],
+        )
+            .await
+    }
+
+    pub async fn change_inflation(&mut self, new_inflation: u64) -> Result<(), BanksClientError> {
+        let change_inflation_ix = change_inflation(
+            self.program_id,
+            change_inflation::Accounts {
+                central_state: &self.central_state,
+                authority: &self.prg_test_ctx.payer.pubkey(),
+            },
+            change_inflation::Params {
+                daily_inflation: new_inflation,
+            },
+        );
+
+        sign_send_instructions(&mut self.prg_test_ctx, vec![change_inflation_ix], vec![])
             .await
     }
 }

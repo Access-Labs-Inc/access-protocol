@@ -77,6 +77,9 @@ pub fn process_crank(
         stake_pool.header.total_staked_delta = 0;
     }
 
+    msg!("Creation time: {}", central_state.creation_time);
+    msg!("Current time: {}", current_time);
+
     if stake_pool.header.current_day_idx as i64 == central_state.last_snapshot_offset {
         #[cfg(not(any(feature = "days-to-sec-10s", feature = "days-to-sec-15m")))]
         return Err(AccessError::NoOp.into());
@@ -94,7 +97,6 @@ pub fn process_crank(
     let mut stakers_reward: u128 = 0;
     let mut pool_reward: u128 = 0;
     if total_staked_snapshot > 0 {
-
         // stakers_reward = [(pool_total_staked << 32) * inflation * stakers_part] / (100 * total_staked * pool_total_staked)
         stakers_reward = (total_staked_snapshot << 32)
             .checked_mul(central_state.daily_inflation as u128)
