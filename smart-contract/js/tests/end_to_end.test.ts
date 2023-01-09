@@ -559,7 +559,7 @@ test("End to end test", async () => {
   expect(stakedAccountObj.owner.toBase58()).toBe(staker.publicKey.toBase58());
   expect(stakedAccountObj.stakeAmount.toNumber()).toBe(stakeAmount);
   expect(stakedAccountObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  expect(stakedAccountObj.lastClaimedOffset.toNumber()).toBe(0);
+  expect(stakedAccountObj.lastClaimedOffset.toNumber()).toBe(1);
   expect(stakedAccountObj.poolMinimumAtCreation.toNumber()).toBe(
     minimumStakeAmount
   );

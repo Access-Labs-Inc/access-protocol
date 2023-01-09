@@ -130,6 +130,34 @@ async fn end_to_end() {
     assert_eq!(bond_stats.last_claimed_offset, 0);
     assert_eq!(bond_stats.sellers[0], tr.get_bond_seller());
 
+    // Stake
+    let stake_amount = 10_000;
+    tr.stake(&stake_pool_owner.pubkey(), &staker, stake_amount).await.unwrap();
+
+    tr.sleep(86_400 / 2).await.unwrap();
+    let staker_stats = tr.staker_stats(staker.pubkey()).await.unwrap();
+    assert_eq!(staker_stats.balance, 4989800);
+    let stake_account_stats = tr.stake_account_stats(staker.pubkey(), stake_pool_owner.pubkey()).await.unwrap();
+    assert_eq!(stake_account_stats.tag, Tag::StakeAccount);
+    assert_eq!(stake_account_stats.owner, staker.pubkey());
+    assert_eq!(stake_account_stats.stake_amount, stake_amount);
+    assert_eq!(stake_account_stats.stake_pool, stake_pool_pda_key);
+    assert_eq!(stake_account_stats.last_claimed_offset, 1);
+    assert_eq!(stake_account_stats.pool_minimum_at_creation, 1000);
+
+    // Crank
+    tr.crank_pool(&stake_pool_owner.pubkey()).await.unwrap();
+    let stake_pool_stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
+    assert_eq!(stake_pool_stats.header.tag, Tag::StakePool as u8);
+    assert_eq!(stake_pool_stats.header.current_day_idx, 2);
+    assert_eq!(stake_pool_stats.header.minimum_stake_amount, 1000);
+    assert_eq!(stake_pool_stats.header.total_staked, stake_amount);
+    assert_eq!(stake_pool_stats.header.total_staked_delta, 0);
+    assert_eq!(stake_pool_stats.header.last_delta_update_offset, 2);
+    assert_eq!(stake_pool_stats.header.last_claimed_offset, 0);
+    assert_eq!(stake_pool_stats.header.stakers_part, 50);
+    assert_eq!(Pubkey::new(&pool_stats.header.owner).to_string(), stake_pool_owner.pubkey().to_string());
+
     return;
     // Stake to pool 1
     let token_amount = 10_000;
