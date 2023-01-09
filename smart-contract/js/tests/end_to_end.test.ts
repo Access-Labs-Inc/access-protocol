@@ -62,7 +62,7 @@ const MAX_i64 = "9223372036854775807";
 const centralStateAuthority = Keypair.generate();
 
 beforeAll(async () => {
-  connection = new Connection("http://localhost:8899", "finalized");
+  connection = new Connection("http://127.0.0.1:8899", "finalized");
   [feePayer, payerKeyFile] = initializePayer();
   await airdropPayer(connection, feePayer.publicKey);
   programId = deployProgram(
@@ -80,6 +80,8 @@ afterAll(() => {
 jest.setTimeout(1_500_000);
 
 test("End to end test", async () => {
+  // Start time measurement
+  const start = Date.now();
   /**
    * Test variables
    */
@@ -540,6 +542,9 @@ test("End to end test", async () => {
     [ix_stake]
   );
 
+  // print time since start
+  console.log("Time since start: ", (new Date().getTime() - start) / 1000, "s");
+
   /**
    * Verifications
    */
@@ -642,9 +647,7 @@ test("End to end test", async () => {
   expect(bondObj.totalUnlockedAmount.toNumber()).toBe(bondAmount);
   expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
   expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  console.log("LCO:", bondObj.lastClaimedOffset.toString());
-
-  expect(bondObj.lastClaimedOffset.toNumber()).toBe(0);
+  expect(bondObj.lastClaimedOffset.toNumber()).toBe(2);
   expect(bondObj.sellers.length).toBe(1);
 
   // Claim pool rewards

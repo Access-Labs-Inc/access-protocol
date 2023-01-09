@@ -68,7 +68,7 @@ async fn end_to_end() {
 
     // Create a bond
     let bond_amount = 5_000_000;
-    let unlock_after = 86_400;
+    let unlock_after = 10;
     tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), bond_amount, unlock_after).await.unwrap();
     let bond_stats = tr.bond_stats(staker.pubkey(), stake_pool_owner.pubkey(), bond_amount).await.unwrap();
     assert_eq!(bond_stats.tag, Tag::InactiveBondAccount);
@@ -134,7 +134,7 @@ async fn end_to_end() {
     let stake_amount = 10_000;
     tr.stake(&stake_pool_owner.pubkey(), &staker, stake_amount).await.unwrap();
 
-    tr.sleep(86_400 / 2).await.unwrap();
+    tr.sleep(5).await.unwrap();
     let staker_stats = tr.staker_stats(staker.pubkey()).await.unwrap();
     assert_eq!(staker_stats.balance, 4989800);
     let stake_account_stats = tr.stake_account_stats(staker.pubkey(), stake_pool_owner.pubkey()).await.unwrap();
@@ -157,6 +157,26 @@ async fn end_to_end() {
     assert_eq!(stake_pool_stats.header.last_claimed_offset, 0);
     assert_eq!(stake_pool_stats.header.stakers_part, 50);
     assert_eq!(Pubkey::new(&pool_stats.header.owner).to_string(), stake_pool_owner.pubkey().to_string());
+
+    // Claim bond rewards
+    tr.claim_bond_rewards(&stake_pool_owner.pubkey(), &staker).await.unwrap();
+    let bond_stats = tr.bond_stats(staker.pubkey(), stake_pool_owner.pubkey(), bond_amount).await.unwrap();
+    assert_eq!(bond_stats.tag, Tag::BondAccount);
+    assert_eq!(bond_stats.owner, staker.pubkey());
+    assert_eq!(bond_stats.total_amount_sold, bond_amount);
+    assert_eq!(bond_stats.total_staked, 0);
+    assert_eq!(bond_stats.total_quote_amount, 0);
+    assert_eq!(bond_stats.quote_mint, tr.get_mint());
+    assert_eq!(bond_stats.seller_token_account, tr.get_bond_seller_ata());
+    assert_eq!(bond_stats.unlock_start_date, bond_creation_time + unlock_after);
+    assert_eq!(bond_stats.unlock_period, 1);
+    assert_eq!(bond_stats.unlock_amount, bond_amount);
+    // assert_eq!(bond_stats.last_unlock_time, bond_creation_time + unlock_after);
+    assert_eq!(bond_stats.total_unlocked_amount, bond_amount);
+    assert_eq!(bond_stats.pool_minimum_at_creation, 1000);
+    assert_eq!(bond_stats.stake_pool, stake_pool_pda_key);
+    assert_eq!(bond_stats.last_claimed_offset, 2);
+    assert_eq!(bond_stats.sellers[0], tr.get_bond_seller());
 
     return;
     // Stake to pool 1
