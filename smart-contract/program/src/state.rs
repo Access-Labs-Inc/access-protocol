@@ -260,7 +260,12 @@ impl StakePoolHeader {
         self.tag = Tag::Deleted as u8
     }
 
-    pub fn deposit(&mut self, amount: u64, system_snapshot_offset: i64, contract_create_time: i64) -> ProgramResult {
+    pub fn deposit(
+        &mut self,
+        amount: u64,
+        system_snapshot_offset: i64,
+        contract_create_time: i64,
+    ) -> ProgramResult {
         self.total_staked = self
             .total_staked
             .checked_add(amount)
@@ -268,21 +273,37 @@ impl StakePoolHeader {
         self.update_delta(amount as i64, system_snapshot_offset, contract_create_time)
     }
 
-    pub fn withdraw(&mut self, amount: u64, system_snapshot_offset: i64, contract_create_time: i64) -> ProgramResult {
+    pub fn withdraw(
+        &mut self,
+        amount: u64,
+        system_snapshot_offset: i64,
+        contract_create_time: i64,
+    ) -> ProgramResult {
         self.total_staked = self
             .total_staked
             .checked_sub(amount)
             .ok_or(AccessError::Overflow)?;
-        self.update_delta(-(amount as i64), system_snapshot_offset, contract_create_time)
+        self.update_delta(
+            -(amount as i64),
+            system_snapshot_offset,
+            contract_create_time,
+        )
     }
 
     // private
-    fn update_delta(&mut self, amount: i64, system_snapshot_offset: i64, contract_create_time: i64) -> ProgramResult {
+    fn update_delta(
+        &mut self,
+        amount: i64,
+        system_snapshot_offset: i64,
+        contract_create_time: i64,
+    ) -> ProgramResult {
         let current_time = Clock::get()?.unix_timestamp;
         let current_offset = (current_time - contract_create_time) / SECONDS_IN_DAY as i64;
         // if this is the first delta change since the last snapshot, we reset it to 0
         // todo think about this a little bit more
-        if current_offset >= system_snapshot_offset && self.last_delta_update_offset < system_snapshot_offset {
+        if current_offset >= system_snapshot_offset
+            && self.last_delta_update_offset < system_snapshot_offset
+        {
             self.total_staked_delta = 0;
         }
         self.last_delta_update_offset = current_offset;
@@ -344,11 +365,7 @@ impl UnstakeRequest {
 impl StakeAccount {
     pub const SEED: &'static [u8; 13] = b"stake_account";
 
-    pub fn new(
-        owner: Pubkey,
-        stake_pool: Pubkey,
-        pool_minimum_at_creation: u64,
-    ) -> Self {
+    pub fn new(owner: Pubkey, stake_pool: Pubkey, pool_minimum_at_creation: u64) -> Self {
         Self {
             tag: Tag::StakeAccount,
             owner,

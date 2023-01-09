@@ -7,7 +7,13 @@ use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::clock::Clock;
 use solana_program::sysvar::Sysvar;
-use solana_program::{account_info::{next_account_info, AccountInfo}, entrypoint::ProgramResult, msg, program_error::ProgramError, pubkey::Pubkey};
+use solana_program::{
+    account_info::{next_account_info, AccountInfo},
+    entrypoint::ProgramResult,
+    msg,
+    program_error::ProgramError,
+    pubkey::Pubkey,
+};
 
 use crate::error::AccessError;
 use crate::state::{StakeAccount, StakePool, UnstakeRequest};
@@ -110,7 +116,11 @@ pub fn process_unstake(
 
     // Update stake account
     stake_account.withdraw(amount)?;
-    stake_pool.header.withdraw(amount, central_state.last_snapshot_offset, central_state.creation_time)?;
+    stake_pool.header.withdraw(
+        amount,
+        central_state.last_snapshot_offset,
+        central_state.creation_time,
+    )?;
 
     // Add unstake request
     stake_account.add_unstake_request(UnstakeRequest::new(amount, current_time))?;

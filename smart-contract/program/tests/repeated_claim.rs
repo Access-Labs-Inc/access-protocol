@@ -1,19 +1,20 @@
-use solana_program::{ pubkey::Pubkey, system_program};
+use solana_program::{pubkey::Pubkey, system_program};
 use solana_program_test::{processor, ProgramTest};
-use solana_test_framework::*;
 use solana_sdk::signer::{keypair::Keypair, Signer};
-use solana_sdk::sysvar::{clock};
-use spl_associated_token_account::{instruction::create_associated_token_account, get_associated_token_address};
+use solana_sdk::sysvar::clock;
+use solana_test_framework::*;
+use spl_associated_token_account::{
+    get_associated_token_address, instruction::create_associated_token_account,
+};
 pub mod common;
+use crate::common::test_runner::TestRunner;
 use crate::common::utils::{mint_bootstrap, sign_send_instructions};
-use crate::common::test_runner::{TestRunner};
 use access_protocol::{
     entrypoint::process_instruction,
     instruction::{
-        activate_stake_pool, admin_mint,
-        claim_pool_rewards, claim_rewards,
-        crank, create_central_state, create_stake_account,
-        create_stake_pool, execute_unstake, stake, unstake,
+        activate_stake_pool, admin_mint, claim_pool_rewards, claim_rewards, crank,
+        create_central_state, create_stake_account, create_stake_pool, execute_unstake, stake,
+        unstake,
     },
 };
 use mpl_token_metadata::pda::find_metadata_account;
@@ -32,29 +33,43 @@ async fn repeated_claim() {
     tr.mint(&staker.pubkey(), 10_200).await.unwrap();
 
     // Create stake pool on day 1 12:00
-    tr.create_stake_pool(&stake_pool_owner.pubkey()).await.unwrap();
+    tr.create_stake_pool(&stake_pool_owner.pubkey())
+        .await
+        .unwrap();
 
     // // Activate stake pool
-    tr.activate_stake_pool(&stake_pool_owner.pubkey()).await.unwrap();
+    tr.activate_stake_pool(&stake_pool_owner.pubkey())
+        .await
+        .unwrap();
 
     // Create stake account
-    tr.create_stake_account(&stake_pool_owner.pubkey(), &staker.pubkey()).await.unwrap();
+    tr.create_stake_account(&stake_pool_owner.pubkey(), &staker.pubkey())
+        .await
+        .unwrap();
 
     // Wait 1 hour
     tr.sleep(3600).await.unwrap();
 
     // Create stake pool 2 on day 1 13:00
-    tr.create_stake_pool(&stake_pool2_owner.pubkey()).await.unwrap();
+    tr.create_stake_pool(&stake_pool2_owner.pubkey())
+        .await
+        .unwrap();
 
     // Activate stake pool 2
-    tr.activate_stake_pool(&stake_pool2_owner.pubkey()).await.unwrap();
+    tr.activate_stake_pool(&stake_pool2_owner.pubkey())
+        .await
+        .unwrap();
 
     // Create stake account 2
-    tr.create_stake_account(&stake_pool2_owner.pubkey(), &staker.pubkey()).await.unwrap();
+    tr.create_stake_account(&stake_pool2_owner.pubkey(), &staker.pubkey())
+        .await
+        .unwrap();
 
     // Stake to pool 1
     let token_amount = 10_000;
-    tr.stake(&stake_pool_owner.pubkey(), &staker, token_amount).await.unwrap();
+    tr.stake(&stake_pool_owner.pubkey(), &staker, token_amount)
+        .await
+        .unwrap();
 
     // wait until day 2 12:15
     tr.sleep(86400 - 2700).await.unwrap();
@@ -66,13 +81,19 @@ async fn repeated_claim() {
     tr.claim_pool_rewards(&stake_pool_owner).await.unwrap();
 
     // Claim staker rewards in pool 1
-    tr.claim_staker_rewards(&stake_pool_owner.pubkey(), &staker).await.unwrap();
+    tr.claim_staker_rewards(&stake_pool_owner.pubkey(), &staker)
+        .await
+        .unwrap();
 
     // Unstake from pool 1
-    tr.unstake(&stake_pool_owner.pubkey(), &staker, token_amount).await.unwrap();
+    tr.unstake(&stake_pool_owner.pubkey(), &staker, token_amount)
+        .await
+        .unwrap();
 
     // Stake to pool 2
-    tr.stake(&stake_pool2_owner.pubkey(), &staker, token_amount).await.unwrap();
+    tr.stake(&stake_pool2_owner.pubkey(), &staker, token_amount)
+        .await
+        .unwrap();
 
     // Crank pool 2
     tr.crank_pool(&stake_pool2_owner.pubkey()).await.unwrap();
@@ -81,7 +102,9 @@ async fn repeated_claim() {
     assert!(tr.claim_pool_rewards(&stake_pool2_owner).await.is_err());
 
     // Claim rewards 2
-    tr.claim_staker_rewards(&stake_pool2_owner.pubkey(), &staker).await.unwrap();
+    tr.claim_staker_rewards(&stake_pool2_owner.pubkey(), &staker)
+        .await
+        .unwrap();
 
     // Print results
     let stats = tr.staker_stats(staker.pubkey()).await.unwrap();
@@ -92,7 +115,6 @@ async fn repeated_claim() {
     let pool_stats2 = tr.pool_stats(stake_pool2_owner.pubkey()).await.unwrap();
     assert_eq!(pool_stats2.balance, 0);
     assert_eq!(pool_stats2.total_pool_staked, 10_000);
-
 
     // todo asserts
 }

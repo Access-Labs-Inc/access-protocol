@@ -20,7 +20,7 @@ use crate::{
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
 use crate::error::AccessError;
-use crate::state::{SECONDS_IN_DAY, StakeAccount, StakePool};
+use crate::state::{StakeAccount, StakePool, SECONDS_IN_DAY};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `stake` instruction
@@ -226,7 +226,11 @@ pub fn process_stake(
 
     // Update stake account
     stake_account.deposit(amount)?;
-    stake_pool.header.deposit(amount, central_state.last_snapshot_offset, central_state.creation_time)?;
+    stake_pool.header.deposit(
+        amount,
+        central_state.last_snapshot_offset,
+        central_state.creation_time,
+    )?;
 
     //Update central state
     central_state.total_staked = central_state

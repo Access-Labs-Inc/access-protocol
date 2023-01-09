@@ -85,16 +85,22 @@ pub fn process_crank(
     msg!("Total staked in pool {}", stake_pool.header.total_staked);
     msg!("Daily inflation {}", central_state.daily_inflation);
     msg!("Total staked {}", central_state.total_staked);
-    msg!("Total staked delta {}", stake_pool.header.total_staked_delta);
-    msg!("Total staked snapshot {}", central_state.total_staked_snapshot);
+    msg!(
+        "Total staked delta {}",
+        stake_pool.header.total_staked_delta
+    );
+    msg!(
+        "Total staked snapshot {}",
+        central_state.total_staked_snapshot
+    );
 
     // get the pool staked amount at the time of last system snapshot
-    let total_staked_snapshot: u128 = (stake_pool.header.total_staked - stake_pool.header.total_staked_delta as u64) as u128;
+    let total_staked_snapshot = (stake_pool.header.total_staked as i128
+        - stake_pool.header.total_staked_delta as i128) as u128;
     msg!("Total staked snapshot {}", total_staked_snapshot);
     let mut stakers_reward: u128 = 0;
     let mut pool_reward: u128 = 0;
     if total_staked_snapshot > 0 {
-
         // stakers_reward = [(pool_total_staked << 32) * inflation * stakers_part] / (100 * total_staked * pool_total_staked)
         stakers_reward = (total_staked_snapshot << 32)
             .checked_mul(central_state.daily_inflation as u128)
@@ -129,7 +135,6 @@ pub fn process_crank(
     } else {
         msg!("Zero rewards");
     }
-
 
     let current_time = Clock::get()?.unix_timestamp;
     let current_offset = (current_time - central_state.creation_time) / SECONDS_IN_DAY as i64;
