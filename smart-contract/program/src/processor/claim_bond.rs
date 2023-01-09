@@ -189,7 +189,11 @@ pub fn process_claim_bond(
         &[&[&program_id.to_bytes(), &[central_state.signer_nonce]]],
     )?;
 
-    stake_pool.header.deposit(bond.total_amount_sold, central_state.last_snapshot_offset, central_state.creation_time)?;
+    stake_pool.header.deposit(
+        bond.total_amount_sold,
+        central_state.last_snapshot_offset,
+        central_state.creation_time,
+    )?;
 
     // Update central state
     central_state.total_staked = central_state
