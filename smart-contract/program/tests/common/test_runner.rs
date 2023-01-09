@@ -3,6 +3,8 @@ use std::error::Error;
 use borsh::BorshDeserialize;
 use mpl_token_metadata::pda::find_metadata_account;
 use solana_program::{pubkey::Pubkey, system_program};
+use solana_program::clock::Clock;
+use solana_program::sysvar::Sysvar;
 
 use solana_program_test::{processor, ProgramTest};
 use solana_sdk::signer::{keypair::Keypair, Signer};
@@ -19,7 +21,7 @@ use access_protocol::{
         create_stake_pool, stake, unstake,
     },
 };
-use access_protocol::instruction::{change_pool_minimum, claim_bond, claim_bond_rewards, create_bond};
+use access_protocol::instruction::{change_pool_minimum, claim_bond, claim_bond_rewards, create_bond, unlock_bond_tokens};
 use access_protocol::state::{BondAccount, CentralState, StakeAccount, StakePoolHeader, Tag};
 
 use crate::common::utils::{mint_bootstrap, sign_send_instructions};
@@ -507,12 +509,15 @@ impl TestRunner {
     }
 
     // todo bond maturity parameter
-    pub async fn create_bond(&mut self, stake_pool_owner: &Pubkey, bond_owner: &Pubkey, bond_amount: u64) -> Result<(), BanksClientError> {
+    pub async fn create_bond(&mut self, stake_pool_owner: &Pubkey, bond_owner: &Pubkey, bond_amount: u64, unlock_after: i64) -> Result<(), BanksClientError> {
         let (bond_key, _bond_nonce) =
             BondAccount::create_key(&bond_owner, bond_amount, &self.program_id);
 
         let stake_pool_key = self.get_pool_pda(stake_pool_owner);
         let seller_token_account = get_associated_token_address(&self.bond_seller.pubkey(), &self.mint);
+        println!("before clock");
+        let current_time = self.local_env.get_sysvar::<clock::Clock>().await.unwrap().unix_timestamp;
+        println!("after: {:?}", current_time);
 
         self.mint(&self.bond_seller.pubkey(), bond_amount).await?;
 
@@ -533,7 +538,7 @@ impl TestRunner {
                 quote_mint: self.mint,
                 unlock_period: 1, // todo: make this a parameter
                 unlock_amount: bond_amount,
-                unlock_start_date: 0,
+                unlock_start_date: current_time + unlock_after,
                 seller_index: 0,
             },
         );
@@ -570,6 +575,31 @@ impl TestRunner {
         );
 
         sign_send_instructions(&mut self.prg_test_ctx, vec![claim_bond_ix], vec![&bond_owner])
+            .await
+    }
+
+    pub async fn unlock_bond(&mut self, stake_pool_owner: &Pubkey, bond_owner: &Keypair) -> Result<(), BanksClientError> {
+        let bond_key = self.bond_accounts.get(&bond_owner.pubkey()).unwrap().clone();
+        let stake_pool_key = self.get_pool_pda(stake_pool_owner);
+        let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
+        let bond_owner_ata = get_associated_token_address(&bond_owner.pubkey(), &self.mint);
+
+        let unlock_ix = unlock_bond_tokens(
+            self.program_id,
+            unlock_bond_tokens::Accounts {
+                bond_account: &bond_key,
+                bond_owner: &bond_owner.pubkey(),
+                mint: &self.mint,
+                access_token_destination: &bond_owner_ata,
+                central_state: &self.central_state,
+                spl_token_program: &spl_token::ID,
+                stake_pool: &stake_pool_key,
+                pool_vault: &pool_vault,
+            },
+            unlock_bond_tokens::Params {},
+        );
+
+        sign_send_instructions(&mut self.prg_test_ctx, vec![unlock_ix], vec![&bond_owner])
             .await
     }
 

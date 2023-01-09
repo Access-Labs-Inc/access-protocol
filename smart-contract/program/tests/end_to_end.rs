@@ -11,6 +11,8 @@ use crate::common::test_runner::TestRunner;
 
 pub mod common;
 
+const hour_seconds: u64 = 3600;
+
 #[tokio::test]
 async fn end_to_end() {
     // Setup the token + basic accounts
@@ -66,17 +68,18 @@ async fn end_to_end() {
 
     // Create a bond
     let bond_amount = 5_000_000;
-    tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), bond_amount).await.unwrap();
+    let unlock_after = 86_400;
+    tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), bond_amount, unlock_after).await.unwrap();
     let bond_stats = tr.bond_stats(staker.pubkey(), stake_pool_owner.pubkey(), bond_amount).await.unwrap();
     assert_eq!(bond_stats.tag, Tag::InactiveBondAccount);
     assert_eq!(bond_stats.owner, staker.pubkey());
     assert_eq!(bond_stats.total_amount_sold, bond_amount);
     assert_eq!(bond_stats.total_staked, bond_amount);
     assert_eq!(bond_stats.total_quote_amount, 0);
-    assert_eq!(bond_stats.unlock_start_date, 0);
+    assert_eq!(bond_stats.unlock_start_date, tr.get_current_time().await + unlock_after);
     assert_eq!(bond_stats.unlock_period, 1);
     assert_eq!(bond_stats.unlock_amount, bond_amount);
-    assert_eq!(bond_stats.last_unlock_time, 0);
+    assert_eq!(bond_stats.last_unlock_time, tr.get_current_time().await + unlock_after);
     assert_eq!(bond_stats.total_unlocked_amount, 0);
     assert_eq!(bond_stats.pool_minimum_at_creation, 1000);
     assert_eq!(bond_stats.stake_pool, stake_pool_pda_key);
@@ -86,6 +89,7 @@ async fn end_to_end() {
     // Claim bond
     tr.claim_bond(&stake_pool_owner.pubkey(), &staker).await.unwrap();
     let bond_stats = tr.bond_stats(staker.pubkey(), stake_pool_owner.pubkey(), bond_amount).await.unwrap();
+    let bond_creation_time = tr.get_current_time().await;
     assert_eq!(bond_stats.tag, Tag::BondAccount);
     assert_eq!(bond_stats.owner, staker.pubkey());
     assert_eq!(bond_stats.total_amount_sold, bond_amount);
@@ -93,11 +97,34 @@ async fn end_to_end() {
     assert_eq!(bond_stats.total_quote_amount, 0);
     assert_eq!(bond_stats.quote_mint, tr.get_mint());
     assert_eq!(bond_stats.seller_token_account, tr.get_bond_seller_ata());
-    assert_eq!(bond_stats.unlock_start_date, 0);
+    assert_eq!(bond_stats.unlock_start_date, bond_creation_time + unlock_after);
+    assert_eq!(bond_stats.unlock_period, 1);
+    assert_eq!(bond_stats.unlock_amount, bond_amount);
+    assert_eq!(bond_stats.last_unlock_time, bond_creation_time + unlock_after);
+    assert_eq!(bond_stats.total_unlocked_amount, 0);
+    assert_eq!(bond_stats.pool_minimum_at_creation, 1000);
+    assert_eq!(bond_stats.stake_pool, stake_pool_pda_key);
+    assert_eq!(bond_stats.last_claimed_offset, 0);
+    assert_eq!(bond_stats.sellers[0], tr.get_bond_seller());
+
+    // Unlock bond
+    let sleep_time = (unlock_after as f32 * 1.5) as u64;
+    tr.sleep(sleep_time).await.unwrap();
+
+    tr.unlock_bond(&stake_pool_owner.pubkey(), &staker).await.unwrap();
+    let bond_stats = tr.bond_stats(staker.pubkey(), stake_pool_owner.pubkey(), bond_amount).await.unwrap();
+    assert_eq!(bond_stats.tag, Tag::BondAccount);
+    assert_eq!(bond_stats.owner, staker.pubkey());
+    assert_eq!(bond_stats.total_amount_sold, bond_amount);
+    assert_eq!(bond_stats.total_staked, 0);
+    assert_eq!(bond_stats.total_quote_amount, 0);
+    assert_eq!(bond_stats.quote_mint, tr.get_mint());
+    assert_eq!(bond_stats.seller_token_account, tr.get_bond_seller_ata());
+    assert_eq!(bond_stats.unlock_start_date, bond_creation_time + unlock_after);
     assert_eq!(bond_stats.unlock_period, 1);
     assert_eq!(bond_stats.unlock_amount, bond_amount);
     assert_eq!(bond_stats.last_unlock_time, tr.get_current_time().await);
-    assert_eq!(bond_stats.total_unlocked_amount, 0);
+    assert_eq!(bond_stats.total_unlocked_amount, bond_amount);
     assert_eq!(bond_stats.pool_minimum_at_creation, 1000);
     assert_eq!(bond_stats.stake_pool, stake_pool_pda_key);
     assert_eq!(bond_stats.last_claimed_offset, 0);
@@ -107,11 +134,6 @@ async fn end_to_end() {
     // Stake to pool 1
     let token_amount = 10_000;
     tr.stake(&stake_pool_owner.pubkey(), &staker, token_amount).await.unwrap();
-    let central_state_stats = tr.central_state_stats().await.unwrap();
-    assert_eq!(central_state_stats.total_staked, token_amount);
-
-    // Create bond account
-    tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), 10_000).await.unwrap();
     let central_state_stats = tr.central_state_stats().await.unwrap();
     assert_eq!(central_state_stats.total_staked, token_amount);
 
