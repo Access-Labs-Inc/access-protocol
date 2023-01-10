@@ -135,6 +135,10 @@ pub fn process_unlock_bond_tokens(
         return Err(ProgramError::InvalidArgument);
     }
 
+    if (stake_pool.header.current_day_idx as u64) < central_state.last_snapshot_offset {
+        return Err(AccessError::PoolMustBeCranked.into());
+    }
+
     let delta = current_time
         .checked_sub(bond.last_unlock_time)
         .ok_or(AccessError::Overflow)?;
@@ -151,11 +155,7 @@ pub fn process_unlock_bond_tokens(
     let unlock_amount = bond.calc_unlock_amount(missed_periods as u64)?;
 
     // Update the stake pool
-    stake_pool.header.withdraw(
-        unlock_amount,
-        central_state.last_snapshot_offset,
-        central_state.get_current_offset(),
-    )?;
+    stake_pool.header.withdraw(unlock_amount)?;
 
     let signer_seeds: &[&[u8]] = &[
         StakePoolHeader::SEED,

@@ -42,7 +42,7 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub stake_pool: &'a T,
 
-    /// The owner of the stake accountØ
+    /// The owner of the stake account
     #[cons(signer)]
     pub owner: &'a T,
 
@@ -162,6 +162,10 @@ pub fn process_stake(
         return Err(AccessError::UnclaimedRewards.into());
     }
 
+    if (stake_pool.header.current_day_idx as u64) < central_state.last_snapshot_offset {
+        return Err(AccessError::PoolMustBeCranked.into());
+    }
+
     if stake_account.stake_amount == 0 {
         stake_account.last_claimed_offset = central_state.get_current_offset();
     }
@@ -222,11 +226,7 @@ pub fn process_stake(
 
     // Update stake account
     stake_account.deposit(amount)?;
-    stake_pool.header.deposit(
-        amount,
-        central_state.last_snapshot_offset,
-        central_state.get_current_offset(),
-    )?;
+    stake_pool.header.deposit(amount)?;
 
     //Update central state
     central_state.total_staked = central_state

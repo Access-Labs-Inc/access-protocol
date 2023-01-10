@@ -98,6 +98,9 @@ pub fn process_unstake(
     if stake_account.last_claimed_offset < stake_pool.header.current_day_idx as u64 {
         return Err(AccessError::UnclaimedRewards.into());
     }
+    if (stake_pool.header.current_day_idx as u64) < central_state.last_snapshot_offset {
+        return Err(AccessError::PoolMustBeCranked.into());
+    }
 
     check_account_key(
         accounts.owner,
@@ -116,11 +119,7 @@ pub fn process_unstake(
 
     // Update stake account
     stake_account.withdraw(amount)?;
-    stake_pool.header.withdraw(
-        amount,
-        central_state.last_snapshot_offset,
-        central_state.get_current_offset(),
-    )?;
+    stake_pool.header.withdraw(amount)?;
 
     // Add unstake request
     stake_account.add_unstake_request(UnstakeRequest::new(amount, current_time))?;

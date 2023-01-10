@@ -72,9 +72,6 @@ pub fn process_crank(
         central_state.total_staked_snapshot = central_state.total_staked;
         central_state.last_snapshot_offset = current_offset;
         central_state.save(&mut accounts.central_state.data.borrow_mut())?;
-        // reset the delta for the pool that we are currently cranking. We don't want the history to influence our result
-        stake_pool.header.last_delta_update_offset = current_offset;
-        stake_pool.header.total_staked_delta = 0;
     }
 
     if stake_pool.header.current_day_idx as u64 == central_state.last_snapshot_offset {
@@ -86,28 +83,12 @@ pub fn process_crank(
     msg!("Daily inflation {}", central_state.daily_inflation);
     msg!("Total staked {}", central_state.total_staked);
     msg!(
-        "Total staked delta {}",
-        stake_pool.header.total_staked_delta
-    );
-    msg!(
         "Total staked snapshot {}",
         central_state.total_staked_snapshot
     );
 
-    let total_staked_snapshot = match stake_pool.header.total_staked_delta.signum() {
-        1 => stake_pool
-            .header
-            .total_staked
-            .checked_sub(stake_pool.header.total_staked_delta.unsigned_abs()) // <- Actualy safe to cast as u64 here
-            .ok_or(AccessError::Overflow)?,
-        -1 => stake_pool
-            .header
-            .total_staked
-            .checked_add(stake_pool.header.total_staked_delta.unsigned_abs())
-            .ok_or(AccessError::Overflow)?,
-        _ => stake_pool.header.total_staked,
-    } as u128;
-
+    // get the pool staked amount at the time of last system snapshot
+    let total_staked_snapshot = stake_pool.header.total_staked as u128;
     let mut stakers_reward: u128 = 0;
     let mut pool_reward: u128 = 0;
     if total_staked_snapshot > 0 {
@@ -154,6 +135,5 @@ pub fn process_crank(
             stakers_reward,
         },
     )?;
-
     Ok(())
 }

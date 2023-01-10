@@ -140,6 +140,10 @@ pub fn process_claim_bond(
         return Err(AccessError::NotEnoughSellers.into());
     }
 
+    if (stake_pool.header.current_day_idx as u64) < central_state.last_snapshot_offset {
+        return Err(AccessError::PoolMustBeCranked.into());
+    }
+
     // Transfer tokens
     let transfer_ix = spl_token::instruction::transfer(
         &spl_token::ID,
@@ -185,11 +189,7 @@ pub fn process_claim_bond(
         &[&[&program_id.to_bytes(), &[central_state.signer_nonce]]],
     )?;
 
-    stake_pool.header.deposit(
-        bond.total_amount_sold,
-        central_state.last_snapshot_offset,
-        central_state.get_current_offset(),
-    )?;
+    stake_pool.header.deposit(bond.total_amount_sold)?;
 
     // Update central state
     central_state.total_staked = central_state

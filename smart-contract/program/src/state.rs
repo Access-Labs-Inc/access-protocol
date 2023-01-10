@@ -93,6 +93,7 @@ pub struct StakePoolHeader {
     /// Updated by a trustless cranker
     pub current_day_idx: u16,
 
+    // todo maybe pad differently as the fields bellow have changed
     /// Padding
     pub _padding: [u8; 4],
 
@@ -101,12 +102,6 @@ pub struct StakePoolHeader {
 
     /// Total amount staked in the pool
     pub total_staked: u64,
-
-    /// The pool total_staked change since the last system-wide crank (snapshot)
-    pub total_staked_delta: i64,
-
-    /// The offset of the last total_staked change in this pool from the central state's creation time
-    pub last_delta_update_offset: u64,
 
     /// Last time the stake pool owner claimed as an offset from the central state's creation time
     pub last_claimed_offset: u64,
@@ -207,6 +202,7 @@ impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [RewardsTuple]>
                     .map_err(|_| AccessError::Overflow)?,
             )
             .ok_or(AccessError::Overflow)?;
+
         self.balances[(((self.header.current_day_idx - 1) as u64) % STAKE_BUFFER_LEN) as usize] =
             rewards;
         Ok(())
@@ -243,7 +239,6 @@ impl StakePoolHeader {
         Ok(Self {
             tag: Tag::InactiveStakePool as u8,
             total_staked: 0,
-            total_staked_delta: 0,
             current_day_idx: 0,
             _padding: [0; 4],
             last_claimed_offset: 0,
@@ -252,7 +247,6 @@ impl StakePoolHeader {
             vault: vault.to_bytes(),
             minimum_stake_amount,
             stakers_part: STAKER_MULTIPLIER,
-            last_delta_update_offset: 0,
         })
     }
 
@@ -260,53 +254,18 @@ impl StakePoolHeader {
         self.tag = Tag::Deleted as u8
     }
 
-    pub fn deposit(
-        &mut self,
-        amount: u64,
-        system_snapshot_offset: u64,
-        current_offset: u64,
-    ) -> ProgramResult {
+    pub fn deposit(&mut self, amount: u64) -> ProgramResult {
         self.total_staked = self
             .total_staked
             .checked_add(amount)
             .ok_or(AccessError::Overflow)?;
-        self.update_delta(amount as i64, system_snapshot_offset, current_offset)
+        Ok(())
     }
 
-    pub fn withdraw(
-        &mut self,
-        amount: u64,
-        system_snapshot_offset: u64,
-        current_offset: u64,
-    ) -> ProgramResult {
+    pub fn withdraw(&mut self, amount: u64) -> ProgramResult {
         self.total_staked = self
             .total_staked
             .checked_sub(amount)
-            .ok_or(AccessError::Overflow)?;
-        self.update_delta(
-            -(amount as i64),
-            system_snapshot_offset,
-            current_offset,
-        )
-    }
-
-    // private
-    fn update_delta(
-        &mut self,
-        amount: i64,
-        system_snapshot_offset: u64,
-        current_offset: u64,
-    ) -> ProgramResult {
-        // if this is the first delta change since the last snapshot, we reset it to 0
-        if current_offset >= system_snapshot_offset
-            && self.last_delta_update_offset < system_snapshot_offset
-        {
-            self.total_staked_delta = 0;
-        }
-        self.last_delta_update_offset = current_offset;
-        self.total_staked_delta = self
-            .total_staked_delta
-            .checked_add(amount)
             .ok_or(AccessError::Overflow)?;
         Ok(())
     }
