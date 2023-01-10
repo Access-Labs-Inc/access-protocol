@@ -1,7 +1,8 @@
 //! Stake
+use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
-    account_info::{next_account_info, AccountInfo},
+    account_info::{AccountInfo, next_account_info},
     clock::Clock,
     entrypoint::ProgramResult,
     msg,
@@ -10,17 +11,14 @@ use solana_program::{
     pubkey::Pubkey,
     sysvar::Sysvar,
 };
-
 use spl_token::instruction::transfer;
 
 use crate::{
-    state::{CentralState, Tag, FEES},
+    state::{CentralState, FEES, Tag},
     utils::{assert_valid_fee, check_account_key, check_account_owner, check_signer},
 };
-use bonfida_utils::{BorshSize, InstructionsAccount};
-
 use crate::error::AccessError;
-use crate::state::{StakeAccount, StakePool, SECONDS_IN_DAY};
+use crate::state::{SECONDS_IN_DAY, StakeAccount, StakePool};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `stake` instruction
@@ -44,7 +42,7 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub stake_pool: &'a T,
 
-    /// The owner of the stake account
+    /// The owner of the stake accountØ
     #[cons(signer)]
     pub owner: &'a T,
 
