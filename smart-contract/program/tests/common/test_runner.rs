@@ -21,7 +21,7 @@ use access_protocol::{
         create_stake_pool, stake, unstake,
     },
 };
-use access_protocol::instruction::{change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards, create_bond, unlock_bond_tokens};
+use access_protocol::instruction::{change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards, create_bond, unlock_bond_tokens};
 use access_protocol::state::{BondAccount, CentralState, StakeAccount, StakePoolHeader, Tag};
 
 use crate::common::utils::{mint_bootstrap, sign_send_instructions};
@@ -703,5 +703,24 @@ impl TestRunner {
 
         sign_send_instructions(&mut self.prg_test_ctx, vec![change_inflation_ix], vec![])
             .await
+    }
+
+    pub async fn change_central_state_authority(&mut self, new_authority: &Keypair) -> Result<(), BanksClientError> {
+        let ix = change_central_state_authority(
+            self.program_id,
+            change_central_state_authority::Accounts {
+                central_state: &self.central_state,
+                authority: &self.prg_test_ctx.payer.pubkey(),
+            },
+            change_central_state_authority::Params {
+                new_authority: new_authority.pubkey(),
+            },
+        );
+        sign_send_instructions(&mut self.prg_test_ctx, vec![ix], vec![])
+            .await?;
+
+        let authority_ata = get_associated_token_address(&&self.prg_test_ctx.payer.pubkey(), &self.mint);
+        self.authority_ata = authority_ata;
+        Ok(())
     }
 }
