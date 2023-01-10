@@ -65,8 +65,7 @@ pub fn process_crank(
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut central_state = CentralState::from_account_info(accounts.central_state)?;
 
-    let current_time = Clock::get()?.unix_timestamp;
-    let current_offset = (current_time - central_state.creation_time) / SECONDS_IN_DAY as i64;
+    let current_offset = central_state.get_current_offset();
     // check if we need to do a system wide snapshot
     if central_state.last_snapshot_offset < current_offset {
         central_state.total_staked_snapshot = central_state.total_staked;
@@ -77,7 +76,7 @@ pub fn process_crank(
         stake_pool.header.total_staked_delta = 0;
     }
 
-    if stake_pool.header.current_day_idx as i64 == central_state.last_snapshot_offset {
+    if stake_pool.header.current_day_idx as u64 == central_state.last_snapshot_offset {
         #[cfg(not(any(feature = "days-to-sec-10s", feature = "days-to-sec-15m")))]
         return Err(AccessError::NoOp.into());
     }
@@ -94,10 +93,20 @@ pub fn process_crank(
         central_state.total_staked_snapshot
     );
 
-    // get the pool staked amount at the time of last system snapshot
-    let total_staked_snapshot = (stake_pool.header.total_staked as i128
-        - stake_pool.header.total_staked_delta as i128) as u128;
-    msg!("Total staked snapshot {}", total_staked_snapshot);
+    let total_staked_snapshot = match stake_pool.header.total_staked_delta.signum() {
+        1 => stake_pool
+            .header
+            .total_staked
+            .checked_sub(stake_pool.header.total_staked_delta.unsigned_abs()) // <- Actualy safe to cast as u64 here
+            .ok_or(AccessError::Overflow)?,
+        -1 => stake_pool
+            .header
+            .total_staked
+            .checked_add(stake_pool.header.total_staked_delta.unsigned_abs())
+            .ok_or(AccessError::Overflow)?,
+        _ => stake_pool.header.total_staked,
+    } as u128;
+
     let mut stakers_reward: u128 = 0;
     let mut pool_reward: u128 = 0;
     if total_staked_snapshot > 0 {
@@ -136,11 +145,9 @@ pub fn process_crank(
         msg!("Zero rewards");
     }
 
-    let current_time = Clock::get()?.unix_timestamp;
-    let current_offset = (current_time - central_state.creation_time) / SECONDS_IN_DAY as i64;
     stake_pool.push_balances_buff(
         current_offset,
-        stake_pool.header.current_day_idx as i64,
+        stake_pool.header.current_day_idx as u64,
         RewardsTuple {
             pool_reward,
             stakers_reward,

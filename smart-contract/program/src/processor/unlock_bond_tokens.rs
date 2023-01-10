@@ -154,7 +154,7 @@ pub fn process_unlock_bond_tokens(
     stake_pool.header.withdraw(
         unlock_amount,
         central_state.last_snapshot_offset,
-        central_state.creation_time,
+        central_state.get_current_offset(),
     )?;
 
     let signer_seeds: &[&[u8]] = &[

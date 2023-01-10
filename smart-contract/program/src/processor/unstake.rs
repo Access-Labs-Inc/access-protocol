@@ -95,7 +95,7 @@ pub fn process_unstake(
     let mut central_state = CentralState::from_account_info(accounts.central_state_account)?;
     let current_time = Clock::get()?.unix_timestamp;
 
-    if stake_account.last_claimed_offset < stake_pool.header.current_day_idx as i64 {
+    if stake_account.last_claimed_offset < stake_pool.header.current_day_idx as u64 {
         return Err(AccessError::UnclaimedRewards.into());
     }
 
@@ -119,7 +119,7 @@ pub fn process_unstake(
     stake_pool.header.withdraw(
         amount,
         central_state.last_snapshot_offset,
-        central_state.creation_time,
+        central_state.get_current_offset(),
     )?;
 
     // Add unstake request

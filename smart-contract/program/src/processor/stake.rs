@@ -159,15 +159,13 @@ pub fn process_stake(
     }
 
     if stake_account.stake_amount > 0
-        && stake_account.last_claimed_offset < stake_pool.header.current_day_idx as i64
+        && stake_account.last_claimed_offset < stake_pool.header.current_day_idx as u64
     {
         return Err(AccessError::UnclaimedRewards.into());
     }
 
-    let current_time = Clock::get()?.unix_timestamp;
-    let current_offset = (current_time - central_state.creation_time) / SECONDS_IN_DAY as i64;
     if stake_account.stake_amount == 0 {
-        stake_account.last_claimed_offset = current_offset;
+        stake_account.last_claimed_offset = central_state.get_current_offset();
     }
 
     // Transfer tokens
@@ -229,7 +227,7 @@ pub fn process_stake(
     stake_pool.header.deposit(
         amount,
         central_state.last_snapshot_offset,
-        central_state.creation_time,
+        central_state.get_current_offset(),
     )?;
 
     //Update central state
