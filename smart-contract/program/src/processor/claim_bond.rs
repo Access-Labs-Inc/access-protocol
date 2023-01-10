@@ -192,7 +192,7 @@ pub fn process_claim_bond(
     stake_pool.header.deposit(
         bond.total_amount_sold,
         central_state.last_snapshot_offset,
-        central_state.creation_time,
+        central_state.get_current_offset(),
     )?;
 
     // Update central state
