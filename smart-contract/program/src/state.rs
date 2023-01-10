@@ -93,6 +93,7 @@ pub struct StakePoolHeader {
     /// Updated by a trustless cranker
     pub current_day_idx: u16,
 
+    // todo maybe pad differently as the fields bellow have changed
     /// Padding
     pub _padding: [u8; 4],
 
