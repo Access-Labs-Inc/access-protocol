@@ -88,7 +88,8 @@ async fn repeated_claim() {
 
     // Stake to pool 2 should succeed
     tr.stake(&stake_pool2_owner.pubkey(), &staker, token_amount)
-        .await.unwrap();
+        .await
+        .unwrap();
     tr.sleep(1).await.unwrap();
 
     // Claim stake pool rewards 2
