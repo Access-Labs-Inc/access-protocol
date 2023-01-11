@@ -1,4 +1,4 @@
-use std::convert::TryFrom;
+
 use std::error::Error;
 use borsh::BorshDeserialize;
 use solana_program::{pubkey::Pubkey, system_program};
@@ -18,7 +18,7 @@ use access_protocol::{
     },
 };
 use mpl_token_metadata::pda::find_metadata_account;
-use solana_program::account_info::AccountInfo;
+
 use access_protocol::instruction::{change_pool_minimum, claim_bond, claim_bond_rewards, create_bond};
 use access_protocol::state::{BondAccount, CentralState};
 
@@ -319,6 +319,7 @@ impl TestRunner {
             },
             stake::Params {
                 amount: token_amount,
+                has_bond_account: staker_bond.is_some(),
             },
         );
         sign_send_instructions(&mut self.prg_test_ctx, vec![stake_ix], vec![&staker]).await
@@ -425,7 +426,7 @@ impl TestRunner {
             },
             unstake::Params {
                 amount: token_amount,
-                has_bond_account: !staker_bond.is_none(),
+                has_bond_account: staker_bond.is_some(),
             },
         );
         // if error, return
@@ -620,7 +621,7 @@ impl TestRunner {
                 stake_pool_owner: &stake_pool_owner.pubkey(),
             },
             change_pool_minimum::Params {
-                new_minimum: new_minimum,
+                new_minimum,
             },
         );
 

@@ -80,7 +80,7 @@ async fn repeated_claim() {
     let result = tr
         .stake(&stake_pool2_owner.pubkey(), &staker, token_amount)
         .await;
-    assert_eq!(result.is_err(), true);
+    assert!(result.is_err());
     tr.sleep(1).await.unwrap();
 
     // Crank pool 2

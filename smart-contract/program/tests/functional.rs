@@ -112,7 +112,7 @@ async fn test_staking() {
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![])
         .await
         .unwrap();
-    let authority_ata = get_associated_token_address(&&prg_test_ctx.payer.pubkey(), &mint);
+    let authority_ata = get_associated_token_address(&prg_test_ctx.payer.pubkey(), &mint);
 
     //
     // Create users
@@ -374,9 +374,11 @@ async fn test_staking() {
             vault: &pool_vault,
             central_state_account: &central_state,
             fee_account: &authority_ata,
+            bond_account: None,
         },
         stake::Params {
             amount: token_amount,
+            has_bond_account: false,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![stake_ix], vec![&staker])
@@ -564,9 +566,11 @@ async fn test_staking() {
             stake_pool: &stake_pool_key,
             owner: &staker.pubkey(),
             central_state_account: &central_state,
+            bond_account: None,
         },
         unstake::Params {
             amount: token_amount,
+            has_bond_account: false,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![unstake_ix], vec![&staker])

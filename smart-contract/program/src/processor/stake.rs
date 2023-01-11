@@ -2,13 +2,11 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
-    clock::Clock,
     entrypoint::ProgramResult,
     msg,
     program::invoke,
     program_error::ProgramError,
     pubkey::Pubkey,
-    sysvar::Sysvar,
 };
 
 use spl_token::instruction::transfer;
@@ -20,7 +18,7 @@ use crate::{
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
 use crate::error::AccessError;
-use crate::state::{BondAccount, SECONDS_IN_DAY, StakeAccount, StakePool};
+use crate::state::{BondAccount, StakeAccount, StakePool};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `stake` instruction
