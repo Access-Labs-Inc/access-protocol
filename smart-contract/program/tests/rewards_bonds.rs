@@ -1,8 +1,3 @@
-
-
-
-
-
 use solana_sdk::signer::{Signer};
 
 use solana_test_framework::*;
