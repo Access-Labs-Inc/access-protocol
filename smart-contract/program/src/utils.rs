@@ -1,6 +1,6 @@
 use crate::error::AccessError;
 use crate::state::{BondAccount, AUTHORIZED_BOND_SELLERS};
-use crate::state::{StakeAccount, StakePoolRef, ACCESS_MINT, SECONDS_IN_DAY, STAKE_BUFFER_LEN};
+use crate::state::{StakeAccount, StakePoolRef, ACCESS_MINT, STAKE_BUFFER_LEN};
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
     program_pack::Pack, pubkey::Pubkey,
@@ -12,33 +12,30 @@ use spl_token::state::Account;
 ///
 /// * `staker` Compute the reward for a staker or a pool owner
 pub fn calc_reward_fp32(
-    current_time: i64,
-    last_claimed_time: i64,
+    current_offset: u64,
+    last_claimed_offset: u64,
     stake_pool: &StakePoolRef,
     staker: bool,
     allow_zero_rewards: bool,
 ) -> Result<u128, ProgramError> {
-    let mut nb_days_to_claim =
-        current_time.saturating_sub(last_claimed_time) as u64 / SECONDS_IN_DAY;
+    let mut nb_days_to_claim = current_offset.saturating_sub(last_claimed_offset);
     msg!("Nb of days behind {}", nb_days_to_claim);
+    msg!("Last claimed offset {}", last_claimed_offset);
+    msg!("Current offset {}", current_offset);
     nb_days_to_claim = std::cmp::min(nb_days_to_claim, STAKE_BUFFER_LEN - 1);
 
-    if current_time
-        .checked_sub(stake_pool.header.last_crank_time)
-        .ok_or(AccessError::Overflow)?
-        > SECONDS_IN_DAY as i64
-    {
+    if current_offset > stake_pool.header.current_day_idx as u64 {
         #[cfg(not(any(feature = "days-to-sec-10s", feature = "days-to-sec-15m")))]
         return Err(AccessError::PoolMustBeCranked.into());
     }
 
     // Saturating as we don't want to wrap around when there haven't been sufficient cranks
-    let mut i = (stake_pool.header.current_day_idx as u64 + 1).saturating_sub(nb_days_to_claim)
+    let mut i = (stake_pool.header.current_day_idx as u64).saturating_sub(nb_days_to_claim)
         % STAKE_BUFFER_LEN;
 
     // Compute reward for all past days
     let mut reward: u128 = 0;
-    while i != (stake_pool.header.current_day_idx as u64 + 1) % STAKE_BUFFER_LEN {
+    while i != (stake_pool.header.current_day_idx as u64) % STAKE_BUFFER_LEN {
         let curr_day_reward = if staker {
             stake_pool.balances[i as usize].stakers_reward
         } else {
@@ -49,6 +46,8 @@ pub fn calc_reward_fp32(
             .ok_or(AccessError::Overflow)?;
         i = (i + 1) % STAKE_BUFFER_LEN;
     }
+
+    msg!("Reward is {}", reward);
 
     if reward == 0 && !allow_zero_rewards {
         msg!("No rewards to claim, no operation.");

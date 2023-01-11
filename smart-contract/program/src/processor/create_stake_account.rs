@@ -2,12 +2,10 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
-    clock::Clock,
     entrypoint::ProgramResult,
     program_error::ProgramError,
     pubkey::Pubkey,
     system_program,
-    sysvar::Sysvar,
 };
 
 use crate::state::{StakeAccount, StakePool, Tag};
@@ -97,11 +95,9 @@ pub fn process_create_stake_account(
         AccessError::AccountNotDeterministic,
     )?;
 
-    let current_time = Clock::get()?.unix_timestamp;
     let stake_account = StakeAccount::new(
         params.owner,
         *accounts.stake_pool.key,
-        current_time,
         stake_pool.header.minimum_stake_amount,
     );
 

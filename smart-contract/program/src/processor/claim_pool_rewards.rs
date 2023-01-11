@@ -12,13 +12,11 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::program::invoke_signed;
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
-    clock::Clock,
     entrypoint::ProgramResult,
     msg,
     program_error::ProgramError,
     program_pack::Pack,
     pubkey::Pubkey,
-    sysvar::Sysvar,
 };
 use spl_token::{instruction::mint_to, state::Account};
 
@@ -99,13 +97,12 @@ pub fn process_claim_pool_rewards(
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let current_time = Clock::get()?.unix_timestamp;
-
     let central_state = CentralState::from_account_info(accounts.central_state)?;
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
 
     let destination_token_acc = Account::unpack(&accounts.rewards_destination.data.borrow())?;
 
+    msg!("Account owner: {}", destination_token_acc.owner);
     if destination_token_acc.owner.to_bytes() != stake_pool.header.owner {
         // If the destination does not belong to the stake pool owner he must sign
         check_signer(accounts.owner, AccessError::StakePoolOwnerMustSign)?;
@@ -127,8 +124,8 @@ pub fn process_claim_pool_rewards(
 
     let reward = safe_downcast(
         calc_reward_fp32(
-            current_time,
-            stake_pool.header.last_claimed_time,
+            central_state.last_snapshot_offset,
+            stake_pool.header.last_claimed_offset,
             &stake_pool,
             false,
             false,
@@ -159,7 +156,7 @@ pub fn process_claim_pool_rewards(
     )?;
 
     // Update stake pool state
-    stake_pool.header.last_claimed_time = current_time;
+    stake_pool.header.last_claimed_offset = central_state.last_snapshot_offset;
 
     Ok(())
 }

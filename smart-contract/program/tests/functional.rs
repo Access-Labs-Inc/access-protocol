@@ -1,7 +1,9 @@
 use solana_program::{pubkey, pubkey::Pubkey, system_program};
 use solana_program_test::{processor, ProgramTest};
 use solana_sdk::signer::{keypair::Keypair, Signer};
-use spl_associated_token_account::{create_associated_token_account, get_associated_token_address};
+use spl_associated_token_account::{
+    get_associated_token_address, instruction::create_associated_token_account,
+};
 pub mod common;
 use crate::common::utils::{mint_bootstrap, sign_send_instructions};
 use access_protocol::{
@@ -13,7 +15,7 @@ use access_protocol::{
         close_stake_pool, crank, create_bond, create_central_state, create_stake_account,
         create_stake_pool, edit_metadata, execute_unstake, stake, unlock_bond_tokens, unstake,
     },
-    state::{BondAccount, FEES},
+    state::BondAccount,
 };
 use mpl_token_metadata::pda::find_metadata_account;
 

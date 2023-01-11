@@ -135,6 +135,10 @@ pub fn process_unlock_bond_tokens(
         return Err(ProgramError::InvalidArgument);
     }
 
+    if (stake_pool.header.current_day_idx as u64) < central_state.get_current_offset() {
+        return Err(AccessError::PoolMustBeCranked.into());
+    }
+
     let delta = current_time
         .checked_sub(bond.last_unlock_time)
         .ok_or(AccessError::Overflow)?;

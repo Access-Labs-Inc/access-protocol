@@ -129,7 +129,7 @@ pub fn process_create_central_state(
         *accounts.mint.key,
         params.authority,
         0,
-    );
+    )?;
 
     msg!("+ Creating central state");
     Cpi::create_account(

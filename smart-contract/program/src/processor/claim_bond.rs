@@ -3,13 +3,11 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
-    clock::Clock,
     entrypoint::ProgramResult,
     msg,
     program::{invoke, invoke_signed},
     program_error::ProgramError,
     pubkey::Pubkey,
-    sysvar::Sysvar,
 };
 
 use crate::state::{BondAccount, CentralState, StakePool, BOND_SIGNER_THRESHOLD};
@@ -142,6 +140,10 @@ pub fn process_claim_bond(
         return Err(AccessError::NotEnoughSellers.into());
     }
 
+    if (stake_pool.header.current_day_idx as u64) < central_state.get_current_offset() {
+        return Err(AccessError::PoolMustBeCranked.into());
+    }
+
     // Transfer tokens
     let transfer_ix = spl_token::instruction::transfer(
         &spl_token::ID,
@@ -162,8 +164,7 @@ pub fn process_claim_bond(
     )?;
 
     // Activate the bond account
-    let current_time = Clock::get()?.unix_timestamp;
-    bond.activate(current_time);
+    bond.activate(central_state.last_snapshot_offset);
 
     bond.save(&mut accounts.bond_account.data.borrow_mut())?;
 

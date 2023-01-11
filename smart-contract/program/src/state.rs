@@ -38,9 +38,6 @@ pub const OWNER_MULTIPLIER: u64 = 100 - STAKER_MULTIPLIER;
 /// Length of the circular buffer (stores balances for 1 year)
 pub const STAKE_BUFFER_LEN: u64 = 274; // 9 Months
 
-/// Default unstake period set to 1 sec
-pub const UNSTAKE_PERIOD: i64 = 1;
-
 /// Max pending unstake requests
 pub const MAX_UNSTAKE_REQUEST: usize = 10;
 
@@ -96,6 +93,7 @@ pub struct StakePoolHeader {
     /// Updated by a trustless cranker
     pub current_day_idx: u16,
 
+    // todo maybe pad differently as the fields bellow have changed
     /// Padding
     pub _padding: [u8; 4],
 
@@ -105,18 +103,11 @@ pub struct StakePoolHeader {
     /// Total amount staked in the pool
     pub total_staked: u64,
 
-    /// Last unix timestamp when rewards were paid to the pool owner
-    /// through a permissionless crank
-    pub last_crank_time: i64,
+    /// Last time the stake pool owner claimed as an offset from the central state's creation time
+    pub last_claimed_offset: u64,
 
-    /// Last time the stake pool owner claimed
-    pub last_claimed_time: i64,
-
-    // The % of pool rewards going to stakers
+    /// The % of pool rewards going to stakers
     pub stakers_part: u64,
-
-    // The unstake period
-    pub unstake_period: i64,
 
     /// Owner of the stake pool
     pub owner: [u8; 32],
@@ -188,15 +179,11 @@ impl StakePoolHeaped {
 impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [RewardsTuple]>> StakePool<H, B> {
     pub fn push_balances_buff(
         &mut self,
-        present_time: i64,
-        last_crank_time: i64,
+        current_offset: u64,
+        last_crank_offset: u64,
         rewards: RewardsTuple,
     ) -> Result<(), ProgramError> {
-        let nb_days_passed = (present_time
-            .checked_sub(last_crank_time)
-            .ok_or(AccessError::Overflow)? as u64)
-            .checked_div(SECONDS_IN_DAY)
-            .ok_or(AccessError::Overflow)?;
+        let nb_days_passed = current_offset - last_crank_offset;
         for i in 1..nb_days_passed {
             self.balances[(((self.header.current_day_idx as u64)
                 .checked_add(i)
@@ -215,7 +202,9 @@ impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [RewardsTuple]>
                     .map_err(|_| AccessError::Overflow)?,
             )
             .ok_or(AccessError::Overflow)?;
-        self.balances[((self.header.current_day_idx as u64) % STAKE_BUFFER_LEN) as usize] = rewards;
+
+        self.balances[(((self.header.current_day_idx - 1) as u64) % STAKE_BUFFER_LEN) as usize] =
+            rewards;
         Ok(())
     }
 
@@ -252,14 +241,12 @@ impl StakePoolHeader {
             total_staked: 0,
             current_day_idx: 0,
             _padding: [0; 4],
-            last_crank_time: Clock::get()?.unix_timestamp,
-            last_claimed_time: Clock::get()?.unix_timestamp,
+            last_claimed_offset: 0,
             owner: owner.to_bytes(),
             nonce,
             vault: vault.to_bytes(),
             minimum_stake_amount,
             stakers_part: STAKER_MULTIPLIER,
-            unstake_period: UNSTAKE_PERIOD,
         })
     }
 
@@ -299,8 +286,8 @@ pub struct StakeAccount {
     /// Stake pool to which the account belongs to
     pub stake_pool: Pubkey,
 
-    /// Last unix timestamp where rewards were claimed
-    pub last_claimed_time: i64,
+    /// Offset of a last day where rewards were claimed from the contract creation date
+    pub last_claimed_offset: u64,
 
     /// Minimum stakeable amount of the pool when the account
     /// was created
@@ -311,7 +298,7 @@ pub struct StakeAccount {
     pub unstake_requests: [UnstakeRequest; MAX_UNSTAKE_REQUEST],
 }
 
-#[derive(BorshSerialize, BorshDeserialize, BorshSize, Copy, Clone, Default)]
+#[derive(BorshSerialize, BorshDeserialize, BorshSize, Copy, Clone)]
 #[allow(missing_docs)]
 pub struct UnstakeRequest {
     pub amount: u64,
@@ -323,9 +310,11 @@ impl UnstakeRequest {
     pub fn new(amount: u64, time: i64) -> Self {
         Self { amount, time }
     }
+}
 
+impl Default for UnstakeRequest {
     #[allow(missing_docs)]
-    pub fn default() -> Self {
+    fn default() -> Self {
         UnstakeRequest::new(0, i64::MAX)
     }
 }
@@ -334,18 +323,13 @@ impl UnstakeRequest {
 impl StakeAccount {
     pub const SEED: &'static [u8; 13] = b"stake_account";
 
-    pub fn new(
-        owner: Pubkey,
-        stake_pool: Pubkey,
-        current_time: i64,
-        pool_minimum_at_creation: u64,
-    ) -> Self {
+    pub fn new(owner: Pubkey, stake_pool: Pubkey, pool_minimum_at_creation: u64) -> Self {
         Self {
             tag: Tag::StakeAccount,
             owner,
             stake_amount: 0,
             stake_pool,
-            last_claimed_time: current_time,
+            last_claimed_offset: 0,
             pool_minimum_at_creation,
             pending_unstake_requests: 0,
             unstake_requests: [UnstakeRequest::default(); MAX_UNSTAKE_REQUEST],
@@ -464,8 +448,17 @@ pub struct CentralState {
     /// The public key that can change the inflation
     pub authority: Pubkey,
 
+    /// Creation timestamp
+    pub creation_time: i64,
+
     /// Total amount of staked tokens
     pub total_staked: u64,
+
+    /// The daily total_staked snapshot to calculate correctly calculate the pool rewards
+    pub total_staked_snapshot: u64,
+
+    /// The offset of the total_staked_snapshot from the creation_time in days
+    pub last_snapshot_offset: u64,
 }
 
 impl CentralState {
@@ -476,15 +469,18 @@ impl CentralState {
         token_mint: Pubkey,
         authority: Pubkey,
         total_staked: u64,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, ProgramError> {
+        Ok(Self {
             tag: Tag::CentralState,
             signer_nonce,
             daily_inflation,
             token_mint,
             authority,
+            creation_time: Clock::get()?.unix_timestamp,
             total_staked,
-        }
+            total_staked_snapshot: 0,
+            last_snapshot_offset: 0,
+        })
     }
     #[allow(missing_docs)]
     pub fn create_key(signer_nonce: &u8, program_id: &Pubkey) -> Result<Pubkey, ProgramError> {
@@ -509,6 +505,11 @@ impl CentralState {
         }
         let result = CentralState::deserialize(&mut data)?;
         Ok(result)
+    }
+    #[allow(missing_docs)]
+    pub fn get_current_offset(&self) -> u64 {
+        let current_time = Clock::get().unwrap().unix_timestamp as u64;
+        (current_time - self.creation_time as u64) / SECONDS_IN_DAY
     }
 }
 
@@ -568,8 +569,8 @@ pub struct BondAccount {
     // Stake pool to which the account belongs to
     pub stake_pool: Pubkey,
 
-    // Last unix timestamp where rewards were claimed
-    pub last_claimed_time: i64,
+    // Last offset of the from the contract creation time in days
+    pub last_claimed_offset: u64,
 
     // Sellers who signed for the sell of the bond account
     pub sellers: Vec<Pubkey>,
@@ -601,7 +602,7 @@ impl BondAccount {
         last_unlock_time: i64,
         pool_minimum_at_creation: u64,
         stake_pool: Pubkey,
-        last_claimed_time: i64,
+        last_claimed_offset: u64,
         seller: Pubkey,
     ) -> Self {
         let sellers = vec![seller];
@@ -619,7 +620,7 @@ impl BondAccount {
             last_unlock_time,
             total_unlocked_amount: 0,
             stake_pool,
-            last_claimed_time,
+            last_claimed_offset,
             sellers,
             pool_minimum_at_creation,
         }
@@ -634,9 +635,10 @@ impl BondAccount {
         self.tag == Tag::BondAccount
     }
 
-    pub fn activate(&mut self, current_time: i64) {
+    pub fn activate(&mut self, current_offset: u64) {
         self.tag = Tag::BondAccount;
-        self.last_claimed_time = current_time;
+        self.last_claimed_offset = current_offset;
+        let current_time = Clock::get().unwrap().unix_timestamp;
         self.last_unlock_time = std::cmp::max(current_time, self.unlock_start_date);
     }
 

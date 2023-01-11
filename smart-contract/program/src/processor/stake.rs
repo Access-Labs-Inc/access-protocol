@@ -1,26 +1,22 @@
 //! Stake
+use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
-    clock::Clock,
     entrypoint::ProgramResult,
     msg,
     program::invoke,
     program_error::ProgramError,
     pubkey::Pubkey,
-    sysvar::Sysvar,
 };
-
 use spl_token::instruction::transfer;
 
+use crate::error::AccessError;
+use crate::state::{StakeAccount, StakePool};
 use crate::{
     state::{CentralState, Tag, FEES},
     utils::{assert_valid_fee, check_account_key, check_account_owner, check_signer},
 };
-use bonfida_utils::{BorshSize, InstructionsAccount};
-
-use crate::error::AccessError;
-use crate::state::{StakeAccount, StakePool};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `stake` instruction
@@ -159,14 +155,17 @@ pub fn process_stake(
     }
 
     if stake_account.stake_amount > 0
-        && stake_account.last_claimed_time < stake_pool.header.last_crank_time
+        && stake_account.last_claimed_offset < stake_pool.header.current_day_idx as u64
     {
         return Err(AccessError::UnclaimedRewards.into());
     }
 
-    let current_time = Clock::get().unwrap().unix_timestamp;
+    if (stake_pool.header.current_day_idx as u64) < central_state.get_current_offset() {
+        return Err(AccessError::PoolMustBeCranked.into());
+    }
+
     if stake_account.stake_amount == 0 {
-        stake_account.last_claimed_time = current_time;
+        stake_account.last_claimed_offset = central_state.get_current_offset();
     }
 
     // Transfer tokens
