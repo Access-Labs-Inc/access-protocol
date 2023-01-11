@@ -319,7 +319,6 @@ impl TestRunner {
             },
             stake::Params {
                 amount: token_amount,
-                has_bond_account: staker_bond.is_some(),
             },
         );
         sign_send_instructions(&mut self.prg_test_ctx, vec![stake_ix], vec![&staker]).await
@@ -426,7 +425,6 @@ impl TestRunner {
             },
             unstake::Params {
                 amount: token_amount,
-                has_bond_account: staker_bond.is_some(),
             },
         );
         // if error, return

@@ -378,7 +378,6 @@ async fn test_staking() {
         },
         stake::Params {
             amount: token_amount,
-            has_bond_account: false,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![stake_ix], vec![&staker])
@@ -570,7 +569,6 @@ async fn test_staking() {
         },
         unstake::Params {
             amount: token_amount,
-            has_bond_account: false,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![unstake_ix], vec![&staker])

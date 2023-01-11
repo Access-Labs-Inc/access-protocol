@@ -25,7 +25,6 @@ use crate::state::{BondAccount, StakeAccount, StakePool};
 pub struct Params {
     // Amount to stake
     pub amount: u64,
-    pub has_bond_account: bool,
 }
 
 #[derive(InstructionsAccount)]
@@ -70,7 +69,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     pub fn parse(
         accounts: &'a [AccountInfo<'b>],
         program_id: &Pubkey,
-        has_bond_account: bool,
     ) -> Result<Self, ProgramError> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
@@ -82,11 +80,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             spl_token_program: next_account_info(accounts_iter)?,
             vault: next_account_info(accounts_iter)?,
             fee_account: next_account_info(accounts_iter)?,
-            bond_account: if has_bond_account {
-                next_account_info(accounts_iter).ok()
-            } else {
-                None
-            },
+            bond_account: next_account_info(accounts_iter).ok(),
         };
 
         // Check keys
@@ -142,8 +136,8 @@ pub fn process_stake(
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
-    let Params { amount, has_bond_account } = params;
-    let accounts = Accounts::parse(accounts, program_id, has_bond_account)?;
+    let Params { amount} = params;
+    let accounts = Accounts::parse(accounts, program_id)?;
 
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
