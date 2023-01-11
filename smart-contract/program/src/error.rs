@@ -75,6 +75,8 @@ pub enum AccessError {
     InvalidUnstakeAmount,
     #[error("Inactive stake pool not allowed")]
     InactiveStakePoolNotAllowed,
+    #[error("Active stake pool not allowed")]
+    ActiveStakePoolNotAllowed,
     #[error("Invalid tag change")]
     InvalidTagChange,
     #[error("Too many unstake requests")]

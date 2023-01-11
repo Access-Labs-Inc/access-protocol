@@ -3,12 +3,7 @@ use crate::error::AccessError;
 use crate::state::{CentralState, StakePool, Tag};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
-use solana_program::{
-    account_info::{next_account_info, AccountInfo},
-    entrypoint::ProgramResult,
-    program_error::ProgramError,
-    pubkey::Pubkey,
-};
+use solana_program::{account_info::{next_account_info, AccountInfo}, entrypoint::ProgramResult, msg, program_error::ProgramError, pubkey::Pubkey};
 
 use crate::utils::{check_account_key, check_account_owner, check_signer};
 
@@ -66,6 +61,9 @@ pub fn process_activate_stake_pool(program_id: &Pubkey, accounts: &[AccountInfo]
         &central_state.authority,
         AccessError::WrongCentralStateAuthority,
     )?;
+    if stake_pool.header.tag != Tag::InactiveStakePool as u8 {
+        return Err(AccessError::ActiveStakePoolNotAllowed.into());
+    }
 
     stake_pool.header.tag = Tag::StakePool as u8;
     stake_pool.header.last_claimed_offset = central_state.last_snapshot_offset;
