@@ -8,7 +8,6 @@ use solana_program::{
     program::invoke,
     program_error::ProgramError,
     pubkey::Pubkey,
-    sysvar::Sysvar,
 };
 use spl_token::instruction::transfer;
 

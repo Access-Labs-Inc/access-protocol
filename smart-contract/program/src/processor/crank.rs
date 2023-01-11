@@ -9,7 +9,6 @@ use solana_program::{
     msg,
     program_error::ProgramError,
     pubkey::Pubkey,
-    sysvar::Sysvar,
 };
 
 use crate::error::AccessError;
