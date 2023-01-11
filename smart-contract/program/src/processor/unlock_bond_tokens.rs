@@ -135,7 +135,7 @@ pub fn process_unlock_bond_tokens(
         return Err(ProgramError::InvalidArgument);
     }
 
-    if (stake_pool.header.current_day_idx as u64) < central_state.last_snapshot_offset {
+    if (stake_pool.header.current_day_idx as u64) < central_state.get_current_offset() {
         return Err(AccessError::PoolMustBeCranked.into());
     }
 
