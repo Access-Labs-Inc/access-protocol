@@ -2,8 +2,7 @@
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
-    account_info::{AccountInfo, next_account_info},
-    clock::Clock,
+    account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
     msg,
     program::invoke,
@@ -13,12 +12,12 @@ use solana_program::{
 };
 use spl_token::instruction::transfer;
 
+use crate::error::AccessError;
+use crate::state::{StakeAccount, StakePool};
 use crate::{
-    state::{CentralState, FEES, Tag},
+    state::{CentralState, Tag, FEES},
     utils::{assert_valid_fee, check_account_key, check_account_owner, check_signer},
 };
-use crate::error::AccessError;
-use crate::state::{SECONDS_IN_DAY, StakeAccount, StakePool};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `stake` instruction

@@ -4,8 +4,7 @@
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
-    account_info::{AccountInfo, next_account_info},
-    clock::Clock,
+    account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
     msg,
     program_error::ProgramError,
@@ -14,7 +13,7 @@ use solana_program::{
 };
 
 use crate::error::AccessError;
-use crate::state::{CentralState, RewardsTuple, SECONDS_IN_DAY, StakePool, Tag};
+use crate::state::{CentralState, RewardsTuple, StakePool, Tag};
 use crate::utils::check_account_owner;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
