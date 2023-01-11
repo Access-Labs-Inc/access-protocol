@@ -1,3 +1,4 @@
+use std::thread::AccessError;
 use solana_program::{pubkey::Pubkey, system_program};
 use solana_program_test::{processor, ProgramTest};
 use solana_sdk::signer::{keypair::Keypair, Signer};
@@ -18,6 +19,7 @@ use access_protocol::{
     },
 };
 use mpl_token_metadata::pda::find_metadata_account;
+use solana_program_test::BanksClientError::TransactionError;
 
 #[tokio::test]
 async fn repeated_claim() {
@@ -93,14 +95,18 @@ async fn repeated_claim() {
     // Stake to pool 2 should fail
     let result = tr.stake(&stake_pool2_owner.pubkey(), &staker, token_amount)
         .await;
-    assert!(result.is_err());
+    assert_eq!(result.is_err(), true);
+    let ts = tr.get_current_time().await;
+    println!("Current time: {}", ts);
+    tr.sleep(1).await.unwrap();
 
     // Crank pool 2
     tr.crank_pool(&stake_pool2_owner.pubkey()).await.unwrap();
 
     // Stake to pool 2 should succeed
-    let result2 = tr.stake(&stake_pool2_owner.pubkey(), &staker, token_amount)
+    tr.stake(&stake_pool2_owner.pubkey(), &staker, token_amount)
         .await.unwrap();
+    tr.sleep(1).await.unwrap();
 
     // Claim stake pool rewards 2
     assert!(tr.claim_pool_rewards(&stake_pool2_owner).await.is_err());
@@ -109,14 +115,14 @@ async fn repeated_claim() {
     tr.claim_staker_rewards(&stake_pool2_owner.pubkey(), &staker)
         .await
         .unwrap();
-    //
-    // // Print results
-    // let stats = tr.staker_stats(staker.pubkey()).await.unwrap();
-    // assert_eq!(stats.balance, 499_800);
-    // let pool_stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
-    // assert_eq!(pool_stats.balance, 500_000);
-    // assert_eq!(pool_stats.total_pool_staked, 0);
-    // let pool_stats2 = tr.pool_stats(stake_pool2_owner.pubkey()).await.unwrap();
-    // assert_eq!(pool_stats2.balance, 0);
-    // assert_eq!(pool_stats2.total_pool_staked, 10_000);
+
+    // Check results
+    let stats = tr.staker_stats(staker.pubkey()).await.unwrap();
+    assert_eq!(stats.balance, 499_800);
+    let pool_stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
+    assert_eq!(pool_stats.balance, 500_000);
+    assert_eq!(pool_stats.total_pool_staked, 0);
+    let pool_stats2 = tr.pool_stats(stake_pool2_owner.pubkey()).await.unwrap();
+    assert_eq!(pool_stats2.balance, 0);
+    assert_eq!(pool_stats2.total_pool_staked, 10_000);
 }
