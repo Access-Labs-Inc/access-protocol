@@ -1,16 +1,9 @@
-
-
-use solana_sdk::signer::{Signer};
+use solana_sdk::signer::Signer;
 
 use solana_test_framework::*;
 
-
 pub mod common;
 use crate::common::test_runner::TestRunner;
-
-
-
-
 
 #[tokio::test]
 async fn rewards_bonds() {

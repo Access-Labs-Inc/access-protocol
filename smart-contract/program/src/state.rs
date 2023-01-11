@@ -183,7 +183,7 @@ impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [RewardsTuple]>
         last_crank_offset: u64,
         rewards: RewardsTuple,
     ) -> Result<(), ProgramError> {
-        let nb_days_passed = (current_offset - last_crank_offset) as u64;
+        let nb_days_passed = current_offset - last_crank_offset;
         for i in 1..nb_days_passed {
             self.balances[(((self.header.current_day_idx as u64)
                 .checked_add(i)
@@ -298,7 +298,7 @@ pub struct StakeAccount {
     pub unstake_requests: [UnstakeRequest; MAX_UNSTAKE_REQUEST],
 }
 
-#[derive(BorshSerialize, BorshDeserialize, BorshSize, Copy, Clone, Default)]
+#[derive(BorshSerialize, BorshDeserialize, BorshSize, Copy, Clone)]
 #[allow(missing_docs)]
 pub struct UnstakeRequest {
     pub amount: u64,
@@ -310,9 +310,11 @@ impl UnstakeRequest {
     pub fn new(amount: u64, time: i64) -> Self {
         Self { amount, time }
     }
+}
 
+impl Default for UnstakeRequest {
     #[allow(missing_docs)]
-    pub fn default() -> Self {
+    fn default() -> Self {
         UnstakeRequest::new(0, i64::MAX)
     }
 }

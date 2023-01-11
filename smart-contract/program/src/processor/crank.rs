@@ -101,7 +101,7 @@ pub fn process_crank(
         .checked_div(total_staked_snapshot)
         .unwrap_or(0);
 
-        msg!("Stakers reward {}", stakers_reward);
+    msg!("Stakers reward {}", stakers_reward);
 
     // pool_rewards = [(pool_total_staked << 32) * inflation * (100 - stakers_part)] / (100 * total_staked)
     let pool_reward = (total_staked_snapshot << 32)

@@ -18,7 +18,7 @@ pub fn calc_reward_fp32(
     staker: bool,
     allow_zero_rewards: bool,
 ) -> Result<u128, ProgramError> {
-    let mut nb_days_to_claim = current_offset.saturating_sub(last_claimed_offset) as u64;
+    let mut nb_days_to_claim = current_offset.saturating_sub(last_claimed_offset);
     msg!("Nb of days behind {}", nb_days_to_claim);
     msg!("Last claimed offset {}", last_claimed_offset);
     msg!("Current offset {}", current_offset);
