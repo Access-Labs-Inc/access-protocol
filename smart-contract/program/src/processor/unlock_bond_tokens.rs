@@ -155,7 +155,7 @@ pub fn process_unlock_bond_tokens(
     let unlock_amount = bond.calc_unlock_amount(missed_periods as u64)?;
 
     // Update the stake pool
-    stake_pool.header.withdraw(unlock_amount, central_state.last_snapshot_offset, central_state.creation_time)?;
+    stake_pool.header.withdraw(unlock_amount)?;
 
     let signer_seeds: &[&[u8]] = &[
         StakePoolHeader::SEED,

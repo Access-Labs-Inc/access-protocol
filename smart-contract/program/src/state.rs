@@ -102,12 +102,6 @@ pub struct StakePoolHeader {
     /// Total amount staked in the pool
     pub total_staked: u64,
 
-    /// The pool total_staked change since the last system-wide crank (snapshot)
-    pub total_staked_delta: i64,
-
-    /// The offset of the last total_staked change in this pool from the central state's creation time
-    pub last_delta_update_offset: i64,
-
     /// Last time the stake pool owner claimed as an offset from the central state's creation time
     pub last_claimed_offset: u64,
 
@@ -244,7 +238,6 @@ impl StakePoolHeader {
         Ok(Self {
             tag: Tag::InactiveStakePool as u8,
             total_staked: 0,
-            total_staked_delta: 0,
             current_day_idx: 0,
             _padding: [0; 4],
             last_claimed_offset: 0,
@@ -253,7 +246,6 @@ impl StakePoolHeader {
             vault: vault.to_bytes(),
             minimum_stake_amount,
             stakers_part: STAKER_MULTIPLIER,
-            last_delta_update_offset: 0,
         })
     }
 

@@ -12,7 +12,7 @@ use solana_program::{
 use spl_token::instruction::transfer;
 
 use crate::error::AccessError;
-use crate::state::{StakeAccount, StakePool};
+use crate::state::{BondAccount, StakeAccount, StakePool};
 use crate::{
     state::{CentralState, Tag, FEES},
     utils::{assert_valid_fee, check_account_key, check_account_owner, check_signer},

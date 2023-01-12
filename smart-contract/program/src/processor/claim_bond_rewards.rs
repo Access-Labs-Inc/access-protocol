@@ -157,6 +157,7 @@ pub fn process_claim_bond_rewards(
     .ok_or(AccessError::Overflow)?;
 
     msg!("Claiming bond rewards {}", reward);
+    msg!("Total staked {}", bond.total_staked);
 
     // Transfer rewards
     let transfer_ix = mint_to(
