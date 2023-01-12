@@ -76,7 +76,6 @@ pub fn process_crank(
         #[cfg(not(any(feature = "days-to-sec-10s", feature = "days-to-sec-15m")))]
         return Err(AccessError::NoOp.into());
     }
-
     msg!("Total staked in pool {}", stake_pool.header.total_staked);
     msg!("Daily inflation {}", central_state.daily_inflation);
     msg!("Total staked {}", central_state.total_staked);

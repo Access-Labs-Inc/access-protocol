@@ -64,6 +64,7 @@ async fn repeated_claim() {
         .stake(&stake_pool2_owner.pubkey(), &staker, token_amount)
         .await;
     assert!(result.is_err());
+    tr.sleep(1).await.unwrap();
 
     // Crank pool 2
     tr.crank_pool(&stake_pool2_owner.pubkey()).await.unwrap();

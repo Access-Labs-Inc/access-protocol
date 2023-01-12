@@ -328,7 +328,6 @@ impl TestRunner {
             },
             stake::Params {
                 amount: token_amount,
-                has_bond_account: staker_bond.is_some(),
             },
         );
         sign_send_instructions(&mut self.prg_test_ctx, vec![stake_ix], vec![staker])
@@ -513,10 +512,6 @@ impl TestRunner {
 
         let stake_pool_key = self.get_pool_pda(stake_pool_owner);
         let seller_token_account = get_associated_token_address(&self.bond_seller.pubkey(), &self.mint);
-        println!("before clock");
-        let current_time = self.local_env.get_sysvar::<clock::Clock>().await.unwrap().unix_timestamp;
-        println!("after: {:?}", current_time);
-
         self.mint(&self.bond_seller.pubkey(), bond_amount).await?;
 
         let create_bond_ix = create_bond(

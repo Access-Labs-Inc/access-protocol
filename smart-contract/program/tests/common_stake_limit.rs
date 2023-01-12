@@ -1,9 +1,6 @@
-
-
 use solana_sdk::signer::{Signer};
 
 use solana_test_framework::*;
-
 
 use crate::common::test_runner::TestRunner;
 
@@ -42,6 +39,7 @@ async fn common_stake_limit() {
     tr.unstake(&stake_pool_owner.pubkey(), &staker, 1000).await.unwrap();
 
     // Create bond account
+
     tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), 10_000, 1).await.unwrap();
 
     // Claim bond
