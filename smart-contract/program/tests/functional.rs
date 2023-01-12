@@ -13,7 +13,7 @@ use access_protocol::{
         change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond,
         claim_bond_rewards, claim_pool_rewards, claim_rewards, close_stake_account,
         close_stake_pool, crank, create_bond, create_central_state, create_stake_account,
-        create_stake_pool, edit_metadata, execute_unstake, stake, unlock_bond_tokens, unstake,
+        create_stake_pool, edit_metadata, stake, unlock_bond_tokens, unstake,
     },
     state::BondAccount,
 };
@@ -564,6 +564,9 @@ async fn test_staking() {
             stake_account: &stake_acc_key,
             stake_pool: &stake_pool_key,
             owner: &staker.pubkey(),
+            destination_token: &staker_token_acc,
+            spl_token_program: &spl_token::ID,
+            vault: &pool_vault,
             central_state_account: &central_state,
             bond_account: None,
         },
@@ -578,26 +581,6 @@ async fn test_staking() {
     // Advance in time by a few seconds
     current_slot += 5_000;
     prg_test_ctx.warp_to_slot(current_slot).unwrap();
-
-    //
-    // Execute Unstake
-    //
-
-    let execute_unstake_ix = execute_unstake(
-        program_id,
-        execute_unstake::Accounts {
-            stake_account: &stake_acc_key,
-            stake_pool: &stake_pool_key,
-            owner: &staker.pubkey(),
-            destination_token: &staker_token_acc,
-            spl_token_program: &spl_token::ID,
-            vault: &pool_vault,
-        },
-        execute_unstake::Params {},
-    );
-    sign_send_instructions(&mut prg_test_ctx, vec![execute_unstake_ix], vec![&staker])
-        .await
-        .unwrap();
 
     //
     // Freeze account

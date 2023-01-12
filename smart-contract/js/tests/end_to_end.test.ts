@@ -26,7 +26,6 @@ import {
   adminFreeze,
   changePoolMultiplier,
   closeStakePool,
-  executeUnstake,
   editMetadata,
 } from "../src/bindings";
 import {
@@ -63,7 +62,7 @@ const MAX_i64 = "9223372036854775807";
 const centralStateAuthority = Keypair.generate();
 
 beforeAll(async () => {
-  connection = new Connection("http://localhost:8899", "finalized");
+  connection = new Connection("http://127.0.0.1:8899", "finalized");
   [feePayer, payerKeyFile] = initializePayer();
   await airdropPayer(connection, feePayer.publicKey);
   programId = deployProgram(
@@ -73,6 +72,10 @@ beforeAll(async () => {
     false
   );
   console.log("Program ID: ", programId.toBase58());
+  // get the timestamp of the blockchain
+  const slot = await connection.getSlot();
+  const timestamp = await connection.getBlockTime(slot);
+  console.log("Timestamp: ", timestamp);
 });
 
 afterAll(() => {
@@ -81,6 +84,8 @@ afterAll(() => {
 jest.setTimeout(1_500_000);
 
 test("End to end test", async () => {
+  // Start time measurement
+  const start = Date.now();
   /**
    * Test variables
    */
@@ -175,7 +180,7 @@ test("End to end test", async () => {
   let tx = await signAndSendTransactionInstructions(connection, [], feePayer, [
     ix_central_state,
   ]);
-  console.log(`Created centrale state ${tx}`);
+  console.log(`Created central state ${tx}`);
 
   // Verifications
 
@@ -263,9 +268,7 @@ test("End to end test", async () => {
   expect(stakePoolObj.currentDayIdx).toBe(0);
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(10_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(0);
-  expect(stakePoolObj.totalStakedDelta.toNumber()).toBe(0);
-  // expect(stakePoolObj.lastDeltaUpdateOffset.toNumber()).toBe(0);
-  console.log("LCO:", stakePoolObj.lastClaimedOffset.toString());
+  expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(stakePoolObj.owner.toBase58()).toBe(
     stakePoolOwner.publicKey.toBase58()
   );
@@ -300,6 +303,10 @@ test("End to end test", async () => {
     stakePoolKey
   );
 
+  /**
+   * Create stake account
+   */
+
   console.log("Create stake account");
   const ix_create_stake_acc = await createStakeAccount(
     stakePoolKey,
@@ -322,29 +329,13 @@ test("End to end test", async () => {
   expect(stakeAccountObj.owner.toBase58()).toBe(staker.publicKey.toBase58());
   expect(stakeAccountObj.stakeAmount.toNumber()).toBe(0);
   expect(stakeAccountObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  console.log("LCO:", stakePoolObj.lastClaimedOffset.toString());
+  expect(stakeAccountObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(stakeAccountObj.poolMinimumAtCreation.toNumber()).toBe(
     minimumStakeAmount
-  );
-  expect(stakeAccountObj.pendingUnstakeRequests).toBe(0);
-  expect(JSON.stringify(stakeAccountObj.unstakeRequests)).toBe(
-    JSON.stringify([
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-    ])
   );
 
   /**
    * Create a bond
-   *
    */
 
   console.log("Create bond account ATAs");
@@ -433,7 +424,7 @@ test("End to end test", async () => {
   expect(bondObj.totalUnlockedAmount.toNumber()).toBe(0);
   expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
   expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  console.log("LCO:", stakePoolObj.lastClaimedOffset.toString());
+  expect(bondObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(bondObj.sellers.length).toBe(1);
   expect(bondObj.sellers[0].toBase58()).toBe(bondSeller.publicKey.toBase58());
 
@@ -475,7 +466,7 @@ test("End to end test", async () => {
   expect(bondObj.totalUnlockedAmount.toNumber()).toBe(0);
   expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
   expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  console.log("LCO:", stakePoolObj.lastClaimedOffset.toString());
+  expect(bondObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(bondObj.sellers.length).toBe(1);
   expect(bondObj.sellers[0].toBase58()).toBe(bondSeller.publicKey.toBase58());
 
@@ -527,7 +518,7 @@ test("End to end test", async () => {
   expect(bondObj.totalUnlockedAmount.toNumber()).toBe(bondAmount);
   expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
   expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  console.log("LCO:", stakePoolObj.lastClaimedOffset.toString());
+  expect(bondObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(bondObj.sellers.length).toBe(1);
   expect(bondObj.sellers[0].toBase58()).toBe(bondSeller.publicKey.toBase58());
 
@@ -551,11 +542,17 @@ test("End to end test", async () => {
     [ix_stake]
   );
 
+  // print time since start
+  console.log("Time since start: ", (new Date().getTime() - start) / 1000, "s");
+
+  const slot = await connection.getSlot();
+  const timestamp = await connection.getBlockTime(slot);
+  console.log("Timestamp 2: ", timestamp);
+
   /**
    * Verifications
    */
 
-  now = Math.floor(new Date().getTime() / 1_000);
   fees = Math.floor(stakeAmount * FEES);
   await sleep(5_000);
   postBalance = (await connection.getTokenAccountBalance(stakerAta)).value
@@ -571,7 +568,7 @@ test("End to end test", async () => {
   expect(stakedAccountObj.owner.toBase58()).toBe(staker.publicKey.toBase58());
   expect(stakedAccountObj.stakeAmount.toNumber()).toBe(stakeAmount);
   expect(stakedAccountObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  console.log("LCO:", stakePoolObj.lastClaimedOffset.toString());
+  expect(stakedAccountObj.lastClaimedOffset.toNumber()).toBe(1);
   expect(stakedAccountObj.poolMinimumAtCreation.toNumber()).toBe(
     minimumStakeAmount
   );
@@ -593,11 +590,10 @@ test("End to end test", async () => {
   centralStateObj = await CentralState.retrieve(connection, centralKey);
   expect(stakePoolObj.tag).toBe(Tag.StakePool);
   expect(stakePoolObj.nonce).toBe(stakePoolNonce);
-  expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
+  expect(stakePoolObj.currentDayIdx).toBe(2);
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(10_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
-  console.log("LCO:", stakePoolObj.lastClaimedOffset.toString());
-  // expect(stakePoolObj.lastDeltaUpdateOffset.toNumber()).toBe(0);
+  expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(stakePoolObj.owner.toBase58()).toBe(
     stakePoolOwner.publicKey.toBase58()
   );
@@ -612,10 +608,8 @@ test("End to end test", async () => {
       .poolReward.toString()
   ).toBe(
     new BN(dailyInflation)
-      .mul(new BN(stakeAmount))
       .mul(new BN(2 ** 32))
       .mul(new BN(100).sub(stakePoolObj.stakersPart))
-      .div(centralStateObj.totalStaked)
       .div(new BN(100))
       .toString()
   );
@@ -656,7 +650,7 @@ test("End to end test", async () => {
   expect(bondObj.totalUnlockedAmount.toNumber()).toBe(bondAmount);
   expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
   expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  console.log("LCO:", stakePoolObj.lastClaimedOffset.toString());
+  expect(bondObj.lastClaimedOffset.toNumber()).toBe(2);
   expect(bondObj.sellers.length).toBe(1);
 
   // Claim pool rewards
@@ -703,7 +697,7 @@ test("End to end test", async () => {
   expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(10_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
-  console.log("LCO:", stakePoolObj.lastClaimedOffset.toString());
+  expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
   // todo delta checks
   expect(stakePoolObj.owner.toBase58()).toBe(
     stakePoolOwner.publicKey.toBase58()
@@ -757,8 +751,7 @@ test("End to end test", async () => {
   expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(10_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
-  console.log("LCO:", stakePoolObj.lastClaimedOffset.toString());
-  // todo delta checks
+  expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(stakePoolObj.owner.toBase58()).toBe(
     stakePoolOwner.publicKey.toBase58()
   );
@@ -828,8 +821,7 @@ test("End to end test", async () => {
   expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
-  console.log("LCO:", stakePoolObj.lastClaimedOffset.toString());
-  // todo delta checks
+  expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(stakePoolObj.owner.toBase58()).toBe(
     stakePoolOwner.publicKey.toBase58()
   );
@@ -861,8 +853,7 @@ test("End to end test", async () => {
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
   expect(stakePoolObj.stakersPart.toNumber()).toBe(50);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
-  console.log("LCO:", stakePoolObj.lastClaimedOffset.toString());
-  // todo delta checks
+  expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(stakePoolObj.owner.toBase58()).toBe(
     stakePoolOwner.publicKey.toBase58()
   );
@@ -886,8 +877,7 @@ test("End to end test", async () => {
   expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
-  console.log("LCO:", stakePoolObj.lastClaimedOffset.toString());
-  // todo delta checks
+  expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(stakePoolObj.owner.toBase58()).toBe(
     stakePoolOwner.publicKey.toBase58()
   );
@@ -930,7 +920,7 @@ test("End to end test", async () => {
   expect(bondObj.totalUnlockedAmount.toNumber()).toBe(bondAmount);
   expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
   expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  console.log("LCO:", stakePoolObj.lastClaimedOffset.toString());
+  expect(bondObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(bondObj.sellers.length).toBe(1);
 
   // Claim pool rewards
@@ -959,7 +949,7 @@ test("End to end test", async () => {
   expect(stakePoolObj.currentDayIdx).toBeGreaterThan(2);
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
-  console.log("LCO:", stakePoolObj.lastClaimedOffset.toString());
+  expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(stakePoolObj.owner.toBase58()).toBe(
     stakePoolOwner.publicKey.toBase58()
   );
@@ -989,15 +979,14 @@ test("End to end test", async () => {
   expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
-  console.log("LCO:", stakePoolObj.lastClaimedOffset.toString());
-  // todo delta checks
+  expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(stakePoolObj.owner.toBase58()).toBe(
     stakePoolOwner.publicKey.toBase58()
   );
   expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
 
   // Unstake
-  let ix_unstake = await unstake(connection, stakeKey, stakeAmount, programId);
+  let ix_unstake = await unstake(connection, stakeKey, stakerAta, stakeAmount, programId);
   tx = await signAndSendTransactionInstructions(
     connection,
     [staker],
@@ -1015,29 +1004,9 @@ test("End to end test", async () => {
   expect(stakedAccountObj.owner.toBase58()).toBe(staker.publicKey.toBase58());
   expect(stakedAccountObj.stakeAmount.toNumber()).toBe(0);
   expect(stakedAccountObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  console.log("LCO:", stakePoolObj.lastClaimedOffset.toString());
+  expect(stakedAccountObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(stakedAccountObj.poolMinimumAtCreation.toNumber()).toBe(
     minimumStakeAmount
-  );
-  expect(stakedAccountObj.pendingUnstakeRequests).toBe(1);
-  expect(stakedAccountObj.unstakeRequests[0].amount.toNumber()).toBe(
-    stakeAmount
-  );
-  expect(stakedAccountObj.unstakeRequests[0].time.toNumber()).toBeLessThan(
-    now + 7 * 24 * 60 * 60
-  );
-  expect(JSON.stringify(stakedAccountObj.unstakeRequests.slice(1))).toBe(
-    JSON.stringify([
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-      new UnstakeRequest({ time: new BN(MAX_i64), amount: new BN(0) }),
-    ])
   );
 
   /**
@@ -1118,8 +1087,7 @@ test("End to end test", async () => {
     .add(staker_rewards_new_inflation)
     .add(new BN(bondAmount))
     .add(new BN(adminMintAmount));
-  // todo uncomment
-  // expect(currentSupply).toBe(expectedSupply.toString());
+  expect(currentSupply).toBe(expectedSupply.toString());
 
   /**
    * Freeze the stake pool account
@@ -1154,23 +1122,6 @@ test("End to end test", async () => {
   );
   stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
   expect(stakePoolObj.tag).toBe(Tag.StakePool);
-
-  /**
-   * Execute unstake
-   */
-
-  const ix_execute = await executeUnstake(
-    connection,
-    stakeKey,
-    stakerAta,
-    programId
-  );
-  tx = await signAndSendTransactionInstructions(
-    connection,
-    [staker],
-    feePayer,
-    [ix_execute]
-  );
 
   /**
    * Close stake pool

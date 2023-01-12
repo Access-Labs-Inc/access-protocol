@@ -1,16 +1,11 @@
-
-
+use solana_sdk::signer::{Signer};
 
 use solana_test_framework::*;
-use solana_sdk::signer::{Signer};
+
+use crate::common::test_runner::TestRunner;
 
 
 pub mod common;
-
-use crate::common::test_runner::{TestRunner};
-
-
-
 
 #[tokio::test]
 async fn common_stake_limit() {
@@ -25,7 +20,7 @@ async fn common_stake_limit() {
     tr.mint(&staker.pubkey(), 10_200).await.unwrap();
 
     // Create stake pool on day 1 12:00
-    tr.create_stake_pool(&stake_pool_owner.pubkey()).await.unwrap();
+    tr.create_stake_pool(&stake_pool_owner.pubkey(), 1000).await.unwrap();
 
     // Activate stake pool
     tr.activate_stake_pool(&stake_pool_owner.pubkey()).await.unwrap();
@@ -44,10 +39,11 @@ async fn common_stake_limit() {
     tr.unstake(&stake_pool_owner.pubkey(), &staker, 1000).await.unwrap();
 
     // Create bond account
-    tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), 10_000).await.unwrap();
+
+    tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), 10_000, 1).await.unwrap();
 
     // Claim bond
-    tr.claim_bond(&stake_pool_owner.pubkey(), &staker, 10_000).await.unwrap();
+    tr.claim_bond(&stake_pool_owner.pubkey(), &staker).await.unwrap();
 
     // staking under the stake limit should work
     tr.stake(&stake_pool_owner.pubkey(), &staker, 1).await.unwrap();

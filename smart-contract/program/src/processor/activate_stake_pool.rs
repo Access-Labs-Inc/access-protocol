@@ -66,6 +66,9 @@ pub fn process_activate_stake_pool(program_id: &Pubkey, accounts: &[AccountInfo]
         &central_state.authority,
         AccessError::WrongCentralStateAuthority,
     )?;
+    if stake_pool.header.tag != Tag::InactiveStakePool as u8 {
+        return Err(AccessError::ActiveStakePoolNotAllowed.into());
+    }
 
     stake_pool.header.tag = Tag::StakePool as u8;
     stake_pool.header.last_claimed_offset = central_state.last_snapshot_offset;

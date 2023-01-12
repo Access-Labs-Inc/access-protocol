@@ -132,7 +132,6 @@ pub fn process_create_bond(
         params.unlock_start_date,
         stake_pool.header.minimum_stake_amount,
         *accounts.stake_pool.key,
-        u64::MAX,
         *accounts.seller.key,
     );
 

@@ -51,8 +51,6 @@ export class StakePool {
   _padding: Uint8Array;
   minimumStakeAmount: BN;
   totalStaked: BN;
-  totalStakedDelta: BN;
-  lastDeltaUpdateOffset: BN;
   lastClaimedOffset: BN;
   stakersPart: BN;
   owner: PublicKey;
@@ -72,8 +70,6 @@ export class StakePool {
           ["_padding", [4]],
           ["minimumStakeAmount", "u64"],
           ["totalStaked", "u64"],
-          ["totalStakedDelta", "u64"],
-          ["lastDeltaUpdateOffset", "u64"],
           ["lastClaimedOffset", "u64"],
           ["stakersPart", "u64"],
           ["owner", [32]],
@@ -101,8 +97,6 @@ export class StakePool {
     _padding: Uint8Array;
     minimumStakeAmount: BN;
     totalStaked: BN;
-    totalStakedDelta: BN;
-    lastDeltaUpdateOffset: BN;
     lastClaimedOffset: BN;
     stakersPart: BN;
     owner: Uint8Array;
@@ -116,8 +110,6 @@ export class StakePool {
     this._padding = obj._padding;
     this.minimumStakeAmount = obj.minimumStakeAmount;
     this.totalStaked = obj.totalStaked;
-    this.totalStakedDelta = obj.totalStakedDelta.fromTwos(64);
-    this.lastDeltaUpdateOffset = obj.lastDeltaUpdateOffset.fromTwos(64);
     this.lastClaimedOffset = obj.lastClaimedOffset.fromTwos(64);
     this.stakersPart = obj.stakersPart;
     this.owner = new PublicKey(obj.owner);
@@ -158,19 +150,6 @@ export class StakePool {
 }
 
 /**
- * Unstake request
- */
-export class UnstakeRequest {
-  amount: BN;
-  time: BN;
-
-  constructor(obj: { time: BN; amount: BN }) {
-    this.amount = obj.amount;
-    this.time = obj.time;
-  }
-}
-
-/**
  * Stake account state
  */
 export class StakeAccount {
@@ -180,20 +159,8 @@ export class StakeAccount {
   stakePool: PublicKey;
   lastClaimedOffset: BN;
   poolMinimumAtCreation: BN;
-  pendingUnstakeRequests: number;
-  unstakeRequests: UnstakeRequest[];
 
   static schema: Schema = new Map<any, any>([
-    [
-      UnstakeRequest,
-      {
-        kind: "struct",
-        fields: [
-          ["amount", "u64"],
-          ["time", "u64"],
-        ],
-      },
-    ],
     [
       StakeAccount,
       {
@@ -205,8 +172,6 @@ export class StakeAccount {
           ["stakePool", [32]],
           ["lastClaimedOffset", "u64"],
           ["poolMinimumAtCreation", "u64"],
-          ["pendingUnstakeRequests", "u8"],
-          ["unstakeRequests", [UnstakeRequest, MAX_UNSTAKE_REQUEST]],
         ],
       },
     ],
@@ -219,8 +184,6 @@ export class StakeAccount {
     stakePool: Uint8Array;
     lastClaimedOffset: BN;
     poolMinimumAtCreation: BN;
-    pendingUnstakeRequests: number;
-    unstakeRequests: UnstakeRequest[];
   }) {
     this.tag = obj.tag;
     this.owner = new PublicKey(obj.owner);
@@ -228,8 +191,6 @@ export class StakeAccount {
     this.stakePool = new PublicKey(obj.stakePool);
     this.lastClaimedOffset = obj.lastClaimedOffset.fromTwos(64);
     this.poolMinimumAtCreation = obj.poolMinimumAtCreation;
-    this.pendingUnstakeRequests = obj.pendingUnstakeRequests;
-    this.unstakeRequests = obj.unstakeRequests;
   }
 
   static deserialize(data: Buffer) {

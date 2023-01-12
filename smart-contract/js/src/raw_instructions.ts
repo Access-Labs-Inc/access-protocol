@@ -1,13 +1,7 @@
 // This file is auto-generated. DO NOT EDIT
 import BN from "bn.js";
-import {
-  Schema,
-  serialize
-} from "borsh";
-import {
-  PublicKey,
-  TransactionInstruction
-} from "@solana/web3.js";
+import { Schema, serialize } from "borsh";
+import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 
 export interface AccountKey {
   pubkey: PublicKey;
@@ -21,14 +15,12 @@ export class closeStakePoolInstruction {
       closeStakePoolInstruction,
       {
         kind: "struct",
-        fields: [
-          ["tag", "u8"],
-        ],
+        fields: [["tag", "u8"]],
       },
     ],
   ]);
   constructor() {
-    this.tag = 10;
+    this.tag = 9;
   }
   serialize(): Uint8Array {
     return serialize(closeStakePoolInstruction.schema, this);
@@ -37,7 +29,7 @@ export class closeStakePoolInstruction {
     programId: PublicKey,
     stakePoolAccount: PublicKey,
     poolVault: PublicKey,
-    owner: PublicKey,
+    owner: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -78,10 +70,8 @@ export class changeInflationInstruction {
       },
     ],
   ]);
-  constructor(obj: {
-    dailyInflation: BN;
-  }) {
-    this.tag = 12;
+  constructor(obj: { dailyInflation: BN }) {
+    this.tag = 11;
     this.dailyInflation = obj.dailyInflation;
   }
   serialize(): Uint8Array {
@@ -90,7 +80,7 @@ export class changeInflationInstruction {
   getInstruction(
     programId: PublicKey,
     centralState: PublicKey,
-    authority: PublicKey,
+    authority: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -118,14 +108,12 @@ export class unlockBondTokensInstruction {
       unlockBondTokensInstruction,
       {
         kind: "struct",
-        fields: [
-          ["tag", "u8"],
-        ],
+        fields: [["tag", "u8"]],
       },
     ],
   ]);
   constructor() {
-    this.tag = 15;
+    this.tag = 14;
   }
   serialize(): Uint8Array {
     return serialize(unlockBondTokensInstruction.schema, this);
@@ -139,7 +127,7 @@ export class unlockBondTokensInstruction {
     centralState: PublicKey,
     stakePool: PublicKey,
     poolVault: PublicKey,
-    splTokenProgram: PublicKey,
+    splTokenProgram: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -197,14 +185,12 @@ export class adminFreezeInstruction {
       adminFreezeInstruction,
       {
         kind: "struct",
-        fields: [
-          ["tag", "u8"],
-        ],
+        fields: [["tag", "u8"]],
       },
     ],
   ]);
   constructor() {
-    this.tag = 20;
+    this.tag = 19;
   }
   serialize(): Uint8Array {
     return serialize(adminFreezeInstruction.schema, this);
@@ -213,7 +199,7 @@ export class adminFreezeInstruction {
     programId: PublicKey,
     authority: PublicKey,
     accountToFreeze: PublicKey,
-    centralState: PublicKey,
+    centralState: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -254,10 +240,8 @@ export class changePoolMinimumInstruction {
       },
     ],
   ]);
-  constructor(obj: {
-    newMinimum: BN;
-  }) {
-    this.tag = 18;
+  constructor(obj: { newMinimum: BN }) {
+    this.tag = 17;
     this.newMinimum = obj.newMinimum;
   }
   serialize(): Uint8Array {
@@ -266,7 +250,7 @@ export class changePoolMinimumInstruction {
   getInstruction(
     programId: PublicKey,
     stakePool: PublicKey,
-    stakePoolOwner: PublicKey,
+    stakePoolOwner: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -294,14 +278,12 @@ export class claimPoolRewardsInstruction {
       claimPoolRewardsInstruction,
       {
         kind: "struct",
-        fields: [
-          ["tag", "u8"],
-        ],
+        fields: [["tag", "u8"]],
       },
     ],
   ]);
   constructor() {
-    this.tag = 7;
+    this.tag = 6;
   }
   serialize(): Uint8Array {
     return serialize(claimPoolRewardsInstruction.schema, this);
@@ -313,7 +295,7 @@ export class claimPoolRewardsInstruction {
     rewardsDestination: PublicKey,
     centralState: PublicKey,
     mint: PublicKey,
-    splTokenProgram: PublicKey,
+    splTokenProgram: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -369,10 +351,8 @@ export class signBondInstruction {
       },
     ],
   ]);
-  constructor(obj: {
-    sellerIndex: BN;
-  }) {
-    this.tag = 14;
+  constructor(obj: { sellerIndex: BN }) {
+    this.tag = 13;
     this.sellerIndex = obj.sellerIndex;
   }
   serialize(): Uint8Array {
@@ -381,7 +361,7 @@ export class signBondInstruction {
   getInstruction(
     programId: PublicKey,
     seller: PublicKey,
-    bondAccount: PublicKey,
+    bondAccount: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -417,10 +397,8 @@ export class claimRewardsInstruction {
       },
     ],
   ]);
-  constructor(obj: {
-    allowZeroRewards: number;
-  }) {
-    this.tag = 8;
+  constructor(obj: { allowZeroRewards: number }) {
+    this.tag = 7;
     this.allowZeroRewards = obj.allowZeroRewards;
   }
   serialize(): Uint8Array {
@@ -434,7 +412,7 @@ export class claimRewardsInstruction {
     rewardsDestination: PublicKey,
     centralState: PublicKey,
     mint: PublicKey,
-    splTokenProgram: PublicKey,
+    splTokenProgram: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -495,9 +473,7 @@ export class stakeInstruction {
       },
     ],
   ]);
-  constructor(obj: {
-    amount: BN;
-  }) {
+  constructor(obj: { amount: BN }) {
     this.tag = 4;
     this.amount = obj.amount;
   }
@@ -514,7 +490,7 @@ export class stakeInstruction {
     splTokenProgram: PublicKey,
     vault: PublicKey,
     feeAccount: PublicKey,
-    bondAccount ? : PublicKey,
+    bondAccount?: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -620,7 +596,7 @@ export class createCentralStateInstruction {
     mint: PublicKey,
     metadata: PublicKey,
     metadataProgram: PublicKey,
-    rentSysvar: PublicKey,
+    rentSysvar: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -681,10 +657,8 @@ export class changePoolMultiplierInstruction {
       },
     ],
   ]);
-  constructor(obj: {
-    newMultiplier: BN;
-  }) {
-    this.tag = 21;
+  constructor(obj: { newMultiplier: BN }) {
+    this.tag = 20;
     this.newMultiplier = obj.newMultiplier;
   }
   serialize(): Uint8Array {
@@ -693,7 +667,7 @@ export class changePoolMultiplierInstruction {
   getInstruction(
     programId: PublicKey,
     stakePool: PublicKey,
-    stakePoolOwner: PublicKey,
+    stakePoolOwner: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -721,14 +695,12 @@ export class closeStakeAccountInstruction {
       closeStakeAccountInstruction,
       {
         kind: "struct",
-        fields: [
-          ["tag", "u8"],
-        ],
+        fields: [["tag", "u8"]],
       },
     ],
   ]);
   constructor() {
-    this.tag = 11;
+    this.tag = 10;
   }
   serialize(): Uint8Array {
     return serialize(closeStakeAccountInstruction.schema, this);
@@ -736,7 +708,7 @@ export class closeStakeAccountInstruction {
   getInstruction(
     programId: PublicKey,
     stakeAccount: PublicKey,
-    owner: PublicKey,
+    owner: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -764,14 +736,12 @@ export class crankInstruction {
       crankInstruction,
       {
         kind: "struct",
-        fields: [
-          ["tag", "u8"],
-        ],
+        fields: [["tag", "u8"]],
       },
     ],
   ]);
   constructor() {
-    this.tag = 9;
+    this.tag = 8;
   }
   serialize(): Uint8Array {
     return serialize(crankInstruction.schema, this);
@@ -779,7 +749,7 @@ export class crankInstruction {
   getInstruction(
     programId: PublicKey,
     stakePool: PublicKey,
-    centralState: PublicKey,
+    centralState: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -800,73 +770,6 @@ export class crankInstruction {
     });
   }
 }
-export class executeUnstakeInstruction {
-  tag: number;
-  static schema: Schema = new Map([
-    [
-      executeUnstakeInstruction,
-      {
-        kind: "struct",
-        fields: [
-          ["tag", "u8"],
-        ],
-      },
-    ],
-  ]);
-  constructor() {
-    this.tag = 6;
-  }
-  serialize(): Uint8Array {
-    return serialize(executeUnstakeInstruction.schema, this);
-  }
-  getInstruction(
-    programId: PublicKey,
-    stakeAccount: PublicKey,
-    stakePool: PublicKey,
-    owner: PublicKey,
-    destinationToken: PublicKey,
-    splTokenProgram: PublicKey,
-    vault: PublicKey,
-  ): TransactionInstruction {
-    const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
-    keys.push({
-      pubkey: stakeAccount,
-      isSigner: false,
-      isWritable: true,
-    });
-    keys.push({
-      pubkey: stakePool,
-      isSigner: false,
-      isWritable: true,
-    });
-    keys.push({
-      pubkey: owner,
-      isSigner: true,
-      isWritable: false,
-    });
-    keys.push({
-      pubkey: destinationToken,
-      isSigner: false,
-      isWritable: true,
-    });
-    keys.push({
-      pubkey: splTokenProgram,
-      isSigner: false,
-      isWritable: false,
-    });
-    keys.push({
-      pubkey: vault,
-      isSigner: false,
-      isWritable: true,
-    });
-    return new TransactionInstruction({
-      keys,
-      programId,
-      data,
-    });
-  }
-}
 export class claimBondInstruction {
   tag: number;
   static schema: Schema = new Map([
@@ -874,14 +777,12 @@ export class claimBondInstruction {
       claimBondInstruction,
       {
         kind: "struct",
-        fields: [
-          ["tag", "u8"],
-        ],
+        fields: [["tag", "u8"]],
       },
     ],
   ]);
   constructor() {
-    this.tag = 16;
+    this.tag = 15;
   }
   serialize(): Uint8Array {
     return serialize(claimBondInstruction.schema, this);
@@ -896,7 +797,7 @@ export class claimBondInstruction {
     accessMint: PublicKey,
     poolVault: PublicKey,
     centralState: PublicKey,
-    splTokenProgram: PublicKey,
+    splTokenProgram: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -971,12 +872,8 @@ export class editMetadataInstruction {
       },
     ],
   ]);
-  constructor(obj: {
-    name: string;
-    symbol: string;
-    uri: string;
-  }) {
-    this.tag = 23;
+  constructor(obj: { name: string; symbol: string; uri: string }) {
+    this.tag = 22;
     this.name = obj.name;
     this.symbol = obj.symbol;
     this.uri = obj.uri;
@@ -989,7 +886,7 @@ export class editMetadataInstruction {
     centralState: PublicKey,
     authority: PublicKey,
     metadata: PublicKey,
-    metadataProgram: PublicKey,
+    metadataProgram: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -1037,10 +934,7 @@ export class createStakeAccountInstruction {
       },
     ],
   ]);
-  constructor(obj: {
-    nonce: number;
-    owner: Uint8Array;
-  }) {
+  constructor(obj: { nonce: number; owner: Uint8Array }) {
     this.tag = 3;
     this.nonce = obj.nonce;
     this.owner = obj.owner;
@@ -1053,7 +947,7 @@ export class createStakeAccountInstruction {
     stakeAccount: PublicKey,
     systemProgram: PublicKey,
     stakePool: PublicKey,
-    feePayer: PublicKey,
+    feePayer: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -1091,14 +985,12 @@ export class claimBondRewardsInstruction {
       claimBondRewardsInstruction,
       {
         kind: "struct",
-        fields: [
-          ["tag", "u8"],
-        ],
+        fields: [["tag", "u8"]],
       },
     ],
   ]);
   constructor() {
-    this.tag = 17;
+    this.tag = 16;
   }
   serialize(): Uint8Array {
     return serialize(claimBondRewardsInstruction.schema, this);
@@ -1111,7 +1003,7 @@ export class claimBondRewardsInstruction {
     rewardsDestination: PublicKey,
     centralState: PublicKey,
     mint: PublicKey,
-    splTokenProgram: PublicKey,
+    splTokenProgram: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -1199,7 +1091,7 @@ export class createBondInstruction {
     unlockAmount: BN;
     sellerIndex: BN;
   }) {
-    this.tag = 13;
+    this.tag = 12;
     this.buyer = obj.buyer;
     this.totalAmountSold = obj.totalAmountSold;
     this.totalQuoteAmount = obj.totalQuoteAmount;
@@ -1219,7 +1111,7 @@ export class createBondInstruction {
     bondAccount: PublicKey,
     stakePool: PublicKey,
     systemProgram: PublicKey,
-    feePayer: PublicKey,
+    feePayer: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -1270,9 +1162,7 @@ export class unstakeInstruction {
       },
     ],
   ]);
-  constructor(obj: {
-    amount: BN;
-  }) {
+  constructor(obj: { amount: BN }) {
     this.tag = 5;
     this.amount = obj.amount;
   }
@@ -1285,7 +1175,10 @@ export class unstakeInstruction {
     stakeAccount: PublicKey,
     stakePool: PublicKey,
     owner: PublicKey,
-    bondAccount ? : PublicKey,
+    destinationToken: PublicKey,
+    splTokenProgram: PublicKey,
+    vault: PublicKey,
+    bondAccount?: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -1308,6 +1201,21 @@ export class unstakeInstruction {
       pubkey: owner,
       isSigner: true,
       isWritable: false,
+    });
+    keys.push({
+      pubkey: destinationToken,
+      isSigner: false,
+      isWritable: true,
+    });
+    keys.push({
+      pubkey: splTokenProgram,
+      isSigner: false,
+      isWritable: false,
+    });
+    keys.push({
+      pubkey: vault,
+      isSigner: false,
+      isWritable: true,
     });
     if (!!bondAccount) {
       keys.push({
@@ -1340,10 +1248,7 @@ export class createStakePoolInstruction {
       },
     ],
   ]);
-  constructor(obj: {
-    owner: Uint8Array;
-    minimumStakeAmount: BN;
-  }) {
+  constructor(obj: { owner: Uint8Array; minimumStakeAmount: BN }) {
     this.tag = 1;
     this.owner = obj.owner;
     this.minimumStakeAmount = obj.minimumStakeAmount;
@@ -1356,7 +1261,7 @@ export class createStakePoolInstruction {
     stakePoolAccount: PublicKey,
     systemProgram: PublicKey,
     feePayer: PublicKey,
-    vault: PublicKey,
+    vault: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -1402,10 +1307,8 @@ export class changeCentralStateAuthorityInstruction {
       },
     ],
   ]);
-  constructor(obj: {
-    newAuthority: Uint8Array;
-  }) {
-    this.tag = 22;
+  constructor(obj: { newAuthority: Uint8Array }) {
+    this.tag = 21;
     this.newAuthority = obj.newAuthority;
   }
   serialize(): Uint8Array {
@@ -1414,7 +1317,7 @@ export class changeCentralStateAuthorityInstruction {
   getInstruction(
     programId: PublicKey,
     centralState: PublicKey,
-    authority: PublicKey,
+    authority: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -1450,10 +1353,8 @@ export class adminMintInstruction {
       },
     ],
   ]);
-  constructor(obj: {
-    amount: BN;
-  }) {
-    this.tag = 19;
+  constructor(obj: { amount: BN }) {
+    this.tag = 18;
     this.amount = obj.amount;
   }
   serialize(): Uint8Array {
@@ -1465,7 +1366,7 @@ export class adminMintInstruction {
     mint: PublicKey,
     accessTokenDestination: PublicKey,
     centralState: PublicKey,
-    splTokenProgram: PublicKey,
+    splTokenProgram: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -1508,9 +1409,7 @@ export class activateStakePoolInstruction {
       activateStakePoolInstruction,
       {
         kind: "struct",
-        fields: [
-          ["tag", "u8"],
-        ],
+        fields: [["tag", "u8"]],
       },
     ],
   ]);
@@ -1524,7 +1423,7 @@ export class activateStakePoolInstruction {
     programId: PublicKey,
     authority: PublicKey,
     stakePool: PublicKey,
-    centralState: PublicKey,
+    centralState: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
