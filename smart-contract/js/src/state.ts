@@ -150,19 +150,6 @@ export class StakePool {
 }
 
 /**
- * Unstake request
- */
-export class UnstakeRequest {
-  amount: BN;
-  time: BN;
-
-  constructor(obj: { time: BN; amount: BN }) {
-    this.amount = obj.amount;
-    this.time = obj.time;
-  }
-}
-
-/**
  * Stake account state
  */
 export class StakeAccount {
@@ -174,16 +161,6 @@ export class StakeAccount {
   poolMinimumAtCreation: BN;
 
   static schema: Schema = new Map<any, any>([
-    [
-      UnstakeRequest,
-      {
-        kind: "struct",
-        fields: [
-          ["amount", "u64"],
-          ["time", "u64"],
-        ],
-      },
-    ],
     [
       StakeAccount,
       {
