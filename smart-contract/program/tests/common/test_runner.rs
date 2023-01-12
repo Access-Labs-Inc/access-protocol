@@ -1,27 +1,26 @@
+
+use std::error::Error;
+use borsh::BorshDeserialize;
+use solana_program::{pubkey::Pubkey, system_program};
+use solana_program_test::{processor, ProgramTest};
+use solana_test_framework::*;
+use solana_sdk::signer::{keypair::Keypair, Signer};
+use solana_sdk::sysvar::{clock};
+use spl_associated_token_account::{instruction::create_associated_token_account, get_associated_token_address};
 use crate::common::utils::{mint_bootstrap, sign_send_instructions};
-use access_protocol::instruction::{claim_bond, claim_bond_rewards, create_bond};
-use access_protocol::state::{BondAccount, CentralState};
 use access_protocol::{
     entrypoint::process_instruction,
     instruction::{
-        activate_stake_pool, admin_mint, claim_pool_rewards, claim_rewards, crank,
-        create_central_state, create_stake_account, create_stake_pool, execute_unstake, stake,
-        unstake,
+        activate_stake_pool, admin_mint,
+        claim_pool_rewards, claim_rewards,
+        crank, create_central_state, create_stake_account,
+        create_stake_pool, execute_unstake, stake, unstake,
     },
 };
-use borsh::BorshDeserialize;
 use mpl_token_metadata::pda::find_metadata_account;
-use solana_program::account_info::AccountInfo;
-use solana_program::{pubkey::Pubkey, system_program};
-use solana_program_test::{processor, ProgramTest};
-use solana_sdk::signer::{keypair::Keypair, Signer};
-use solana_sdk::sysvar::clock;
-use solana_test_framework::*;
-use spl_associated_token_account::{
-    get_associated_token_address, instruction::create_associated_token_account,
-};
-use std::convert::TryFrom;
-use std::error::Error;
+
+use access_protocol::instruction::{change_pool_minimum, claim_bond, claim_bond_rewards, create_bond};
+use access_protocol::state::{BondAccount, CentralState};
 
 pub struct TestRunner {
     pub program_id: Pubkey,
@@ -29,7 +28,9 @@ pub struct TestRunner {
     local_env: BanksClient,
     authority_ata: Pubkey,
     central_state: Pubkey,
-    mint: Pubkey,
+    mint : Pubkey,
+    // hashmap from user pubkey to a bond account
+    bond_accounts: std::collections::HashMap<Pubkey, Pubkey>,
 }
 
 #[derive(Debug)]
@@ -123,7 +124,7 @@ impl TestRunner {
             &mint,
         );
         sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![]).await?;
-        let authority_ata = get_associated_token_address(&&prg_test_ctx.payer.pubkey(), &mint);
+        let authority_ata = get_associated_token_address(&prg_test_ctx.payer.pubkey(), &mint);
 
         Ok(Self {
             program_id,
@@ -132,6 +133,7 @@ impl TestRunner {
             authority_ata,
             central_state,
             mint,
+            bond_accounts: std::collections::HashMap::new(),
         })
     }
 
@@ -147,7 +149,7 @@ impl TestRunner {
             vec![create_ata_stake_pool_owner_ix],
             vec![],
         )
-        .await?;
+            .await?;
         Ok(owner)
     }
 
@@ -156,7 +158,7 @@ impl TestRunner {
         destination: &Pubkey,
         amount: u64,
     ) -> Result<(), BanksClientError> {
-        let destination_ata = get_associated_token_address(&destination, &self.mint);
+        let destination_ata = get_associated_token_address(destination, &self.mint);
         let admin_mint_ix = admin_mint(
             self.program_id,
             admin_mint::Accounts {
@@ -187,7 +189,7 @@ impl TestRunner {
             vec![create_associated_instruction],
             vec![],
         )
-        .await?;
+            .await?;
 
         let create_stake_pool_ix = create_stake_pool(
             self.program_id,
@@ -253,7 +255,7 @@ impl TestRunner {
         staker_key: &Pubkey,
     ) -> Result<(), BanksClientError> {
         let stake_pool_key = self.get_pool_pda(stake_pool_owner_key);
-        let (stake_acc_key, stake_nonce) = self.get_stake_account_pda(&stake_pool_key, &staker_key);
+        let (stake_acc_key, stake_nonce) = self.get_stake_account_pda(&stake_pool_key, staker_key);
         let create_stake_account_ix = create_stake_account(
             self.program_id,
             create_stake_account::Accounts {
@@ -272,7 +274,7 @@ impl TestRunner {
             vec![create_stake_account_ix],
             vec![],
         )
-        .await
+            .await
     }
 
     pub async fn sleep(&mut self, duration: u64) -> Result<(), ProgramTestError> {
@@ -299,6 +301,9 @@ impl TestRunner {
         let (stake_acc_key, _) = self.get_stake_account_pda(&stake_pool_key, &staker_key);
         let staker_token_acc = get_associated_token_address(&staker_key, &self.mint);
         let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
+        // get the staker's bond from the hash map if it exists
+        let staker_bond: Option<&Pubkey> = self.bond_accounts.get(&staker_key);
+
         let stake_ix = stake(
             self.program_id,
             stake::Accounts {
@@ -310,12 +315,13 @@ impl TestRunner {
                 vault: &pool_vault,
                 central_state_account: &self.central_state,
                 fee_account: &self.authority_ata,
+                bond_account: staker_bond,
             },
             stake::Params {
                 amount: token_amount,
             },
         );
-        sign_send_instructions(&mut self.prg_test_ctx, vec![stake_ix], vec![&staker]).await
+        sign_send_instructions(&mut self.prg_test_ctx, vec![stake_ix], vec![staker]).await
     }
 
     pub async fn crank_pool(
@@ -359,9 +365,9 @@ impl TestRunner {
         sign_send_instructions(
             &mut self.prg_test_ctx,
             vec![claim_stake_pool_ix],
-            vec![&stake_pool_owner],
+            vec![stake_pool_owner],
         )
-        .await
+            .await
     }
 
     pub async fn claim_staker_rewards(
@@ -390,7 +396,7 @@ impl TestRunner {
             true,
         );
 
-        sign_send_instructions(&mut self.prg_test_ctx, vec![claim_ix], vec![&staker]).await
+        sign_send_instructions(&mut self.prg_test_ctx, vec![claim_ix], vec![staker]).await
     }
 
     pub async fn unstake(
@@ -404,6 +410,9 @@ impl TestRunner {
         let staker_token_acc = get_associated_token_address(&staker.pubkey(), &self.mint);
         let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
 
+        // get the staker's bond from the hash map if it exists
+        let staker_bond: Option<&Pubkey> = self.bond_accounts.get(&staker.pubkey());
+
         // Request Unstake
         let unstake_ix = unstake(
             self.program_id,
@@ -412,13 +421,14 @@ impl TestRunner {
                 stake_pool: &stake_pool_key,
                 owner: &staker.pubkey(),
                 central_state_account: &self.central_state,
+                bond_account: staker_bond,
             },
             unstake::Params {
                 amount: token_amount,
             },
         );
         // if error, return
-        sign_send_instructions(&mut self.prg_test_ctx, vec![unstake_ix], vec![&staker]).await?;
+        sign_send_instructions(&mut self.prg_test_ctx, vec![unstake_ix], vec![staker]).await?;
 
         // Execute Unstake
         let execute_unstake_ix = execute_unstake(
@@ -436,9 +446,9 @@ impl TestRunner {
         sign_send_instructions(
             &mut self.prg_test_ctx,
             vec![execute_unstake_ix],
-            vec![&staker],
+            vec![staker],
         )
-        .await
+            .await
     }
 
     pub async fn staker_stats(
@@ -505,10 +515,10 @@ impl TestRunner {
         bond_amount: u64,
     ) -> Result<(), BanksClientError> {
         let (bond_key, _bond_nonce) =
-            BondAccount::create_key(&bond_owner, bond_amount, &self.program_id);
+            BondAccount::create_key(bond_owner, bond_amount, &self.program_id);
 
         let stake_pool_key = self.get_pool_pda(stake_pool_owner);
-        let seller_token_acc = get_associated_token_address(&bond_owner, &self.mint);
+        let seller_token_acc = get_associated_token_address(bond_owner, &self.mint);
 
         let create_bond_ix = create_bond(
             self.program_id,
@@ -520,7 +530,7 @@ impl TestRunner {
                 fee_payer: &self.prg_test_ctx.payer.pubkey(),
             },
             create_bond::Params {
-                buyer: bond_owner.clone(),
+                buyer: *bond_owner,
                 total_amount_sold: bond_amount,
                 seller_token_account: seller_token_acc,
                 total_quote_amount: 0,
@@ -563,12 +573,12 @@ impl TestRunner {
             claim_bond::Params {},
         );
 
-        sign_send_instructions(
-            &mut self.prg_test_ctx,
-            vec![claim_bond_ix],
-            vec![&bond_owner],
-        )
-        .await
+        sign_send_instructions(&mut self.prg_test_ctx, vec![claim_bond_ix], vec![bond_owner])
+            .await?;
+
+        // add bond account to the map
+        self.bond_accounts.insert(bond_owner.pubkey(), bond_key);
+        Ok(())
     }
 
     pub async fn claim_bond_rewards(
@@ -598,5 +608,26 @@ impl TestRunner {
         );
 
         sign_send_instructions(&mut self.prg_test_ctx, vec![claim_bond_rewards_ix], vec![]).await
+    }
+
+    pub async fn change_pool_minimum(&mut self, stake_pool_owner: &Keypair, new_minimum: u64) -> Result<(), BanksClientError> {
+        let stake_pool_key = self.get_pool_pda(&stake_pool_owner.pubkey());
+        let change_min_ix = change_pool_minimum(
+            self.program_id,
+            change_pool_minimum::Accounts {
+                stake_pool: &stake_pool_key,
+                stake_pool_owner: &stake_pool_owner.pubkey(),
+            },
+            change_pool_minimum::Params {
+                new_minimum,
+            },
+        );
+
+        sign_send_instructions(
+            &mut self.prg_test_ctx,
+            vec![change_min_ix],
+            vec![stake_pool_owner],
+        )
+            .await
     }
 }

@@ -71,6 +71,8 @@ pub enum AccessError {
     UnclaimedRewards,
     #[error("Unstake period not over")]
     CannotUnstake,
+    #[error("Invalid unstake amount")]
+    InvalidUnstakeAmount,
     #[error("Inactive stake pool not allowed")]
     InactiveStakePoolNotAllowed,
     #[error("Invalid tag change")]
