@@ -424,7 +424,6 @@ impl TestRunner {
             },
             unstake::Params {
                 amount: token_amount,
-                has_bond_account: staker_bond.is_some(),
             },
         );
         // if error, return
@@ -513,6 +512,7 @@ impl TestRunner {
         let stake_pool_key = self.get_pool_pda(stake_pool_owner);
         let seller_token_account = get_associated_token_address(&self.bond_seller.pubkey(), &self.mint);
         self.mint(&self.bond_seller.pubkey(), bond_amount).await?;
+        let current_time = self.local_env.get_sysvar::<clock::Clock>().await.unwrap().unix_timestamp;
 
         let create_bond_ix = create_bond(
             self.program_id,

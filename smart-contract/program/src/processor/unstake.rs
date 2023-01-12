@@ -8,9 +8,11 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::clock::Clock;
 use solana_program::sysvar::Sysvar;
 use solana_program::{account_info::{next_account_info, AccountInfo}, entrypoint::ProgramResult, program_error::ProgramError, pubkey::Pubkey};
+use solana_program::program::invoke_signed;
+use spl_token::instruction::transfer;
 
 use crate::error::AccessError;
-use crate::state::{BondAccount, StakeAccount, StakePool, UnstakeRequest};
+use crate::state::{BondAccount, StakeAccount, StakePool, StakePoolHeader};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `unstake` instruction
