@@ -1,29 +1,21 @@
 use solana_test_framework::*;
-use std::error::Error;
 
-use borsh::BorshDeserialize;
-use mpl_token_metadata::pda::find_metadata_account;
-use solana_program::{pubkey::Pubkey, system_program};
-use solana_program::clock::Clock;
-use solana_program::sysvar::Sysvar;
 
-use solana_program_test::{processor, ProgramTest};
-use solana_sdk::signer::{keypair::Keypair, Signer};
-use solana_sdk::sysvar::clock;
-use solana_test_framework::*;
-use spl_associated_token_account::{get_associated_token_address, instruction::create_associated_token_account};
 
-use access_protocol::{
-    entrypoint::process_instruction,
-    instruction::{
-        activate_stake_pool, admin_mint,
-        claim_pool_rewards, claim_rewards,
-        crank, create_central_state, create_stake_account,
-        create_stake_pool, stake, unstake,
-    },
-};
-use access_protocol::instruction::{change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards, create_bond, unlock_bond_tokens};
-use access_protocol::state::{BondAccount, CentralState, StakeAccount, StakePoolHeader, Tag};
+
+
+
+
+
+
+use solana_sdk::signer::{Signer};
+
+
+
+
+
+
+
 use crate::common::test_runner::TestRunner;
 
 pub mod common;
@@ -42,12 +34,12 @@ async fn full_system_test() {
     let pool_owner2 = tr.create_ata_account().await.unwrap();
     let pool_owner3 = tr.create_ata_account().await.unwrap();
     // Setup 3 airdrop users
-    let airdropUser1 = tr.create_ata_account().await.unwrap();
-    let airdropUser2 = tr.create_ata_account().await.unwrap();
-    let airdropUser3 = tr.create_ata_account().await.unwrap();
+    let airdrop_user1 = tr.create_ata_account().await.unwrap();
+    let airdrop_user2 = tr.create_ata_account().await.unwrap();
+    let _airdrop_user3 = tr.create_ata_account().await.unwrap();
     // Setup 2 vesting users
-    let vestingUser1 = tr.create_ata_account().await.unwrap();
-    let vestingUser2 = tr.create_ata_account().await.unwrap();
+    let _vesting_user1 = tr.create_ata_account().await.unwrap();
+    let _vesting_user2 = tr.create_ata_account().await.unwrap();
 
     // Setup all the pools
     tr.create_stake_pool(&pool_owner.pubkey(), 1_000_000_000).await.unwrap();
@@ -62,10 +54,10 @@ async fn full_system_test() {
     //-------------------------------------------
     tr.sleep(DAY).await.unwrap();
     // First two airdrop users get airdrop of 100000 tokens to the first pool with the release date on day 10
-    tr.create_bond(&pool_owner.pubkey(), &airdropUser1.pubkey(), 100_000_000_000, 8*DAY as i64).await.unwrap();
-    tr.create_bond(&pool_owner.pubkey(), &airdropUser2.pubkey(), 100_000_000_000, 8*DAY as i64).await.unwrap();
-    tr.claim_bond(&pool_owner.pubkey(), &airdropUser1).await.unwrap();
-    tr.claim_bond(&pool_owner.pubkey(), &airdropUser2).await.unwrap();
+    tr.create_bond(&pool_owner.pubkey(), &airdrop_user1.pubkey(), 100_000_000_000, 8*DAY as i64).await.unwrap();
+    tr.create_bond(&pool_owner.pubkey(), &airdrop_user2.pubkey(), 100_000_000_000, 8*DAY as i64).await.unwrap();
+    tr.claim_bond(&pool_owner.pubkey(), &airdrop_user1).await.unwrap();
+    tr.claim_bond(&pool_owner.pubkey(), &airdrop_user2).await.unwrap();
 }
 
 // // check that this raises the totalRewardable and the pool totalUnrewardedAirdrops

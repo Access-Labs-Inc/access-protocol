@@ -13,7 +13,7 @@ use access_protocol::{
         change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond,
         claim_bond_rewards, claim_pool_rewards, claim_rewards, close_stake_account,
         close_stake_pool, crank, create_bond, create_central_state, create_stake_account,
-        create_stake_pool, edit_metadata, execute_unstake, stake, unlock_bond_tokens, unstake,
+        create_stake_pool, edit_metadata, stake, unlock_bond_tokens, unstake,
     },
     state::BondAccount,
 };
@@ -104,7 +104,7 @@ async fn test_staking() {
     //
     // Create authority ACCESS token account
     //
-    let ix = instruction::create_associated_token_account(
+    let ix = create_associated_token_account(
         &prg_test_ctx.payer.pubkey(),
         &prg_test_ctx.payer.pubkey(),
         &mint,
@@ -112,7 +112,7 @@ async fn test_staking() {
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![])
         .await
         .unwrap();
-    let authority_ata = get_associated_token_address(&&prg_test_ctx.payer.pubkey(), &mint);
+    let authority_ata = get_associated_token_address(&prg_test_ctx.payer.pubkey(), &mint);
 
     //
     // Create users
@@ -121,7 +121,7 @@ async fn test_staking() {
     let stake_pool_owner = Keypair::new();
     let staker = Keypair::new();
 
-    let create_ata_stake_pool_owner_ix = instruction::create_associated_token_account(
+    let create_ata_stake_pool_owner_ix = create_associated_token_account(
         &prg_test_ctx.payer.pubkey(),
         &stake_pool_owner.pubkey(),
         &mint,
@@ -135,7 +135,7 @@ async fn test_staking() {
     .unwrap();
 
     let create_ata_staker_ix =
-        instruction::create_associated_token_account(&prg_test_ctx.payer.pubkey(), &staker.pubkey(), &mint);
+        create_associated_token_account(&prg_test_ctx.payer.pubkey(), &staker.pubkey(), &mint);
     sign_send_instructions(&mut prg_test_ctx, vec![create_ata_staker_ix], vec![])
         .await
         .unwrap();
@@ -177,7 +177,7 @@ async fn test_staking() {
     );
 
     let create_associated_instruction =
-        instruction::create_associated_token_account(&prg_test_ctx.payer.pubkey(), &stake_pool_key, &mint);
+        create_associated_token_account(&prg_test_ctx.payer.pubkey(), &stake_pool_key, &mint);
     let pool_vault = get_associated_token_address(&stake_pool_key, &mint);
     sign_send_instructions(
         &mut prg_test_ctx,

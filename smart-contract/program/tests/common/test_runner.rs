@@ -3,8 +3,6 @@ use std::error::Error;
 use borsh::BorshDeserialize;
 use mpl_token_metadata::pda::find_metadata_account;
 use solana_program::{pubkey::Pubkey, system_program};
-use solana_program::clock::Clock;
-use solana_program::sysvar::Sysvar;
 
 use solana_program_test::{processor, ProgramTest};
 use solana_sdk::signer::{keypair::Keypair, Signer};
@@ -138,7 +136,7 @@ impl TestRunner {
         );
         sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![])
             .await?;
-        let authority_ata = get_associated_token_address(&&prg_test_ctx.payer.pubkey(), &mint);
+        let authority_ata = get_associated_token_address(&prg_test_ctx.payer.pubkey(), &mint);
 
         // Create bond seller
         let bond_seller = Keypair::new();
@@ -183,7 +181,7 @@ impl TestRunner {
     }
 
     pub async fn mint(&mut self, destination: &Pubkey, amount: u64) -> Result<(), BanksClientError> {
-        let destination_ata = get_associated_token_address(&destination, &self.mint);
+        let destination_ata = get_associated_token_address(destination, &self.mint);
         let admin_mint_ix = admin_mint(
             self.program_id,
             admin_mint::Accounts {
@@ -282,7 +280,7 @@ impl TestRunner {
 
     pub async fn create_stake_account(&mut self, stake_pool_owner_key: &Pubkey, staker_key: &Pubkey) -> Result<(), BanksClientError>  {
         let stake_pool_key = self.get_pool_pda(stake_pool_owner_key);
-        let (stake_acc_key, stake_nonce) = self.get_stake_account_pda(&stake_pool_key, &staker_key);
+        let (stake_acc_key, stake_nonce) = self.get_stake_account_pda(&stake_pool_key, staker_key);
         let create_stake_account_ix = create_stake_account(
             self.program_id,
             create_stake_account::Accounts {
@@ -330,10 +328,10 @@ impl TestRunner {
             },
             stake::Params {
                 amount: token_amount,
-                has_bond_account: !staker_bond.is_none(),
+                has_bond_account: staker_bond.is_some(),
             },
         );
-        sign_send_instructions(&mut self.prg_test_ctx, vec![stake_ix], vec![&staker])
+        sign_send_instructions(&mut self.prg_test_ctx, vec![stake_ix], vec![staker])
             .await
     }
 
@@ -372,7 +370,7 @@ impl TestRunner {
         sign_send_instructions(
             &mut self.prg_test_ctx,
             vec![claim_stake_pool_ix],
-            vec![&stake_pool_owner],
+            vec![stake_pool_owner],
         )
             .await
     }
@@ -399,7 +397,7 @@ impl TestRunner {
             true,
         );
 
-        sign_send_instructions(&mut self.prg_test_ctx, vec![claim_ix], vec![&staker])
+        sign_send_instructions(&mut self.prg_test_ctx, vec![claim_ix], vec![staker])
             .await
     }
 
@@ -427,11 +425,11 @@ impl TestRunner {
             },
             unstake::Params {
                 amount: token_amount,
-                has_bond_account: !staker_bond.is_none(),
+                has_bond_account: staker_bond.is_some(),
             },
         );
         // if error, return
-        sign_send_instructions(&mut self.prg_test_ctx, vec![unstake_ix], vec![&staker])
+        sign_send_instructions(&mut self.prg_test_ctx, vec![unstake_ix], vec![staker])
             .await
     }
 
@@ -483,7 +481,7 @@ impl TestRunner {
 
     // bond stats
     pub async fn bond_stats(&mut self, bond_owner: Pubkey, stake_pool_owner: Pubkey, original_bond_amount: u64) -> Result<BondAccount, BanksClientError> {
-        let stake_pool_key = self.get_pool_pda(&stake_pool_owner);
+        let _stake_pool_key = self.get_pool_pda(&stake_pool_owner);
         let (bond_key, _) =
             BondAccount::create_key(&bond_owner, original_bond_amount, &self.program_id);
 
@@ -511,7 +509,7 @@ impl TestRunner {
     // todo bond maturity parameter
     pub async fn create_bond(&mut self, stake_pool_owner: &Pubkey, bond_owner: &Pubkey, bond_amount: u64, unlock_after: i64) -> Result<(), BanksClientError> {
         let (bond_key, _bond_nonce) =
-            BondAccount::create_key(&bond_owner, bond_amount, &self.program_id);
+            BondAccount::create_key(bond_owner, bond_amount, &self.program_id);
 
         let stake_pool_key = self.get_pool_pda(stake_pool_owner);
         let seller_token_account = get_associated_token_address(&self.bond_seller.pubkey(), &self.mint);
@@ -531,7 +529,7 @@ impl TestRunner {
                 fee_payer: &self.prg_test_ctx.payer.pubkey(),
             },
             create_bond::Params {
-                buyer: bond_owner.clone(),
+                buyer: *bond_owner,
                 total_amount_sold: bond_amount,
                 seller_token_account,
                 total_quote_amount: 0,
@@ -547,12 +545,12 @@ impl TestRunner {
             .await?;
 
         // add bond account to the map
-        self.bond_accounts.insert(bond_owner.clone(), bond_key.clone());
+        self.bond_accounts.insert(*bond_owner, bond_key);
         Ok(())
     }
 
     pub async fn claim_bond(&mut self, stake_pool_owner: &Pubkey, bond_owner: &Keypair) -> Result<(), BanksClientError> {
-        let bond_key = self.bond_accounts.get(&bond_owner.pubkey()).unwrap().clone();
+        let bond_key = *self.bond_accounts.get(&bond_owner.pubkey()).unwrap();
         let stake_pool_key = self.get_pool_pda(stake_pool_owner);
         let seller_token_acc = get_associated_token_address(&self.bond_seller.pubkey(), &self.mint);
         let bond_owner_ata = get_associated_token_address(&bond_owner.pubkey(), &self.mint);
@@ -574,12 +572,12 @@ impl TestRunner {
             claim_bond::Params {},
         );
 
-        sign_send_instructions(&mut self.prg_test_ctx, vec![claim_bond_ix], vec![&bond_owner])
+        sign_send_instructions(&mut self.prg_test_ctx, vec![claim_bond_ix], vec![bond_owner])
             .await
     }
 
     pub async fn unlock_bond(&mut self, stake_pool_owner: &Pubkey, bond_owner: &Keypair) -> Result<(), BanksClientError> {
-        let bond_key = self.bond_accounts.get(&bond_owner.pubkey()).unwrap().clone();
+        let bond_key = *self.bond_accounts.get(&bond_owner.pubkey()).unwrap();
         let stake_pool_key = self.get_pool_pda(stake_pool_owner);
         let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
         let bond_owner_ata = get_associated_token_address(&bond_owner.pubkey(), &self.mint);
@@ -599,7 +597,7 @@ impl TestRunner {
             unlock_bond_tokens::Params {},
         );
 
-        sign_send_instructions(&mut self.prg_test_ctx, vec![unlock_ix], vec![&bond_owner])
+        sign_send_instructions(&mut self.prg_test_ctx, vec![unlock_ix], vec![bond_owner])
             .await
     }
 
@@ -612,7 +610,7 @@ impl TestRunner {
             self.program_id,
             claim_bond_rewards::Accounts {
                 stake_pool: &stake_pool_key,
-                bond_account: &bond_key,
+                bond_account: bond_key,
                 bond_owner: &bond_owner.pubkey(),
                 rewards_destination: &seller_token_acc,
                 central_state: &self.central_state,
@@ -656,14 +654,14 @@ impl TestRunner {
                 stake_pool_owner: &stake_pool_owner.pubkey(),
             },
             change_pool_minimum::Params {
-                new_minimum: new_minimum,
+                new_minimum,
             },
         );
 
         sign_send_instructions(
             &mut self.prg_test_ctx,
             vec![change_min_ix],
-            vec![&stake_pool_owner],
+            vec![stake_pool_owner],
         )
             .await
     }
@@ -677,14 +675,14 @@ impl TestRunner {
                 stake_pool_owner: &stake_pool_owner.pubkey(),
             },
             change_pool_multiplier::Params {
-                new_multiplier: new_multiplier,
+                new_multiplier,
             },
         );
 
         sign_send_instructions(
             &mut self.prg_test_ctx,
             vec![change_min_ix],
-            vec![&stake_pool_owner],
+            vec![stake_pool_owner],
         )
             .await
     }
@@ -719,7 +717,7 @@ impl TestRunner {
         sign_send_instructions(&mut self.prg_test_ctx, vec![ix], vec![])
             .await?;
 
-        let authority_ata = get_associated_token_address(&&self.prg_test_ctx.payer.pubkey(), &self.mint);
+        let authority_ata = get_associated_token_address(&self.prg_test_ctx.payer.pubkey(), &self.mint);
         self.authority_ata = authority_ata;
         Ok(())
     }
