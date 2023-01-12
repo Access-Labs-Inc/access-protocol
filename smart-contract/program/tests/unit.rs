@@ -1,22 +1,8 @@
+use solana_program::pubkey::Pubkey;
+use solana_sdk::signer::{keypair::Keypair, Signer};
 use solana_test_framework::*;
 
-
-
-
-use solana_program::{pubkey::Pubkey};
-
-
-
-
-use solana_sdk::signer::{keypair::Keypair, Signer};
-
-
-
-
-
-
-use access_protocol::state::{Tag};
-
+use access_protocol::state::Tag;
 
 use crate::common::test_runner::TestRunner;
 
@@ -24,6 +10,7 @@ pub mod common;
 
 mod basic_functionality {
     use super::*;
+
     #[tokio::test]
     async fn change_inflation() {
         // Setup the token + basic accounts
@@ -52,6 +39,7 @@ mod basic_functionality {
 
 mod pool_creation_and_activation {
     use super::*;
+
     #[tokio::test]
     async fn create_and_activate_pool() {
         // Setup the token + basic accounts
@@ -151,6 +139,7 @@ mod pool_creation_and_activation {
 
 mod pool_settings {
     use super::*;
+
     #[tokio::test]
     async fn can_change_minimum_stake_amount() {
         // Setup the token + basic accounts
