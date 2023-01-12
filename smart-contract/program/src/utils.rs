@@ -12,23 +12,19 @@ use spl_token::state::Account;
 ///
 /// * `staker` Compute the reward for a staker or a pool owner
 pub fn calc_reward_fp32(
-    current_offset: i64,
-    last_claimed_offset: i64,
+    current_offset: u64,
+    last_claimed_offset: u64,
     stake_pool: &StakePoolRef,
     staker: bool,
     allow_zero_rewards: bool,
 ) -> Result<u128, ProgramError> {
-    let mut nb_days_to_claim = current_offset.saturating_sub(last_claimed_offset) as u64;
+    let mut nb_days_to_claim = current_offset.saturating_sub(last_claimed_offset);
     msg!("Nb of days behind {}", nb_days_to_claim);
     msg!("Last claimed offset {}", last_claimed_offset);
     msg!("Current offset {}", current_offset);
     nb_days_to_claim = std::cmp::min(nb_days_to_claim, STAKE_BUFFER_LEN - 1);
 
-    if current_offset
-        .checked_sub(stake_pool.header.current_day_idx as i64)
-        .ok_or(AccessError::Overflow)?
-        > 0
-    {
+    if current_offset > stake_pool.header.current_day_idx as u64 {
         #[cfg(not(any(feature = "days-to-sec-10s", feature = "days-to-sec-15m")))]
         return Err(AccessError::PoolMustBeCranked.into());
     }
@@ -128,11 +124,6 @@ pub fn assert_uninitialized(account: &AccountInfo) -> ProgramResult {
 }
 
 pub fn assert_authorized_seller(seller: &AccountInfo, seller_index: usize) -> ProgramResult {
-    // print all authorized sellers
-    for i in 0..AUTHORIZED_BOND_SELLERS.len() {
-        msg!("Authorized seller {}", i);
-        msg!("{}", AUTHORIZED_BOND_SELLERS[i]);
-    }
     let expected_seller = AUTHORIZED_BOND_SELLERS
         .get(seller_index)
         .ok_or(AccessError::UnauthorizedSeller)?;

@@ -136,8 +136,11 @@ pub fn process_unstake(
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
     let mut central_state = CentralState::from_account_info(accounts.central_state_account)?;
 
-    if stake_account.last_claimed_offset < stake_pool.header.current_day_idx as i64 {
+    if stake_account.last_claimed_offset < stake_pool.header.current_day_idx as u64 {
         return Err(AccessError::UnclaimedRewards.into());
+    }
+    if (stake_pool.header.current_day_idx as u64) < central_state.get_current_offset() {
+        return Err(AccessError::PoolMustBeCranked.into());
     }
 
     check_account_key(
@@ -189,7 +192,7 @@ pub fn process_unstake(
 
     // Update stake account
     stake_account.withdraw(amount)?;
-    stake_pool.header.withdraw(amount, central_state.last_snapshot_offset, central_state.creation_time)?;
+    stake_pool.header.withdraw(amount)?;
 
     // Transfer tokens
     let signer_seeds: &[&[u8]] = &[

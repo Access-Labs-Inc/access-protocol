@@ -426,8 +426,6 @@ test("End to end test", async () => {
   expect(bondObj.totalUnlockedAmount.toNumber()).toBe(0);
   expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
   expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  console.log("LCO:", bondObj.lastClaimedOffset.toString());
-
   expect(bondObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(bondObj.sellers.length).toBe(1);
   expect(bondObj.sellers[0].toBase58()).toBe(bondSeller.publicKey.toBase58());
@@ -757,7 +755,6 @@ test("End to end test", async () => {
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(10_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
   expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
-  // todo delta checks
   expect(stakePoolObj.owner.toBase58()).toBe(
     stakePoolOwner.publicKey.toBase58()
   );
@@ -860,7 +857,6 @@ test("End to end test", async () => {
   expect(stakePoolObj.stakersPart.toNumber()).toBe(50);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
   expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
-  // todo delta checks
   expect(stakePoolObj.owner.toBase58()).toBe(
     stakePoolOwner.publicKey.toBase58()
   );
@@ -885,7 +881,6 @@ test("End to end test", async () => {
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
   expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
-  // todo delta checks
   expect(stakePoolObj.owner.toBase58()).toBe(
     stakePoolOwner.publicKey.toBase58()
   );
@@ -928,8 +923,6 @@ test("End to end test", async () => {
   expect(bondObj.totalUnlockedAmount.toNumber()).toBe(bondAmount);
   expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
   expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  console.log("LCO:", bondObj.lastClaimedOffset.toString());
-
   expect(bondObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(bondObj.sellers.length).toBe(1);
 
@@ -990,7 +983,6 @@ test("End to end test", async () => {
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
   expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
-  // todo delta checks
   expect(stakePoolObj.owner.toBase58()).toBe(
     stakePoolOwner.publicKey.toBase58()
   );
@@ -1098,8 +1090,7 @@ test("End to end test", async () => {
     .add(staker_rewards_new_inflation)
     .add(new BN(bondAmount))
     .add(new BN(adminMintAmount));
-  // todo uncomment
-  // expect(currentSupply).toBe(expectedSupply.toString());
+  expect(currentSupply).toBe(expectedSupply.toString());
 
   /**
    * Freeze the stake pool account

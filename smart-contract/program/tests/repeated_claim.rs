@@ -1,12 +1,9 @@
-use solana_test_framework::*;
-use solana_sdk::signer::{Signer};
+use solana_sdk::signer::Signer;
 
+use solana_test_framework::*;
 
 pub mod common;
-
-use crate::common::test_runner::{TestRunner};
-
-
+use crate::common::test_runner::TestRunner;
 
 #[tokio::test]
 async fn repeated_claim() {
@@ -56,24 +53,36 @@ async fn repeated_claim() {
     tr.claim_pool_rewards(&stake_pool_owner).await.unwrap();
 
     // Claim staker rewards in pool 1
+
     tr.claim_staker_rewards(&stake_pool_owner.pubkey(), &staker).await.unwrap();
 
     // Unstake from pool 1
     tr.unstake(&stake_pool_owner.pubkey(), &staker, token_amount).await.unwrap();
 
-    // Stake to pool 2
-    tr.stake(&stake_pool2_owner.pubkey(), &staker, token_amount).await.unwrap();
+    // Stake to pool 2 should fail
+    let result = tr
+        .stake(&stake_pool2_owner.pubkey(), &staker, token_amount)
+        .await;
+    assert_eq!(result.is_err(), true);
 
     // Crank pool 2
     tr.crank_pool(&stake_pool2_owner.pubkey()).await.unwrap();
+
+    // Stake to pool 2 should succeed
+    tr.stake(&stake_pool2_owner.pubkey(), &staker, token_amount)
+        .await
+        .unwrap();
+    tr.sleep(1).await.unwrap();
 
     // Claim stake pool rewards 2
     assert!(tr.claim_pool_rewards(&stake_pool2_owner).await.is_err());
 
     // Claim rewards 2
-    tr.claim_staker_rewards(&stake_pool2_owner.pubkey(), &staker).await.unwrap();
+    tr.claim_staker_rewards(&stake_pool2_owner.pubkey(), &staker)
+        .await
+        .unwrap();
 
-    // Print results
+    // Check results
     let stats = tr.staker_stats(staker.pubkey()).await.unwrap();
     assert_eq!(stats.balance, 499_800);
     let pool_stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
@@ -83,6 +92,4 @@ async fn repeated_claim() {
     assert_eq!(pool_stats2.balance, 0);
     assert_eq!(pool_stats2.total_pool_staked, 10_000);
 
-
-    // todo asserts
 }

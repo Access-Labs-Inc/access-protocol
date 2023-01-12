@@ -1,26 +1,22 @@
 //! Stake
+use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
-    clock::Clock,
     entrypoint::ProgramResult,
     msg,
     program::invoke,
     program_error::ProgramError,
     pubkey::Pubkey,
-    sysvar::Sysvar,
 };
-
 use spl_token::instruction::transfer;
 
+use crate::error::AccessError;
+use crate::state::{StakeAccount, StakePool};
 use crate::{
     state::{CentralState, Tag, FEES},
     utils::{assert_valid_fee, check_account_key, check_account_owner, check_signer},
 };
-use bonfida_utils::{BorshSize, InstructionsAccount};
-
-use crate::error::AccessError;
-use crate::state::{BondAccount, SECONDS_IN_DAY, StakeAccount, StakePool};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `stake` instruction
@@ -199,15 +195,17 @@ pub fn process_stake(
     }
 
     if stake_account.stake_amount > 0
-        && stake_account.last_claimed_offset < stake_pool.header.current_day_idx as i64
+        && stake_account.last_claimed_offset < stake_pool.header.current_day_idx as u64
     {
         return Err(AccessError::UnclaimedRewards.into());
     }
 
-    let current_time = Clock::get()?.unix_timestamp;
-    let current_offset = (current_time - central_state.creation_time) / SECONDS_IN_DAY as i64;
+    if (stake_pool.header.current_day_idx as u64) < central_state.get_current_offset() {
+        return Err(AccessError::PoolMustBeCranked.into());
+    }
+
     if stake_account.stake_amount == 0 {
-        stake_account.last_claimed_offset = current_offset;
+        stake_account.last_claimed_offset = central_state.get_current_offset();
     }
 
     // Transfer tokens
@@ -268,7 +266,7 @@ pub fn process_stake(
 
     // Update stake account
     stake_account.deposit(amount)?;
-    stake_pool.header.deposit(amount, central_state.last_snapshot_offset, central_state.creation_time)?;
+    stake_pool.header.deposit(amount)?;
 
     //Update central state
     central_state.total_staked = central_state

@@ -145,7 +145,7 @@ pub fn process_claim_bond_rewards(
 
     let reward = calc_reward_fp32(
         central_state.last_snapshot_offset,
-        bond.last_claimed_offset as i64,
+        bond.last_claimed_offset,
         &stake_pool,
         true,
         false,

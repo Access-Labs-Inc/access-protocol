@@ -140,6 +140,10 @@ pub fn process_claim_bond(
         return Err(AccessError::NotEnoughSellers.into());
     }
 
+    if (stake_pool.header.current_day_idx as u64) < central_state.get_current_offset() {
+        return Err(AccessError::PoolMustBeCranked.into());
+    }
+
     // Transfer tokens
     let transfer_ix = spl_token::instruction::transfer(
         &spl_token::ID,

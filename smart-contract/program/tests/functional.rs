@@ -1,9 +1,11 @@
-use mpl_token_metadata::pda::find_metadata_account;
 use solana_program::{pubkey, pubkey::Pubkey, system_program};
 use solana_program_test::{processor, ProgramTest};
 use solana_sdk::signer::{keypair::Keypair, Signer};
-use spl_associated_token_account::{get_associated_token_address, instruction};
-
+use spl_associated_token_account::{
+    get_associated_token_address, instruction::create_associated_token_account,
+};
+pub mod common;
+use crate::common::utils::{mint_bootstrap, sign_send_instructions};
 use access_protocol::{
     entrypoint::process_instruction,
     instruction::{
@@ -11,14 +13,11 @@ use access_protocol::{
         change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond,
         claim_bond_rewards, claim_pool_rewards, claim_rewards, close_stake_account,
         close_stake_pool, crank, create_bond, create_central_state, create_stake_account,
-        create_stake_pool, edit_metadata, stake, unlock_bond_tokens, unstake,
+        create_stake_pool, edit_metadata, execute_unstake, stake, unlock_bond_tokens, unstake,
     },
     state::BondAccount,
 };
-
-use crate::common::utils::{mint_bootstrap, sign_send_instructions};
-
-pub mod common;
+use mpl_token_metadata::pda::find_metadata_account;
 
 #[tokio::test]
 async fn test_staking() {
