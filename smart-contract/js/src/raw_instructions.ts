@@ -461,7 +461,6 @@ export class claimRewardsInstruction {
 export class stakeInstruction {
   tag: number;
   amount: BN;
-  hasBondAccount: number;
   static schema: Schema = new Map([
     [
       stakeInstruction,
@@ -470,15 +469,13 @@ export class stakeInstruction {
         fields: [
           ["tag", "u8"],
           ["amount", "u64"],
-          ["hasBondAccount", "u8"],
         ],
       },
     ],
   ]);
-  constructor(obj: { amount: BN; hasBondAccount: number }) {
+  constructor(obj: { amount: BN }) {
     this.tag = 4;
     this.amount = obj.amount;
-    this.hasBondAccount = obj.hasBondAccount;
   }
   serialize(): Uint8Array {
     return serialize(stakeInstruction.schema, this);
@@ -1153,7 +1150,6 @@ export class createBondInstruction {
 export class unstakeInstruction {
   tag: number;
   amount: BN;
-  hasBondAccount: number;
   static schema: Schema = new Map([
     [
       unstakeInstruction,
@@ -1162,15 +1158,13 @@ export class unstakeInstruction {
         fields: [
           ["tag", "u8"],
           ["amount", "u64"],
-          ["hasBondAccount", "u8"],
         ],
       },
     ],
   ]);
-  constructor(obj: { amount: BN; hasBondAccount: number }) {
+  constructor(obj: { amount: BN }) {
     this.tag = 5;
     this.amount = obj.amount;
-    this.hasBondAccount = obj.hasBondAccount;
   }
   serialize(): Uint8Array {
     return serialize(unstakeInstruction.schema, this);
