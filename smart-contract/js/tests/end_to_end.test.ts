@@ -268,8 +268,6 @@ test("End to end test", async () => {
   expect(stakePoolObj.currentDayIdx).toBe(0);
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(10_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(0);
-  expect(stakePoolObj.totalStakedDelta.toNumber()).toBe(0);
-  expect(stakePoolObj.lastDeltaUpdateOffset.toNumber()).toBe(0);
   expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(stakePoolObj.owner.toBase58()).toBe(
     stakePoolOwner.publicKey.toBase58()
@@ -596,7 +594,6 @@ test("End to end test", async () => {
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(10_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
   expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
-  expect(stakePoolObj.lastDeltaUpdateOffset.toNumber()).toBe(0);
   expect(stakePoolObj.owner.toBase58()).toBe(
     stakePoolOwner.publicKey.toBase58()
   );
