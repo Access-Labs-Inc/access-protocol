@@ -152,7 +152,7 @@ pub fn process_claim_bond_rewards(
     )?
     // Multiply by the staker shares of the total pool
     .checked_mul(bond.total_staked as u128)
-    .map(|r| r >> 32)
+    .map(|r| ((r >> 31) + 1) >> 1)
     .and_then(safe_downcast)
     .ok_or(AccessError::Overflow)?;
 

@@ -149,7 +149,7 @@ pub fn process_claim_rewards(
     )?
     // Multiply by the staker shares of the total pool
     .checked_mul(stake_account.stake_amount as u128)
-    .map(|r| r >> 32)
+    .map(|r| ((r >> 31) + 1) >> 1)
     .and_then(safe_downcast)
     .ok_or(AccessError::Overflow)?;
 

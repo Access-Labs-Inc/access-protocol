@@ -132,6 +132,7 @@ pub fn process_claim_pool_rewards(
         )? >> 32,
     )
     .ok_or(AccessError::Overflow)?;
+    let reward = ((reward >> 31) + 1) >> 1;
 
     msg!("Claiming pool rewards {}", reward);
 
