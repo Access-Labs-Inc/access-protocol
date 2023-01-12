@@ -148,6 +148,10 @@ pub fn process_unlock_bond_tokens(
         return Err(ProgramError::InvalidArgument);
     }
 
+    if bond.last_claimed_offset < central_state.get_current_offset() {
+        return Err(AccessError::UnclaimedRewards.into());
+    }
+
     let missed_periods = delta
         .checked_div(bond.unlock_period)
         .ok_or(AccessError::Overflow)?;
