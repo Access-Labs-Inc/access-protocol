@@ -16,6 +16,7 @@ use access_protocol::{
     state::BondAccount,
 };
 use mpl_token_metadata::{instruction::create_metadata_accounts_v3, pda::find_metadata_account};
+use mpl_token_metadata::instruction::update_metadata_accounts;
 use spl_token::{instruction::set_authority, instruction::AuthorityType};
 
 #[tokio::test]
@@ -84,7 +85,7 @@ async fn test_staking() {
         mint,
         authority.pubkey(),
         prg_test_ctx.payer.pubkey(),
-        central_state,
+        authority.pubkey(),
         "Access Protocol".to_string(),
         "ACS".to_string(),
         "URI".to_string(),
@@ -100,6 +101,23 @@ async fn test_staking() {
     sign_send_instructions(
         &mut prg_test_ctx,
         vec![create_metadata_ix],
+        vec![&authority],
+    )
+    .await
+    .unwrap();
+
+    let metaplex_set_authority_to_cs_ix = update_metadata_accounts(
+        mpl_token_metadata::ID,
+        metadata_key,
+        authority.pubkey(),
+        Some(central_state),
+        None,
+        Some(true),
+    );
+
+    sign_send_instructions(
+        &mut prg_test_ctx,
+        vec![metaplex_set_authority_to_cs_ix],
         vec![&authority],
     )
     .await
