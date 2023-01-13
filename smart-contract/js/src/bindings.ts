@@ -412,30 +412,19 @@ export const createCentralState = async (
   authority: PublicKey,
   feePayer: PublicKey,
   mint: PublicKey,
-  name: string,
-  symbol: string,
-  uri: string,
   programId: PublicKey,
-  tokenMetataProgramId = TokenMetadataProgram.publicKey
 ) => {
   const [centralKey] = await CentralState.getKey(programId);
-  const metadata = findMetadataPda(mint, tokenMetataProgramId);
 
   const ix = new createCentralStateInstruction({
     dailyInflation: new BN(dailyInflation),
     authority: authority.toBuffer(),
-    name,
-    symbol,
-    uri,
   }).getInstruction(
     programId,
     centralKey,
     SystemProgram.programId,
     feePayer,
     mint,
-    metadata,
-    TokenMetadataProgram.publicKey,
-    SYSVAR_RENT_PUBKEY
   );
 
   return ix;

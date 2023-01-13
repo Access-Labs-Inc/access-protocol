@@ -552,9 +552,6 @@ export class createCentralStateInstruction {
   tag: number;
   dailyInflation: BN;
   authority: Uint8Array;
-  name: string;
-  symbol: string;
-  uri: string;
   static schema: Schema = new Map([
     [
       createCentralStateInstruction,
@@ -564,9 +561,6 @@ export class createCentralStateInstruction {
           ["tag", "u8"],
           ["dailyInflation", "u64"],
           ["authority", [32]],
-          ["name", "string"],
-          ["symbol", "string"],
-          ["uri", "string"],
         ],
       },
     ],
@@ -574,16 +568,10 @@ export class createCentralStateInstruction {
   constructor(obj: {
     dailyInflation: BN;
     authority: Uint8Array;
-    name: string;
-    symbol: string;
-    uri: string;
   }) {
     this.tag = 0;
     this.dailyInflation = obj.dailyInflation;
     this.authority = obj.authority;
-    this.name = obj.name;
-    this.symbol = obj.symbol;
-    this.uri = obj.uri;
   }
   serialize(): Uint8Array {
     return serialize(createCentralStateInstruction.schema, this);
@@ -594,9 +582,6 @@ export class createCentralStateInstruction {
     systemProgram: PublicKey,
     feePayer: PublicKey,
     mint: PublicKey,
-    metadata: PublicKey,
-    metadataProgram: PublicKey,
-    rentSysvar: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -617,21 +602,6 @@ export class createCentralStateInstruction {
     });
     keys.push({
       pubkey: mint,
-      isSigner: false,
-      isWritable: false,
-    });
-    keys.push({
-      pubkey: metadata,
-      isSigner: false,
-      isWritable: true,
-    });
-    keys.push({
-      pubkey: metadataProgram,
-      isSigner: false,
-      isWritable: false,
-    });
-    keys.push({
-      pubkey: rentSysvar,
       isSigner: false,
       isWritable: false,
     });

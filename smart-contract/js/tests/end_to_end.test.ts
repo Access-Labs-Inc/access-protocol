@@ -90,10 +90,12 @@ test("End to end test", async () => {
    * Test variables
    */
   const [centralKey, centralNonce] = await CentralState.getKey(programId);
+  console.log("Central key:", centralKey.toBase58());
+  console.log("Central key pubkey:", centralStateAuthority.publicKey.toBase58());
   const decimals = Math.pow(10, 6);
   let dailyInflation = 1_000_000;
-  accessToken = await TokenMint.init(connection, feePayer, centralKey);
-  const quoteToken = await TokenMint.init(connection, feePayer);
+  accessToken = await TokenMint.init(connection, feePayer, centralStateAuthority, centralKey);
+  const quoteToken = await TokenMint.init(connection, feePayer, undefined, centralKey);
   const stakePoolOwner = Keypair.generate();
   const staker = Keypair.generate();
   let minimumStakeAmount = 10_000 * decimals;
@@ -166,14 +168,13 @@ test("End to end test", async () => {
    * Create central state
    */
 
+  console.log("Authority:", centralStateAuthority.publicKey.toBase58());
+
   const ix_central_state = await createCentralState(
     dailyInflation,
     centralStateAuthority.publicKey,
     feePayer.publicKey,
     accessToken.token.publicKey,
-    "ACCESS",
-    "ACCS",
-    "some_uri",
     programId
   );
 
@@ -186,9 +187,6 @@ test("End to end test", async () => {
 
   let centralStateObj = await CentralState.retrieve(connection, centralKey);
 
-  const metadatKey = findMetadataPda(accessToken.token.publicKey);
-  let metadata = await Metadata.fromAccountAddress(connection, metadatKey);
-
   expect(centralStateObj.tag).toBe(Tag.CentralState);
   expect(centralStateObj.signerNonce).toBe(centralNonce);
   expect(centralStateObj.dailyInflation.toNumber()).toBe(1_000_000);
@@ -199,35 +197,39 @@ test("End to end test", async () => {
     centralStateAuthority.publicKey.toBase58()
   );
 
+  const metadatKey = findMetadataPda(accessToken.token.publicKey);
+  let metadata = await Metadata.fromAccountAddress(connection, metadatKey);
+
   // We slice because the metaplex lib does not remove trailling 0s in the buffer info
-  expect(metadata.data.name.slice(0, 6)).toBe("ACCESS");
-  expect(metadata.data.symbol.slice(0, 4)).toBe("ACCS");
-  expect(metadata.data.uri.slice(0, 8)).toBe("some_uri");
+  expect(metadata.data.name.slice(0, "Access Protocol".length)).toBe("Access Protocol");
+  expect(metadata.data.symbol.slice(0, "ACS".length)).toBe("ACS");
+  expect(metadata.data.uri.slice(0, "https://accessprotocol.com".length)).toBe("https://accessprotocol.com");
 
   /**
    * Edit metadata
    */
-  console.log("Edit metadata");
-  const ix_edit_metadata = await editMetadata(
-    connection,
-    "new name",
-    "new symbol",
-    "new uri",
-    programId
-  );
-  tx = await signAndSendTransactionInstructions(
-    connection,
-    [centralStateAuthority],
-    feePayer,
-    [ix_edit_metadata]
-  );
-  console.log(`Edit metadata ${tx}`);
+   console.log("Edit metadata");
+   const ix_edit_metadata = await editMetadata(
+     connection,
+     "new name",
+     "new symbol",
+     "new uri",
+     programId
+   );
+   tx = await signAndSendTransactionInstructions(
+     connection,
+     [centralStateAuthority],
+     feePayer,
+     [ix_edit_metadata],
+     true
+   );
+   console.log(`Edit metadata ${tx}`);
 
-  // Verification
-  metadata = await Metadata.fromAccountAddress(connection, metadatKey);
-  expect(metadata.data.name.slice(0, 8)).toBe("new name");
-  expect(metadata.data.symbol.slice(0, 10)).toBe("new symbol");
-  expect(metadata.data.uri.slice(0, 7)).toBe("new uri");
+   // Verification
+   metadata = await Metadata.fromAccountAddress(connection, metadatKey);
+   expect(metadata.data.name.slice(0, 8)).toBe("new name");
+   expect(metadata.data.symbol.slice(0, 10)).toBe("new symbol");
+   expect(metadata.data.uri.slice(0, 7)).toBe("new uri");
 
   /**
    * Create stake pool
@@ -444,7 +446,8 @@ test("End to end test", async () => {
     connection,
     [staker],
     feePayer,
-    [ix_claim_bond]
+    [ix_claim_bond],
+    true
   );
   console.log("Claimed bond ", tx);
 

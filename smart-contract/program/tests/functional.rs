@@ -17,7 +17,9 @@ use access_protocol::{
     },
     state::BondAccount,
 };
-use mpl_token_metadata::pda::find_metadata_account;
+use mpl_token_metadata::{instruction::create_metadata_accounts_v3, pda::find_metadata_account};
+use mpl_token_metadata::instruction::update_metadata_accounts;
+use spl_token::{instruction::set_authority, instruction::AuthorityType};
 
 #[tokio::test]
 async fn test_staking() {
@@ -38,10 +40,12 @@ async fn test_staking() {
     let (central_state, _nonce) =
         Pubkey::find_program_address(&[&program_id.to_bytes()], &program_id);
 
+    let authority = Keypair::new();
+
     //
     // Create mint
     //
-    let (mint, _) = mint_bootstrap(None, 6, &mut program_test, &central_state);
+    let (mint, _) = mint_bootstrap(None, 6, &mut program_test, &authority.pubkey());
 
     ////
     // Create test context
@@ -64,23 +68,83 @@ async fn test_staking() {
             system_program: &system_program::ID,
             fee_payer: &prg_test_ctx.payer.pubkey(),
             mint: &mint,
-            metadata: &metadata_key,
-            metadata_program: &mpl_token_metadata::ID,
-            rent_sysvar: &solana_program::sysvar::rent::ID,
         },
         create_central_state::Params {
             daily_inflation,
             authority: prg_test_ctx.payer.pubkey(),
-            name: "Access protocol token".to_string(),
-            symbol: "ACCESS".to_string(),
-            uri: "uri".to_string(),
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![create_central_state_ix], vec![])
         .await
         .unwrap();
 
+    ////
+    // Metadata creation
+    ////
+    let create_metadata_ix = create_metadata_accounts_v3(
+        mpl_token_metadata::ID,
+        metadata_key,
+        mint,
+        authority.pubkey(),
+        prg_test_ctx.payer.pubkey(),
+        authority.pubkey(),
+        "Access Protocol".to_string(),
+        "ACS".to_string(),
+        "URI".to_string(),
+        None,
+        0,
+        false,
+        true,
+        None,
+        None,
+        None,
+    );
+
+    sign_send_instructions(
+        &mut prg_test_ctx,
+        vec![create_metadata_ix],
+        vec![&authority],
+    )
+    .await
+    .unwrap();
+
+    let metaplex_set_authority_to_cs_ix = update_metadata_accounts(
+        mpl_token_metadata::ID,
+        metadata_key,
+        authority.pubkey(),
+        Some(central_state),
+        None,
+        Some(true),
+    );
+
+    sign_send_instructions(
+        &mut prg_test_ctx,
+        vec![metaplex_set_authority_to_cs_ix],
+        vec![&authority],
+    )
+    .await
+    .unwrap();
+
+    let set_authority_to_cs_ix = set_authority(
+        &spl_token::ID,
+        &mint,
+        Some(&central_state),
+        AuthorityType::MintTokens,
+        &authority.pubkey(),
+        &[],
+    )
+    .unwrap();
+
+    sign_send_instructions(
+        &mut prg_test_ctx,
+        vec![set_authority_to_cs_ix],
+        vec![&authority],
+    )
+    .await
+    .unwrap();
+
     //
+    // TODO(Ladi): Not sure how to make this work
     // Edit metadata
     //
     let ix = edit_metadata(
@@ -108,6 +172,7 @@ async fn test_staking() {
         &prg_test_ctx.payer.pubkey(),
         &prg_test_ctx.payer.pubkey(),
         &mint,
+        &spl_token::ID,
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![])
         .await
@@ -125,6 +190,7 @@ async fn test_staking() {
         &prg_test_ctx.payer.pubkey(),
         &stake_pool_owner.pubkey(),
         &mint,
+        &spl_token::ID,
     );
     sign_send_instructions(
         &mut prg_test_ctx,
@@ -135,7 +201,7 @@ async fn test_staking() {
     .unwrap();
 
     let create_ata_staker_ix =
-        create_associated_token_account(&prg_test_ctx.payer.pubkey(), &staker.pubkey(), &mint);
+        create_associated_token_account(&prg_test_ctx.payer.pubkey(), &staker.pubkey(), &mint, &spl_token::ID,);
     sign_send_instructions(&mut prg_test_ctx, vec![create_ata_staker_ix], vec![])
         .await
         .unwrap();
@@ -177,7 +243,7 @@ async fn test_staking() {
     );
 
     let create_associated_instruction =
-        create_associated_token_account(&prg_test_ctx.payer.pubkey(), &stake_pool_key, &mint);
+        create_associated_token_account(&prg_test_ctx.payer.pubkey(), &stake_pool_key, &mint, &spl_token::ID,);
     let pool_vault = get_associated_token_address(&stake_pool_key, &mint);
     sign_send_instructions(
         &mut prg_test_ctx,
