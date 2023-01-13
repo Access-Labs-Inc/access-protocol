@@ -1,4 +1,4 @@
-use solana_program::{pubkey, pubkey::Pubkey, system_program, sysvar};
+use solana_program::{pubkey, pubkey::Pubkey, system_program};
 use solana_program_test::{processor, ProgramTest};
 use solana_sdk::signer::{keypair::Keypair, Signer};
 use spl_associated_token_account::{
@@ -172,6 +172,7 @@ async fn test_staking() {
         &prg_test_ctx.payer.pubkey(),
         &prg_test_ctx.payer.pubkey(),
         &mint,
+        &spl_token::ID,
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![])
         .await
@@ -189,6 +190,7 @@ async fn test_staking() {
         &prg_test_ctx.payer.pubkey(),
         &stake_pool_owner.pubkey(),
         &mint,
+        &spl_token::ID,
     );
     sign_send_instructions(
         &mut prg_test_ctx,
@@ -199,7 +201,7 @@ async fn test_staking() {
     .unwrap();
 
     let create_ata_staker_ix =
-        create_associated_token_account(&prg_test_ctx.payer.pubkey(), &staker.pubkey(), &mint);
+        create_associated_token_account(&prg_test_ctx.payer.pubkey(), &staker.pubkey(), &mint, &spl_token::ID,);
     sign_send_instructions(&mut prg_test_ctx, vec![create_ata_staker_ix], vec![])
         .await
         .unwrap();
@@ -241,7 +243,7 @@ async fn test_staking() {
     );
 
     let create_associated_instruction =
-        create_associated_token_account(&prg_test_ctx.payer.pubkey(), &stake_pool_key, &mint);
+        create_associated_token_account(&prg_test_ctx.payer.pubkey(), &stake_pool_key, &mint, &spl_token::ID,);
     let pool_vault = get_associated_token_address(&stake_pool_key, &mint);
     sign_send_instructions(
         &mut prg_test_ctx,

@@ -1,7 +1,6 @@
 use std::error::Error;
 
 use borsh::BorshDeserialize;
-use mpl_token_metadata::pda::find_metadata_account;
 use solana_program::{pubkey::Pubkey, system_program};
 
 use solana_program_test::{processor, ProgramTest};
@@ -91,11 +90,6 @@ impl TestRunner {
         let local_env = prg_test_ctx.banks_client.clone();
 
 
-        ////
-        // Metadata account
-        ////
-        let (metadata_key, _) = find_metadata_account(&mint);
-
         //
         // Create central state
         //
@@ -107,16 +101,10 @@ impl TestRunner {
                 system_program: &system_program::ID,
                 fee_payer: &prg_test_ctx.payer.pubkey(),
                 mint: &mint,
-                metadata: &metadata_key,
-                metadata_program: &mpl_token_metadata::ID,
-                rent_sysvar: &solana_program::sysvar::rent::ID,
             },
             create_central_state::Params {
                 daily_inflation,
                 authority: prg_test_ctx.payer.pubkey(),
-                name: "Access protocol token".to_string(),
-                symbol: "ACCESS".to_string(),
-                uri: "uri".to_string(),
             },
         );
         sign_send_instructions(&mut prg_test_ctx, vec![create_central_state_ix], vec![])
@@ -129,6 +117,7 @@ impl TestRunner {
             &prg_test_ctx.payer.pubkey(),
             &prg_test_ctx.payer.pubkey(),
             &mint,
+            &spl_token::ID,
         );
         sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![])
             .await?;
@@ -140,6 +129,7 @@ impl TestRunner {
             &prg_test_ctx.payer.pubkey(),
             &bond_seller.pubkey(),
             &mint,
+            &spl_token::ID,
         );
         sign_send_instructions(
             &mut prg_test_ctx,
@@ -166,6 +156,7 @@ impl TestRunner {
             &self.prg_test_ctx.payer.pubkey(),
             &owner.pubkey(),
             &self.mint,
+            &spl_token::ID,
         );
         sign_send_instructions(
             &mut self.prg_test_ctx,
@@ -198,12 +189,13 @@ impl TestRunner {
     pub async fn create_stake_pool(&mut self, stake_pool_owner: &Pubkey, minimum_stake_amount: u64) -> Result<(), BanksClientError>  {
         let stake_pool_key = self.get_pool_pda(stake_pool_owner);
         let create_associated_instruction =
-            create_associated_token_account(&self.prg_test_ctx.payer.pubkey(), &stake_pool_key, &self.mint);
+            create_associated_token_account(&self.prg_test_ctx.payer.pubkey(), &stake_pool_key, &self.mint, &spl_token::ID);
         let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
         let create_ata_pool_vault_ix = create_associated_token_account(
             &self.prg_test_ctx.payer.pubkey(),
             &stake_pool_key,
             &self.mint,
+            &spl_token::ID,
         );
         sign_send_instructions(
             &mut self.prg_test_ctx,
