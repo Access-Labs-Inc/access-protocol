@@ -96,7 +96,7 @@ pub fn process_crank(
         .checked_div(100u128)
         .ok_or(AccessError::Overflow)?
         .checked_div(central_state.total_staked_snapshot as u128)
-        .ok_or(AccessError::Overflow)?
+        .unwrap_or(0)
         .checked_div(total_staked_snapshot)
         .unwrap_or(0);
 
