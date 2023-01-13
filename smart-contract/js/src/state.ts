@@ -51,10 +51,8 @@ export class StakePool {
   _padding: Uint8Array;
   minimumStakeAmount: BN;
   totalStaked: BN;
-  lastCrankTime: BN;
-  lastClaimedTime: BN;
+  lastClaimedOffset: BN;
   stakersPart: BN;
-  unstakePeriod: BN;
   owner: PublicKey;
   vault: PublicKey;
 
@@ -72,10 +70,8 @@ export class StakePool {
           ["_padding", [4]],
           ["minimumStakeAmount", "u64"],
           ["totalStaked", "u64"],
-          ["lastCrankTime", "u64"],
-          ["lastClaimedTime", "u64"],
+          ["lastClaimedOffset", "u64"],
           ["stakersPart", "u64"],
-          ["unstakePeriod", "u64"],
           ["owner", [32]],
           ["vault", [32]],
           ["balances", [RewardsTuple, STAKE_BUFFER_LEN]],
@@ -101,13 +97,11 @@ export class StakePool {
     _padding: Uint8Array;
     minimumStakeAmount: BN;
     totalStaked: BN;
-    totalStakedLastCrank: BN;
-    lastCrankTime: BN;
-    lastClaimedTime: BN;
+    lastClaimedOffset: BN;
     stakersPart: BN;
-    unstakePeriod: BN;
     owner: Uint8Array;
     vault: Uint8Array;
+
     balances: RewardsTuple[];
   }) {
     this.tag = obj.tag as Tag;
@@ -116,10 +110,8 @@ export class StakePool {
     this._padding = obj._padding;
     this.minimumStakeAmount = obj.minimumStakeAmount;
     this.totalStaked = obj.totalStaked;
-    this.lastCrankTime = obj.lastCrankTime;
-    this.lastClaimedTime = obj.lastClaimedTime;
+    this.lastClaimedOffset = obj.lastClaimedOffset.fromTwos(64);
     this.stakersPart = obj.stakersPart;
-    this.unstakePeriod = obj.unstakePeriod;
     this.owner = new PublicKey(obj.owner);
     this.vault = new PublicKey(obj.vault);
     this.balances = obj.balances;
@@ -158,19 +150,6 @@ export class StakePool {
 }
 
 /**
- * Unstake request
- */
-export class UnstakeRequest {
-  amount: BN;
-  time: BN;
-
-  constructor(obj: { time: BN; amount: BN }) {
-    this.amount = obj.amount;
-    this.time = obj.time;
-  }
-}
-
-/**
  * Stake account state
  */
 export class StakeAccount {
@@ -178,22 +157,10 @@ export class StakeAccount {
   owner: PublicKey;
   stakeAmount: BN;
   stakePool: PublicKey;
-  lastClaimedTime: BN;
+  lastClaimedOffset: BN;
   poolMinimumAtCreation: BN;
-  pendingUnstakeRequests: number;
-  unstakeRequests: UnstakeRequest[];
 
   static schema: Schema = new Map<any, any>([
-    [
-      UnstakeRequest,
-      {
-        kind: "struct",
-        fields: [
-          ["amount", "u64"],
-          ["time", "u64"],
-        ],
-      },
-    ],
     [
       StakeAccount,
       {
@@ -203,10 +170,8 @@ export class StakeAccount {
           ["owner", [32]],
           ["stakeAmount", "u64"],
           ["stakePool", [32]],
-          ["lastClaimedTime", "u64"],
+          ["lastClaimedOffset", "u64"],
           ["poolMinimumAtCreation", "u64"],
-          ["pendingUnstakeRequests", "u8"],
-          ["unstakeRequests", [UnstakeRequest, MAX_UNSTAKE_REQUEST]],
         ],
       },
     ],
@@ -217,19 +182,15 @@ export class StakeAccount {
     owner: Uint8Array;
     stakeAmount: BN;
     stakePool: Uint8Array;
-    lastClaimedTime: BN;
+    lastClaimedOffset: BN;
     poolMinimumAtCreation: BN;
-    pendingUnstakeRequests: number;
-    unstakeRequests: UnstakeRequest[];
   }) {
     this.tag = obj.tag;
     this.owner = new PublicKey(obj.owner);
     this.stakeAmount = obj.stakeAmount;
     this.stakePool = new PublicKey(obj.stakePool);
-    this.lastClaimedTime = obj.lastClaimedTime;
+    this.lastClaimedOffset = obj.lastClaimedOffset.fromTwos(64);
     this.poolMinimumAtCreation = obj.poolMinimumAtCreation;
-    this.pendingUnstakeRequests = obj.pendingUnstakeRequests;
-    this.unstakeRequests = obj.unstakeRequests;
   }
 
   static deserialize(data: Buffer) {
@@ -278,7 +239,10 @@ export class CentralState {
   dailyInflation: BN;
   tokenMint: PublicKey;
   authority: PublicKey;
+  creationTime: BN;
   totalStaked: BN;
+  totalStakedSnapshot: BN;
+  lastSnapshotOffset: BN;
 
   static schema: Schema = new Map([
     [
@@ -291,7 +255,10 @@ export class CentralState {
           ["dailyInflation", "u64"],
           ["tokenMint", [32]],
           ["authority", [32]],
+          ["creationTime", "u64"],
           ["totalStaked", "u64"],
+          ["totalStakedSnapshot", "u64"],
+          ["lastSnapshotOffset", "u64"],
         ],
       },
     ],
@@ -303,14 +270,20 @@ export class CentralState {
     dailyInflation: BN;
     tokenMint: Uint8Array;
     authority: Uint8Array;
+    creationTime: BN;
     totalStaked: BN;
+    totalStakedSnapshot: BN;
+    lastSnapshotOffset: BN;
   }) {
     this.tag = obj.tag as Tag;
     this.signerNonce = obj.signerNonce;
     this.dailyInflation = obj.dailyInflation;
     this.tokenMint = new PublicKey(obj.tokenMint);
     this.authority = new PublicKey(obj.authority);
+    this.creationTime = obj.creationTime.fromTwos(64);
     this.totalStaked = obj.totalStaked;
+    this.totalStakedSnapshot = obj.totalStakedSnapshot.fromTwos(64);
+    this.lastSnapshotOffset = obj.lastSnapshotOffset.fromTwos(64);
   }
 
   static deserialize(data: Buffer) {
@@ -362,7 +335,7 @@ export class BondAccount {
   totalUnlockedAmount: BN;
   poolMinimumAtCreation: BN;
   stakePool: PublicKey;
-  lastClaimedTime: BN;
+  lastClaimedOffset: BN;
   sellers: PublicKey[];
 
   static schema: Schema = new Map([
@@ -385,7 +358,7 @@ export class BondAccount {
           ["totalUnlockedAmount", "u64"],
           ["poolMinimumAtCreation", "u64"],
           ["stakePool", [32]],
-          ["lastClaimedTime", "u64"],
+          ["lastClaimedOffset", "u64"],
           ["sellers", [[32]]],
         ],
       },
@@ -407,7 +380,7 @@ export class BondAccount {
     totalUnlockedAmount: BN;
     poolMinimumAtCreation: BN;
     stakePool: Uint8Array;
-    lastClaimedTime: BN;
+    lastClaimedOffset: BN;
     sellers: Uint8Array[];
   }) {
     this.tag = obj.tag as Tag;
@@ -424,7 +397,7 @@ export class BondAccount {
     this.totalUnlockedAmount = obj.totalUnlockedAmount;
     this.poolMinimumAtCreation = obj.poolMinimumAtCreation;
     this.stakePool = new PublicKey(obj.stakePool);
-    this.lastClaimedTime = obj.lastClaimedTime;
+    this.lastClaimedOffset = obj.lastClaimedOffset;
     this.sellers = obj.sellers.map((e) => new PublicKey(e));
   }
 

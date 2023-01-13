@@ -2,7 +2,7 @@ pub use crate::processor::{
     activate_stake_pool, admin_freeze, admin_mint, change_central_state_authority,
     change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards,
     claim_pool_rewards, claim_rewards, close_stake_account, close_stake_pool, crank, create_bond,
-    create_central_state, create_stake_account, create_stake_pool, edit_metadata, execute_unstake,
+    create_central_state, create_stake_account, create_stake_pool, edit_metadata,
     sign_bond, stake, unlock_bond_tokens, unstake,
 };
 use bonfida_utils::InstructionsAccount;
@@ -71,18 +71,8 @@ pub enum ProgramInstruction {
     /// | 1     | ✅        | ❌      | The stake account              |
     /// | 2     | ✅        | ❌      | The stake pool account         |
     /// | 3     | ❌        | ✅      | The owner of the stake account |
+    // todo update the documentation - maybe not just here
     Unstake,
-    /// Execute the token transfer after the unstake outbounding period
-    ///
-    /// | Index | Writable | Signer | Description                          |
-    /// | ---------------------------------------------------------------- |
-    /// | 0     | ✅        | ❌      | The stake account                    |
-    /// | 1     | ✅        | ❌      | The stake pool account               |
-    /// | 2     | ❌        | ✅      | The owner of the stake account       |
-    /// | 3     | ✅        | ❌      | The destination of the staked tokens |
-    /// | 4     | ❌        | ❌      | The SPL token program account        |
-    /// | 5     | ✅        | ❌      | The stake pool vault                 |
-    ExecuteUnstake,
     /// Claim rewards of a stake pool
     /// This instruction is used by stake pool owner for claiming their staking rewards
     ///
@@ -460,14 +450,6 @@ pub fn admin_freeze(
     params: admin_freeze::Params,
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::AdminFreeze as u8, params)
-}
-#[allow(missing_docs)]
-pub fn execute_unstake(
-    program_id: Pubkey,
-    accounts: execute_unstake::Accounts<Pubkey>,
-    params: execute_unstake::Params,
-) -> Instruction {
-    accounts.get_instruction(program_id, ProgramInstruction::ExecuteUnstake as u8, params)
 }
 #[allow(missing_docs)]
 pub fn activate_stake_pool(

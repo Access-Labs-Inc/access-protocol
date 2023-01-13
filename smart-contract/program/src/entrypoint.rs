@@ -131,8 +131,14 @@ impl PrintProgramError for AccessError {
             AccessError::CannotUnstake => {
                 msg!("Error: Unstake period not over")
             }
+            AccessError::InvalidUnstakeAmount => {
+                msg!("Error: Invalid unstake amount")
+            }
             AccessError::InactiveStakePoolNotAllowed => {
                 msg!("Error: Inactive stake pool not allowed")
+            }
+            AccessError::ActiveStakePoolNotAllowed => {
+                msg!("Error: Active stake pool not allowed")
             }
             AccessError::InvalidTagChange => {
                 msg!("Error: Invalid tag change")

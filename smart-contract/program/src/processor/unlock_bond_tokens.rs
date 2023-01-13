@@ -135,6 +135,10 @@ pub fn process_unlock_bond_tokens(
         return Err(ProgramError::InvalidArgument);
     }
 
+    if (stake_pool.header.current_day_idx as u64) < central_state.get_current_offset() {
+        return Err(AccessError::PoolMustBeCranked.into());
+    }
+
     let delta = current_time
         .checked_sub(bond.last_unlock_time)
         .ok_or(AccessError::Overflow)?;
@@ -142,6 +146,10 @@ pub fn process_unlock_bond_tokens(
     if delta < bond.unlock_period {
         msg!("Need to wait the end of the current unlock period before unlocking the bond");
         return Err(ProgramError::InvalidArgument);
+    }
+
+    if bond.last_claimed_offset < central_state.get_current_offset() {
+        return Err(AccessError::UnclaimedRewards.into());
     }
 
     let missed_periods = delta

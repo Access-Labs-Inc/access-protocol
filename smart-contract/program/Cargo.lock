@@ -30,6 +30,7 @@ dependencies = [
  "solana-program",
  "solana-program-test",
  "solana-sdk",
+ "solana-test-framework",
  "spl-associated-token-account",
  "spl-token",
  "thiserror",
@@ -3860,6 +3861,23 @@ dependencies = [
  "thiserror",
  "tokio",
  "x509-parser",
+]
+
+[[package]]
+name = "solana-test-framework"
+version = "1.0.3"
+source = "git+https://github.com/halbornteam/solana-test-framework#167ea22f34214f580f38facd6e5bc7a00a083dd2"
+dependencies = [
+ "async-trait",
+ "bincode",
+ "borsh",
+ "futures",
+ "solana-banks-client",
+ "solana-program",
+ "solana-program-test",
+ "solana-sdk",
+ "spl-associated-token-account",
+ "spl-token",
 ]
 
 [[package]]
