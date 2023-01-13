@@ -546,7 +546,7 @@ impl TestRunner {
         let bond_owner_ata = get_associated_token_address(&bond_owner, &self.mint);
         let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
 
-        let claim_bond_ix = claim_bond(
+        let mut claim_bond_ix = claim_bond(
             self.program_id,
             claim_bond::Accounts {
                 bond_account: &bond_key,
@@ -561,6 +561,7 @@ impl TestRunner {
             },
             claim_bond::Params {},
         );
+        claim_bond_ix.accounts[1].is_signer = false;
 
     println!("claiming bond");
         sign_send_instructions(&mut self.prg_test_ctx, vec![claim_bond_ix], vec![])
