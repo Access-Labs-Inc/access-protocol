@@ -64,7 +64,7 @@ async fn common_unstake_limit() {
     tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), 5_000, 1).await.unwrap();
 
     // Claim bond
-    tr.claim_bond(&stake_pool_owner.pubkey(), &staker).await.unwrap();
+    tr.claim_bond(&stake_pool_owner.pubkey(), &staker.pubkey()).await.unwrap();
 
     // unstake under the common pool minimum should fail
     let result = tr.unstake(&stake_pool_owner.pubkey(), &staker, 5001).await;

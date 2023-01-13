@@ -41,8 +41,8 @@ async fn full_system_test() {
     // First two airdrop users get airdrop of 100000 tokens to the first pool with the release date on day 10
     tr.create_bond(&pool_owner.pubkey(), &airdrop_user1.pubkey(), 100_000_000_000, 8*DAY as i64).await.unwrap();
     tr.create_bond(&pool_owner.pubkey(), &airdrop_user2.pubkey(), 100_000_000_000, 8*DAY as i64).await.unwrap();
-    tr.claim_bond(&pool_owner.pubkey(), &airdrop_user1).await.unwrap();
-    tr.claim_bond(&pool_owner.pubkey(), &airdrop_user2).await.unwrap();
+    tr.claim_bond(&pool_owner.pubkey(), &airdrop_user1.pubkey()).await.unwrap();
+    tr.claim_bond(&pool_owner.pubkey(), &airdrop_user2.pubkey()).await.unwrap();
 
    // todo continue
 }

@@ -80,7 +80,7 @@ async fn end_to_end() {
     assert_eq!(bond_stats.sellers[0], tr.get_bond_seller());
 
     // Claim bond
-    tr.claim_bond(&stake_pool_owner.pubkey(), &staker).await.unwrap();
+    tr.claim_bond(&stake_pool_owner.pubkey(), &staker.pubkey()).await.unwrap();
     let bond_stats = tr.bond_stats(staker.pubkey(), stake_pool_owner.pubkey(), bond_amount).await.unwrap();
     let bond_creation_time = tr.get_current_time().await;
     assert_eq!(bond_stats.tag, Tag::BondAccount);
