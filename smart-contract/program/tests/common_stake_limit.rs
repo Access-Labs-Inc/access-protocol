@@ -43,7 +43,7 @@ async fn common_stake_limit() {
     tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), 10_000, 1).await.unwrap();
 
     // Claim bond
-    tr.claim_bond(&stake_pool_owner.pubkey(), &staker).await.unwrap();
+    tr.claim_bond(&stake_pool_owner.pubkey(), &staker.pubkey()).await.unwrap();
 
     // staking under the stake limit should work
     tr.stake(&stake_pool_owner.pubkey(), &staker, 1).await.unwrap();

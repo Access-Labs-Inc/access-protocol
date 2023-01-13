@@ -90,9 +90,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_owner(accounts.stake_pool, program_id, AccessError::WrongOwner)?;
         check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
 
-        // Check signer
-        check_signer(accounts.buyer, AccessError::BuyerMustSign)?;
-
         Ok(accounts)
     }
 }
@@ -106,13 +103,6 @@ pub fn process_claim_bond(
     let mut bond = BondAccount::from_account_info(accounts.bond_account, true)?;
     let mut central_state = CentralState::from_account_info(accounts.central_state)?;
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
-
-    assert_bond_derivation(
-        accounts.bond_account,
-        accounts.buyer.key,
-        bond.total_amount_sold,
-        program_id,
-    )?;
 
     check_account_key(
         accounts.stake_pool,
@@ -144,24 +134,36 @@ pub fn process_claim_bond(
         return Err(AccessError::PoolMustBeCranked.into());
     }
 
-    // Transfer tokens
-    let transfer_ix = spl_token::instruction::transfer(
-        &spl_token::ID,
-        accounts.quote_token_source.key,
-        accounts.quote_token_destination.key,
-        accounts.buyer.key,
-        &[],
-        bond.total_quote_amount,
-    )?;
-    invoke(
-        &transfer_ix,
-        &[
-            accounts.spl_token_program.clone(),
-            accounts.quote_token_destination.clone(),
-            accounts.quote_token_source.clone(),
-            accounts.buyer.clone(),
-        ],
-    )?;
+    // If there is a quote amount we need the buyer to sign the transaction, otherwise it can be permissionless
+    if bond.total_quote_amount > 0 {
+        assert_bond_derivation(
+            accounts.bond_account,
+            accounts.buyer.key,
+            bond.total_amount_sold,
+            program_id,
+        )?;
+        msg!("Checking buyer signature");
+        // Check signer
+        check_signer(accounts.buyer, AccessError::BuyerMustSign)?;
+        // Transfer tokens
+        let transfer_ix = spl_token::instruction::transfer(
+            &spl_token::ID,
+            accounts.quote_token_source.key,
+            accounts.quote_token_destination.key,
+            accounts.buyer.key,
+            &[],
+            bond.total_quote_amount,
+        )?;
+        invoke(
+            &transfer_ix,
+            &[
+                accounts.spl_token_program.clone(),
+                accounts.quote_token_destination.clone(),
+                accounts.quote_token_source.clone(),
+                accounts.buyer.clone(),
+            ],
+        )?;
+    }
 
     // Activate the bond account
     bond.activate(central_state.last_snapshot_offset);

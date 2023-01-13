@@ -44,7 +44,7 @@ async fn rewards_bonds() {
     assert_eq!(central_state_stats.total_staked, token_amount);
 
     // Claim bond
-    tr.claim_bond(&stake_pool_owner.pubkey(), &staker).await.unwrap();
+    tr.claim_bond(&stake_pool_owner.pubkey(), &staker.pubkey()).await.unwrap();
     let central_state_stats = tr.central_state_stats().await.unwrap();
     assert_eq!(central_state_stats.total_staked, 20_000);
 
