@@ -56,7 +56,7 @@ pub struct CentralStateStats {
 }
 
 impl TestRunner {
-    pub async fn new() -> Result<Self, BanksClientError> {
+    pub async fn new(daily_inflation: u64) -> Result<Self, BanksClientError> {
         // Create program and test environment
         let program_id = access_protocol::ID;
 
@@ -93,7 +93,6 @@ impl TestRunner {
         //
         // Create central state
         //
-        let daily_inflation: u64 = 1_000_000;
         let create_central_state_ix = create_central_state(
             program_id,
             create_central_state::Accounts {
@@ -492,13 +491,13 @@ impl TestRunner {
         Ok(cs)
     }
 
-    pub async fn create_bond(&mut self, stake_pool_owner: &Pubkey, bond_owner: &Pubkey, bond_amount: u64, unlock_after: i64) -> Result<(), BanksClientError> {
+    pub async fn create_bond(&mut self, stake_pool_owner: &Pubkey, bond_owner: &Pubkey, total_amount: u64, payout_count: u64, unlock_after: i64, unlock_period: i64) -> Result<(), BanksClientError> {
         let (bond_key, _bond_nonce) =
-            BondAccount::create_key(bond_owner, bond_amount, &self.program_id);
+            BondAccount::create_key(bond_owner, total_amount, &self.program_id);
 
         let stake_pool_key = self.get_pool_pda(stake_pool_owner);
         let seller_token_account = get_associated_token_address(&self.bond_seller.pubkey(), &self.mint);
-        self.mint(&self.bond_seller.pubkey(), bond_amount).await?;
+        self.mint(&self.bond_seller.pubkey(), total_amount).await?;
         let current_time = self.local_env.get_sysvar::<clock::Clock>().await.unwrap().unix_timestamp;
 
         let create_bond_ix = create_bond(
@@ -512,12 +511,12 @@ impl TestRunner {
             },
             create_bond::Params {
                 buyer: *bond_owner,
-                total_amount_sold: bond_amount,
+                total_amount_sold: total_amount,
                 seller_token_account,
                 total_quote_amount: 0,
                 quote_mint: self.mint,
-                unlock_period: 1, // todo: make this a parameter
-                unlock_amount: bond_amount,
+                unlock_period,
+                unlock_amount: total_amount / payout_count,
                 unlock_start_date: current_time + unlock_after,
                 seller_index: 0,
             },

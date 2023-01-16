@@ -16,7 +16,7 @@ const DAILY_INFLATION: u64 = 1_000_000;
 #[tokio::test]
 async fn end_to_end() {
     // Setup the token + basic accounts
-    let mut tr = TestRunner::new().await.unwrap();
+    let mut tr = TestRunner::new(DAILY_INFLATION).await.unwrap();
 
     let cs_stats = tr.central_state_stats().await.unwrap();
     assert_eq!(cs_stats.tag, Tag::CentralState);
@@ -62,7 +62,7 @@ async fn end_to_end() {
     // Create a bond
     let bond_amount = 5_000_000;
     let unlock_after = 10;
-    tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), bond_amount, unlock_after).await.unwrap();
+    tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), bond_amount, 1, unlock_after, 1).await.unwrap();
     let bond_stats = tr.bond_stats(staker.pubkey(), stake_pool_owner.pubkey(), bond_amount).await.unwrap();
     assert_eq!(bond_stats.tag, Tag::InactiveBondAccount);
     assert_eq!(bond_stats.owner, staker.pubkey());

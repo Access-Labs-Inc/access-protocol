@@ -79,3 +79,7 @@ This will:
 - Deploy the program
 - Run all the instructions of the protocol
 - Verify the states of each account at each step
+
+### Known shortcomings
+
+- Cannot create two bonds tied to a different pool with the same amount

@@ -7,7 +7,7 @@ use crate::common::test_runner::{TestRunner};
 #[tokio::test]
 async fn common_unstake_limit() {
     // Setup the token + basic accounts
-    let mut tr = TestRunner::new().await.unwrap();
+    let mut tr = TestRunner::new(1_000_000_000).await.unwrap();
 
     // Create users
     let stake_pool_owner = tr.create_ata_account().await.unwrap();
@@ -61,7 +61,7 @@ async fn common_unstake_limit() {
     tr.stake(&stake_pool_owner.pubkey(), &staker, 9000).await.unwrap();
 
     // Create bond account
-    tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), 5_000, 1).await.unwrap();
+    tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), 5_000, 1, 1, 1).await.unwrap();
 
     // Claim bond
     tr.claim_bond(&stake_pool_owner.pubkey(), &staker.pubkey()).await.unwrap();
