@@ -22,7 +22,7 @@ use mpl_token_metadata::instruction::update_metadata_accounts;
 use spl_token::{instruction::set_authority, instruction::AuthorityType};
 
 #[tokio::test]
-async fn test_staking() {
+async fn functional_10s() {
     // Create program and test environment
     let program_id = pubkey!("hxrotrKwueSFofXvCmCpYyKMjn1BhmwKtPxA1nLcv8m");
 
