@@ -155,37 +155,23 @@ async fn full_system_test() {
             (DAILY_INFLATION as f64 * 10_000_000_000.0 / 370_000_000_020.0 * 0.5)
         ).round() as u64
     );
+
+    // ------------------------------------------
+    // DAY 6
+    //-------------------------------------------
+    tr.sleep(DAY).await.unwrap();
+    tr.crank_pool(&pool_owner.pubkey()).await.unwrap();
+    tr.crank_pool(&pool_owner2.pubkey()).await.unwrap();
+    tr.crank_pool(&pool_owner3.pubkey()).await.unwrap();
+
+    //vestingUser1 should be able to claim his rewards in pool1
+    tr.claim_bond_rewards(&pool_owner.pubkey(), &vesting_user1).await.unwrap();
 }
 
+// ------------------------------------------
+// DAY 6
+//-------------------------------------------
 
-// // check that the totalStaked, totalRewardable and pool stats are correct
-// expect(await token.balanceOf(staker.address)).to.equal(
-// Math.round(
-// 0.4 * 10_000_000_000 * DAILY_INFLATION / totalRewardables[3] +
-// 0.4 * 10_000_000_000 * DAILY_INFLATION / totalRewardables[4]
-// ) + 5_000_000_000
-// );
-// expect(await token.s_totalRewardable()).to.equal(200_000_000_000 * 0.6 + 100_000_000_000 * 0.5 + 25_000_000_000 + 2 * 2 * 100_000_000_000);
-// expect((await token.s_pools(poolOwner.address)).totalUnrewardedAirdrops).to.equal(200_000_000_000);
-// expect((await token.s_pools(poolOwner2.address)).totalUnrewardedAirdrops).to.equal(100_000_000_000);
-// expect((await token.s_pools(poolOwner3.address)).totalUnrewardedAirdrops).to.equal(0);
-// expect((await token.s_pools(poolOwner.address)).totalRewardedAirdrops).to.equal(200_000_000_000);
-// expect((await token.s_pools(poolOwner2.address)).totalRewardedAirdrops).to.equal(0);
-// expect((await token.s_pools(poolOwner3.address)).totalRewardedAirdrops).to.equal(200_000_000_000);
-// expect((await token.s_pools(poolOwner.address)).totalStaked).to.equal(5_000_000_000);
-// expect((await token.s_pools(poolOwner2.address)).totalStaked).to.equal(10_000_000_000);
-// expect((await token.s_pools(poolOwner3.address)).totalStaked).to.equal(10_000_000_000);
-// totalRewardables.push(200_000_000_000 * 0.6 + 100_000_000_000 * 0.5 + 25_000_000_000 + 2 * 2 * 100_000_000_000);
-//
-// // ------------------------------------------
-// // DAY 6
-// //-------------------------------------------
-// console.log("starting day 6");
-// currentTimestamp = (await ethers.provider.getBlock("latest")).timestamp;
-// await ethers.provider.send("evm_mine", [currentTimestamp + SECONDS_IN_DAY]);
-// currentTimestamp = (await ethers.provider.getBlock("latest")).timestamp;
-//
-// //vestingUser1 should be able to claim his rewards in pool1
 // expect(await token.balanceOf(vestingUser1.address)).to.equal(0);
 // await token.connect(vestingUser1).claimRewards(poolOwner.address);
 // expect(await token.balanceOf(vestingUser1.address)).to.equal
