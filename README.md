@@ -38,7 +38,7 @@ The `program` folder contains the Solana smart contract code, documentation can 
 cargo doc
 ```
 
-`functional.rs` test can be ran using Solana program test
+`functional.rs` test can be run using Solana program test
 
 ```
 BPF_OUT_DIR=target/deploy cargo test-bpf --features days-to-sec-10s no-mint-check no-bond-signer --test functional
