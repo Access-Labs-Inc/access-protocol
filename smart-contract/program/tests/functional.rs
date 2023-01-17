@@ -22,7 +22,7 @@ use mpl_token_metadata::instruction::update_metadata_accounts;
 use spl_token::{instruction::set_authority, instruction::AuthorityType};
 
 #[tokio::test]
-async fn test_staking() {
+async fn functional_10s() {
     // Create program and test environment
     let program_id = pubkey!("hxrotrKwueSFofXvCmCpYyKMjn1BhmwKtPxA1nLcv8m");
 
@@ -556,6 +556,50 @@ async fn test_staking() {
         .unwrap();
 
     //
+    // Crank
+    //
+
+    let crank_ix = crank(
+        program_id,
+        crank::Accounts {
+            stake_pool: &stake_pool_key,
+            central_state: &central_state,
+        },
+        crank::Params {},
+    );
+
+    sign_send_instructions(&mut prg_test_ctx, vec![crank_ix], vec![])
+        .await
+        .unwrap();
+
+    //
+    // Claim bond rewards
+    //
+
+    // Need to warp so that we don't have two identical transaction in one block
+    current_slot += 1;
+    prg_test_ctx.warp_to_slot(current_slot).unwrap();
+
+    let claim_bond_rewards_ix = claim_bond_rewards(
+        program_id,
+        claim_bond_rewards::Accounts {
+            stake_pool: &stake_pool_key,
+            bond_account: &bond_key,
+            bond_owner: &staker.pubkey(),
+            rewards_destination: &staker_token_acc,
+            central_state: &central_state,
+            mint: &mint,
+            spl_token_program: &spl_token::ID,
+        },
+        claim_bond_rewards::Params {},
+        false,
+    );
+
+    sign_send_instructions(&mut prg_test_ctx, vec![claim_bond_rewards_ix], vec![])
+        .await
+        .unwrap();
+
+    //
     // Unlock bond tokens
     //
 
@@ -577,7 +621,7 @@ async fn test_staking() {
     sign_send_instructions(&mut prg_test_ctx, vec![unlock_ix], vec![&staker])
         .await
         .unwrap();
-
+    //
     //
     // Change inflation
     //
@@ -619,6 +663,31 @@ async fn test_staking() {
     )
     .await
     .unwrap();
+
+    //
+    // Claim rewards
+    //
+
+    let claim_ix = claim_rewards(
+        program_id,
+        claim_rewards::Accounts {
+            stake_pool: &stake_pool_key,
+            stake_account: &stake_acc_key,
+            owner: &staker.pubkey(),
+            rewards_destination: &staker_token_acc,
+            central_state: &central_state,
+            mint: &mint,
+            spl_token_program: &spl_token::ID,
+        },
+        claim_rewards::Params {
+            allow_zero_rewards: false,
+        },
+        true,
+    );
+
+    sign_send_instructions(&mut prg_test_ctx, vec![claim_ix], vec![&staker])
+        .await
+        .unwrap();
 
     //
     // Request Unstake
@@ -752,7 +821,7 @@ async fn test_staking() {
     .unwrap();
 
     //
-    // Change central state auth
+    // Change central state authority
     //
     let ix = change_central_state_authority(
         program_id,

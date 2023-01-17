@@ -38,10 +38,20 @@ The `program` folder contains the Solana smart contract code, documentation can 
 cargo doc
 ```
 
-Functional test can be ran using Solana program test
+`functional.rs` test can be run using Solana program test
 
 ```
-BPF_OUT_DIR=target/deploy cargo test-bpf --features days-to-sec-10s no-mint-check no-bond-signer
+BPF_OUT_DIR=target/deploy cargo test-bpf --features days-to-sec-10s no-mint-check no-bond-signer --test functional
+```
+
+Other Rust tests can be run using
+
+```
+BPF_OUT_DIR=target/deploy cargo test-bpf --features no-mint-check no-bond-signer -- --skip functional_10s
+```
+
+```
+
 ```
 
 ### JS
@@ -69,3 +79,7 @@ This will:
 - Deploy the program
 - Run all the instructions of the protocol
 - Verify the states of each account at each step
+
+### Known shortcomings
+
+- Cannot create two bonds tied to a different pool with the same amount

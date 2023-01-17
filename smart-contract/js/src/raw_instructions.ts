@@ -565,10 +565,7 @@ export class createCentralStateInstruction {
       },
     ],
   ]);
-  constructor(obj: {
-    dailyInflation: BN;
-    authority: Uint8Array;
-  }) {
+  constructor(obj: { dailyInflation: BN; authority: Uint8Array }) {
     this.tag = 0;
     this.dailyInflation = obj.dailyInflation;
     this.authority = obj.authority;
@@ -581,7 +578,7 @@ export class createCentralStateInstruction {
     centralState: PublicKey,
     systemProgram: PublicKey,
     feePayer: PublicKey,
-    mint: PublicKey,
+    mint: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -778,7 +775,7 @@ export class claimBondInstruction {
     });
     keys.push({
       pubkey: buyer,
-      isSigner: true,
+      isSigner: false,
       isWritable: false,
     });
     keys.push({

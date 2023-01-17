@@ -31,7 +31,7 @@ pub struct TestRunner {
     central_state: Pubkey,
     mint : Pubkey,
     // hashmap from user pubkey to a bond account
-    bond_accounts: std::collections::HashMap<Pubkey, Pubkey>,
+    bond_accounts: std::collections::HashMap<String, Pubkey>,
     bond_seller: Keypair,
 }
 
@@ -56,7 +56,7 @@ pub struct CentralStateStats {
 }
 
 impl TestRunner {
-    pub async fn new() -> Result<Self, BanksClientError> {
+    pub async fn new(daily_inflation: u64) -> Result<Self, BanksClientError> {
         // Create program and test environment
         let program_id = access_protocol::ID;
 
@@ -93,7 +93,6 @@ impl TestRunner {
         //
         // Create central state
         //
-        let daily_inflation: u64 = 1_000_000;
         let create_central_state_ix = create_central_state(
             program_id,
             create_central_state::Accounts {
@@ -299,7 +298,7 @@ impl TestRunner {
         let staker_token_acc = get_associated_token_address(&staker_key, &self.mint);
         let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
         // get the staker's bond from the hash map if it exists
-        let staker_bond: Option<&Pubkey> = self.bond_accounts.get(&staker_key);
+        let staker_bond: Option<&Pubkey> = self.bond_accounts.get((stake_pool_owner_key.to_string() + &staker_key.to_string()).as_str());
 
         let stake_ix = stake(
             self.program_id,
@@ -395,7 +394,7 @@ impl TestRunner {
         let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
 
         // get the staker's bond from the hash map if it exists
-        let staker_bond: Option<&Pubkey> = self.bond_accounts.get(&staker.pubkey());
+        let staker_bond: Option<&Pubkey> = self.bond_accounts.get((stake_pool_owner.to_string() + &staker.pubkey().to_string()).as_str());
 
         // Request Unstake
         let unstake_ix = unstake(
@@ -492,13 +491,13 @@ impl TestRunner {
         Ok(cs)
     }
 
-    pub async fn create_bond(&mut self, stake_pool_owner: &Pubkey, bond_owner: &Pubkey, bond_amount: u64, unlock_after: i64) -> Result<(), BanksClientError> {
+    pub async fn create_bond(&mut self, stake_pool_owner: &Pubkey, bond_owner: &Pubkey, total_amount: u64, payout_count: u64, unlock_after: i64, unlock_period: i64) -> Result<(), BanksClientError> {
         let (bond_key, _bond_nonce) =
-            BondAccount::create_key(bond_owner, bond_amount, &self.program_id);
+            BondAccount::create_key(bond_owner, total_amount, &self.program_id);
 
         let stake_pool_key = self.get_pool_pda(stake_pool_owner);
         let seller_token_account = get_associated_token_address(&self.bond_seller.pubkey(), &self.mint);
-        self.mint(&self.bond_seller.pubkey(), bond_amount).await?;
+        self.mint(&self.bond_seller.pubkey(), total_amount).await?;
         let current_time = self.local_env.get_sysvar::<clock::Clock>().await.unwrap().unix_timestamp;
 
         let create_bond_ix = create_bond(
@@ -512,12 +511,12 @@ impl TestRunner {
             },
             create_bond::Params {
                 buyer: *bond_owner,
-                total_amount_sold: bond_amount,
+                total_amount_sold: total_amount,
                 seller_token_account,
                 total_quote_amount: 0,
                 quote_mint: self.mint,
-                unlock_period: 1, // todo: make this a parameter
-                unlock_amount: bond_amount,
+                unlock_period,
+                unlock_amount: total_amount / payout_count,
                 unlock_start_date: current_time + unlock_after,
                 seller_index: 0,
             },
@@ -527,22 +526,22 @@ impl TestRunner {
             .await?;
 
         // add bond account to the map
-        self.bond_accounts.insert(*bond_owner, bond_key);
+        self.bond_accounts.insert(stake_pool_owner.to_string() + bond_owner.clone().to_string().as_str(), bond_key);
         Ok(())
     }
 
     pub async fn claim_bond(&mut self, stake_pool_owner: &Pubkey, bond_owner: &Pubkey) -> Result<(), BanksClientError> {
-        let bond_key = *self.bond_accounts.get(&bond_owner).unwrap();
+        let bond_key = *self.bond_accounts.get((stake_pool_owner.to_string() + &bond_owner.to_string()).as_str()).unwrap();
         let stake_pool_key = self.get_pool_pda(stake_pool_owner);
         let seller_token_acc = get_associated_token_address(&self.bond_seller.pubkey(), &self.mint);
-        let bond_owner_ata = get_associated_token_address(&bond_owner, &self.mint);
+        let bond_owner_ata = get_associated_token_address(bond_owner, &self.mint);
         let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
 
         let mut claim_bond_ix = claim_bond(
             self.program_id,
             claim_bond::Accounts {
                 bond_account: &bond_key,
-                buyer: &bond_owner,
+                buyer: bond_owner,
                 quote_token_source: &bond_owner_ata,
                 quote_token_destination: &seller_token_acc,
                 stake_pool: &stake_pool_key,
@@ -595,12 +594,12 @@ impl TestRunner {
             .await?;
 
         // add bond account to the map
-        self.bond_accounts.insert(*bond_owner, bond_key);
+        self.bond_accounts.insert(stake_pool_owner.to_string() + bond_owner.clone().to_string().as_str(), bond_key);
         Ok(())
     }
 
     pub async fn claim_bond_with_quote(&mut self, stake_pool_owner: &Pubkey, bond_owner: &Keypair) -> Result<(), BanksClientError> {
-        let bond_key = *self.bond_accounts.get(&bond_owner.pubkey()).unwrap();
+        let bond_key = *self.bond_accounts.get((stake_pool_owner.to_string() + bond_owner.pubkey().to_string().as_str()).as_str()).unwrap();
         let stake_pool_key = self.get_pool_pda(stake_pool_owner);
         let seller_token_acc = get_associated_token_address(&self.bond_seller.pubkey(), &self.mint);
         let bond_owner_ata = get_associated_token_address(&bond_owner.pubkey(), &self.mint);
@@ -627,7 +626,7 @@ impl TestRunner {
     }
 
     pub async fn unlock_bond(&mut self, stake_pool_owner: &Pubkey, bond_owner: &Keypair) -> Result<(), BanksClientError> {
-        let bond_key = *self.bond_accounts.get(&bond_owner.pubkey()).unwrap();
+        let bond_key = *self.bond_accounts.get((stake_pool_owner.to_string() + &bond_owner.pubkey().to_string()).as_str()).unwrap();
         let stake_pool_key = self.get_pool_pda(stake_pool_owner);
         let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
         let bond_owner_ata = get_associated_token_address(&bond_owner.pubkey(), &self.mint);
@@ -653,7 +652,7 @@ impl TestRunner {
 
     pub async fn claim_bond_rewards(&mut self, stake_pool_owner: &Pubkey, bond_owner: &Keypair) -> Result<(), BanksClientError> {
         let stake_pool_key = self.get_pool_pda(stake_pool_owner);
-        let bond_key = self.bond_accounts.get(&bond_owner.pubkey()).unwrap();
+        let bond_key = self.bond_accounts.get((stake_pool_owner.to_string() + &bond_owner.pubkey().to_string()).as_str()).unwrap();
         let seller_token_acc = get_associated_token_address(&bond_owner.pubkey(), &self.mint);
 
         let claim_bond_rewards_ix = claim_bond_rewards(
