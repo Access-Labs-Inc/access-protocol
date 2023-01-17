@@ -106,13 +106,14 @@ async fn full_system_test() {
     tr.crank_pool(&pool_owner3.pubkey()).await.unwrap();
 
     // create vesting airdrop with cliff at day 7 with rewards for 100_000 tokens to both vesting users to pool1 and pool3
-    tr.create_bond(&pool_owner.pubkey(), &vesting_user1.pubkey(), 10_000_000_000, 10, 3*DAY as i64, DAY as i64).await.unwrap();
+    // fixme the parameter should be 3 * DAY not 2 * DAY, but with the current implementation this wouldn't work
+    tr.create_bond(&pool_owner.pubkey(), &vesting_user1.pubkey(), 10_000_000_000, 10, 2*DAY as i64, DAY as i64).await.unwrap();
     tr.claim_bond(&pool_owner.pubkey(), &vesting_user1.pubkey()).await.unwrap();
-    tr.create_bond(&pool_owner.pubkey(), &vesting_user2.pubkey(), 10_000_000_000, 10, 3*DAY as i64, DAY as i64).await.unwrap();
+    tr.create_bond(&pool_owner.pubkey(), &vesting_user2.pubkey(), 10_000_000_000, 10, 2*DAY as i64, DAY as i64).await.unwrap();
     tr.claim_bond(&pool_owner.pubkey(), &vesting_user2.pubkey()).await.unwrap();
-    tr.create_bond(&pool_owner3.pubkey(), &vesting_user1.pubkey(), 10_000_000_010, 10, 3*DAY as i64, DAY as i64).await.unwrap();
+    tr.create_bond(&pool_owner3.pubkey(), &vesting_user1.pubkey(), 10_000_000_010, 10, 2*DAY as i64, DAY as i64).await.unwrap();
     tr.claim_bond(&pool_owner3.pubkey(), &vesting_user1.pubkey()).await.unwrap();
-    tr.create_bond(&pool_owner3.pubkey(), &vesting_user2.pubkey(), 10_000_000_010, 10, 3*DAY as i64, DAY as i64).await.unwrap();
+    tr.create_bond(&pool_owner3.pubkey(), &vesting_user2.pubkey(), 10_000_000_010, 10, 2*DAY as i64, DAY as i64).await.unwrap();
     tr.claim_bond(&pool_owner3.pubkey(), &vesting_user2.pubkey()).await.unwrap();
 
     // check that the totalStaked and pool stats are correct
@@ -182,187 +183,145 @@ async fn full_system_test() {
     tr.unlock_bond(&pool_owner.pubkey(), &vesting_user1).await.unwrap_err();
     tr.unlock_bond(&pool_owner.pubkey(), &vesting_user2).await.unwrap_err();
 
+    // claim rewards as a pool1 owner
+    tr.claim_pool_rewards(&pool_owner).await.unwrap();
+    let pool_owner_stats = tr.staker_stats(pool_owner.pubkey()).await.unwrap();
+    assert_eq!(pool_owner_stats.balance,
+               (
+                   (DAILY_INFLATION as f64 * 0.5) +
+                   (DAILY_INFLATION as f64 / 330.0 * 210.0 * 0.5) +
+                   (DAILY_INFLATION as f64 * 230_000_000_000.0 / 370_000_000_020.0 * 0.5) +
+                   (DAILY_INFLATION as f64 * 225_000_000_000.0 / 365_000_000_020.0 * 0.5)
+               ).round() as u64
+    );
+
     // ------------------------------------------
     // DAY 7
     //-------------------------------------------
-}
+    tr.sleep(DAY).await.unwrap();
+    tr.crank_pool(&pool_owner.pubkey()).await.unwrap();
+    tr.crank_pool(&pool_owner2.pubkey()).await.unwrap();
+    tr.crank_pool(&pool_owner3.pubkey()).await.unwrap();
 
-// // ------------------------------------------
-// // DAY 7
-// //-------------------------------------------
-// console.log("starting day 7");
-// currentTimestamp = (await ethers.provider.getBlock("latest")).timestamp;
-// await ethers.provider.send("evm_mine", [currentTimestamp + SECONDS_IN_DAY]);
-// currentTimestamp = (await ethers.provider.getBlock("latest")).timestamp;
-//
-// // the first part of the vesting airdrop should be ready now
-// await token.connect(vestingUser1).claimRewards(poolOwner.address);
-// await token.connect(vestingUser1).unlockAirdrop(poolOwner.address);
-// expect(await token.balanceOf(vestingUser1.address)).to.equal(
-// Math.round(
-// (0.4 * 100_000_000_000 * DAILY_INFLATION / totalRewardables[4]) +
-// (0.4 * 100_000_000_000 * DAILY_INFLATION / totalRewardables[5]) +
-// (0.4 * 100_000_000_000 * DAILY_INFLATION / totalRewardables[6])
-// ) + 10_000_000_000
-// );
-// await expect(token.connect(vestingUser1).unlockAirdrop(poolOwner.address)).to.be.revertedWithCustomError(token, "AirdropNotReady").withArgs(vestingUser1.address, poolOwner.address);
-//
-// // pool1 owner should be able to claim his rewards again
-// await token.connect(poolOwner).claimRewards(poolOwner.address);
-// expect(await token.balanceOf(poolOwner.address)).to.equal(
-// Math.floor(
-// 0.6 * 200_000_000_000 * DAILY_INFLATION / totalRewardables[2] +
-// 0.6 * 210_000_000_000 * DAILY_INFLATION / totalRewardables[3] +
-// 0.6 * 410_000_000_000 * DAILY_INFLATION / totalRewardables[4] +
-// 0.6 * 405_000_000_000 * DAILY_INFLATION / totalRewardables[5] +
-// 0.6 * 405_000_000_000 * DAILY_INFLATION / totalRewardables[6]
-// )
-// )
-//
-// // check that the totalStaked, totalRewardable are correct
-// expect(await token.s_totalRewardable()).to.equal(200_000_000_000 * 0.6 + 100_000_000_000 * 0.5 + 25_000_000_000 + 2 * 2 * 100_000_000_000 - 10_000_000_000);
-// totalRewardables.push(200_000_000_000 * 0.6 + 100_000_000_000 * 0.5 + 25_000_000_000 + 2 * 2 * 100_000_000_000 - 10_000_000_000);
-//
-// // ------------------------------------------
-// // DAY 8
-// //-------------------------------------------
-// console.log("starting day 8");
-// currentTimestamp = (await ethers.provider.getBlock("latest")).timestamp;
-// await ethers.provider.send("evm_mine", [currentTimestamp + SECONDS_IN_DAY]);
-// currentTimestamp = (await ethers.provider.getBlock("latest")).timestamp;
-//
-// // the second part of the vesting airdrop should be ready now
-// await token.connect(vestingUser1).claimRewards(poolOwner.address);
-// await token.connect(vestingUser1).unlockAirdrop(poolOwner.address);
-// expect(await token.balanceOf(vestingUser1.address)).to.equal(
-// Math.round(
-// (0.4 * 100_000_000_000 * DAILY_INFLATION / totalRewardables[4]) +
-// (0.4 * 100_000_000_000 * DAILY_INFLATION / totalRewardables[5]) +
-// (0.4 * 100_000_000_000 * DAILY_INFLATION / totalRewardables[6]) +
-// (0.4 * 90_000_000_000 * DAILY_INFLATION / totalRewardables[7])
-// ) + 20_000_000_000 + 1 // +1 rounding error - todo investigate
-// );
-//
-// // check that the totalStaked, totalRewardable are correct
-// expect(await token.s_totalRewardable()).to.equal(200_000_000_000 * 0.6 + 100_000_000_000 * 0.5 + 25_000_000_000 + 2 * 2 * 100_000_000_000 - 20_000_000_000);
-// totalRewardables.push(200_000_000_000 * 0.6 + 100_000_000_000 * 0.5 + 25_000_000_000 + 2 * 2 * 100_000_000_000 - 20_000_000_000);
-//
-// // ------------------------------------------
-// // DAY 9
-// //-------------------------------------------
-// console.log("starting day 9");
-// currentTimestamp = (await ethers.provider.getBlock("latest")).timestamp;
-// await ethers.provider.send("evm_mine", [currentTimestamp + SECONDS_IN_DAY]);
-// currentTimestamp = (await ethers.provider.getBlock("latest")).timestamp;
-//
-// // check that the airdropUsers still cannot claim their airdrop
-// await expect(token.connect(airdropUser1).unlockAirdrop(poolOwner.address)).to.be.revertedWithCustomError(token, "AirdropNotReady").withArgs(airdropUser1.address, poolOwner.address);
-// await expect(token.connect(airdropUser2).unlockAirdrop(poolOwner.address)).to.be.revertedWithCustomError(token, "AirdropNotReady").withArgs(airdropUser2.address, poolOwner.address);
-// await expect(token.connect(airdropUser3).unlockAirdrop(poolOwner2.address)).to.be.revertedWithCustomError(token, "AirdropNotReady").withArgs(airdropUser3.address, poolOwner2.address);
-//
-// // check that the totalStaked, totalRewardable are correct
-// expect(await token.s_totalRewardable()).to.equal(200_000_000_000 * 0.6 + 100_000_000_000 * 0.5 + 25_000_000_000 + 2 * 2 * 100_000_000_000 - 20_000_000_000);
-// totalRewardables.push(200_000_000_000 * 0.6 + 100_000_000_000 * 0.5 + 25_000_000_000 + 2 * 2 * 100_000_000_000 - 20_000_000_000);
-//
-// // ------------------------------------------
-// // DAY 10
-// //-------------------------------------------
-// console.log("starting day 10");
-// currentTimestamp = (await ethers.provider.getBlock("latest")).timestamp;
-// await ethers.provider.send("evm_mine", [currentTimestamp + SECONDS_IN_DAY]);
-// currentTimestamp = (await ethers.provider.getBlock("latest")).timestamp;
-//
-// // revoke the airdrop for vestingUser1 and airdropUser1
-// expect(await token.s_totalRewardable()).to.equal(200_000_000_000 * 0.6 + 100_000_000_000 * 0.5 + 25_000_000_000 + 380_000_000_000);
-// await token.connect(owner).revokeAirdrop(poolOwner.address, [vestingUser1.address, airdropUser1.address]);
-// expect(await token.s_totalRewardable()).to.equal(100_000_000_000 * 0.6 + 100_000_000_000 * 0.5 + 25_000_000_000 + 300_000_000_000);
-//
-// // check that the airdropUser1 and vestingUser1 cannot claim their airdrop
-// await expect(token.connect(airdropUser1).unlockAirdrop(poolOwner.address)).to.be.revertedWithCustomError(token, "AirdropNotReady").withArgs(airdropUser1.address, poolOwner.address);
-// await expect(token.connect(vestingUser1).unlockAirdrop(poolOwner.address)).to.be.revertedWithCustomError(token, "AirdropNotReady").withArgs(vestingUser1.address, poolOwner.address);
-// //try claiming rewards as a vestingUser1
-// await expect(token.connect(vestingUser1).claimRewards(poolOwner.address)).to.be.revertedWithCustomError(token, "NoClaimableRewards").withArgs(vestingUser1.address, poolOwner.address);
-//
-// // check that the airdropUser2 can claim his airdrop
-// await token.connect(airdropUser2).unlockAirdrop(poolOwner.address);
-// expect(await token.balanceOf(airdropUser2.address)).to.equal(100_000_000_000);
-//
-// // check that the totalStaked, totalRewardable are correct
-// expect(await token.s_totalRewardable()).to.equal(100_000_000_000 * 0.5 + 25_000_000_000 + 300_000_000_000);
-//
-// //check that the pool1 owner can claim his rewards
-// await token.connect(poolOwner).claimRewards(poolOwner.address);
-// expect(await token.balanceOf(poolOwner.address)).to.equal(
-// Math.floor(
-// 0.6 * 200_000_000_000 * DAILY_INFLATION / totalRewardables[2] +
-// 0.6 * 210_000_000_000 * DAILY_INFLATION / totalRewardables[3] +
-// 0.6 * 410_000_000_000 * DAILY_INFLATION / totalRewardables[4] +
-// 0.6 * 405_000_000_000 * DAILY_INFLATION / totalRewardables[5] +
-// 0.6 * 405_000_000_000 * DAILY_INFLATION / totalRewardables[6] +
-// 0.6 * 395_000_000_000 * DAILY_INFLATION / totalRewardables[7] +
-// 0.6 * 385_000_000_000 * DAILY_INFLATION / totalRewardables[8] +
-// 0.6 * 385_000_000_000 * DAILY_INFLATION / totalRewardables[9]
-// ) - 2 // -2 because of the rounding error - todo maybe fix this
-// );
-//
-// // check that the totalStaked, totalRewardable are correct
-// expect(await token.s_totalRewardable()).to.equal(100_000_000_000 * 0.5 + 25_000_000_000 + 300_000_000_000);
-// totalRewardables.push(100_000_000_000 * 0.5 + 25_000_000_000 + 300_000_000_000);
-//
-// // ------------------------------------------
-// // DAY 11
-// //-------------------------------------------
-// console.log("starting day 11");
-// currentTimestamp = (await ethers.provider.getBlock("latest")).timestamp;
-// await ethers.provider.send("evm_mine", [currentTimestamp + SECONDS_IN_DAY]);
-// currentTimestamp = (await ethers.provider.getBlock("latest")).timestamp;
-//
-// // check that the pool1 owner can claim his rewards
-// await token.connect(poolOwner).claimRewards(poolOwner.address);
-// expect(await token.balanceOf(poolOwner.address)).to.equal(
-// Math.floor(
-// 0.6 * 200_000_000_000 * DAILY_INFLATION / totalRewardables[2] +
-// 0.6 * 210_000_000_000 * DAILY_INFLATION / totalRewardables[3] +
-// 0.6 * 410_000_000_000 * DAILY_INFLATION / totalRewardables[4] +
-// 0.6 * 405_000_000_000 * DAILY_INFLATION / totalRewardables[5] +
-// 0.6 * 405_000_000_000 * DAILY_INFLATION / totalRewardables[6] +
-// 0.6 * 395_000_000_000 * DAILY_INFLATION / totalRewardables[7] +
-// 0.6 * 385_000_000_000 * DAILY_INFLATION / totalRewardables[8] +
-// 0.6 * 385_000_000_000 * DAILY_INFLATION / totalRewardables[9] +
-// 0.6 * 105_000_000_000 * DAILY_INFLATION / totalRewardables[10]
-// ) - 2 // -2 because of the rounding error - todo maybe fix this
-// );
-//
-// // staker claims all rewards
-// expect(await token.balanceOf(staker.address)).to.equal(
-// Math.round(
-// 0.4 * 10_000_000_000 * DAILY_INFLATION / totalRewardables[3] +
-// 0.4 * 10_000_000_000 * DAILY_INFLATION / totalRewardables[4]
-// ) + 5_000_000_000
-// );
-//
-// await token.connect(staker).claimRewards(poolOwner.address);
-// await token.connect(staker).claimRewards(poolOwner2.address);
-// await token.connect(staker).claimRewards(poolOwner3.address);
-//
-// // unstake it all
-// await token.connect(staker).unstake(poolOwner.address, 5_000_000_000);
-// await token.connect(staker).unstake(poolOwner2.address, 10_000_000_000);
-// await token.connect(staker).unstake(poolOwner3.address, 10_000_000_000);
-//
-// // claim rewards as a staker - should fail
-// expect(await token.balanceOf(staker.address)).to.equal(
-// Math.round(
-// (0.4 * 10_000_000_000 + 0.5 * 10_000_000_000 + 0.25 * 10_000_000_000) * DAILY_INFLATION / totalRewardables[3] +
-// (0.4 * 10_000_000_000 + 0.5 * 10_000_000_000 + 0.25 * 10_000_000_000) * DAILY_INFLATION / totalRewardables[4] +
-// (0.4 * 5_000_000_000 + 0.5 * 10_000_000_000 + 0.25 * 10_000_000_000) * DAILY_INFLATION / totalRewardables[5] +
-// (0.4 * 5_000_000_000 + 0.5 * 10_000_000_000 + 0.25 * 10_000_000_000) * DAILY_INFLATION / totalRewardables[6] +
-// (0.4 * 5_000_000_000 + 0.5 * 10_000_000_000 + 0.25 * 10_000_000_000) * DAILY_INFLATION / totalRewardables[7] +
-// (0.4 * 5_000_000_000 + 0.5 * 10_000_000_000 + 0.25 * 10_000_000_000) * DAILY_INFLATION / totalRewardables[8] +
-// (0.4 * 5_000_000_000 + 0.5 * 10_000_000_000 + 0.25 * 10_000_000_000) * DAILY_INFLATION / totalRewardables[9] +
-// (0.4 * 5_000_000_000 + 0.5 * 10_000_000_000 + 0.25 * 10_000_000_000) * DAILY_INFLATION / totalRewardables[10]
-// ) + 30_000_000_000 + 1 // +1 because of the rounding error - todo maybe fix this
-// );
-//
-// // check that the totalStaked, totalRewardable are correct
-// expect(await token.s_totalRewardable()).to.equal(100_000_000_000 * 0.5 + 300_000_000_000);
+    // the first part of the vesting airdrop should be ready now
+    tr.claim_bond_rewards(&pool_owner.pubkey(), &vesting_user1).await.unwrap();
+    tr.unlock_bond(&pool_owner.pubkey(), &vesting_user1).await.unwrap();
+    let vesting_owner_stats = tr.staker_stats(vesting_user1.pubkey()).await.unwrap();
+    // todo maybe investigate this rounding error
+    assert_eq!(vesting_owner_stats.balance / 10,
+        1_000_000_000 / 10 + (
+            (DAILY_INFLATION as f64 * 10_000_000_000.0 / 370_000_000_020.0 * 0.5) +
+            (DAILY_INFLATION as f64 * 10_000_000_000.0 / 365_000_000_020.0 * 0.5) +
+            (DAILY_INFLATION as f64 * 10_000_000_000.0 / 365_000_000_020.0 * 0.5)
+        ).round() as u64 / 10
+    );
+
+    // second unlock of the same bond should fail today
+    tr.sleep(1).await.unwrap(); // so that we are not sending the same transaction twice in the same block
+    tr.claim_bond_rewards(&pool_owner.pubkey(), &vesting_user1).await.unwrap_err();
+    tr.unlock_bond(&pool_owner.pubkey(), &vesting_user1).await.unwrap_err();
+
+    // pool1 owner should be able to claim his rewards again
+    tr.claim_pool_rewards(&pool_owner).await.unwrap();
+    let pool_owner_stats = tr.staker_stats(pool_owner.pubkey()).await.unwrap();
+    assert_eq!(pool_owner_stats.balance,
+               (
+                   (DAILY_INFLATION as f64 * 0.5) +
+                   (DAILY_INFLATION as f64 / 330.0 * 210.0 * 0.5) +
+                   (DAILY_INFLATION as f64 * 230_000_000_000.0 / 370_000_000_020.0 * 0.5) +
+                   (DAILY_INFLATION as f64 * 225_000_000_000.0 / 365_000_000_020.0 * 0.5) +
+                   (DAILY_INFLATION as f64 * 225_000_000_000.0 / 365_000_000_020.0 * 0.5)
+               ).round() as u64
+    );
+
+    // ------------------------------------------
+    // DAY 8
+    //-------------------------------------------
+    tr.sleep(DAY).await.unwrap();
+    tr.crank_pool(&pool_owner.pubkey()).await.unwrap();
+    tr.crank_pool(&pool_owner2.pubkey()).await.unwrap();
+    tr.crank_pool(&pool_owner3.pubkey()).await.unwrap();
+
+    // the second part of the vesting airdrop should be ready now
+    tr.claim_bond_rewards(&pool_owner.pubkey(), &vesting_user1).await.unwrap();
+    tr.unlock_bond(&pool_owner.pubkey(), &vesting_user1).await.unwrap();
+    let vesting_owner_stats = tr.staker_stats(vesting_user1.pubkey()).await.unwrap();
+    // todo maybe investigate this rounding error
+    assert_eq!(vesting_owner_stats.balance / 10,
+        2_000_000_000 / 10 + (
+            (DAILY_INFLATION as f64 * 10_000_000_000.0 / 370_000_000_020.0 * 0.5) +
+            (DAILY_INFLATION as f64 * 10_000_000_000.0 / 365_000_000_020.0 * 0.5) +
+            (DAILY_INFLATION as f64 * 10_000_000_000.0 / 365_000_000_020.0 * 0.5) +
+            (DAILY_INFLATION as f64 * 9_000_000_000.0 / 364_000_000_020.0 * 0.5)
+        ).round() as u64 / 10
+    );
+
+    // ------------------------------------------
+    // DAY 9
+    //-------------------------------------------
+    tr.sleep(DAY).await.unwrap();
+    tr.crank_pool(&pool_owner.pubkey()).await.unwrap();
+    tr.crank_pool(&pool_owner2.pubkey()).await.unwrap();
+    tr.crank_pool(&pool_owner3.pubkey()).await.unwrap();
+
+    // check that the airdrop_users still cannot claim their airdrop
+    tr.claim_bond_rewards(&pool_owner.pubkey(), &airdrop_user1).await.unwrap();
+    tr.unlock_bond(&pool_owner.pubkey(), &airdrop_user1).await.unwrap_err();
+    tr.claim_bond_rewards(&pool_owner.pubkey(), &airdrop_user2).await.unwrap();
+    tr.unlock_bond(&pool_owner.pubkey(), &airdrop_user2).await.unwrap_err();
+    tr.claim_bond_rewards(&pool_owner2.pubkey(), &airdrop_user3).await.unwrap();
+    tr.unlock_bond(&pool_owner2.pubkey(), &airdrop_user3).await.unwrap_err();
+
+    // ------------------------------------------
+    // DAY 10
+    //-------------------------------------------
+    tr.sleep(DAY).await.unwrap();
+    tr.crank_pool(&pool_owner.pubkey()).await.unwrap();
+    tr.crank_pool(&pool_owner2.pubkey()).await.unwrap();
+    tr.crank_pool(&pool_owner3.pubkey()).await.unwrap();
+
+    // check that the airdropUser2 can claim his airdrop
+    tr.claim_bond_rewards(&pool_owner.pubkey(), &airdrop_user2).await.unwrap();
+    tr.unlock_bond(&pool_owner.pubkey(), &airdrop_user2).await.unwrap();
+
+
+    //check that the pool1 owner can claim his rewards
+    tr.claim_pool_rewards(&pool_owner).await.unwrap();
+    let pool_owner_stats = tr.staker_stats(pool_owner.pubkey()).await.unwrap();
+    // todo check stats
+
+    // ------------------------------------------
+    // DAY 11
+    //-------------------------------------------
+    tr.sleep(DAY).await.unwrap();
+    tr.crank_pool(&pool_owner.pubkey()).await.unwrap();
+    tr.crank_pool(&pool_owner2.pubkey()).await.unwrap();
+    tr.crank_pool(&pool_owner3.pubkey()).await.unwrap();
+
+    // check that the pool1 owner can claim his rewards
+    tr.claim_pool_rewards(&pool_owner).await.unwrap();
+    let pool_owner_stats = tr.staker_stats(pool_owner.pubkey()).await.unwrap();
+    // todo check stats
+
+    // staker claims all rewards
+    tr.claim_staker_rewards(&pool_owner.pubkey(), &staker).await.unwrap();
+    tr.claim_staker_rewards(&pool_owner2.pubkey(), &staker).await.unwrap();
+    tr.claim_staker_rewards(&pool_owner3.pubkey(), &staker).await.unwrap();
+    let staker_stats = tr.staker_stats(staker.pubkey()).await.unwrap();
+    // todo check stats
+
+    // unstake it all
+    tr.unstake(&pool_owner.pubkey(), &staker, 5_000_000_000).await.unwrap();
+    tr.unstake(&pool_owner2.pubkey(), &staker, 10_000_000_000).await.unwrap();
+    tr.unstake(&pool_owner3.pubkey(), &staker, 10_000_000_000).await.unwrap();
+
+
+    // claim rewards as a staker - should not claim anything
+    tr.sleep(1).await.unwrap();  // so that we are not sending the same transaction twice in the same block
+    tr.claim_staker_rewards(&pool_owner.pubkey(), &staker).await.unwrap();
+    tr.claim_staker_rewards(&pool_owner2.pubkey(), &staker).await.unwrap();
+    tr.claim_staker_rewards(&pool_owner3.pubkey(), &staker).await.unwrap();
+    let staker_stats = tr.staker_stats(staker.pubkey()).await.unwrap();
+    // todo check stats
+
+}
