@@ -283,12 +283,36 @@ async fn full_system_test() {
     // check that the airdropUser2 can claim his airdrop
     tr.claim_bond_rewards(&pool_owner.pubkey(), &airdrop_user2).await.unwrap();
     tr.unlock_bond(&pool_owner.pubkey(), &airdrop_user2).await.unwrap();
-
+    let airdrop_user2_stats = tr.staker_stats(airdrop_user2.pubkey()).await.unwrap();
+    // todo maybe investigate this rounding error
+    assert_eq!(airdrop_user2_stats.balance / 100,
+               100_000_000_000 / 100 + (
+                   DAILY_INFLATION as f64 * 100_000_000_000.0 / 200_000_000_000.0 * 0.5 +
+                       DAILY_INFLATION as f64 * 100_000_000_000.0 / 330_000_000_000.0 * 0.5 +
+                       DAILY_INFLATION as f64 * 100_000_000_000.0 / 370_000_000_020.0 * 0.5 +
+                       DAILY_INFLATION as f64 * 100_000_000_000.0 / 365_000_000_020.0 * 0.5 +
+                       DAILY_INFLATION as f64 * 100_000_000_000.0 / 365_000_000_020.0 * 0.5 +
+                       DAILY_INFLATION as f64 * 100_000_000_000.0 / 364_000_000_020.0 * 0.5 +
+                       DAILY_INFLATION as f64 * 100_000_000_000.0 / 363_000_000_020.0 * 0.5 +
+                       DAILY_INFLATION as f64 * 100_000_000_000.0 / 363_000_000_020.0 * 0.5
+               ).round() as u64 / 100
+    );
 
     //check that the pool1 owner can claim his rewards
     tr.claim_pool_rewards(&pool_owner).await.unwrap();
     let pool_owner_stats = tr.staker_stats(pool_owner.pubkey()).await.unwrap();
-    // todo check stats
+    assert_eq!(pool_owner_stats.balance / 10,
+               (
+                   DAILY_INFLATION as f64 * 0.5 +
+                   DAILY_INFLATION as f64 / 330.0 * 210.0 * 0.5 +
+                   DAILY_INFLATION as f64 * 230_000_000_000.0 / 370_000_000_020.0 * 0.5 +
+                   DAILY_INFLATION as f64 * 225_000_000_000.0 / 365_000_000_020.0 * 0.5 +
+                   DAILY_INFLATION as f64 * 225_000_000_000.0 / 365_000_000_020.0 * 0.5 +
+                   DAILY_INFLATION as f64 * 224_000_000_000.0 / 364_000_000_020.0 * 0.5 +
+                   DAILY_INFLATION as f64 * 223_000_000_000.0 / 363_000_000_020.0 * 0.5 +
+                   DAILY_INFLATION as f64 * 223_000_000_000.0 / 363_000_000_020.0 * 0.5
+               ).round() as u64 / 10
+    );
 
     // ------------------------------------------
     // DAY 11
@@ -301,14 +325,38 @@ async fn full_system_test() {
     // check that the pool1 owner can claim his rewards
     tr.claim_pool_rewards(&pool_owner).await.unwrap();
     let pool_owner_stats = tr.staker_stats(pool_owner.pubkey()).await.unwrap();
-    // todo check stats
+    assert_eq!(pool_owner_stats.balance / 10,
+               (
+                   (DAILY_INFLATION as f64 * 0.5) +
+                   (DAILY_INFLATION as f64 / 330.0 * 210.0 * 0.5) +
+                   (DAILY_INFLATION as f64 * 230_000_000_000.0 / 370_000_000_020.0 * 0.5) +
+                   (DAILY_INFLATION as f64 * 225_000_000_000.0 / 365_000_000_020.0 * 0.5) +
+                   (DAILY_INFLATION as f64 * 225_000_000_000.0 / 365_000_000_020.0 * 0.5) +
+                   (DAILY_INFLATION as f64 * 224_000_000_000.0 / 364_000_000_020.0 * 0.5) +
+                   (DAILY_INFLATION as f64 * 223_000_000_000.0 / 363_000_000_020.0 * 0.5) +
+                   (DAILY_INFLATION as f64 * 223_000_000_000.0 / 363_000_000_020.0 * 0.5) +
+                   (DAILY_INFLATION as f64 * 123_000_000_000.0 / 263_000_000_020.0 * 0.5)
+           ).round() as u64 / 10
+    );
 
     // staker claims all rewards
     tr.claim_staker_rewards(&pool_owner.pubkey(), &staker).await.unwrap();
     tr.claim_staker_rewards(&pool_owner2.pubkey(), &staker).await.unwrap();
     tr.claim_staker_rewards(&pool_owner3.pubkey(), &staker).await.unwrap();
     let staker_stats = tr.staker_stats(staker.pubkey()).await.unwrap();
-    // todo check stats
+    // todo maybe investigate this rounding error
+    assert_eq!(staker_stats.balance / 100,
+               5_000_000_000 / 100 + (
+                   (DAILY_INFLATION as f64 / 330.0 * 30.0 * 0.5) +
+                   (DAILY_INFLATION as f64 * 30_000_000_000.0 / 370_000_000_020.0 * 0.5) +
+                   (DAILY_INFLATION as f64 * 25_000_000_000.0 / 365_000_000_020.0 * 0.5) +
+                   (DAILY_INFLATION as f64 * 25_000_000_000.0 / 365_000_000_020.0 * 0.5) +
+                   (DAILY_INFLATION as f64 * 25_000_000_000.0 / 364_000_000_020.0 * 0.5) +
+                   (DAILY_INFLATION as f64 * 25_000_000_000.0 / 363_000_000_020.0 * 0.5) +
+                   (DAILY_INFLATION as f64 * 25_000_000_000.0 / 363_000_000_020.0 * 0.5) +
+                   (DAILY_INFLATION as f64 * 25_000_000_000.0 / 263_000_000_020.0 * 0.5)
+               ).round() as u64 / 100
+    );
 
     // unstake it all
     tr.unstake(&pool_owner.pubkey(), &staker, 5_000_000_000).await.unwrap();
@@ -322,6 +370,18 @@ async fn full_system_test() {
     tr.claim_staker_rewards(&pool_owner2.pubkey(), &staker).await.unwrap();
     tr.claim_staker_rewards(&pool_owner3.pubkey(), &staker).await.unwrap();
     let staker_stats = tr.staker_stats(staker.pubkey()).await.unwrap();
-    // todo check stats
+    // todo maybe investigate this rounding error
+    assert_eq!(staker_stats.balance / 100,
+               30_000_000_000 / 100 + (
+                   (DAILY_INFLATION as f64 / 330.0 * 30.0 * 0.5) +
+                       (DAILY_INFLATION as f64 * 30_000_000_000.0 / 370_000_000_020.0 * 0.5) +
+                       (DAILY_INFLATION as f64 * 25_000_000_000.0 / 365_000_000_020.0 * 0.5) +
+                       (DAILY_INFLATION as f64 * 25_000_000_000.0 / 365_000_000_020.0 * 0.5) +
+                       (DAILY_INFLATION as f64 * 25_000_000_000.0 / 364_000_000_020.0 * 0.5) +
+                       (DAILY_INFLATION as f64 * 25_000_000_000.0 / 363_000_000_020.0 * 0.5) +
+                       (DAILY_INFLATION as f64 * 25_000_000_000.0 / 363_000_000_020.0 * 0.5) +
+                       (DAILY_INFLATION as f64 * 25_000_000_000.0 / 263_000_000_020.0 * 0.5)
+               ).round() as u64 / 100
+    );
 
 }
