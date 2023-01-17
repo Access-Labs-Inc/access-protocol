@@ -8,7 +8,7 @@ use crate::common::test_runner::TestRunner;
 #[tokio::test]
 async fn repeated_claim() {
     // Setup the token + basic accounts
-    let mut tr = TestRunner::new().await.unwrap();
+    let mut tr = TestRunner::new(1_000_000).await.unwrap();
 
     // Create users
     let stake_pool_owner = tr.create_ata_account().await.unwrap();

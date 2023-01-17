@@ -14,7 +14,7 @@ mod basic_functionality {
     #[tokio::test]
     async fn change_inflation() {
         // Setup the token + basic accounts
-        let mut tr = TestRunner::new().await.unwrap();
+        let mut tr = TestRunner::new(1_000_000).await.unwrap();
         // Set daily inflation
         tr.change_inflation(200_000_000_000).await.unwrap();
         // Check the inflation
@@ -25,7 +25,7 @@ mod basic_functionality {
     #[tokio::test]
     async fn change_authority() {
         // Setup the token + basic accounts
-        let mut tr = TestRunner::new().await.unwrap();
+        let mut tr = TestRunner::new(1_000_000).await.unwrap();
         // Change the authority
         let new_authority = Keypair::new();
         let stats = tr.central_state_stats().await.unwrap();
@@ -43,7 +43,7 @@ mod pool_creation_and_activation {
     #[tokio::test]
     async fn create_and_activate_pool() {
         // Setup the token + basic accounts
-        let mut tr = TestRunner::new().await.unwrap();
+        let mut tr = TestRunner::new(1_000_000).await.unwrap();
         // Create users
         let stake_pool_owner = tr.create_ata_account().await.unwrap();
         // Create stake pool on day 1 12:00
@@ -63,7 +63,7 @@ mod pool_creation_and_activation {
     #[tokio::test]
     async fn cannot_change_stakers_part_to_invalid() {
         // Setup the token + basic accounts
-        let mut tr = TestRunner::new().await.unwrap();
+        let mut tr = TestRunner::new(1_000_000).await.unwrap();
         // Create users
         let stake_pool_owner = tr.create_ata_account().await.unwrap();
         // Create stake pool
@@ -80,7 +80,7 @@ mod pool_creation_and_activation {
     #[tokio::test]
     async fn cannot_be_activated_if_not_created() {
         // Setup the token + basic accounts
-        let mut tr = TestRunner::new().await.unwrap();
+        let mut tr = TestRunner::new(1_000_000).await.unwrap();
         // Create users
         let stake_pool_owner = tr.create_ata_account().await.unwrap();
         // Activate stake pool
@@ -91,7 +91,7 @@ mod pool_creation_and_activation {
     #[tokio::test]
     async fn cannot_be_created_twice() {
         // Setup the token + basic accounts
-        let mut tr = TestRunner::new().await.unwrap();
+        let mut tr = TestRunner::new(1_000_000).await.unwrap();
         // Create users
         let stake_pool_owner = tr.create_ata_account().await.unwrap();
         // Create stake pool
@@ -104,7 +104,7 @@ mod pool_creation_and_activation {
     #[tokio::test]
     async fn cannot_be_activated_twice() {
         // Setup the token + basic accounts
-        let mut tr = TestRunner::new().await.unwrap();
+        let mut tr = TestRunner::new(1_000_000).await.unwrap();
         // Create users
         let stake_pool_owner = tr.create_ata_account().await.unwrap();
         // Create stake pool
@@ -120,7 +120,7 @@ mod pool_creation_and_activation {
     #[tokio::test]
     async fn cannot_be_called_before_activation() {
         // Setup the token + basic accounts
-        let mut tr = TestRunner::new().await.unwrap();
+        let mut tr = TestRunner::new(1_000_000).await.unwrap();
         // Create users
         let stake_pool_owner = tr.create_ata_account().await.unwrap();
         let staker = tr.create_ata_account().await.unwrap();
@@ -132,7 +132,7 @@ mod pool_creation_and_activation {
         let result = tr.stake(&stake_pool_owner.pubkey(), &staker,  100000).await;
         assert!(result.is_err());
         // Try to create a bond
-        let result = tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), 10000, 1).await;
+        let result = tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), 10000, 1, 1, 1).await;
         assert!(result.is_err());
     }
 }
@@ -143,7 +143,7 @@ mod pool_settings {
     #[tokio::test]
     async fn can_change_minimum_stake_amount() {
         // Setup the token + basic accounts
-        let mut tr = TestRunner::new().await.unwrap();
+        let mut tr = TestRunner::new(1_000_000).await.unwrap();
         // Create users
         let stake_pool_owner = tr.create_ata_account().await.unwrap();
         // Create stake pool
@@ -160,7 +160,7 @@ mod pool_settings {
     #[tokio::test]
     async fn can_change_stakers_part() {
         // Setup the token + basic accounts
-        let mut tr = TestRunner::new().await.unwrap();
+        let mut tr = TestRunner::new(1_000_000).await.unwrap();
         // Create users
         let stake_pool_owner = tr.create_ata_account().await.unwrap();
         // Create stake pool
@@ -180,7 +180,7 @@ mod pool_settings {
 //     #[tokio::test]
 //     async fn permissionless_claim() {
 //         // Setup the token + basic accounts
-//         let mut tr = TestRunner::new().await.unwrap();
+//         let mut tr = TestRunner::new(1_000_000).await.unwrap();
 //         // Create users
 //         let stake_pool_owner = tr.create_ata_account().await.unwrap();
 //         let staker = tr.create_ata_account().await.unwrap();
@@ -197,7 +197,7 @@ mod pool_settings {
 //     #[tokio::test]
 //     async fn signed_claim() {
 //         // Setup the token + basic accounts
-//         let mut tr = TestRunner::new().await.unwrap();
+//         let mut tr = TestRunner::new(1_000_000).await.unwrap();
 //         // Create users
 //         let stake_pool_owner = tr.create_ata_account().await.unwrap();
 //         let staker = tr.create_ata_account().await.unwrap();

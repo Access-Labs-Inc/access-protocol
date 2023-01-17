@@ -534,14 +534,14 @@ impl TestRunner {
         let bond_key = *self.bond_accounts.get((stake_pool_owner.to_string() + &bond_owner.to_string()).as_str()).unwrap();
         let stake_pool_key = self.get_pool_pda(stake_pool_owner);
         let seller_token_acc = get_associated_token_address(&self.bond_seller.pubkey(), &self.mint);
-        let bond_owner_ata = get_associated_token_address(&bond_owner, &self.mint);
+        let bond_owner_ata = get_associated_token_address(bond_owner, &self.mint);
         let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
 
         let mut claim_bond_ix = claim_bond(
             self.program_id,
             claim_bond::Accounts {
                 bond_account: &bond_key,
-                buyer: &bond_owner,
+                buyer: bond_owner,
                 quote_token_source: &bond_owner_ata,
                 quote_token_destination: &seller_token_acc,
                 stake_pool: &stake_pool_key,
@@ -599,7 +599,7 @@ impl TestRunner {
     }
 
     pub async fn claim_bond_with_quote(&mut self, stake_pool_owner: &Pubkey, bond_owner: &Keypair) -> Result<(), BanksClientError> {
-        let bond_key = *self.bond_accounts.get((stake_pool_owner.to_string() + &bond_owner.pubkey().to_string().as_str()).as_str()).unwrap();
+        let bond_key = *self.bond_accounts.get((stake_pool_owner.to_string() + bond_owner.pubkey().to_string().as_str()).as_str()).unwrap();
         let stake_pool_key = self.get_pool_pda(stake_pool_owner);
         let seller_token_acc = get_associated_token_address(&self.bond_seller.pubkey(), &self.mint);
         let bond_owner_ata = get_associated_token_address(&bond_owner.pubkey(), &self.mint);

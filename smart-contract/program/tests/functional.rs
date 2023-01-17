@@ -595,7 +595,7 @@ async fn functional_10s() {
         false,
     );
 
-    let result = sign_send_instructions(&mut prg_test_ctx, vec![claim_bond_rewards_ix], vec![])
+    sign_send_instructions(&mut prg_test_ctx, vec![claim_bond_rewards_ix], vec![])
         .await
         .unwrap();
 
@@ -685,7 +685,7 @@ async fn functional_10s() {
         true,
     );
 
-    let result = sign_send_instructions(&mut prg_test_ctx, vec![claim_ix], vec![&staker])
+    sign_send_instructions(&mut prg_test_ctx, vec![claim_ix], vec![&staker])
         .await
         .unwrap();
 
