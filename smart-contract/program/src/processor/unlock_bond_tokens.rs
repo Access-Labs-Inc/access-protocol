@@ -130,8 +130,6 @@ pub fn process_unlock_bond_tokens(
         return Err(ProgramError::InvalidArgument);
     }
 
-    msg!("Current time: {}", current_time);
-    msg!("Unlock time: {}", bond.unlock_start_date);
     if current_time < bond.unlock_start_date {
         msg!("The bond tokens have not started unlocking yet");
         return Err(ProgramError::InvalidArgument);
@@ -145,8 +143,6 @@ pub fn process_unlock_bond_tokens(
         .checked_sub(bond.last_unlock_time)
         .ok_or(AccessError::Overflow)?;
 
-    msg!("Time since last unlock: {}", delta);
-    msg!("Unlock period: {}", bond.unlock_period);
     if delta < bond.unlock_period {
         msg!("Need to wait the end of the current unlock period before unlocking the bond");
         return Err(ProgramError::InvalidArgument);
