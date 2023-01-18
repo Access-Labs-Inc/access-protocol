@@ -83,3 +83,6 @@ This will:
 ### Known shortcomings
 
 - Cannot create two bonds tied to a different pool with the same amount
+- Bond functionality is counterintuitive
+  - Bond unlocking does not start at `unlock_start_date`, but at `unlock_start_date + unlock_period`
+  - If bond is claimed after the `unlock_start_date`, the offset of unlock times is counted relative to this date instead of the `unlock_start_date`
