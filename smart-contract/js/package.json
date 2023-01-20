@@ -22,7 +22,6 @@
     "doc": "yarn typedoc src/index.ts",
     "init_central_state": "tsc && node dist/init_central_state.js",
     "amman:start": "amman start",
-    "amman:start2": "amman start --help",
     "amman:stop": "amman stop"
   },
   "devDependencies": {
