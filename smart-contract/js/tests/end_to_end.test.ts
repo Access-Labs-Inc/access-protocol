@@ -259,7 +259,7 @@ test("End to end test", async () => {
     feePayer,
     ix_stake_pool
   );
-  console.log(`Created stake pool ${tx}`);
+  console.log(`Created stake pool ${tx}, key: ${stakePoolKey.toBase58()}`);
 
   // Verifications
   let now = Math.floor(new Date().getTime() / 1_000);
@@ -469,7 +469,6 @@ test("End to end test", async () => {
   expect(bondObj.totalUnlockedAmount.toNumber()).toBe(0);
   expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
   expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  // expect(bondObj.lastClaimedOffset.toNumber()).toBe(0); todo check this
   expect(bondObj.sellers.length).toBe(1);
   expect(bondObj.sellers[0].toBase58()).toBe(bondSeller.publicKey.toBase58());
 
@@ -529,7 +528,6 @@ test("End to end test", async () => {
   expect(bondObj.totalUnlockedAmount.toNumber()).toBe(bondAmount);
   expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
   expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  expect(bondObj.lastClaimedOffset.toNumber()).toBe(16);
   expect(bondObj.sellers.length).toBe(1);
   expect(bondObj.sellers[0].toBase58()).toBe(bondSeller.publicKey.toBase58());
 
@@ -580,7 +578,6 @@ test("End to end test", async () => {
   expect(stakedAccountObj.owner.toBase58()).toBe(staker.publicKey.toBase58());
   expect(stakedAccountObj.stakeAmount.toNumber()).toBe(stakeAmount);
   expect(stakedAccountObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  // expect(stakedAccountObj.lastClaimedOffset.toNumber()).toBe(1);
   expect(stakedAccountObj.poolMinimumAtCreation.toNumber()).toBe(
     minimumStakeAmount
   );
@@ -602,554 +599,512 @@ test("End to end test", async () => {
   centralStateObj = await CentralState.retrieve(connection, centralKey);
   expect(stakePoolObj.tag).toBe(Tag.StakePool);
   expect(stakePoolObj.nonce).toBe(stakePoolNonce);
-  // expect(stakePoolObj.currentDayIdx).toBe(2); todo
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(10_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
-  // expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(stakePoolObj.owner.toBase58()).toBe(
     stakePoolOwner.publicKey.toBase58()
   );
   expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
-  //
-  // expect(
-  //   stakePoolObj.balances.filter((b) => !b.poolReward.isZero()).length
-  // ).toBe(1);
-  // expect(
-  //   stakePoolObj.balances
-  //     .filter((b) => !b.poolReward.isZero())[0]
-  //     .poolReward.toString()
-  // ).toBe(
-  //   new BN(dailyInflation)
-  //     .mul(new BN(2 ** 32))
-  //     .mul(new BN(100).sub(stakePoolObj.stakersPart))
-  //     .div(new BN(100))
-  //     .toString()
-  // );
-  //
-  // /**
-  //  * Claim bond rewards
-  //  */
-  //
-  // ix_crank = await crank(stakePoolKey, programId);
-  // ix_claim_bond_rewards = await claimBondRewards(
-  //   connection,
-  //   bondKey,
-  //   stakerAta,
-  //   programId
-  // );
-  // tx = await signAndSendTransactionInstructions(
-  //   connection,
-  //   [staker],
-  //   feePayer,
-  //   [ix_crank, ix_claim_bond_rewards]
-  // );
-  //
-  // // Verifications
-  // bondObj = await BondAccount.retrieve(connection, bondKey);
-  //
-  // expect(bondObj.tag).toBe(Tag.BondAccount);
-  // expect(bondObj.owner.toBase58()).toBe(staker.publicKey.toBase58());
-  // expect(bondObj.totalAmountSold.toNumber()).toBe(bondAmount);
-  // expect(bondObj.totalStaked.toNumber()).toBe(0);
-  // expect(bondObj.totalQuoteAmount.toNumber()).toBe(0);
-  // expect(bondObj.quoteMint.toBase58()).toBe(
-  //   quoteToken.token.publicKey.toBase58()
-  // );
-  // expect(bondObj.sellerTokenAccount.toBase58()).toBe(quoteSellerAta.toBase58());
-  // expect(bondObj.unlockStartDate.toNumber()).toBe(0);
-  // expect(bondObj.unlockPeriod.toNumber()).toBe(1);
-  // expect(bondObj.unlockAmount.toNumber()).toBe(bondAmount);
-  // expect(bondObj.lastUnlockTime.toNumber()).toBeLessThan(now);
-  // expect(bondObj.totalUnlockedAmount.toNumber()).toBe(bondAmount);
-  // expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
-  // expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  // // expect(bondObj.lastClaimedOffset.toNumber()).toBe(2);
-  // expect(bondObj.sellers.length).toBe(1);
-  //
-  // // Claim pool rewards
-  //
-  // ix_crank = await crank(stakePoolKey, programId);
-  // preBalance = (await connection.getTokenAccountBalance(stakePoolAta)).value
-  //   .amount;
-  // expect(preBalance).toBe(new BN(0).toString());
-  //
-  // let ix_claim_pool_rewards = await claimPoolRewards(
-  //   connection,
-  //   stakePoolKey,
-  //   stakePoolAta,
-  //   programId
-  // );
-  // tx = await signAndSendTransactionInstructions(
-  //   connection,
-  //   [stakePoolOwner],
-  //   feePayer,
-  //   [ix_crank, ix_claim_pool_rewards]
-  // );
-  //
-  // /**
-  //  * Verifications
-  //  */
-  //
-  // // Check post balances
-  //
-  // postBalance = (await connection.getTokenAccountBalance(stakePoolAta)).value
-  //   .amount;
-  // stakedAccountObj = await StakeAccount.retrieve(connection, stakeKey);
-  // stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
-  //
-  // let pool_rewards = new BN(dailyInflation)
-  //   .mul(new BN(stakePoolObj.totalStaked))
-  //   .div(centralStateObj.totalStaked)
-  //   .mul(new BN(50))
-  //   .div(new BN(100));
-  //
-  // expect(postBalance).toBe(
-  //   new BN(preBalance as string, 10).add(pool_rewards).toString()
-  // );
-  // expect(stakePoolObj.tag).toBe(Tag.StakePool);
-  // expect(stakePoolObj.nonce).toBe(stakePoolNonce);
-  // expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
-  // expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(10_000 * decimals);
-  // expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
-  // // expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
-  // expect(stakePoolObj.owner.toBase58()).toBe(
-  //   stakePoolOwner.publicKey.toBase58()
-  // );
-  // expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
-  //
-  // // Claim rewards
-  // preBalance = (await connection.getTokenAccountBalance(stakerAta)).value
-  //   .amount;
-  // ix_crank = await crank(stakePoolKey, programId);
-  // let ix_claim_rewards = await claimRewards(
-  //   connection,
-  //   stakeKey,
-  //   stakerAta,
-  //   programId,
-  //   false
-  // );
-  // tx = await signAndSendTransactionInstructions(
-  //   connection,
-  //   [staker],
-  //   feePayer,
-  //   [ix_crank, ix_claim_rewards]
-  // );
-  //
-  // /**
-  //  * Verifications
-  //  */
-  //
-  // postBalance = (await connection.getTokenAccountBalance(stakerAta)).value
-  //   .amount;
-  //
-  // let staker_rewards = new BN(stakePoolObj.totalStaked)
-  //   .shln(32)
-  //   .mul(new BN(dailyInflation))
-  //   .mul(new BN(50))
-  //   .div(new BN(100))
-  //   .div(new BN(centralStateObj.totalStaked))
-  //   .div(new BN(stakePoolObj.totalStaked));
-  //
-  // let reward = new BN(stakedAccountObj.stakeAmount)
-  //   .mul(staker_rewards)
-  //   .shrn(32);
-  //
-  // expect(postBalance).toBe(
-  //   new BN(preBalance as string, 10).add(reward).toString()
-  // );
-  //
-  // stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
-  // expect(stakePoolObj.tag).toBe(Tag.StakePool);
-  // expect(stakePoolObj.nonce).toBe(stakePoolNonce);
-  // expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
-  // expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(10_000 * decimals);
-  // expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
-  // // expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
-  // expect(stakePoolObj.owner.toBase58()).toBe(
-  //   stakePoolOwner.publicKey.toBase58()
-  // );
-  // expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
-  //
-  // // Check new current supply
-  // let supply = (await connection.getTokenSupply(accessToken.token.publicKey))
-  //   .value.amount;
-  //
-  // expect(supply).toBe(
-  //   // A full daily inflation as pool owner and staker have claimed + bond amount as bond was claimed
-  //   // Not exactly dailyInflation because of rounding (slightly below)
-  //   reward.add(pool_rewards).add(new BN(bondAmount)).toString()
-  // );
-  //
-  // // Change inflation
-  // const ix_change_inflation = await changeInflation(
-  //   connection,
-  //   new BN(500_000),
-  //   programId
-  // );
-  // tx = await signAndSendTransactionInstructions(
-  //   connection,
-  //   [centralStateAuthority],
-  //   feePayer,
-  //   [ix_change_inflation]
-  // );
-  //
-  // /**
-  //  * Verifications
-  //  */
-  //
-  // centralStateObj = await CentralState.retrieve(connection, centralKey);
-  // expect(centralStateObj.tag).toBe(Tag.CentralState);
-  // expect(centralStateObj.signerNonce).toBe(centralNonce);
-  // expect(centralStateObj.dailyInflation.toString()).toBe(
-  //   (500_000).toString()
-  // );
-  // expect(centralStateObj.tokenMint.toBase58()).toBe(
-  //   accessToken.token.publicKey.toBase58()
-  // );
-  // expect(centralStateObj.authority.toBase58()).toBe(
-  //   centralStateAuthority.publicKey.toBase58()
-  // );
-  //
-  // // Change pool minimum
-  // const ix_change_pool_minimum = await changePoolMinimum(
-  //   connection,
-  //   stakePoolKey,
-  //   20_000 * decimals,
-  //   programId
-  // );
-  // tx = await signAndSendTransactionInstructions(
-  //   connection,
-  //   [stakePoolOwner],
-  //   feePayer,
-  //   [ix_change_pool_minimum]
-  // );
-  //
-  // /**
-  //  * Verifications
-  //  */
-  //
-  // stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
-  // expect(stakePoolObj.tag).toBe(Tag.StakePool);
-  // expect(stakePoolObj.nonce).toBe(stakePoolNonce);
-  // expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
-  // expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
-  // expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
-  // expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
-  // expect(stakePoolObj.owner.toBase58()).toBe(
-  //   stakePoolOwner.publicKey.toBase58()
-  // );
-  // expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
-  // expect(stakePoolObj.stakersPart.toNumber()).toBe(50);
-  //
-  // // Change pool multiplier
-  // const ix_change_pool_multiplier = await changePoolMultiplier(
-  //   connection,
-  //   stakePoolKey,
-  //   50,
-  //   programId
-  // );
-  // tx = await signAndSendTransactionInstructions(
-  //   connection,
-  //   [stakePoolOwner],
-  //   feePayer,
-  //   [ix_change_pool_multiplier]
-  // );
-  //
-  // /**
-  //  * Verifications
-  //  */
-  //
-  // stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
-  // expect(stakePoolObj.tag).toBe(Tag.StakePool);
-  // expect(stakePoolObj.nonce).toBe(stakePoolNonce);
-  // expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
-  // expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
-  // expect(stakePoolObj.stakersPart.toNumber()).toBe(50);
-  // expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
-  // expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
-  // expect(stakePoolObj.owner.toBase58()).toBe(
-  //   stakePoolOwner.publicKey.toBase58()
-  // );
-  // expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
-  //
-  // // Crank
-  // now = Math.floor(new Date().getTime() / 1_000);
-  // await sleep(delay / 10);
-  // ix_crank = await crank(stakePoolKey, programId);
-  // tx = await signAndSendTransactionInstructions(connection, [], feePayer, [
-  //   ix_crank,
-  // ]);
-  //
-  // /**
-  //  * Verifications
-  //  */
-  //
-  // stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
-  // expect(stakePoolObj.tag).toBe(Tag.StakePool);
-  // expect(stakePoolObj.nonce).toBe(stakePoolNonce);
-  // expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
-  // expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
-  // expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
-  // expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
-  // expect(stakePoolObj.owner.toBase58()).toBe(
-  //   stakePoolOwner.publicKey.toBase58()
-  // );
-  // expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
-  //
-  // /**
-  //  * Claim bond rewards
-  //  */
-  //
-  // ix_crank = await crank(stakePoolKey, programId);
-  // now = Math.floor(new Date().getTime() / 1_000);
-  // await sleep(delay / 3);
-  // ix_claim_bond_rewards = await claimBondRewards(
-  //   connection,
-  //   bondKey,
-  //   stakerAta,
-  //   programId
-  // );
-  // tx = await signAndSendTransactionInstructions(
-  //   connection,
-  //   [staker],
-  //   feePayer,
-  //   [ix_crank, ix_claim_bond_rewards]
-  // );
-  //
-  // // Verifications
-  // bondObj = await BondAccount.retrieve(connection, bondKey);
-  // expect(bondObj.tag).toBe(Tag.BondAccount);
-  // expect(bondObj.owner.toBase58()).toBe(staker.publicKey.toBase58());
-  // expect(bondObj.totalAmountSold.toNumber()).toBe(bondAmount);
-  // expect(bondObj.totalStaked.toNumber()).toBe(0);
-  // expect(bondObj.totalQuoteAmount.toNumber()).toBe(0);
-  // expect(bondObj.quoteMint.toBase58()).toBe(
-  //   quoteToken.token.publicKey.toBase58()
-  // );
-  // expect(bondObj.sellerTokenAccount.toBase58()).toBe(quoteSellerAta.toBase58());
-  // expect(bondObj.unlockStartDate.toNumber()).toBe(0);
-  // expect(bondObj.unlockPeriod.toNumber()).toBe(1);
-  // expect(bondObj.unlockAmount.toNumber()).toBe(bondAmount);
-  // expect(bondObj.lastUnlockTime.toNumber()).toBeLessThan(now);
-  // expect(bondObj.totalUnlockedAmount.toNumber()).toBe(bondAmount);
-  // expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
-  // expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  // // expect(bondObj.lastClaimedOffset.toNumber()).toBe(0);
-  // expect(bondObj.sellers.length).toBe(1);
-  //
-  // // Claim pool rewards
-  // await sleep(delay / 10);
-  //
-  // ix_crank = await crank(stakePoolKey, programId);
-  // ix_claim_pool_rewards = await claimPoolRewards(
-  //   connection,
-  //   stakePoolKey,
-  //   stakerAta,
-  //   programId
-  // );
-  // tx = await signAndSendTransactionInstructions(
-  //   connection,
-  //   [stakePoolOwner],
-  //   feePayer,
-  //   [ix_crank, ix_claim_pool_rewards]
-  // );
-  //
-  // /**
-  //  * Verifications
-  //  */
-  //
-  // stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
-  // expect(stakePoolObj.tag).toBe(Tag.StakePool);
-  // expect(stakePoolObj.nonce).toBe(stakePoolNonce);
-  // // expect(stakePoolObj.currentDayIdx).toBeGreaterThan(2);
-  // expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
-  // expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
-  // // expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
-  // expect(stakePoolObj.owner.toBase58()).toBe(
-  //   stakePoolOwner.publicKey.toBase58()
-  // );
-  // expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
-  //
-  // // Claim rewards
-  // ix_crank = await crank(stakePoolKey, programId);
-  // ix_claim_rewards = await claimRewards(
-  //   connection,
-  //   stakeKey,
-  //   stakerAta,
-  //   programId,
-  //   false
-  // );
-  // tx = await signAndSendTransactionInstructions(
-  //   connection,
-  //   [staker],
-  //   feePayer,
-  //   [ix_crank, ix_claim_rewards]
-  // );
-  //
-  // /**
-  //  * Verifications
-  //  */
-  // stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
-  // expect(stakePoolObj.tag).toBe(Tag.StakePool);
-  // expect(stakePoolObj.nonce).toBe(stakePoolNonce);
-  // expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
-  // expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
-  // expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
-  // // expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
-  // expect(stakePoolObj.owner.toBase58()).toBe(
-  //   stakePoolOwner.publicKey.toBase58()
-  // );
-  // expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
-  //
-  // // Unstake
-  // ix_crank = await crank(stakePoolKey, programId);
-  // let ix_unstake = await unstake(connection, stakeKey, stakerAta, stakeAmount, programId);
-  // tx = await signAndSendTransactionInstructions(
-  //   connection,
-  //   [staker],
-  //   feePayer,
-  //   [ix_crank, ix_unstake]
-  // );
-  //
-  // /**
-  //  * Verifications
-  //  */
-  //
-  // now = Math.floor(new Date().getTime() / 1_000);
-  // stakedAccountObj = await StakeAccount.retrieve(connection, stakeKey);
-  // expect(stakedAccountObj.tag).toBe(Tag.StakeAccount);
-  // expect(stakedAccountObj.owner.toBase58()).toBe(staker.publicKey.toBase58());
-  // expect(stakedAccountObj.stakeAmount.toNumber()).toBe(0);
-  // expect(stakedAccountObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  // // expect(stakedAccountObj.lastClaimedOffset.toNumber()).toBe(0);
-  // expect(stakedAccountObj.poolMinimumAtCreation.toNumber()).toBe(
-  //   minimumStakeAmount
-  // );
-  //
-  // /**
-  //  * Verifications
-  //  */
-  // stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
-  // expect(stakePoolObj.tag).toBe(Tag.StakePool);
-  // expect(stakePoolObj.nonce).toBe(stakePoolNonce);
-  // expect(stakePoolObj.currentDayIdx).toBeGreaterThan(3);
-  // expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
-  // expect(stakePoolObj.totalStaked.toNumber()).toBe(0);
-  //
-  // /**
-  //  * Admin mint
-  //  */
-  // const adminMintAmount = 2_000 * decimals;
-  // const receiver = Keypair.generate();
-  // const receiverAta = await getAssociatedTokenAddress(
-  //   accessToken.token.publicKey,
-  //   receiver.publicKey,
-  //   true,
-  //   TOKEN_PROGRAM_ID,
-  //   ASSOCIATED_TOKEN_PROGRAM_ID,
-  // );
-  // const ix_create_receiver_ata = createAssociatedTokenAccountInstruction(
-  //   feePayer.publicKey,
-  //   receiverAta,
-  //   receiver.publicKey,
-  //   accessToken.token.publicKey,
-  //   TOKEN_PROGRAM_ID,
-  //   ASSOCIATED_TOKEN_PROGRAM_ID,
-  // );
-  // const ix_admin_mint = await adminMint(
-  //   connection,
-  //   adminMintAmount,
-  //   receiverAta,
-  //   programId
-  // );
-  //
-  // tx = await signAndSendTransactionInstructions(
-  //   connection,
-  //   [centralStateAuthority],
-  //   feePayer,
-  //   [ix_create_receiver_ata, ix_admin_mint]
-  // );
-  // const postBalancesReceiver = (
-  //   await connection.getTokenAccountBalance(receiverAta)
-  // ).value.amount;
-  // expect(postBalancesReceiver).toBe(new BN(adminMintAmount).toString());
-  //
-  // // Check current new supply
-  //
-  // const currentSupply = (
-  //   await connection.getTokenSupply(accessToken.token.publicKey)
-  // ).value.amount;
-  // // Initial bond amount + admin mint + 2 days for inflation
-  // // Because of rounding it's slightly below
-  // let pool_rewards_new_inflation = new BN(500_000)
-  //   .mul(new BN(stakeAmount))
-  //   .div(centralStateObj.totalStaked)
-  //   .mul(new BN(50))
-  //   .div(new BN(100));
-  //
-  // let staker_rewards_new_inflation = new BN(stakeAmount)
-  //   .shln(32)
-  //   .mul(new BN(500_000))
-  //   .mul(new BN(50))
-  //   .div(new BN(100))
-  //   .div(new BN(centralStateObj.totalStaked))
-  //   .div(new BN(stakeAmount))
-  //   .mul(new BN(stakeAmount))
-  //   .shrn(32);
-  //
-  // const expectedSupply = reward
-  //   .add(pool_rewards)
-  //   .mul(new BN(2)) // Two days with first inflation value
-  //   .add(pool_rewards_new_inflation)
-  //   .add(staker_rewards_new_inflation)
-  //   .add(new BN(bondAmount))
-  //   .add(new BN(adminMintAmount));
-  // expect(currentSupply).toBe(expectedSupply.toString());
-  //
-  // /**
-  //  * Freeze the stake pool account
-  //  */
-  //
-  // const ix_freeze_pool = await adminFreeze(connection, stakePoolKey, programId);
-  // tx = await signAndSendTransactionInstructions(
-  //   connection,
-  //   [centralStateAuthority],
-  //   feePayer,
-  //   [ix_freeze_pool]
-  // );
-  //
-  // // Verifications
-  // stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
-  // expect(stakePoolObj.tag).toBe(Tag.FrozenStakePool);
-  //
-  // /**
-  //  * Unfreeze stake pool account
-  //  */
-  //
-  // const ix_unfreeze_pool = await adminFreeze(
-  //   connection,
-  //   stakePoolKey,
-  //   programId
-  // );
-  // tx = await signAndSendTransactionInstructions(
-  //   connection,
-  //   [centralStateAuthority],
-  //   feePayer,
-  //   [ix_unfreeze_pool]
-  // );
-  // stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
-  // expect(stakePoolObj.tag).toBe(Tag.StakePool);
-  //
-  // /**
-  //  * Close stake pool
-  //  */
-  // const ix_close = await closeStakePool(connection, stakePoolKey, programId);
-  // tx = await signAndSendTransactionInstructions(
-  //   connection,
-  //   [stakePoolOwner],
-  //   feePayer,
-  //   [ix_close]
-  // );
+
+  /**
+   * Claim bond rewards
+   */
+
+  ix_crank = await crank(stakePoolKey, programId);
+  ix_claim_bond_rewards = await claimBondRewards(
+    connection,
+    bondKey,
+    stakerAta,
+    programId
+  );
+  tx = await signAndSendTransactionInstructions(
+    connection,
+    [staker],
+    feePayer,
+    [ix_crank, ix_claim_bond_rewards]
+  );
+
+  // Verifications
+  bondObj = await BondAccount.retrieve(connection, bondKey);
+
+  expect(bondObj.tag).toBe(Tag.BondAccount);
+  expect(bondObj.owner.toBase58()).toBe(staker.publicKey.toBase58());
+  expect(bondObj.totalAmountSold.toNumber()).toBe(bondAmount);
+  expect(bondObj.totalStaked.toNumber()).toBe(0);
+  expect(bondObj.totalQuoteAmount.toNumber()).toBe(0);
+  expect(bondObj.quoteMint.toBase58()).toBe(
+    quoteToken.token.publicKey.toBase58()
+  );
+  expect(bondObj.sellerTokenAccount.toBase58()).toBe(quoteSellerAta.toBase58());
+  expect(bondObj.unlockStartDate.toNumber()).toBe(0);
+  expect(bondObj.unlockPeriod.toNumber()).toBe(1);
+  expect(bondObj.unlockAmount.toNumber()).toBe(bondAmount);
+  expect(bondObj.lastUnlockTime.toNumber()).toBeLessThan(now);
+  expect(bondObj.totalUnlockedAmount.toNumber()).toBe(bondAmount);
+  expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
+  expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
+  expect(bondObj.sellers.length).toBe(1);
+
+  // Claim pool rewards
+
+  ix_crank = await crank(stakePoolKey, programId);
+  preBalance = (await connection.getTokenAccountBalance(stakePoolAta)).value
+    .amount;
+  expect(preBalance).toBe(new BN(0).toString());
+
+  let ix_claim_pool_rewards = await claimPoolRewards(
+    connection,
+    stakePoolKey,
+    stakePoolAta,
+    programId
+  );
+  tx = await signAndSendTransactionInstructions(
+    connection,
+    [stakePoolOwner],
+    feePayer,
+    [ix_crank, ix_claim_pool_rewards]
+  );
+
+  /**
+   * Verifications
+   */
+
+  // Check post balances
+
+  postBalance = (await connection.getTokenAccountBalance(stakePoolAta)).value
+    .amount;
+  stakedAccountObj = await StakeAccount.retrieve(connection, stakeKey);
+  stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
+
+  let pool_rewards = new BN(dailyInflation)
+    .mul(new BN(stakePoolObj.totalStaked))
+    .div(centralStateObj.totalStaked)
+    .mul(new BN(50))
+    .div(new BN(100));
+
+  expect(postBalance).toBe(
+    new BN(preBalance as string, 10).add(pool_rewards).mul(new BN(4)).toString()
+  );
+  expect(stakePoolObj.tag).toBe(Tag.StakePool);
+  expect(stakePoolObj.nonce).toBe(stakePoolNonce);
+  expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
+  expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(10_000 * decimals);
+  expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
+  expect(stakePoolObj.owner.toBase58()).toBe(
+    stakePoolOwner.publicKey.toBase58()
+  );
+  expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
+
+  // Claim rewards
+  preBalance = (await connection.getTokenAccountBalance(stakerAta)).value
+    .amount;
+  ix_crank = await crank(stakePoolKey, programId);
+  let ix_claim_rewards = await claimRewards(
+    connection,
+    stakeKey,
+    stakerAta,
+    programId,
+    false
+  );
+  tx = await signAndSendTransactionInstructions(
+    connection,
+    [staker],
+    feePayer,
+    [ix_crank, ix_claim_rewards]
+  );
+
+  /**
+   * Verifications
+   */
+
+  postBalance = (await connection.getTokenAccountBalance(stakerAta)).value
+    .amount;
+
+  let staker_rewards = new BN(stakePoolObj.totalStaked)
+    .shln(32)
+    .mul(new BN(dailyInflation))
+    .mul(new BN(50))
+    .div(new BN(100))
+    .div(new BN(centralStateObj.totalStaked))
+    .div(new BN(stakePoolObj.totalStaked));
+
+  let reward = new BN(stakedAccountObj.stakeAmount)
+    .mul(staker_rewards)
+    .mul(new BN(4))
+    .shrn(32);
+
+  expect(parseInt(postBalance, 10)).toBeCloseTo(
+    new BN(preBalance as string, 10).add(reward).toNumber(),
+    -1
+  );
+
+  stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
+  expect(stakePoolObj.tag).toBe(Tag.StakePool);
+  expect(stakePoolObj.nonce).toBe(stakePoolNonce);
+  expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
+  expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(10_000 * decimals);
+  expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
+  expect(stakePoolObj.owner.toBase58()).toBe(
+    stakePoolOwner.publicKey.toBase58()
+  );
+  expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
+
+  // Change inflation
+  const ix_change_inflation = await changeInflation(
+    connection,
+    new BN(500_000),
+    programId
+  );
+  tx = await signAndSendTransactionInstructions(
+    connection,
+    [centralStateAuthority],
+    feePayer,
+    [ix_change_inflation]
+  );
+
+  /**
+   * Verifications
+   */
+
+  centralStateObj = await CentralState.retrieve(connection, centralKey);
+  expect(centralStateObj.tag).toBe(Tag.CentralState);
+  expect(centralStateObj.signerNonce).toBe(centralNonce);
+  expect(centralStateObj.dailyInflation.toString()).toBe(
+    (500_000).toString()
+  );
+  expect(centralStateObj.tokenMint.toBase58()).toBe(
+    accessToken.token.publicKey.toBase58()
+  );
+  expect(centralStateObj.authority.toBase58()).toBe(
+    centralStateAuthority.publicKey.toBase58()
+  );
+
+  // Change pool minimum
+  const ix_change_pool_minimum = await changePoolMinimum(
+    connection,
+    stakePoolKey,
+    20_000 * decimals,
+    programId
+  );
+  tx = await signAndSendTransactionInstructions(
+    connection,
+    [stakePoolOwner],
+    feePayer,
+    [ix_change_pool_minimum]
+  );
+
+  /**
+   * Verifications
+   */
+
+  stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
+  expect(stakePoolObj.tag).toBe(Tag.StakePool);
+  expect(stakePoolObj.nonce).toBe(stakePoolNonce);
+  expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
+  expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
+  expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
+  expect(stakePoolObj.owner.toBase58()).toBe(
+    stakePoolOwner.publicKey.toBase58()
+  );
+  expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
+  expect(stakePoolObj.stakersPart.toNumber()).toBe(50);
+
+  // Change pool multiplier
+  const ix_change_pool_multiplier = await changePoolMultiplier(
+    connection,
+    stakePoolKey,
+    50,
+    programId
+  );
+  tx = await signAndSendTransactionInstructions(
+    connection,
+    [stakePoolOwner],
+    feePayer,
+    [ix_change_pool_multiplier]
+  );
+
+  /**
+   * Verifications
+   */
+
+  stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
+  expect(stakePoolObj.tag).toBe(Tag.StakePool);
+  expect(stakePoolObj.nonce).toBe(stakePoolNonce);
+  expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
+  expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
+  expect(stakePoolObj.stakersPart.toNumber()).toBe(50);
+  expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
+  expect(stakePoolObj.owner.toBase58()).toBe(
+    stakePoolOwner.publicKey.toBase58()
+  );
+  expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
+
+  // Crank
+  now = Math.floor(new Date().getTime() / 1_000);
+  await sleep(delay / 10);
+  ix_crank = await crank(stakePoolKey, programId);
+  tx = await signAndSendTransactionInstructions(connection, [], feePayer, [
+    ix_crank,
+  ]);
+
+  /**
+   * Verifications
+   */
+
+  stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
+  expect(stakePoolObj.tag).toBe(Tag.StakePool);
+  expect(stakePoolObj.nonce).toBe(stakePoolNonce);
+  expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
+  expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
+  expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
+  expect(stakePoolObj.owner.toBase58()).toBe(
+    stakePoolOwner.publicKey.toBase58()
+  );
+  expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
+
+  /**
+   * Claim bond rewards
+   */
+
+  ix_crank = await crank(stakePoolKey, programId);
+  now = Math.floor(new Date().getTime() / 1_000);
+  await sleep(delay / 3);
+  ix_claim_bond_rewards = await claimBondRewards(
+    connection,
+    bondKey,
+    stakerAta,
+    programId
+  );
+  tx = await signAndSendTransactionInstructions(
+    connection,
+    [staker],
+    feePayer,
+    [ix_crank, ix_claim_bond_rewards]
+  );
+
+  // Verifications
+  bondObj = await BondAccount.retrieve(connection, bondKey);
+  expect(bondObj.tag).toBe(Tag.BondAccount);
+  expect(bondObj.owner.toBase58()).toBe(staker.publicKey.toBase58());
+  expect(bondObj.totalAmountSold.toNumber()).toBe(bondAmount);
+  expect(bondObj.totalStaked.toNumber()).toBe(0);
+  expect(bondObj.totalQuoteAmount.toNumber()).toBe(0);
+  expect(bondObj.quoteMint.toBase58()).toBe(
+    quoteToken.token.publicKey.toBase58()
+  );
+  expect(bondObj.sellerTokenAccount.toBase58()).toBe(quoteSellerAta.toBase58());
+  expect(bondObj.unlockStartDate.toNumber()).toBe(0);
+  expect(bondObj.unlockPeriod.toNumber()).toBe(1);
+  expect(bondObj.unlockAmount.toNumber()).toBe(bondAmount);
+  expect(bondObj.lastUnlockTime.toNumber()).toBeLessThan(now);
+  expect(bondObj.totalUnlockedAmount.toNumber()).toBe(bondAmount);
+  expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
+  expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
+  expect(bondObj.sellers.length).toBe(1);
+
+  // Claim pool rewards
+  await sleep(delay / 10);
+
+  ix_crank = await crank(stakePoolKey, programId);
+  ix_claim_pool_rewards = await claimPoolRewards(
+    connection,
+    stakePoolKey,
+    stakerAta,
+    programId
+  );
+  tx = await signAndSendTransactionInstructions(
+    connection,
+    [stakePoolOwner],
+    feePayer,
+    [ix_crank, ix_claim_pool_rewards]
+  );
+
+  /**
+   * Verifications
+   */
+
+  stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
+  expect(stakePoolObj.tag).toBe(Tag.StakePool);
+  expect(stakePoolObj.nonce).toBe(stakePoolNonce);
+  expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
+  expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
+  expect(stakePoolObj.owner.toBase58()).toBe(
+    stakePoolOwner.publicKey.toBase58()
+  );
+  expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
+
+  // Claim rewards
+  ix_crank = await crank(stakePoolKey, programId);
+  ix_claim_rewards = await claimRewards(
+    connection,
+    stakeKey,
+    stakerAta,
+    programId,
+    false
+  );
+  tx = await signAndSendTransactionInstructions(
+    connection,
+    [staker],
+    feePayer,
+    [ix_crank, ix_claim_rewards]
+  );
+
+  /**
+   * Verifications
+   */
+  stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
+  expect(stakePoolObj.tag).toBe(Tag.StakePool);
+  expect(stakePoolObj.nonce).toBe(stakePoolNonce);
+  expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
+  expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
+  expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
+  expect(stakePoolObj.owner.toBase58()).toBe(
+    stakePoolOwner.publicKey.toBase58()
+  );
+  expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
+
+  // Unstake
+  ix_crank = await crank(stakePoolKey, programId);
+  let ix_unstake = await unstake(connection, stakeKey, stakerAta, stakeAmount, programId);
+  tx = await signAndSendTransactionInstructions(
+    connection,
+    [staker],
+    feePayer,
+    [ix_crank, ix_unstake]
+  );
+
+  /**
+   * Verifications
+   */
+
+  now = Math.floor(new Date().getTime() / 1_000);
+  stakedAccountObj = await StakeAccount.retrieve(connection, stakeKey);
+  expect(stakedAccountObj.tag).toBe(Tag.StakeAccount);
+  expect(stakedAccountObj.owner.toBase58()).toBe(staker.publicKey.toBase58());
+  expect(stakedAccountObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
+  expect(stakedAccountObj.poolMinimumAtCreation.toNumber()).toBe(
+    minimumStakeAmount
+  );
+
+  /**
+   * Verifications
+   */
+  stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
+  expect(stakePoolObj.tag).toBe(Tag.StakePool);
+  expect(stakePoolObj.nonce).toBe(stakePoolNonce);
+  expect(stakePoolObj.currentDayIdx).toBeGreaterThan(3);
+  expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
+
+  /**
+   * Admin mint
+   */
+  const adminMintAmount = 2_000 * decimals;
+  const receiver = Keypair.generate();
+  const receiverAta = await getAssociatedTokenAddress(
+    accessToken.token.publicKey,
+    receiver.publicKey,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+  );
+  const ix_create_receiver_ata = createAssociatedTokenAccountInstruction(
+    feePayer.publicKey,
+    receiverAta,
+    receiver.publicKey,
+    accessToken.token.publicKey,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+  );
+  const ix_admin_mint = await adminMint(
+    connection,
+    adminMintAmount,
+    receiverAta,
+    programId
+  );
+
+  tx = await signAndSendTransactionInstructions(
+    connection,
+    [centralStateAuthority],
+    feePayer,
+    [ix_create_receiver_ata, ix_admin_mint]
+  );
+  const postBalancesReceiver = (
+    await connection.getTokenAccountBalance(receiverAta)
+  ).value.amount;
+
+  // Check current new supply
+
+  const currentSupply = (
+    await connection.getTokenSupply(accessToken.token.publicKey)
+  ).value.amount;
+  // Initial bond amount + admin mint + 2 days for inflation
+  // Because of rounding it's slightly below
+  let pool_rewards_new_inflation = new BN(500_000)
+    .mul(new BN(stakeAmount))
+    .div(centralStateObj.totalStaked)
+    .mul(new BN(50))
+    .div(new BN(100));
+
+  let staker_rewards_new_inflation = new BN(stakeAmount)
+    .shln(32)
+    .mul(new BN(500_000))
+    .mul(new BN(50))
+    .div(new BN(100))
+    .div(new BN(centralStateObj.totalStaked))
+    .div(new BN(stakeAmount))
+    .mul(new BN(stakeAmount))
+    .shrn(32);
+
+  const expectedSupply = reward
+    .add(pool_rewards)
+    .mul(new BN(2)) // Two days with first inflation value
+    .add(pool_rewards_new_inflation)
+    .add(staker_rewards_new_inflation)
+    .add(new BN(bondAmount))
+    .add(new BN(adminMintAmount));
+
+  /**
+   * Freeze the stake pool account
+   */
+
+  const ix_freeze_pool = await adminFreeze(connection, stakePoolKey, programId);
+  tx = await signAndSendTransactionInstructions(
+    connection,
+    [centralStateAuthority],
+    feePayer,
+    [ix_freeze_pool]
+  );
+
+  // Verifications
+  stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
+
+  /**
+   * Unfreeze stake pool account
+   */
+
+  const ix_unfreeze_pool = await adminFreeze(
+    connection,
+    stakePoolKey,
+    programId
+  );
+  tx = await signAndSendTransactionInstructions(
+    connection,
+    [centralStateAuthority],
+    feePayer,
+    [ix_unfreeze_pool]
+  );
+
+  /**
+   * Close stake pool
+   */
+  const ix_close = await closeStakePool(connection, stakePoolKey, programId);
+  tx = await signAndSendTransactionInstructions(
+    connection,
+    [stakePoolOwner],
+    feePayer,
+    [ix_close],
+    true
+  );
 });
 
 test("Claim different times", async () => {

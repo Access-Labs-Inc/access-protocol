@@ -181,11 +181,13 @@ export const poc = async (
    * Stake
    */
 
+  let crank_ix = await crank(stakePoolKey, programId);
   tx = await signAndSendTransactionInstructions(
     connection,
     [Alice, Bob],
     feePayer,
     [
+      crank_ix,
       await stake(
         connection,
         aliceStakeKey,

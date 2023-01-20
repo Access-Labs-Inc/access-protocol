@@ -1,15 +1,16 @@
 import { Connection, PublicKey, MemcmpFilter } from "@solana/web3.js";
-import { ACCESS_PROGRAM_ID } from "./bindings";
 
 /**
  * This function can be used to find all stake accounts of a user
  * @param connection The Solana RPC connection
  * @param owner The owner of the stake accounts to retrieve
+ * @param programId The program ID
  * @returns
  */
 export const getStakeAccounts = async (
   connection: Connection,
-  owner: PublicKey
+  owner: PublicKey,
+  programId: PublicKey
 ) => {
   const filters: MemcmpFilter[] = [
     {
@@ -25,7 +26,7 @@ export const getStakeAccounts = async (
       },
     },
   ];
-  return await connection.getProgramAccounts(ACCESS_PROGRAM_ID, {
+  return await connection.getProgramAccounts(programId, {
     filters,
   });
 };
@@ -34,11 +35,13 @@ export const getStakeAccounts = async (
  * This function can be used to find all stake pools of a user
  * @param connection The Solana RPC connection
  * @param owner The owner of the stake pools to retrieve
+ * @param programId The program ID
  * @returns
  */
 export const getStakePools = async (
   connection: Connection,
-  owner: PublicKey
+  owner: PublicKey,
+  programId: PublicKey
 ) => {
   const filters = [
     {
@@ -54,7 +57,7 @@ export const getStakePools = async (
       },
     },
   ];
-  return await connection.getProgramAccounts(ACCESS_PROGRAM_ID, {
+  return await connection.getProgramAccounts(programId, {
     filters,
   });
 };
@@ -63,11 +66,13 @@ export const getStakePools = async (
  * This function can be used to find all bonds of a user
  * @param connection The Solana RPC connection
  * @param owner The owner of the bonds to retrieve
+ * @param programId The program ID
  * @returns
  */
 export const getBondAccounts = async (
   connection: Connection,
-  owner: PublicKey
+  owner: PublicKey,
+  programId: PublicKey
 ) => {
   const filters = [
     {
@@ -83,7 +88,7 @@ export const getBondAccounts = async (
       },
     },
   ];
-  return await connection.getProgramAccounts(ACCESS_PROGRAM_ID, {
+  return await connection.getProgramAccounts(programId, {
     filters,
   });
 };
@@ -91,9 +96,13 @@ export const getBondAccounts = async (
 /**
  * This function can be used to retrieve all the stake pools
  * @param connection The Solana RPC connection
+ * @param programId The program ID
  * @returns
  */
-export const getAllStakePools = async (connection: Connection) => {
+export const getAllStakePools = async (
+  connection: Connection,
+  programId: PublicKey
+) => {
   const filters = [
     {
       memcmp: {
@@ -102,7 +111,7 @@ export const getAllStakePools = async (connection: Connection) => {
       },
     },
   ];
-  return await connection.getProgramAccounts(ACCESS_PROGRAM_ID, {
+  return await connection.getProgramAccounts(programId, {
     filters,
   });
 };
@@ -110,9 +119,13 @@ export const getAllStakePools = async (connection: Connection) => {
 /**
  * This function can be used to retrieve all the inactive stake pools
  * @param connection The Solana RPC connection
+ * @param programId The program ID
  * @returns
  */
-export const getAllInactiveStakePools = async (connection: Connection) => {
+export const getAllInactiveStakePools = async (
+  connection: Connection,
+  programId: PublicKey
+) => {
   const filters = [
     {
       memcmp: {
@@ -121,7 +134,7 @@ export const getAllInactiveStakePools = async (connection: Connection) => {
       },
     },
   ];
-  return await connection.getProgramAccounts(ACCESS_PROGRAM_ID, {
+  return await connection.getProgramAccounts(programId, {
     filters,
   });
 };
@@ -129,9 +142,13 @@ export const getAllInactiveStakePools = async (connection: Connection) => {
 /**
  * This function can be used to retrieve all the inactive bonds
  * @param connection The Solana RPC connection
+ * @param programId The program ID
  * @returns
  */
-export const getAllInactiveBonds = async (connection: Connection) => {
+export const getAllInactiveBonds = async (
+  connection: Connection,
+  programId: PublicKey
+) => {
   const filters = [
     {
       memcmp: {
@@ -140,7 +157,7 @@ export const getAllInactiveBonds = async (connection: Connection) => {
       },
     },
   ];
-  return await connection.getProgramAccounts(ACCESS_PROGRAM_ID, {
+  return await connection.getProgramAccounts(programId, {
     filters,
   });
 };
@@ -148,9 +165,13 @@ export const getAllInactiveBonds = async (connection: Connection) => {
 /**
  * This function can be used to retrieve all the active bonds
  * @param connection The Solana RPC connection
+ * @param programId The program ID
  * @returns
  */
-export const getAllActiveBonds = async (connection: Connection) => {
+export const getAllActiveBonds = async (
+  connection: Connection,
+  programId: PublicKey
+) => {
   const filters = [
     {
       memcmp: {
@@ -159,7 +180,7 @@ export const getAllActiveBonds = async (connection: Connection) => {
       },
     },
   ];
-  return await connection.getProgramAccounts(ACCESS_PROGRAM_ID, {
+  return await connection.getProgramAccounts(programId, {
     filters,
   });
 };

@@ -2,8 +2,8 @@ pub use crate::processor::{
     activate_stake_pool, admin_freeze, admin_mint, change_central_state_authority,
     change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards,
     claim_pool_rewards, claim_rewards, close_stake_account, close_stake_pool, crank, create_bond,
-    create_central_state, create_stake_account, create_stake_pool, edit_metadata,
-    sign_bond, stake, unlock_bond_tokens, unstake,
+    create_central_state, create_stake_account, create_stake_pool, edit_metadata, sign_bond, stake,
+    unlock_bond_tokens, unstake,
 };
 use bonfida_utils::InstructionsAccount;
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -20,9 +20,6 @@ pub enum ProgramInstruction {
     /// | 1     | ❌        | ❌      | The system program account   |
     /// | 2     | ✅        | ✅      | The fee payer account        |
     /// | 3     | ❌        | ❌      | The mint of the ACCESS token |
-    /// | 4     | ✅        | ❌      | The metadata account         |
-    /// | 5     | ❌        | ❌      | The metadata program account |
-    /// | 6     | ❌        | ❌      | The rent sysvar account      |
     CreateCentralState,
     /// Create stake pool
     ///
@@ -52,26 +49,30 @@ pub enum ProgramInstruction {
     CreateStakeAccount,
     /// Stake
     ///
-    /// | Index | Writable | Signer | Description                            |
-    /// | ------------------------------------------------------------------ |
-    /// | 0     | ✅        | ❌      | The central state account              |
-    /// | 1     | ✅        | ❌      | The stake account                      |
-    /// | 2     | ✅        | ❌      | The stake pool account                 |
-    /// | 3     | ❌        | ✅      | The owner of the stake account         |
-    /// | 4     | ✅        | ❌      | The source account of the stake tokens |
-    /// | 5     | ❌        | ❌      | The SPL token program account          |
-    /// | 6     | ✅        | ❌      | The stake pool vault account           |
-    /// | 7     | ✅        | ❌      | The stake fee account                  |
+    /// | Index | Writable | Signer | Description                                                 |
+    /// | --------------------------------------------------------------------------------------- |
+    /// | 0     | ✅        | ❌      | The central state account                                   |
+    /// | 1     | ✅        | ❌      | The stake account                                           |
+    /// | 2     | ✅        | ❌      | The stake pool account                                      |
+    /// | 3     | ❌        | ✅      | The owner of the stake account                              |
+    /// | 4     | ✅        | ❌      | The source account of the stake tokens                      |
+    /// | 5     | ❌        | ❌      | The SPL token program account                               |
+    /// | 6     | ✅        | ❌      | The stake pool vault account                                |
+    /// | 7     | ✅        | ❌      | The stake fee account                                       |
+    /// | 8     | ❌        | ❌      | Optional bond account to be able to stake under the minimum |
     Stake,
     /// Unstake
     ///
-    /// | Index | Writable | Signer | Description                    |
-    /// | ---------------------------------------------------------- |
-    /// | 0     | ✅        | ❌      | The central state account      |
-    /// | 1     | ✅        | ❌      | The stake account              |
-    /// | 2     | ✅        | ❌      | The stake pool account         |
-    /// | 3     | ❌        | ✅      | The owner of the stake account |
-    // todo update the documentation - maybe not just here
+    /// | Index | Writable | Signer | Description                                                 |
+    /// | --------------------------------------------------------------------------------------- |
+    /// | 0     | ✅        | ❌      | The central state account                                   |
+    /// | 1     | ✅        | ❌      | The stake account                                           |
+    /// | 2     | ✅        | ❌      | The stake pool account                                      |
+    /// | 3     | ❌        | ✅      | The owner of the stake account                              |
+    /// | 4     | ✅        | ❌      | The destination of the staked tokens                        |
+    /// | 5     | ❌        | ❌      | The SPL token program account                               |
+    /// | 6     | ✅        | ❌      | The stake pool vault                                        |
+    /// | 7     | ❌        | ❌      | Optional bond account to be able to stake under the minimum |
     Unstake,
     /// Claim rewards of a stake pool
     /// This instruction is used by stake pool owner for claiming their staking rewards
@@ -104,7 +105,7 @@ pub enum ProgramInstruction {
     /// | Index | Writable | Signer | Description                      |
     /// | ------------------------------------------------------------ |
     /// | 0     | ✅        | ❌      | The stake pool account           |
-    /// | 1     | ❌        | ❌      | The account of the central state |
+    /// | 1     | ✅        | ❌      | The account of the central state |
     Crank,
     /// Close a stake pool
     /// This instruction can be used to close an empty stake pool and collect the lamports
@@ -305,11 +306,9 @@ pub fn claim_pool_rewards(
         ProgramInstruction::ClaimPoolRewards as u8,
         params,
     );
-
     if let Some(acc) = ix.accounts.get_mut(1) {
         acc.is_signer = owner_must_sign
     }
-
     ix
 }
 #[allow(missing_docs)]
@@ -321,11 +320,9 @@ pub fn claim_rewards(
 ) -> Instruction {
     let mut ix =
         accounts.get_instruction(program_id, ProgramInstruction::ClaimRewards as u8, params);
-
     if let Some(acc) = ix.accounts.get_mut(2) {
         acc.is_signer = owner_must_sign
     }
-
     ix
 }
 #[allow(missing_docs)]
@@ -416,11 +413,9 @@ pub fn claim_bond_rewards(
         ProgramInstruction::ClaimBondRewards as u8,
         params,
     );
-
     if let Some(acc) = ix.accounts.get_mut(2) {
         acc.is_signer = owner_must_sign
     }
-
     ix
 }
 #[allow(missing_docs)]

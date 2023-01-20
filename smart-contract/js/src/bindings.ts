@@ -41,11 +41,6 @@ import { findMetadataPda, TokenMetadataProgram } from "@metaplex-foundation/js";
 import {u64} from "./u64";
 import {getBondAccounts} from "./secondary_bindings";
 
-// TODO Change
-export const ACCESS_PROGRAM_ID = new PublicKey(
-  "2ZsWiVGXzL4kgMDtSfeEJSV27fBnMptrdcNKKZygUoB8"
-);
-
 /**
  * This function can be used to update the inflation schedule of the central state
  * @param connection The Solana RPC connection
@@ -558,7 +553,7 @@ export const stake = async (
   const stakePool = await StakePool.retrieve(connection, stake.stakePool);
   const [centralKey] = await CentralState.getKey(programId);
   const centralState = await CentralState.retrieve(connection, centralKey);
-  const bondAccounts = await getBondAccounts(connection, stake.owner);
+  const bondAccounts = await getBondAccounts(connection, stake.owner, programId);
   let bondAccountKey: PublicKey | undefined;
   if (bondAccounts.length > 0) {
     bondAccountKey = bondAccounts[0].pubkey;
@@ -644,7 +639,7 @@ export const unstake = async (
   const stake = await StakeAccount.retrieve(connection, stakeAccount);
   const stakePool = await StakePool.retrieve(connection, stake.stakePool);
   const [centralKey] = await CentralState.getKey(programId);
-  const bondAccounts = await getBondAccounts(connection, stake.owner);
+  const bondAccounts = await getBondAccounts(connection, stake.owner, programId);
   let bondAccountKey: PublicKey | undefined;
   if (bondAccounts.length > 0) {
     bondAccountKey = bondAccounts[0].pubkey;
