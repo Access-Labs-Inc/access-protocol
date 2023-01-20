@@ -5,7 +5,7 @@ import BN from "bn.js";
  */
 export class u64 extends BN {
 
-  constructor(input: number | object | string, number?: number) {
+  constructor(input: string | number | BN | Uint8Array | Buffer | number[], number?: number) {
     super(input, number ?? 10);
   }
   /**
