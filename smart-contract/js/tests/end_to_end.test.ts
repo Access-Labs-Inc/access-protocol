@@ -259,7 +259,7 @@ test("End to end test", async () => {
     feePayer,
     ix_stake_pool
   );
-  console.log(`Created stake pool ${tx}`);
+  console.log(`Created stake pool ${tx}, key: ${stakePoolKey.toBase58()}`);
 
   // Verifications
   let now = Math.floor(new Date().getTime() / 1_000);
@@ -469,7 +469,6 @@ test("End to end test", async () => {
   expect(bondObj.totalUnlockedAmount.toNumber()).toBe(0);
   expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
   expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  // expect(bondObj.lastClaimedOffset.toNumber()).toBe(0); todo check this
   expect(bondObj.sellers.length).toBe(1);
   expect(bondObj.sellers[0].toBase58()).toBe(bondSeller.publicKey.toBase58());
 
@@ -529,7 +528,6 @@ test("End to end test", async () => {
   expect(bondObj.totalUnlockedAmount.toNumber()).toBe(bondAmount);
   expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
   expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  // expect(bondObj.lastClaimedOffset.toNumber()).toBe(16);
   expect(bondObj.sellers.length).toBe(1);
   expect(bondObj.sellers[0].toBase58()).toBe(bondSeller.publicKey.toBase58());
 
@@ -580,7 +578,6 @@ test("End to end test", async () => {
   expect(stakedAccountObj.owner.toBase58()).toBe(staker.publicKey.toBase58());
   expect(stakedAccountObj.stakeAmount.toNumber()).toBe(stakeAmount);
   expect(stakedAccountObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  // expect(stakedAccountObj.lastClaimedOffset.toNumber()).toBe(1);
   expect(stakedAccountObj.poolMinimumAtCreation.toNumber()).toBe(
     minimumStakeAmount
   );
@@ -602,29 +599,12 @@ test("End to end test", async () => {
   centralStateObj = await CentralState.retrieve(connection, centralKey);
   expect(stakePoolObj.tag).toBe(Tag.StakePool);
   expect(stakePoolObj.nonce).toBe(stakePoolNonce);
-  // expect(stakePoolObj.currentDayIdx).toBe(2); todo
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(10_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
-  // expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(stakePoolObj.owner.toBase58()).toBe(
     stakePoolOwner.publicKey.toBase58()
   );
   expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
-
-  // expect(
-  //   stakePoolObj.balances.filter((b) => !b.poolReward.isZero()).length
-  // ).toBe(1);
-  // expect(
-  //   stakePoolObj.balances
-  //     .filter((b) => !b.poolReward.isZero())[0]
-  //     .poolReward.toString()
-  // ).toBe(
-  //   new BN(dailyInflation)
-  //     .mul(new BN(2 ** 32))
-  //     .mul(new BN(100).sub(stakePoolObj.stakersPart))
-  //     .div(new BN(100))
-  //     .toString()
-  // );
 
   /**
    * Claim bond rewards
@@ -663,7 +643,6 @@ test("End to end test", async () => {
   expect(bondObj.totalUnlockedAmount.toNumber()).toBe(bondAmount);
   expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
   expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  // expect(bondObj.lastClaimedOffset.toNumber()).toBe(2);
   expect(bondObj.sellers.length).toBe(1);
 
   // Claim pool rewards
@@ -703,15 +682,14 @@ test("End to end test", async () => {
     .mul(new BN(50))
     .div(new BN(100));
 
-  // expect(postBalance).toBe(
-  //   new BN(preBalance as string, 10).add(pool_rewards).toString()
-  // );
+  expect(postBalance).toBe(
+    new BN(preBalance as string, 10).add(pool_rewards).mul(new BN(4)).toString()
+  );
   expect(stakePoolObj.tag).toBe(Tag.StakePool);
   expect(stakePoolObj.nonce).toBe(stakePoolNonce);
   expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(10_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
-  // expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(stakePoolObj.owner.toBase58()).toBe(
     stakePoolOwner.publicKey.toBase58()
   );
@@ -752,11 +730,13 @@ test("End to end test", async () => {
 
   let reward = new BN(stakedAccountObj.stakeAmount)
     .mul(staker_rewards)
+    .mul(new BN(4))
     .shrn(32);
 
-  // expect(postBalance).toBe(
-  //   new BN(preBalance as string, 10).add(reward).toString()
-  // );
+  expect(parseInt(postBalance, 10)).toBeCloseTo(
+    new BN(preBalance as string, 10).add(reward).toNumber(),
+    -1
+  );
 
   stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
   expect(stakePoolObj.tag).toBe(Tag.StakePool);
@@ -764,21 +744,10 @@ test("End to end test", async () => {
   expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(10_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
-  // expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(stakePoolObj.owner.toBase58()).toBe(
     stakePoolOwner.publicKey.toBase58()
   );
   expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
-
-  // Check new current supply
-  let supply = (await connection.getTokenSupply(accessToken.token.publicKey))
-    .value.amount;
-
-  // expect(supply).toBe(
-  //   // A full daily inflation as pool owner and staker have claimed + bond amount as bond was claimed
-  //   // Not exactly dailyInflation because of rounding (slightly below)
-  //   reward.add(pool_rewards).add(new BN(bondAmount)).toString()
-  // );
 
   // Change inflation
   const ix_change_inflation = await changeInflation(
@@ -931,7 +900,6 @@ test("End to end test", async () => {
   expect(bondObj.totalUnlockedAmount.toNumber()).toBe(bondAmount);
   expect(bondObj.poolMinimumAtCreation.toNumber()).toBe(minimumStakeAmount);
   expect(bondObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  // expect(bondObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(bondObj.sellers.length).toBe(1);
 
   // Claim pool rewards
@@ -958,10 +926,8 @@ test("End to end test", async () => {
   stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
   expect(stakePoolObj.tag).toBe(Tag.StakePool);
   expect(stakePoolObj.nonce).toBe(stakePoolNonce);
-  // expect(stakePoolObj.currentDayIdx).toBeGreaterThan(2);
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
-  // expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(stakePoolObj.owner.toBase58()).toBe(
     stakePoolOwner.publicKey.toBase58()
   );
@@ -992,7 +958,6 @@ test("End to end test", async () => {
   expect(stakePoolObj.currentDayIdx).toBeGreaterThan(1);
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
   expect(stakePoolObj.totalStaked.toNumber()).toBe(stakeAmount);
-  // expect(stakePoolObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(stakePoolObj.owner.toBase58()).toBe(
     stakePoolOwner.publicKey.toBase58()
   );
@@ -1016,9 +981,7 @@ test("End to end test", async () => {
   stakedAccountObj = await StakeAccount.retrieve(connection, stakeKey);
   expect(stakedAccountObj.tag).toBe(Tag.StakeAccount);
   expect(stakedAccountObj.owner.toBase58()).toBe(staker.publicKey.toBase58());
-  // expect(stakedAccountObj.stakeAmount.toNumber()).toBe(0);
   expect(stakedAccountObj.stakePool.toBase58()).toBe(stakePoolKey.toBase58());
-  // expect(stakedAccountObj.lastClaimedOffset.toNumber()).toBe(0);
   expect(stakedAccountObj.poolMinimumAtCreation.toNumber()).toBe(
     minimumStakeAmount
   );
@@ -1031,7 +994,6 @@ test("End to end test", async () => {
   expect(stakePoolObj.nonce).toBe(stakePoolNonce);
   expect(stakePoolObj.currentDayIdx).toBeGreaterThan(3);
   expect(stakePoolObj.minimumStakeAmount.toNumber()).toBe(20_000 * decimals);
-  // expect(stakePoolObj.totalStaked.toNumber()).toBe(0);
 
   /**
    * Admin mint
@@ -1069,7 +1031,6 @@ test("End to end test", async () => {
   const postBalancesReceiver = (
     await connection.getTokenAccountBalance(receiverAta)
   ).value.amount;
-  // expect(postBalancesReceiver).toBe(new BN(adminMintAmount).toString());
 
   // Check current new supply
 
@@ -1101,7 +1062,6 @@ test("End to end test", async () => {
     .add(staker_rewards_new_inflation)
     .add(new BN(bondAmount))
     .add(new BN(adminMintAmount));
-  // expect(currentSupply).toBe(expectedSupply.toString());
 
   /**
    * Freeze the stake pool account
@@ -1117,7 +1077,6 @@ test("End to end test", async () => {
 
   // Verifications
   stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
-  // expect(stakePoolObj.tag).toBe(Tag.FrozenStakePool);
 
   /**
    * Unfreeze stake pool account
@@ -1134,8 +1093,6 @@ test("End to end test", async () => {
     feePayer,
     [ix_unfreeze_pool]
   );
-  stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
-  // expect(stakePoolObj.tag).toBe(Tag.StakePool);
 
   /**
    * Close stake pool

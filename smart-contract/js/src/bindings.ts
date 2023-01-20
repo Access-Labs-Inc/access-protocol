@@ -41,11 +41,6 @@ import { findMetadataPda, TokenMetadataProgram } from "@metaplex-foundation/js";
 import {u64} from "./u64";
 import {getBondAccounts} from "./secondary_bindings";
 
-// TODO Change
-export const ACCESS_PROGRAM_ID = new PublicKey(
-  "2ZsWiVGXzL4kgMDtSfeEJSV27fBnMptrdcNKKZygUoB8"
-);
-
 /**
  * This function can be used to update the inflation schedule of the central state
  * @param connection The Solana RPC connection
