@@ -149,6 +149,9 @@ pub fn process_stake(
     if source_token_acc.mint != central_state.token_mint {
         return Err(AccessError::WrongMint.into());
     }
+    if source_token_acc.owner != accounts.owner.key {
+        return Err(AccessError::WrongOwner.into());
+    }
 
     check_account_key(
         accounts.owner,
