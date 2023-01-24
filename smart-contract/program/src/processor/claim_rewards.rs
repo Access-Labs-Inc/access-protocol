@@ -124,6 +124,10 @@ pub fn process_claim_rewards(
         assert_no_close_or_delegate(&destination_token_acc)?;
     }
 
+    if destination_token_acc.mint != central_state.token_mint {
+        return Err(AccessError::WrongMint.into());
+    }
+
     check_account_key(
         accounts.stake_pool,
         &stake_account.stake_pool,

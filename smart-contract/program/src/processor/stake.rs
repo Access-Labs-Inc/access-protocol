@@ -16,6 +16,8 @@ use crate::{
     utils::{assert_valid_fee, check_account_key, check_account_owner, check_signer},
 };
 use bonfida_utils::{BorshSize, InstructionsAccount};
+use solana_program::program_pack::Pack;
+use spl_token::state::Account;
 
 use crate::error::AccessError;
 use crate::state::{BondAccount, StakeAccount, StakePool};
@@ -142,6 +144,11 @@ pub fn process_stake(
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
     let mut central_state = CentralState::from_account_info(accounts.central_state_account)?;
+
+    let source_token_acc = Account::unpack(&accounts.source_token.data.borrow())?;
+    if source_token_acc.mint != central_state.token_mint {
+        return Err(AccessError::WrongMint.into());
+    }
 
     check_account_key(
         accounts.owner,
