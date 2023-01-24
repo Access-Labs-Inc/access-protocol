@@ -161,6 +161,9 @@ impl PrintProgramError for AccessError {
             AccessError::WrongMplProgram => {
                 msg!("Wrong MPL metadata program")
             }
+            AccessError::WrongBondAccountOwner => {
+                msg!("Wrong bond account owner")
+            }
         }
     }
 }
