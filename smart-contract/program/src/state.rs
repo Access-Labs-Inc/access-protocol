@@ -148,7 +148,7 @@ impl<'a> StakePoolRef<'a> {
             let (hd, rem) = s.split_at_mut(size_of::<StakePoolHeader>());
             (
                 from_bytes_mut::<StakePoolHeader>(hd),
-                try_cast_slice_mut(rem).unwrap(),
+                try_cast_slice_mut(rem)?,
             )
         });
 
@@ -447,7 +447,7 @@ impl CentralState {
     }
     #[allow(missing_docs)]
     pub fn get_current_offset(&self) -> u64 {
-        let current_time = Clock::get().unwrap().unix_timestamp as u64;
+        let current_time = Clock::get()?.unix_timestamp as u64;
         (current_time - self.creation_time as u64) / SECONDS_IN_DAY
     }
 }
@@ -576,7 +576,7 @@ impl BondAccount {
     pub fn activate(&mut self, current_offset: u64) {
         self.tag = Tag::BondAccount;
         self.last_claimed_offset = current_offset;
-        let current_time = Clock::get().unwrap().unix_timestamp;
+        let current_time = Clock::get()?.unix_timestamp;
         self.last_unlock_time = std::cmp::max(current_time, self.unlock_start_date);
     }
 
