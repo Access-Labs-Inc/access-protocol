@@ -110,7 +110,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             check_account_owner(
                 bond_account,
                 program_id,
-                AccessError::WrongTokenAccountOwner,
+                AccessError::WrongBondAccountOwner,
             )?
         }
 
