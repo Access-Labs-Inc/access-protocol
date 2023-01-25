@@ -130,7 +130,7 @@ pub fn process_claim_bond(
         return Err(AccessError::NotEnoughSellers.into());
     }
 
-    if (stake_pool.header.current_day_idx as u64) < central_state.get_current_offset() {
+    if (stake_pool.header.current_day_idx as u64) < central_state.get_current_offset()? {
         return Err(AccessError::PoolMustBeCranked.into());
     }
 
@@ -166,7 +166,7 @@ pub fn process_claim_bond(
     }
 
     // Activate the bond account
-    bond.activate(central_state.last_snapshot_offset);
+    bond.activate(central_state.last_snapshot_offset)?;
 
     bond.save(&mut accounts.bond_account.data.borrow_mut())?;
 

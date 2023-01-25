@@ -141,7 +141,7 @@ pub fn process_unstake(
     if stake_account.last_claimed_offset < stake_pool.header.current_day_idx as u64 {
         return Err(AccessError::UnclaimedRewards.into());
     }
-    if (stake_pool.header.current_day_idx as u64) < central_state.get_current_offset() {
+    if (stake_pool.header.current_day_idx as u64) < central_state.get_current_offset()? {
         return Err(AccessError::PoolMustBeCranked.into());
     }
 

@@ -64,7 +64,7 @@ pub fn process_crank(
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut central_state = CentralState::from_account_info(accounts.central_state)?;
 
-    let current_offset = central_state.get_current_offset();
+    let current_offset = central_state.get_current_offset()?;
     // check if we need to do a system wide snapshot
     if central_state.last_snapshot_offset < current_offset {
         central_state.total_staked_snapshot = central_state.total_staked;

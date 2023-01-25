@@ -206,12 +206,12 @@ pub fn process_stake(
         return Err(AccessError::UnclaimedRewards.into());
     }
 
-    if (stake_pool.header.current_day_idx as u64) < central_state.get_current_offset() {
+    if (stake_pool.header.current_day_idx as u64) < central_state.get_current_offset()? {
         return Err(AccessError::PoolMustBeCranked.into());
     }
 
     if stake_account.stake_amount == 0 {
-        stake_account.last_claimed_offset = central_state.get_current_offset();
+        stake_account.last_claimed_offset = central_state.get_current_offset()?;
     }
 
     // Transfer tokens
