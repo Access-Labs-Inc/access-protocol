@@ -102,6 +102,10 @@ pub fn process_claim_pool_rewards(
 
     let destination_token_acc = Account::unpack(&accounts.rewards_destination.data.borrow())?;
 
+    if destination_token_acc.mint != central_state.token_mint {
+        return Err(AccessError::WrongMint.into());
+    }
+
     msg!("Account owner: {}", destination_token_acc.owner);
     if destination_token_acc.owner.to_bytes() != stake_pool.header.owner {
         // If the destination does not belong to the stake pool owner he must sign

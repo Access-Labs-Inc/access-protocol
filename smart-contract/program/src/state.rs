@@ -446,9 +446,9 @@ impl CentralState {
         Ok(result)
     }
     #[allow(missing_docs)]
-    pub fn get_current_offset(&self) -> u64 {
-        let current_time = Clock::get().unwrap().unix_timestamp as u64;
-        (current_time - self.creation_time as u64) / SECONDS_IN_DAY
+    pub fn get_current_offset(&self) -> Result<u64, ProgramError> {
+        let current_time = Clock::get()?.unix_timestamp as u64;
+        Ok((current_time - self.creation_time as u64) / SECONDS_IN_DAY)
     }
 }
 
@@ -573,11 +573,12 @@ impl BondAccount {
         self.tag == Tag::BondAccount
     }
 
-    pub fn activate(&mut self, current_offset: u64) {
+    pub fn activate(&mut self, current_offset: u64) -> ProgramResult {
         self.tag = Tag::BondAccount;
         self.last_claimed_offset = current_offset;
-        let current_time = Clock::get().unwrap().unix_timestamp;
+        let current_time = Clock::get()?.unix_timestamp;
         self.last_unlock_time = std::cmp::max(current_time, self.unlock_start_date);
+        Ok(())
     }
 
     pub fn from_account_info(

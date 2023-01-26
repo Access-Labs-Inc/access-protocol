@@ -40,3 +40,6 @@ solana-test-framework = { git = "https://github.com/halbornteam/solana-test-fram
 
 [lib]
 crate-type = ["cdylib", "lib"]
+
+[profile.release]
+overflow-checks = true

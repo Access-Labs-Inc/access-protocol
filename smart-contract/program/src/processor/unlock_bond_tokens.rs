@@ -15,6 +15,8 @@ use solana_program::{
 use crate::state::{BondAccount, CentralState, StakePool, StakePoolHeader};
 use crate::{error::AccessError, state::Tag};
 use bonfida_utils::{BorshSize, InstructionsAccount};
+use solana_program::program_pack::Pack;
+use spl_token::state::Account;
 
 use crate::utils::{assert_bond_derivation, check_account_key, check_account_owner, check_signer};
 
@@ -103,6 +105,11 @@ pub fn process_unlock_bond_tokens(
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let current_time = Clock::get()?.unix_timestamp;
 
+    let destination_token_acc = Account::unpack(&accounts.access_token_destination.data.borrow())?;
+    if destination_token_acc.mint != central_state.token_mint {
+        return Err(AccessError::WrongMint.into());
+    }
+
     assert_bond_derivation(
         accounts.bond_account,
         accounts.bond_owner.key,
@@ -135,7 +142,7 @@ pub fn process_unlock_bond_tokens(
         return Err(ProgramError::InvalidArgument);
     }
 
-    if (stake_pool.header.current_day_idx as u64) < central_state.get_current_offset() {
+    if (stake_pool.header.current_day_idx as u64) < central_state.get_current_offset()? {
         return Err(AccessError::PoolMustBeCranked.into());
     }
 
@@ -148,7 +155,7 @@ pub fn process_unlock_bond_tokens(
         return Err(ProgramError::InvalidArgument);
     }
 
-    if bond.last_claimed_offset < central_state.get_current_offset() {
+    if bond.last_claimed_offset < central_state.get_current_offset()? {
         return Err(AccessError::UnclaimedRewards.into());
     }
 

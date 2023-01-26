@@ -8,7 +8,9 @@ use borsh::{BorshDeserialize, BorshSerialize};
 
 use solana_program::{account_info::{next_account_info, AccountInfo}, entrypoint::ProgramResult, program_error::ProgramError, pubkey::Pubkey};
 use solana_program::program::invoke_signed;
+use solana_program::program_pack::Pack;
 use spl_token::instruction::transfer;
+use spl_token::state::Account;
 
 use crate::error::AccessError;
 use crate::state::{BondAccount, StakeAccount, StakePool, StakePoolHeader};
@@ -108,7 +110,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             check_account_owner(
                 bond_account,
                 program_id,
-                AccessError::WrongTokenAccountOwner,
+                AccessError::WrongBondAccountOwner,
             )?
         }
 
@@ -131,10 +133,15 @@ pub fn process_unstake(
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
     let mut central_state = CentralState::from_account_info(accounts.central_state_account)?;
 
+    let destination_token_acc = Account::unpack(&accounts.destination_token.data.borrow())?;
+    if destination_token_acc.mint != central_state.token_mint {
+        return Err(AccessError::WrongMint.into());
+    }
+
     if stake_account.last_claimed_offset < stake_pool.header.current_day_idx as u64 {
         return Err(AccessError::UnclaimedRewards.into());
     }
-    if (stake_pool.header.current_day_idx as u64) < central_state.get_current_offset() {
+    if (stake_pool.header.current_day_idx as u64) < central_state.get_current_offset()? {
         return Err(AccessError::PoolMustBeCranked.into());
     }
 

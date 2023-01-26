@@ -16,6 +16,8 @@ use crate::{
     utils::{assert_valid_fee, check_account_key, check_account_owner, check_signer},
 };
 use bonfida_utils::{BorshSize, InstructionsAccount};
+use solana_program::program_pack::Pack;
+use spl_token::state::Account;
 
 use crate::error::AccessError;
 use crate::state::{BondAccount, StakeAccount, StakePool};
@@ -120,7 +122,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             check_account_owner(
                 bond_account,
                 program_id,
-                AccessError::WrongTokenAccountOwner,
+                AccessError::WrongBondAccountOwner,
             )?
         }
 
@@ -142,6 +144,14 @@ pub fn process_stake(
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
     let mut central_state = CentralState::from_account_info(accounts.central_state_account)?;
+
+    let source_token_acc = Account::unpack(&accounts.source_token.data.borrow())?;
+    if source_token_acc.mint != central_state.token_mint {
+        return Err(AccessError::WrongMint.into());
+    }
+    if &source_token_acc.owner != accounts.owner.key {
+        return Err(AccessError::WrongOwner.into());
+    }
 
     check_account_key(
         accounts.owner,
@@ -177,7 +187,7 @@ pub fn process_stake(
     }
 
     // if we were previously under the minimum stake limit it gets reset to the pool's one
-    if stake_account.stake_amount + amount_in_bonds < stake_account.pool_minimum_at_creation {
+    if stake_account.stake_amount.checked_add(amount_in_bonds).ok_or(AccessError::Overflow)? < stake_account.pool_minimum_at_creation {
         stake_account.pool_minimum_at_creation = stake_pool.header.minimum_stake_amount;
     }
 
@@ -196,12 +206,12 @@ pub fn process_stake(
         return Err(AccessError::UnclaimedRewards.into());
     }
 
-    if (stake_pool.header.current_day_idx as u64) < central_state.get_current_offset() {
+    if (stake_pool.header.current_day_idx as u64) < central_state.get_current_offset()? {
         return Err(AccessError::PoolMustBeCranked.into());
     }
 
     if stake_account.stake_amount == 0 {
-        stake_account.last_claimed_offset = central_state.get_current_offset();
+        stake_account.last_claimed_offset = central_state.get_current_offset()?;
     }
 
     // Transfer tokens

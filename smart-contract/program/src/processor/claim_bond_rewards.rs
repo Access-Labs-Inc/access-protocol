@@ -118,6 +118,9 @@ pub fn process_claim_bond_rewards(
     let mut bond = BondAccount::from_account_info(accounts.bond_account, false)?;
 
     let destination_token_acc = Account::unpack(&accounts.rewards_destination.data.borrow())?;
+    if destination_token_acc.mint != central_state.token_mint {
+        return Err(AccessError::WrongMint.into());
+    }
 
     if destination_token_acc.owner != bond.owner {
         // If the destination does not belong to the bond owner he must sign
