@@ -1,6 +1,6 @@
 use crate::{error::ProgramError, utils::current_time};
 use {
-    access_protocol::state::{StakePoolHeaped, Tag, SECONDS_IN_DAY},
+    access_protocol::state::{Tag, SECONDS_IN_DAY},
     solana_account_decoder::UiAccountEncoding,
     solana_client::{
         rpc_client::RpcClient,

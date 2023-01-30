@@ -5,7 +5,7 @@ mod settings;
 mod utils;
 
 use solana_client::rpc_client::RpcClient;
-use solana_sdk::signer::Signer;
+
 use {
     solana_program::pubkey::Pubkey,
     std::{thread::sleep, time::Duration},
@@ -19,7 +19,7 @@ fn process() -> Result<(), error::ProgramError> {
     let rt = Runtime::new().unwrap();
     let _guard = rt.enter();
 
-    println!("PROGRAM: {}", PROGRAM_ID.to_string());
+    println!("PROGRAM: {}", *PROGRAM_ID);
 
     let (central_key, _) =
         Pubkey::find_program_address(&[&PROGRAM_ID.to_bytes()], &PROGRAM_ID);
