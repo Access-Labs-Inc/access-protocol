@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use {
     access_protocol::instruction::crank,
     solana_client::rpc_client::RpcClient,
@@ -7,14 +8,16 @@ use {
 
 use crate::{
     settings::PAYER,
+    // settings::PROGRAM_ID,
     utils::{no_op_filter, retry},
 };
+use crate::settings::PROGRAM_ID;
 
 pub async fn crank_pool(stake_pool: Pubkey, central_state: Pubkey) {
     let connection = RpcClient::new(crate::settings::RPC_URL.as_str());
 
     let ix = crank(
-        access_protocol::ID,
+        *PROGRAM_ID,
         crank::Accounts {
             stake_pool: &stake_pool,
             central_state: &central_state,
