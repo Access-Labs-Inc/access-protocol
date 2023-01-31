@@ -14,3 +14,4 @@ access-protocol = {path = "../program", features = ["no-entrypoint"]}
 tokio = "1.14.1"
 dotenv = "0.15.0"
 lazy_static = "1.4.0"
+borsh = "0.9.1"

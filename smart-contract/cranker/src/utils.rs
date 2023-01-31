@@ -59,6 +59,6 @@ pub fn no_op_filter(r: Result<Signature, ClientError>) -> Result<Signature, Clie
 pub fn current_time() -> u64 {
     let start = SystemTime::now();
     let since_the_epoch = start.duration_since(UNIX_EPOCH).unwrap();
-    let now = since_the_epoch.as_secs();
-    now
+    
+    since_the_epoch.as_secs()
 }

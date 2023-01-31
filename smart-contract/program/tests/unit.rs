@@ -35,6 +35,31 @@ mod basic_functionality {
         let stats = tr.central_state_stats().await.unwrap();
         assert_eq!(stats.authority, new_authority.pubkey());
     }
+
+    #[tokio::test]
+    async fn zero_inflation_start() {
+        // Setup the token + basic accounts
+        let mut tr = TestRunner::new(0).await.unwrap();
+        // Sleep for 5 days
+        tr.sleep(5*86400).await.unwrap();
+        // Create users
+        let stake_pool_owner = tr.create_ata_account().await.unwrap();
+        // Create a pool
+        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000).await.unwrap();
+        // Check the pool
+        let stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
+        assert_eq!(Pubkey::new(&stats.header.owner).to_string(), stake_pool_owner.pubkey().to_string());
+        assert_eq!(stats.header.tag, Tag::InactiveStakePool as u8);
+        // Activate stake pool
+        tr.activate_stake_pool(&stake_pool_owner.pubkey()).await.unwrap();
+        // Crank
+        tr.crank_pool(&stake_pool_owner.pubkey()).await.unwrap();
+        // Check the central state
+        let stats = tr.central_state_stats().await.unwrap();
+        assert_eq!(stats.last_snapshot_offset, 5);
+        assert_eq!(stats.total_staked, 0);
+        assert_eq!(stats.total_staked_snapshot, 0);
+    }
 }
 
 mod pool_creation_and_activation {
@@ -174,44 +199,44 @@ mod pool_settings {
         assert_eq!(stats.header.stakers_part, 20);
     }
 }
-//
-// mod bonds {
-//     use super::*;
-//     #[tokio::test]
-//     async fn permissionless_claim() {
-//         // Setup the token + basic accounts
-//         let mut tr = TestRunner::new(1_000_000).await.unwrap();
-//         // Create users
-//         let stake_pool_owner = tr.create_ata_account().await.unwrap();
-//         let staker = tr.create_ata_account().await.unwrap();
-//         // Create stake pool
-//         tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000).await.unwrap();
-//         // Activate stake pool
-//         tr.activate_stake_pool(&stake_pool_owner.pubkey()).await.unwrap();
-//         // Create bond
-//         tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), 10000, 1).await.unwrap();
-//         // Claim bond
-//         tr.claim_bond(&stake_pool_owner.pubkey(), &staker.pubkey()).await.unwrap();
-//     }
-//
-//     #[tokio::test]
-//     async fn signed_claim() {
-//         // Setup the token + basic accounts
-//         let mut tr = TestRunner::new(1_000_000).await.unwrap();
-//         // Create users
-//         let stake_pool_owner = tr.create_ata_account().await.unwrap();
-//         let staker = tr.create_ata_account().await.unwrap();
-//         // Mint to staker
-//         tr.mint(&staker.pubkey(), 100_000_000_000).await.unwrap();
-//         // Create stake pool
-//         tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000).await.unwrap();
-//         // Activate stake pool
-//         tr.activate_stake_pool(&stake_pool_owner.pubkey()).await.unwrap();
-//         // Create real bond with quote amount
-//         tr.create_bond_with_quote(&stake_pool_owner.pubkey(), &staker.pubkey(), 10000, 200, 1).await.unwrap();
-//         // Claim bond without signature should fail
-//         assert!(tr.claim_bond(&stake_pool_owner.pubkey(), &staker.pubkey()).await.is_err());
-//         // Claim bond with signature should succeed
-//         tr.claim_bond_with_quote(&stake_pool_owner.pubkey(), &staker).await.unwrap();
-//     }
-// }
+
+mod bonds {
+    use super::*;
+    #[tokio::test]
+    async fn permissionless_claim() {
+        // Setup the token + basic accounts
+        let mut tr = TestRunner::new(1_000_000).await.unwrap();
+        // Create users
+        let stake_pool_owner = tr.create_ata_account().await.unwrap();
+        let staker = tr.create_ata_account().await.unwrap();
+        // Create stake pool
+        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000).await.unwrap();
+        // Activate stake pool
+        tr.activate_stake_pool(&stake_pool_owner.pubkey()).await.unwrap();
+        // Create bond
+        tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), 10000, 1).await.unwrap();
+        // Claim bond
+        tr.claim_bond(&stake_pool_owner.pubkey(), &staker.pubkey()).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn signed_claim() {
+        // Setup the token + basic accounts
+        let mut tr = TestRunner::new(1_000_000).await.unwrap();
+        // Create users
+        let stake_pool_owner = tr.create_ata_account().await.unwrap();
+        let staker = tr.create_ata_account().await.unwrap();
+        // Mint to staker
+        tr.mint(&staker.pubkey(), 100_000_000_000).await.unwrap();
+        // Create stake pool
+        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000).await.unwrap();
+        // Activate stake pool
+        tr.activate_stake_pool(&stake_pool_owner.pubkey()).await.unwrap();
+        // Create real bond with quote amount
+        tr.create_bond_with_quote(&stake_pool_owner.pubkey(), &staker.pubkey(), 10000, 200, 1).await.unwrap();
+        // Claim bond without signature should fail
+        assert!(tr.claim_bond(&stake_pool_owner.pubkey(), &staker.pubkey()).await.is_err());
+        // Claim bond with signature should succeed
+        tr.claim_bond_with_quote(&stake_pool_owner.pubkey(), &staker).await.unwrap();
+    }
+}

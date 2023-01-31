@@ -17,6 +17,7 @@ name = "access-cranker"
 version = "0.1.0"
 dependencies = [
  "access-protocol",
+ "borsh",
  "dotenv",
  "lazy_static",
  "solana-account-decoder",
