@@ -639,10 +639,9 @@ export const unstake = async (
   const stakePool = await StakePool.retrieve(connection, stake.stakePool);
   const [centralKey] = await CentralState.getKey(programId);
   const bondAccounts = await getBondAccounts(connection, stake.owner, programId);
-  let bondAccountKey: PublicKey | undefined;
-  if (bondAccounts.length > 0) {
-    bondAccountKey = bondAccounts[0].pubkey;
-  }
+  const bondAccountKey = bondAccounts.find(
+    (bond) => BondAccount.deserialize(bond.account.data).stakePool === stake.stakePool
+  )?.pubkey;
 
   const ix = new unstakeInstruction({
     amount: new BN(amount)
