@@ -554,11 +554,10 @@ export const stake = async (
   const [centralKey] = await CentralState.getKey(programId);
   const centralState = await CentralState.retrieve(connection, centralKey);
   const bondAccounts = await getBondAccounts(connection, stake.owner, programId);
-  let bondAccountKey: PublicKey | undefined;
-  if (bondAccounts.length > 0) {
-    bondAccountKey = bondAccounts[0].pubkey;
-  }
 
+  const bondAccountKey = bondAccounts.find(
+    (bond) => BondAccount.deserialize(bond.account.data).stakePool === stake.stakePool
+  )?.pubkey;
 
   const feesAta = await getAssociatedTokenAddress(
     centralState.tokenMint,
