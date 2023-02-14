@@ -556,7 +556,9 @@ export const stake = async (
   const bondAccounts = await getBondAccounts(connection, stake.owner, programId);
 
   const bondAccountKey = bondAccounts.find(
-    (bond) => BondAccount.deserialize(bond.account.data).stakePool === stake.stakePool
+    bond =>
+      BondAccount.deserialize(bond.account.data).stakePool.toBase58() ===
+      stake.stakePool.toBase58(),
   )?.pubkey;
 
   const feesAta = await getAssociatedTokenAddress(
@@ -640,7 +642,9 @@ export const unstake = async (
   const [centralKey] = await CentralState.getKey(programId);
   const bondAccounts = await getBondAccounts(connection, stake.owner, programId);
   const bondAccountKey = bondAccounts.find(
-    (bond) => BondAccount.deserialize(bond.account.data).stakePool === stake.stakePool
+    bond =>
+      BondAccount.deserialize(bond.account.data).stakePool.toBase58() ===
+      stake.stakePool.toBase58(),
   )?.pubkey;
 
   const ix = new unstakeInstruction({
