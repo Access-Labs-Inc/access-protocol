@@ -124,6 +124,17 @@ pub fn process_crank(
 
     msg!("Pool reward {}", pool_reward);
 
+    let total_claimable_rewards = pool_reward
+        .checked_add(
+            ((stakers_reward.checked_mul(total_staked_snapshot)
+                .ok_or(AccessError::Overflow)? >> 31) + 1) >> 1
+        ).ok_or(AccessError::Overflow)?;
+
+    msg!("Total claimable rewards {}", total_claimable_rewards);
+
+    assert!(total_claimable_rewards <= (central_state.daily_inflation as u128)
+                .checked_add(1_000_000).ok_or(AccessError::Overflow)?);
+
     stake_pool.push_balances_buff(
         current_offset,
         stake_pool.header.current_day_idx as u64,

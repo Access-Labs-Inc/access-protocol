@@ -1,8 +1,8 @@
-use solana_program::pubkey::Pubkey;
-use solana_sdk::signer::{keypair::Keypair, Signer};
+
+use solana_sdk::signer::{Signer};
 use solana_test_framework::*;
 
-use access_protocol::state::Tag;
+
 
 use crate::common::test_runner::TestRunner;
 
@@ -16,7 +16,7 @@ mod basic_functionality {
         // Setup the token + basic accounts
         let mut tr = TestRunner::new(1_000_000).await.unwrap();
         // Set daily inflation
-        tr.change_inflation(5479452_000_000_000).await.unwrap();
+        tr.change_inflation(5_479_452_000_000_000).await.unwrap();
         // Create pools
         let pool_owner = tr.create_ata_account().await.unwrap();
         let pool_owner2 = tr.create_ata_account().await.unwrap();
