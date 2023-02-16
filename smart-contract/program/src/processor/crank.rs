@@ -87,23 +87,22 @@ pub fn process_crank(
     // get the pool staked amount at the time of last system snapshot
     let total_staked_snapshot = stake_pool.header.total_staked as u128;
 
-    // stakers_reward = [(pool_total_staked << 32) * inflation * stakers_part] / (100 * total_staked * pool_total_staked)
-    let stakers_reward = (total_staked_snapshot << 32)
-        .checked_mul(central_state.daily_inflation as u128)
-        .ok_or(AccessError::Overflow)?
-        .checked_mul(stake_pool.header.stakers_part as u128)
-        .ok_or(AccessError::Overflow)?
-        .checked_div(100u128)
-        .ok_or(AccessError::Overflow)?
-        .checked_div(central_state.total_staked_snapshot as u128)
-        .unwrap_or(0)
-        .checked_div(total_staked_snapshot)
-        .unwrap_or(0);
+    let mut stakers_reward = 0;
+    if total_staked_snapshot != 0 {
+        // stakers_reward = [(pool_total_staked << 32) * inflation * stakers_part] / (100 * total_staked * pool_total_staked)
+        stakers_reward = ((central_state.daily_inflation as u128) << 32)
+            .checked_mul(stake_pool.header.stakers_part as u128)
+            .ok_or(AccessError::PoolMustBeCranked)?
+            .checked_div(100u128)
+            .ok_or(AccessError::WrongBondAccountOwner)?
+            .checked_div(central_state.total_staked_snapshot as u128)
+            .unwrap_or(0);
+    };
 
     msg!("Stakers reward {}", stakers_reward);
 
-    // pool_rewards = [(pool_total_staked << 32) * inflation * (100 - stakers_part)] / (100 * total_staked)
-    let pool_reward = (total_staked_snapshot << 32)
+    // pool_rewards = [(pool_total_staked) * inflation * (100 - stakers_part)] / (100 * total_staked)
+    let pool_reward = (total_staked_snapshot)
         .checked_mul(central_state.daily_inflation as u128)
         .ok_or(AccessError::Overflow)?
         .checked_mul(
@@ -112,10 +111,29 @@ pub fn process_crank(
                 .ok_or(AccessError::Overflow)? as u128,
         )
         .ok_or(AccessError::Overflow)?
+        .checked_mul(10)
+        .ok_or(AccessError::Overflow)?
         .checked_div(100u128)
         .ok_or(AccessError::Overflow)?
         .checked_div(central_state.total_staked_snapshot as u128)
-        .unwrap_or(0);
+        .unwrap_or(0)
+        .checked_add(5)
+        .ok_or(AccessError::Overflow)?
+        .checked_div(10)
+        .ok_or(AccessError::Overflow)?;
+
+    msg!("Pool reward {}", pool_reward);
+
+    let total_claimable_rewards = pool_reward
+        .checked_add(
+            ((stakers_reward.checked_mul(total_staked_snapshot)
+                .ok_or(AccessError::Overflow)? >> 31) + 1) >> 1
+        ).ok_or(AccessError::Overflow)?;
+
+    msg!("Total claimable rewards {}", total_claimable_rewards);
+
+    assert!(total_claimable_rewards <= (central_state.daily_inflation as u128)
+                .checked_add(1_000_000).ok_or(AccessError::Overflow)?);
 
     stake_pool.push_balances_buff(
         current_offset,
