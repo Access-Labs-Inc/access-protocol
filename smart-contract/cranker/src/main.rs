@@ -31,7 +31,6 @@ fn process() -> Result<(), error::ProgramError> {
     let central_state = CentralState::deserialize(&mut &acc.data[..]).unwrap();
 
     let all_pools = pools::get_all_pools(connection, central_state.creation_time as u64)?;
-    println!("Found {:?} pools", all_pools);
     let mut join_handles = Vec::with_capacity(all_pools.len());
 
     for pool in all_pools {

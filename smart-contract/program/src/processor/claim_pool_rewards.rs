@@ -135,7 +135,7 @@ pub fn process_claim_pool_rewards(
             false,
         )?;
 
-    let reward = safe_downcast(reward).ok_or(AccessError::Overflow)?;
+    let reward = safe_downcast(((reward >> 31) + 1) >> 1).ok_or(AccessError::Overflow)?;
 
     msg!("Claiming pool rewards {}", reward);
 
