@@ -102,9 +102,13 @@ pub fn process_crank(
 
     msg!("Stakers reward {}", stakers_reward);
 
-    let precise_total_staked_snapshot = PreciseNumber::new(total_staked_snapshot  << 32).ok_or(AccessError::Overflow)?;
-    let precise_daily_inflation = PreciseNumber::new(central_state.daily_inflation as u128).ok_or(AccessError::Overflow)?;
-    let precise_system_staked_snapshot = PreciseNumber::new(central_state.total_staked_snapshot as u128).ok_or(AccessError::Overflow)?;
+    let precise_total_staked_snapshot = PreciseNumber::new(total_staked_snapshot.checked_shl(32)
+        .ok_or(AccessError::Overflow)?)
+        .ok_or(AccessError::Overflow)?;
+    let precise_daily_inflation = PreciseNumber::new(central_state.daily_inflation as u128)
+        .ok_or(AccessError::Overflow)?;
+    let precise_system_staked_snapshot = PreciseNumber::new(central_state.total_staked_snapshot as u128)
+        .ok_or(AccessError::Overflow)?;
 
     // pool_rewards = [(pool_total_staked << 32) * inflation * (100 - stakers_part)] / (100 * total_staked)
     let precise_pool_reward = (precise_total_staked_snapshot)

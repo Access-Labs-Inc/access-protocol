@@ -30,7 +30,7 @@ mod basic_functionality {
         tr.create_stake_account(&pool_owner2.pubkey(), &staker.pubkey()).await.unwrap();
         // Stake
         tr.stake(&pool_owner.pubkey(), &staker, 530_959_347_000_000).await.unwrap();
-        // tr.stake(&pool_owner2.pubkey(), &staker, 704_776_720_000_000).await.unwrap();
+        tr.stake(&pool_owner2.pubkey(), &staker, 704_776_720_000_000).await.unwrap();
         // Wait 1 day
         tr.sleep(86400).await.unwrap();
         // Crank
