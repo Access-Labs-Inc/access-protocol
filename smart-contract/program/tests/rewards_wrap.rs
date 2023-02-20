@@ -1,5 +1,6 @@
 use solana_sdk::signer::Signer;
 use solana_test_framework::*;
+
 use access_protocol::state::STAKE_BUFFER_LEN;
 
 use crate::common::test_runner::TestRunner;
@@ -7,11 +8,12 @@ use crate::common::test_runner::TestRunner;
 pub mod common;
 
 const DAY: u64 = 86400;
-const DAILY_INFLATION: u64 = 1_000_000_000_000; // 1M of tokens
+const DAILY_INFLATION: u64 = 10_000_000_000_000_000; // 1M of tokens
 
 mod rewards_wrap {
     use super::*;
-    #[tokio::test]
+
+#[tokio::test]
     async fn rewards_long_time() {
         // Setup the token + basic accounts
         let mut tr = TestRunner::new(DAILY_INFLATION).await.unwrap();
@@ -89,12 +91,12 @@ mod rewards_wrap {
             // Claim pool 1 rewards on the last day before the wrap
             tr.claim_pool_rewards(&pool_owner).await.unwrap();
             let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
-            assert_eq!(pool_stats.balance, (i+1) * DAILY_INFLATION / 4);
+            assert_eq!(pool_stats.balance, (i + 1) * DAILY_INFLATION / 4);
 
             // Claim staker rewards on the last day before the wrap
             tr.claim_staker_rewards(&pool_owner.pubkey(), &staker).await.unwrap();
             let staker_stats = tr.staker_stats(staker.pubkey()).await.unwrap();
-            assert_eq!(staker_stats.balance, (i+1) * DAILY_INFLATION / 4);
+            assert_eq!(pool_stats.balance, (i + 1) * DAILY_INFLATION / 4);
         }
     }
 
@@ -132,12 +134,12 @@ mod rewards_wrap {
             // Claim pool 1 rewards on the last day before the wrap
             tr.claim_pool_rewards(&pool_owner).await.unwrap();
             let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
-            assert_eq!(pool_stats.balance, (i+1) * DAILY_INFLATION / 4);
+            assert_eq!(pool_stats.balance, (i + 1) * DAILY_INFLATION / 4);
 
             // Claim staker rewards on the last day before the wrap
             tr.claim_staker_rewards(&pool_owner.pubkey(), &staker).await.unwrap();
             let staker_stats = tr.staker_stats(staker.pubkey()).await.unwrap();
-            assert_eq!(staker_stats.balance, (i+1) * DAILY_INFLATION / 4);
+            assert_eq!(staker_stats.balance, (i + 1) * DAILY_INFLATION / 4);
         }
 
         // crank 10 more times without claim
@@ -154,6 +156,5 @@ mod rewards_wrap {
         tr.claim_staker_rewards(&pool_owner.pubkey(), &staker).await.unwrap();
         let staker_stats = tr.staker_stats(staker.pubkey()).await.unwrap();
         assert_eq!(staker_stats.balance, (STAKE_BUFFER_LEN + 5) * DAILY_INFLATION / 4);
-
     }
 }
