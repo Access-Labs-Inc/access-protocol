@@ -36,7 +36,8 @@ pub const STAKER_MULTIPLIER: u64 = 50;
 pub const OWNER_MULTIPLIER: u64 = 100 - STAKER_MULTIPLIER;
 
 /// Length of the circular buffer (stores balances for 1 year)
-pub const STAKE_BUFFER_LEN: u64 = 274; // 9 Months
+// todo rollback!!!!!!!!!!
+pub const STAKE_BUFFER_LEN: u64 = 10; // 9 Months
 
 /// Max pending unstake requests
 pub const MAX_UNSTAKE_REQUEST: usize = 10;
