@@ -29,7 +29,7 @@ pub fn calc_reward_fp32(
             msg!("No rewards to claim, no operation.");
             return Err(AccessError::NoOp.into());
         }
-        return Ok(0)
+        return Ok(0);
     }
 
     if current_offset > stake_pool.header.current_day_idx as u64 {
@@ -41,8 +41,6 @@ pub fn calc_reward_fp32(
     // Saturating as we don't want to wrap around when there haven't been sufficient cranks
     let mut i = (stake_pool.header.current_day_idx as u64).saturating_sub(nb_days_to_claim)
         % STAKE_BUFFER_LEN;
-
-    msg!("Current i {}", i);
 
     // Compute reward for all past days
     let mut reward: u128 = 0;
@@ -59,7 +57,6 @@ pub fn calc_reward_fp32(
         if i == (stake_pool.header.current_day_idx as u64) % STAKE_BUFFER_LEN {
             break;
         }
-        msg!("Next i {}", i); // todo delete (and other msg!)
     }
 
     msg!("Reward is {}", reward);
