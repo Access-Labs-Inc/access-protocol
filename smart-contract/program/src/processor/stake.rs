@@ -207,6 +207,7 @@ pub fn process_stake(
     }
 
     if (stake_pool.header.current_day_idx as u64) < central_state.get_current_offset()? {
+        msg!("Pool must be cranked before staking, {}, {}", stake_pool.header.current_day_idx, central_state.get_current_offset()?);
         return Err(AccessError::PoolMustBeCranked.into());
     }
 
