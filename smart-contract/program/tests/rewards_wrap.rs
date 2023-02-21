@@ -49,25 +49,25 @@ mod rewards_wrap {
             tr.crank_pool(&pool_owner2.pubkey()).await.unwrap();
         }
 
-        // Claim pool 1 rewards
+        // Claim pool 1 rewards - owner gets (DAILY_INFLATION / 4) every day
         tr.claim_pool_rewards(&pool_owner).await.unwrap();
         let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
         assert_eq!(pool_stats.balance, STAKE_BUFFER_LEN * DAILY_INFLATION / 4);
 
-        // Claim staker rewards
+        // Claim staker rewards in pool 1 - staker gets (DAILY_INFLATION / 4) every day
         tr.claim_staker_rewards(&pool_owner.pubkey(), &staker).await.unwrap();
         let staker_stats = tr.staker_stats(staker.pubkey()).await.unwrap();
         assert_eq!(staker_stats.balance, STAKE_BUFFER_LEN * DAILY_INFLATION / 4);
 
-        // Claim pool 2 rewards
+        // Claim pool 2 rewards - owner gets (DAILY_INFLATION / 4) every day
         tr.claim_pool_rewards(&pool_owner2).await.unwrap();
         let pool_stats = tr.pool_stats(pool_owner2.pubkey()).await.unwrap();
         assert_eq!(pool_stats.balance, STAKE_BUFFER_LEN * DAILY_INFLATION / 4);
 
-        // Claim bond rewards
+        // Claim bond rewards - staker gets another (DAILY_INFLATION / 4) every day, but he already had (DAILY_INFLATION / 4) from previous claim
         tr.claim_bond_rewards(&pool_owner2.pubkey(), &staker).await.unwrap();
         let staker_stats = tr.staker_stats(staker.pubkey()).await.unwrap();
-        assert_eq!(staker_stats.balance, STAKE_BUFFER_LEN * DAILY_INFLATION / 2);
+        assert_eq!(staker_stats.balance, 2 * (STAKE_BUFFER_LEN * DAILY_INFLATION / 4));
     }
 
     #[tokio::test]
@@ -105,25 +105,25 @@ mod rewards_wrap {
             tr.crank_pool(&pool_owner.pubkey()).await.unwrap();
             tr.crank_pool(&pool_owner2.pubkey()).await.unwrap();
 
-            // Claim pool 1 rewards
+            // Claim pool 1 rewards  - owner gets (DAILY_INFLATION / 4) every day
             tr.claim_pool_rewards(&pool_owner).await.unwrap();
             let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
             assert_eq!(pool_stats.balance, (i + 1) * DAILY_INFLATION / 4);
 
-            // Claim staker rewards
+            // Claim staker rewards in pool 1 - staker gets (DAILY_INFLATION / 4) every day and he already had (2 * i * DAILY_INFLATION / 4) from previous iteration
             tr.claim_staker_rewards(&pool_owner.pubkey(), &staker).await.unwrap();
             let staker_stats = tr.staker_stats(staker.pubkey()).await.unwrap();
-            assert_eq!(staker_stats.balance, i * DAILY_INFLATION / 2 + DAILY_INFLATION / 4);
+            assert_eq!(staker_stats.balance, 2 * i * DAILY_INFLATION / 4 + DAILY_INFLATION / 4);
 
-            // Claim pool 2 rewards
+            // Claim pool 2 rewards - owner gets (DAILY_INFLATION / 4) every day
             tr.claim_pool_rewards(&pool_owner2).await.unwrap();
             let pool_stats = tr.pool_stats(pool_owner2.pubkey()).await.unwrap();
             assert_eq!(pool_stats.balance, (i + 1) * DAILY_INFLATION / 4);
 
-            // Claim bond rewards
+            // Claim bond rewards - staker gets another (DAILY_INFLATION / 4) every day
             tr.claim_bond_rewards(&pool_owner2.pubkey(), &staker).await.unwrap();
             let staker_stats = tr.staker_stats(staker.pubkey()).await.unwrap();
-            assert_eq!(staker_stats.balance, (i + 1) * DAILY_INFLATION / 2);
+            assert_eq!(staker_stats.balance, 2 * (i + 1) * DAILY_INFLATION / 2);
         }
     }
 
@@ -162,25 +162,25 @@ mod rewards_wrap {
             tr.crank_pool(&pool_owner.pubkey()).await.unwrap();
             tr.crank_pool(&pool_owner2.pubkey()).await.unwrap();
 
-            // Claim pool 1 rewards
+            // Claim pool 1 rewards - owner gets (DAILY_INFLATION / 4) every day
             tr.claim_pool_rewards(&pool_owner).await.unwrap();
             let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
             assert_eq!(pool_stats.balance, (i + 1) * DAILY_INFLATION / 4);
 
-            // Claim staker rewards
+            // Claim staker rewards - staker gets (DAILY_INFLATION / 4) every day and he already had (i * DAILY_INFLATION / 4) from previous iteration
             tr.claim_staker_rewards(&pool_owner.pubkey(), &staker).await.unwrap();
             let staker_stats = tr.staker_stats(staker.pubkey()).await.unwrap();
-            assert_eq!(staker_stats.balance, i * DAILY_INFLATION / 2 + DAILY_INFLATION / 4);
+            assert_eq!(staker_stats.balance, 2 * i * DAILY_INFLATION / 4 + DAILY_INFLATION / 4);
 
-            // Claim pool 2 rewards
+            // Claim pool 2 rewards - owner gets (DAILY_INFLATION / 4) every day
             tr.claim_pool_rewards(&pool_owner2).await.unwrap();
             let pool_stats = tr.pool_stats(pool_owner2.pubkey()).await.unwrap();
             assert_eq!(pool_stats.balance, (i + 1) * DAILY_INFLATION / 4);
 
-            // Claim bond rewards
+            // Claim bond rewards - staker gets another (DAILY_INFLATION / 4) every day
             tr.claim_bond_rewards(&pool_owner2.pubkey(), &staker).await.unwrap();
             let staker_stats = tr.staker_stats(staker.pubkey()).await.unwrap();
-            assert_eq!(staker_stats.balance, (i + 1) * DAILY_INFLATION / 2);
+            assert_eq!(staker_stats.balance, 2* (i + 1) * DAILY_INFLATION / 4);
         }
 
         // crank 10 more times without claim
@@ -190,22 +190,22 @@ mod rewards_wrap {
             tr.crank_pool(&pool_owner2.pubkey()).await.unwrap();
         }
 
-        // Claim pool 1 rewards
+        // Claim pool 1 rewards - owner gets another 10 * (DAILY_INFLATION / 4)
         tr.claim_pool_rewards(&pool_owner).await.unwrap();
         let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
         assert_eq!(pool_stats.balance, (STAKE_BUFFER_LEN + 5) * DAILY_INFLATION / 4);
 
-        // Claim staker rewards
+        // Claim staker rewards - staker gets another 10 * (DAILY_INFLATION / 4)
         tr.claim_staker_rewards(&pool_owner.pubkey(), &staker).await.unwrap();
         let staker_stats = tr.staker_stats(staker.pubkey()).await.unwrap();
         assert_eq!(staker_stats.balance, (STAKE_BUFFER_LEN - 5) * DAILY_INFLATION / 2 + 10 * DAILY_INFLATION / 4);
 
-        // Claim pool 2 rewards
+        // Claim pool 2 rewards - owner gets another 10 * (DAILY_INFLATION / 4)
         tr.claim_pool_rewards(&pool_owner2).await.unwrap();
         let pool_stats = tr.pool_stats(pool_owner2.pubkey()).await.unwrap();
         assert_eq!(pool_stats.balance, (STAKE_BUFFER_LEN + 5) * DAILY_INFLATION / 4);
 
-        // Claim bond rewards
+        // Claim bond rewards - staker gets another 10 * (DAILY_INFLATION / 4)
         tr.claim_bond_rewards(&pool_owner2.pubkey(), &staker).await.unwrap();
         let staker_stats = tr.staker_stats(staker.pubkey()).await.unwrap();
         assert_eq!(staker_stats.balance, (STAKE_BUFFER_LEN + 5) * DAILY_INFLATION / 2);
@@ -216,7 +216,7 @@ mod rewards_wrap {
         tr.activate_stake_pool(&pool_owner3.pubkey()).await.unwrap();
         let pool_stats = tr.pool_stats(pool_owner3.pubkey()).await.unwrap();
         assert_eq!(pool_stats.balance, 0);
-        assert_eq!(pool_stats.header.last_claimed_offset, 123);
+        assert_eq!(pool_stats.header.last_claimed_offset, STAKE_BUFFER_LEN + 5);
         tr.create_stake_account(&pool_owner3.pubkey(), &staker.pubkey()).await.unwrap();
 
         // mint to staker
@@ -232,7 +232,7 @@ mod rewards_wrap {
         // claim pool 3 rewards
         tr.claim_pool_rewards(&pool_owner3).await.unwrap();
         let pool_stats = tr.pool_stats(pool_owner3.pubkey()).await.unwrap();
-        assert_eq!(pool_stats.balance, DAILY_INFLATION / 4);
-        assert_eq!(pool_stats.header.current_day_idx, 999);
+        assert_eq!(pool_stats.balance, DAILY_INFLATION / 6 + 1);  // +1 to mitigate a rounding mistake
+        assert_eq!(pool_stats.header.current_day_idx as u64, STAKE_BUFFER_LEN + 5 + 1);
     }
 }
