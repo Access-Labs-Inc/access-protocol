@@ -59,11 +59,11 @@ BPF_OUT_DIR=target/deploy cargo test-bpf --features no-mint-check no-bond-signer
 The `js` folder contains the Javascript bindings of the smart contract. This package is published on NPM
 
 ```
-npm i @access-protocol/js
+npm i @accessprotocol/js
 ```
 
 ```
-yarn add @access-protocol/js
+yarn add @accessprotocol/js
 ```
 
 End to end tests are implemented using `jest`, they can be run using
