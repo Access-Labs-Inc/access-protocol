@@ -369,11 +369,8 @@ export const createBond = async (
   );
 
   const ix = new createBondInstruction({
-    buyer: buyer.toBuffer(),
     totalAmountSold: new BN(totalAmountSold),
     totalQuoteAmount: new BN(totalQuoteAmount),
-    quoteMint: quoteMint.toBuffer(),
-    sellerTokenAccount: sellerTokenAccount.toBuffer(),
     unlockStartDate: new BN(unlockStartDate),
     unlockPeriod: new BN(unlockPeriod),
     unlockAmount: new BN(unlockAmount),
@@ -384,6 +381,9 @@ export const createBond = async (
     bondAccount,
     stakePool,
     SystemProgram.programId,
+    buyer,
+    quoteMint,
+    sellerTokenAccount,
     seller
   );
 
