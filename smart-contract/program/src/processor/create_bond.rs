@@ -23,16 +23,10 @@ use bonfida_utils::{BorshSize, InstructionsAccount};
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `create_bond` instruction
 pub struct Params {
-    /// Ultimate buyer of the bond
-    pub buyer: Pubkey,
     /// Total amount of ACCESS tokens being sold
     pub total_amount_sold: u64,
     /// Total price of the bond
     pub total_quote_amount: u64,
-    /// Mint of the token used to buy the bond
-    pub quote_mint: Pubkey,
-    /// The token account i.e where the sell proceeds go
-    pub seller_token_account: Pubkey,
     /// The start date of the unlock
     pub unlock_start_date: i64,
     /// The time interval at which the tokens unlock
@@ -60,6 +54,15 @@ pub struct Accounts<'a, T> {
     /// The system program account
     pub system_program: &'a T,
 
+    /// Ultimate buyer of the bond
+    pub buyer: &'a T,
+
+    /// Mint of the token used to buy the bond
+    pub quote_mint: &'a T,
+
+    /// The token account i.e where the sell proceeds go
+    pub seller_token_account: &'a T,
+
     /// The fee account
     #[cons(writable, signer)]
     pub fee_payer: &'a T,
@@ -76,6 +79,9 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             bond_account: next_account_info(accounts_iter)?,
             stake_pool: next_account_info(accounts_iter)?,
             system_program: next_account_info(accounts_iter)?,
+            buyer: next_account_info(accounts_iter)?,
+            quote_mint: next_account_info(accounts_iter)?,
+            seller_token_account: next_account_info(accounts_iter)?,
             fee_payer: next_account_info(accounts_iter)?,
         };
 
@@ -104,7 +110,7 @@ pub fn process_create_bond(
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let (derived_key, nonce) =
-        BondAccount::create_key(&params.buyer, params.total_amount_sold, program_id);
+        BondAccount::create_key(accounts.buyer.key, params.total_amount_sold, program_id);
 
     let stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
 
@@ -123,11 +129,11 @@ pub fn process_create_bond(
     }
 
     let bond = BondAccount::new(
-        params.buyer,
+        *accounts.buyer.key,
         params.total_amount_sold,
         params.total_quote_amount,
-        params.quote_mint,
-        params.seller_token_account,
+        *accounts.quote_mint.key,
+        *accounts.seller_token_account.key,
         params.unlock_start_date,
         params.unlock_period,
         params.unlock_amount,
@@ -140,7 +146,7 @@ pub fn process_create_bond(
     // Create bond account
     let seeds: &[&[u8]] = &[
         BondAccount::SEED,
-        &params.buyer.to_bytes(),
+        &accounts.buyer.key.to_bytes(),
         &params.total_amount_sold.to_le_bytes(),
         &[nonce],
     ];
