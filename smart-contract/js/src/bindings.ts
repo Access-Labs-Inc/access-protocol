@@ -21,13 +21,13 @@ import {
   adminFreezeInstruction,
   changePoolMultiplierInstruction,
   changeCentralStateAuthorityInstruction,
-} from "./raw_instructions.js";
+} from "./raw_instructions";
 import {
   Connection,
   PublicKey,
   SystemProgram,
 } from "@solana/web3.js";
-import { CentralState, StakePool, BondAccount, StakeAccount } from "./state.js";
+import { CentralState, StakePool, BondAccount, StakeAccount } from "./state";
 import BN from "bn.js";
 import {
   TOKEN_PROGRAM_ID,
@@ -35,7 +35,7 @@ import {
   getAssociatedTokenAddress,
   createAssociatedTokenAccountInstruction, getImmutableOwner,
 } from "@solana/spl-token";
-import {getBondAccounts} from "./secondary_bindings.js";
+import {getBondAccounts} from "./secondary_bindings";
 
 /**
  * This function can be used to update the inflation schedule of the central state

@@ -1,7 +1,7 @@
 import { deserialize, Schema } from "borsh";
 import BN from "bn.js";
 import { Connection, PublicKey } from "@solana/web3.js";
-import { u64 } from "./u64.js";
+import { u64 } from "./u64";
 
 /**
  * Lenght of the stake pool circular buffer used to store balances and inflation
