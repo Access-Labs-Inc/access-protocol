@@ -8,6 +8,7 @@
   "publishConfig": {
     "access": "public"
   },
+  "type": "module",
   "types": "./dist/cjs/types/index.d.ts",
   "main": "./dist/cjs/index.js",
   "scripts": {
@@ -36,6 +37,7 @@
   "devDependencies": {
     "@metaplex-foundation/amman": "^0.12.1",
     "@tsconfig/recommended": "^1.0.1",
+    "@types/bn.js": "^5.1.1",
     "@types/bs58": "^4.0.1",
     "@types/jest": "^27.0.3",
     "@types/node": "^14.14.20",
@@ -56,8 +58,7 @@
     "typescript": "^4.1.5"
   },
   "dependencies": {
-    "@metaplex-foundation/js": "^0.11.7",
-    "@solana/spl-token": "^0.3.5",
+    "@solana/spl-token": "^0.3.7",
     "@solana/web3.js": "^1.66.2",
     "bn.js": "^5.2.0",
     "borsh": "^0.6.0",

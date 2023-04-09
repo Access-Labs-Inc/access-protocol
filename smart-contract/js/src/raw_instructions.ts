@@ -32,7 +32,7 @@ export class closeStakePoolInstruction {
     owner: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
+    const keys: AccountKey[] = [];
     keys.push({
       pubkey: stakePoolAccount,
       isSigner: false,
@@ -83,7 +83,7 @@ export class changeInflationInstruction {
     authority: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
+    const keys: AccountKey[] = [];
     keys.push({
       pubkey: centralState,
       isSigner: false,
@@ -130,7 +130,7 @@ export class unlockBondTokensInstruction {
     splTokenProgram: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
+    const keys: AccountKey[] = [];
     keys.push({
       pubkey: bondAccount,
       isSigner: false,
@@ -202,7 +202,7 @@ export class adminFreezeInstruction {
     centralState: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
+    const keys: AccountKey[] = [];
     keys.push({
       pubkey: authority,
       isSigner: true,
@@ -253,7 +253,7 @@ export class changePoolMinimumInstruction {
     stakePoolOwner: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
+    const keys: AccountKey[] = [];
     keys.push({
       pubkey: stakePool,
       isSigner: false,
@@ -298,7 +298,7 @@ export class claimPoolRewardsInstruction {
     splTokenProgram: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
+    const keys: AccountKey[] = [];
     keys.push({
       pubkey: stakePool,
       isSigner: false,
@@ -364,7 +364,7 @@ export class signBondInstruction {
     bondAccount: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
+    const keys: AccountKey[] = [];
     keys.push({
       pubkey: seller,
       isSigner: true,
@@ -415,7 +415,7 @@ export class claimRewardsInstruction {
     splTokenProgram: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
+    const keys: AccountKey[] = [];
     keys.push({
       pubkey: stakePool,
       isSigner: false,
@@ -493,7 +493,7 @@ export class stakeInstruction {
     bondAccount?: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
+    const keys: AccountKey[] = [];
     keys.push({
       pubkey: centralStateAccount,
       isSigner: false,
@@ -534,7 +534,7 @@ export class stakeInstruction {
       isSigner: false,
       isWritable: true,
     });
-    if (!!bondAccount) {
+    if (bondAccount) {
       keys.push({
         pubkey: bondAccount,
         isSigner: false,
@@ -581,7 +581,7 @@ export class createCentralStateInstruction {
     mint: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
+    const keys: AccountKey[] = [];
     keys.push({
       pubkey: centralState,
       isSigner: false,
@@ -637,7 +637,7 @@ export class changePoolMultiplierInstruction {
     stakePoolOwner: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
+    const keys: AccountKey[] = [];
     keys.push({
       pubkey: stakePool,
       isSigner: false,
@@ -678,7 +678,7 @@ export class closeStakeAccountInstruction {
     owner: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
+    const keys: AccountKey[] = [];
     keys.push({
       pubkey: stakeAccount,
       isSigner: false,
@@ -719,7 +719,7 @@ export class crankInstruction {
     centralState: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
+    const keys: AccountKey[] = [];
     keys.push({
       pubkey: stakePool,
       isSigner: false,
@@ -767,7 +767,7 @@ export class claimBondInstruction {
     splTokenProgram: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
+    const keys: AccountKey[] = [];
     keys.push({
       pubkey: bondAccount,
       isSigner: false,
@@ -856,7 +856,7 @@ export class editMetadataInstruction {
     metadataProgram: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
+    const keys: AccountKey[] = [];
     keys.push({
       pubkey: centralState,
       isSigner: false,
@@ -917,7 +917,7 @@ export class createStakeAccountInstruction {
     feePayer: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
+    const keys: AccountKey[] = [];
     keys.push({
       pubkey: stakeAccount,
       isSigner: false,
@@ -973,7 +973,7 @@ export class claimBondRewardsInstruction {
     splTokenProgram: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
+    const keys: AccountKey[] = [];
     keys.push({
       pubkey: stakePool,
       isSigner: false,
@@ -1081,7 +1081,7 @@ export class createBondInstruction {
     feePayer: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
+    const keys: AccountKey[] = [];
     keys.push({
       pubkey: seller,
       isSigner: true,
@@ -1148,7 +1148,7 @@ export class unstakeInstruction {
     bondAccount?: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
+    const keys: AccountKey[] = [];
     keys.push({
       pubkey: centralStateAccount,
       isSigner: false,
@@ -1184,7 +1184,7 @@ export class unstakeInstruction {
       isSigner: false,
       isWritable: true,
     });
-    if (!!bondAccount) {
+    if (bondAccount) {
       keys.push({
         pubkey: bondAccount,
         isSigner: false,
@@ -1231,7 +1231,7 @@ export class createStakePoolInstruction {
     vault: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
+    const keys: AccountKey[] = [];
     keys.push({
       pubkey: stakePoolAccount,
       isSigner: false,
@@ -1287,7 +1287,7 @@ export class changeCentralStateAuthorityInstruction {
     authority: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
+    const keys: AccountKey[] = [];
     keys.push({
       pubkey: centralState,
       isSigner: false,
@@ -1336,7 +1336,7 @@ export class adminMintInstruction {
     splTokenProgram: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
+    const keys: AccountKey[] = [];
     keys.push({
       pubkey: authority,
       isSigner: true,
@@ -1393,7 +1393,7 @@ export class activateStakePoolInstruction {
     centralState: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
+    const keys: AccountKey[] = [];
     keys.push({
       pubkey: authority,
       isSigner: true,

@@ -21,15 +21,13 @@ import {
   adminFreezeInstruction,
   changePoolMultiplierInstruction,
   changeCentralStateAuthorityInstruction,
-  editMetadataInstruction,
-} from "./raw_instructions";
+} from "./raw_instructions.js";
 import {
   Connection,
   PublicKey,
   SystemProgram,
-  SYSVAR_RENT_PUBKEY,
 } from "@solana/web3.js";
-import { CentralState, StakePool, BondAccount, StakeAccount } from "./state";
+import { CentralState, StakePool, BondAccount, StakeAccount } from "./state.js";
 import BN from "bn.js";
 import {
   TOKEN_PROGRAM_ID,
@@ -37,9 +35,7 @@ import {
   getAssociatedTokenAddress,
   createAssociatedTokenAccountInstruction, getImmutableOwner,
 } from "@solana/spl-token";
-import { findMetadataPda, TokenMetadataProgram } from "@metaplex-foundation/js";
-import {u64} from "./u64";
-import {getBondAccounts} from "./secondary_bindings";
+import {getBondAccounts} from "./secondary_bindings.js";
 
 /**
  * This function can be used to update the inflation schedule of the central state
@@ -761,42 +757,6 @@ export const changeCentralStateAuthority = async (
   const ix = new changeCentralStateAuthorityInstruction({
     newAuthority: newAuthority.toBytes(),
   }).getInstruction(programId, centralKey, centralState.authority);
-
-  return ix;
-};
-
-/**
- * This function can be used to edit the token metadata
- * @param connection The Solana RPC connection
- * @param name The new metadata name
- * @param symbol The new metadata symbol
- * @param uri The new metadata URI
- * @param programId The ACCESS program ID
- * @param tokenMetataProgramId The token metadata program ID (optional)
- * @returns
- */
-export const editMetadata = async (
-  connection: Connection,
-  name: string,
-  symbol: string,
-  uri: string,
-  programId: PublicKey,
-  tokenMetataProgramId = TokenMetadataProgram.publicKey
-) => {
-  const [centralKey] = await CentralState.getKey(programId);
-  const centralState = await CentralState.retrieve(connection, centralKey);
-  const metadata = findMetadataPda(
-    centralState.tokenMint,
-    tokenMetataProgramId
-  );
-
-  const ix = new editMetadataInstruction({ name, symbol, uri }).getInstruction(
-    programId,
-    centralKey,
-    centralState.authority,
-    metadata,
-    tokenMetataProgramId
-  );
 
   return ix;
 };

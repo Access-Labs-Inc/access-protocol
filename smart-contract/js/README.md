@@ -18,5 +18,7 @@ import { stake, unstake, ... } from "@accessprotocol/js"
 ```
 yarn install
 npm login
+yarn version <major|minor|patch>
+yarn publish --dry-run
 yarn publish
 ```

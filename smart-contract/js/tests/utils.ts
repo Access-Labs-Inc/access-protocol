@@ -11,8 +11,6 @@ import { readFileSync, writeSync, closeSync } from "fs";
 import { execSync } from "child_process";
 import tmp from "tmp";
 import { getOrCreateAssociatedTokenAccount, createMint, mintTo, TOKEN_PROGRAM_ID, AuthorityType, createSetAuthorityInstruction } from "@solana/spl-token";
-import { createCreateMetadataAccountV2Instruction } from '@metaplex-foundation/mpl-token-metadata';
-import { findMetadataPda } from '@metaplex-foundation/js';
 import { sleep } from "../src/utils";
 
 const programName = "access_protocol";
@@ -92,7 +90,6 @@ export async function airdropPayer(connection: Connection, key: PublicKey) {
     } catch (e) {
       console.log(`Error airdropping ${e}`);
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      continue;
     }
   }
 }
@@ -160,62 +157,18 @@ export class TokenMint {
       )
     ];
 
-    let tx = await signAndSendTransactionInstructions(connection, [mintAuthorityKeypair], feePayer, 
+    const tx = await signAndSendTransactionInstructions(connection, [mintAuthorityKeypair], feePayer, 
       txs
     );
     console.log(`Move mint authority to central key ${tx}`);
-  }
-
-  async createMetadata(
-    connection: Connection,
-    feePayer: Keypair,
-    mintAuthorityKeypair: Keypair,
-    centralKey: PublicKey,
-    name: string, symbol: string, uri: string
-  ) {
-    const metadataPDA = await findMetadataPda(this.token.publicKey);
-
-    const tx_instructions = [
-      createCreateMetadataAccountV2Instruction({
-        metadata: metadataPDA,
-        mint: this.token.publicKey,
-        mintAuthority: this.mintAuthority,
-        payer: this.feePayer.publicKey,
-        updateAuthority: centralKey,
-      },
-      { createMetadataAccountArgsV2: 
-        { 
-          data: {
-            name: name, 
-            symbol: symbol,
-            uri: uri,
-            sellerFeeBasisPoints: 0,
-            creators: null,
-            collection: null,
-            uses: null
-          }, 
-          isMutable: true 
-        } 
-      })
-    ]; 
-
-    if (mintAuthorityKeypair) {
-      let tx = await signAndSendTransactionInstructions(connection, [mintAuthorityKeypair], feePayer, 
-        tx_instructions
-      );
-      console.log(`Created metadata ${tx}`);
-    } else {
-      console.log("Skipping metadata... ");
-    }
   }
 
   static async init(
     connection: Connection,
     feePayer: Keypair,
     mintAuthority: Keypair | null = null,
-    centralKey: PublicKey,
   ) {
-    let tokenKeypair = new Keypair();
+    const tokenKeypair = new Keypair();
     await createMint(
       connection,
       feePayer,
@@ -227,28 +180,11 @@ export class TokenMint {
     const token = new TokenMint(
       tokenKeypair, connection, feePayer, mintAuthority?.publicKey ?? tokenKeypair.publicKey,
     );
-    if (mintAuthority) {
-      await token.createMetadata(
-        connection,
-        feePayer,
-        mintAuthority,
-        centralKey,
-        'Access Protocol',
-        'ACS',
-        'https://accessprotocol.com',
-      );
-      await token.updateAuthorityToCentralState(
-        connection,
-        mintAuthority,
-        feePayer,
-        centralKey
-      )
-    }
     return token;
   }
 
   async getAssociatedTokenAccount(wallet: PublicKey): Promise<PublicKey> {
-    let acc = await getOrCreateAssociatedTokenAccount(
+    const acc = await getOrCreateAssociatedTokenAccount(
       this.connection,
       this.feePayer,
       this.token.publicKey,
