@@ -7,4 +7,3 @@ target/
 bin/
 coverage/
 wallet.json
-smart-contract/js/package/

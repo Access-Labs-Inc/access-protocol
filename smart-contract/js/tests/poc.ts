@@ -40,7 +40,7 @@ export const poc = async (
   const stakePoolOwner = Keypair.generate();
   const Bob = Keypair.generate();
   const Alice = Keypair.generate();
-  let minimumStakeAmount = 10_000 * decimals;
+  const minimumStakeAmount = 10_000 * decimals;
 
   /**
    * Set up ATA
@@ -181,7 +181,7 @@ export const poc = async (
    * Stake
    */
 
-  let crank_ix = await crank(stakePoolKey, programId);
+  const crank_ix = await crank(stakePoolKey, programId);
   tx = await signAndSendTransactionInstructions(
     connection,
     [Alice, Bob],

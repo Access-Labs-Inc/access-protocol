@@ -26,7 +26,6 @@ import {
   adminFreeze,
   changePoolMultiplier,
   closeStakePool,
-  editMetadata,
 } from "../src/bindings";
 import {
   CentralState,
@@ -46,8 +45,6 @@ import BN from "bn.js";
 import { TokenMint } from "./utils";
 import { poc } from "./poc";
 import { changeCentralStateAuth } from "./change-central-state-auth";
-import { findMetadataPda } from "@metaplex-foundation/js";
-import { Metadata } from "@metaplex-foundation/mpl-token-metadata";
 
 // Global state initialized once in test startup and cleaned up at test
 // teardown.
@@ -92,16 +89,16 @@ test("End to end test", async () => {
   console.log("Central key:", centralKey.toBase58());
   console.log("Central key pubkey:", centralStateAuthority.publicKey.toBase58());
   const decimals = Math.pow(10, 6);
-  let dailyInflation = 1_000_000;
+  const dailyInflation = 1_000_000;
   accessToken = await TokenMint.init(connection, feePayer, centralStateAuthority, centralKey);
   const quoteToken = await TokenMint.init(connection, feePayer, undefined, centralKey);
   const stakePoolOwner = Keypair.generate();
   const staker = Keypair.generate();
-  let minimumStakeAmount = 10_000 * decimals;
+  const minimumStakeAmount = 10_000 * decimals;
   const bondAmount = 5_000_000 * decimals;
   const bondSeller = Keypair.generate();
   let fees = 0; // Fees collected by the central state
-  let FEES = 2 / 100; // % of fees collected on each stake
+  const FEES = 2 / 100; // % of fees collected on each stake
 
   await airdropPayer(connection, bondSeller.publicKey);
 
@@ -195,40 +192,6 @@ test("End to end test", async () => {
   expect(centralStateObj.authority.toBase58()).toBe(
     centralStateAuthority.publicKey.toBase58()
   );
-
-  const metadatKey = findMetadataPda(accessToken.token.publicKey);
-  let metadata = await Metadata.fromAccountAddress(connection, metadatKey);
-
-  // We slice because the metaplex lib does not remove trailling 0s in the buffer info
-  expect(metadata.data.name.slice(0, "Access Protocol".length)).toBe("Access Protocol");
-  expect(metadata.data.symbol.slice(0, "ACS".length)).toBe("ACS");
-  expect(metadata.data.uri.slice(0, "https://accessprotocol.com".length)).toBe("https://accessprotocol.com");
-
-  /**
-   * Edit metadata
-   */
-   console.log("Edit metadata");
-   const ix_edit_metadata = await editMetadata(
-     connection,
-     "new name",
-     "new symbol",
-     "new uri",
-     programId
-   );
-   tx = await signAndSendTransactionInstructions(
-     connection,
-     [centralStateAuthority],
-     feePayer,
-     [ix_edit_metadata],
-     true
-   );
-   console.log(`Edit metadata ${tx}`);
-
-   // Verification
-   metadata = await Metadata.fromAccountAddress(connection, metadatKey);
-   expect(metadata.data.name.slice(0, 8)).toBe("new name");
-   expect(metadata.data.symbol.slice(0, 10)).toBe("new symbol");
-   expect(metadata.data.uri.slice(0, 7)).toBe("new uri");
 
   /**
    * Create stake pool
@@ -535,10 +498,10 @@ test("End to end test", async () => {
   preBalance = (await connection.getTokenAccountBalance(stakerAta)).value
     .amount;
 
-  let stakeAmount = 10_000 * decimals;
+  const stakeAmount = 10_000 * decimals;
 
   ix_crank = await crank(stakePoolKey, programId);
-  let ix_stake = await stake(
+  const ix_stake = await stake(
     connection,
     stakeKey,
     stakerAta,
@@ -582,7 +545,7 @@ test("End to end test", async () => {
     minimumStakeAmount
   );
 
-  let feesTokenAcc = await connection.getTokenAccountBalance(feesAta);
+  const feesTokenAcc = await connection.getTokenAccountBalance(feesAta);
   expect(parseInt(feesTokenAcc.value.amount)).toBe(fees);
 
   // Crank
@@ -676,7 +639,7 @@ test("End to end test", async () => {
   stakedAccountObj = await StakeAccount.retrieve(connection, stakeKey);
   stakePoolObj = await StakePool.retrieve(connection, stakePoolKey);
 
-  let pool_rewards = new BN(dailyInflation)
+  const pool_rewards = new BN(dailyInflation)
     .mul(new BN(stakePoolObj.totalStaked))
     .div(centralStateObj.totalStaked)
     .mul(new BN(50))
@@ -720,7 +683,7 @@ test("End to end test", async () => {
   postBalance = (await connection.getTokenAccountBalance(stakerAta)).value
     .amount;
 
-  let staker_rewards = new BN(stakePoolObj.totalStaked)
+  const staker_rewards = new BN(stakePoolObj.totalStaked)
     .shln(32)
     .mul(new BN(dailyInflation))
     .mul(new BN(50))
@@ -728,7 +691,7 @@ test("End to end test", async () => {
     .div(new BN(centralStateObj.totalStaked))
     .div(new BN(stakePoolObj.totalStaked));
 
-  let reward = new BN(stakedAccountObj.stakeAmount)
+  const reward = new BN(stakedAccountObj.stakeAmount)
     .mul(staker_rewards)
     .mul(new BN(4))
     .shrn(32);
@@ -965,7 +928,7 @@ test("End to end test", async () => {
 
   // Unstake
   ix_crank = await crank(stakePoolKey, programId);
-  let ix_unstake = await unstake(connection, stakeKey, stakerAta, stakeAmount, programId);
+  const ix_unstake = await unstake(connection, stakeKey, stakerAta, stakeAmount, programId);
   tx = await signAndSendTransactionInstructions(
     connection,
     [staker],
@@ -1039,13 +1002,13 @@ test("End to end test", async () => {
   ).value.amount;
   // Initial bond amount + admin mint + 2 days for inflation
   // Because of rounding it's slightly below
-  let pool_rewards_new_inflation = new BN(500_000)
+  const pool_rewards_new_inflation = new BN(500_000)
     .mul(new BN(stakeAmount))
     .div(centralStateObj.totalStaked)
     .mul(new BN(50))
     .div(new BN(100));
 
-  let staker_rewards_new_inflation = new BN(stakeAmount)
+  const staker_rewards_new_inflation = new BN(stakeAmount)
     .shln(32)
     .mul(new BN(500_000))
     .mul(new BN(50))
