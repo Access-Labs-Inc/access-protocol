@@ -4,19 +4,12 @@ import {
   Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
-  SystemProgram,
-  Transaction,
   TransactionMessage,
   VersionedTransaction
 } from "@solana/web3.js";
-import {
-  createInitializeMintInstruction, createMint,
-  getMinimumBalanceForRentExemptMint,
-  MintLayout,
-  TOKEN_PROGRAM_ID
-} from "@solana/spl-token";
+import { createMint } from "@solana/spl-token";
 
-import { findMetadataPda, keypairIdentity, Metaplex } from '@metaplex-foundation/js';
+import { keypairIdentity, Metaplex } from '@metaplex-foundation/js';
 import { createCreateMetadataAccountV3Instruction } from '@metaplex-foundation/mpl-token-metadata';
 
 
@@ -54,10 +47,7 @@ const updateMetadata = async (
   console.log(`Balance of mint authority wallet: ${(balance / LAMPORTS_PER_SOL).toFixed(2)} SOL`);
 
   const metaplex = Metaplex.make(connection).use(keypairIdentity(mintAuthority))
-
-  console.log("Adding metadata: ", metadata);
-
-  const metadataPDA = await findMetadataPda(mintAddress);
+  const metadataPDA = metaplex.nfts().pdas().metadata({mint:mintAddress});
 
   console.log("Metadata: ", metadata);
 
@@ -88,7 +78,7 @@ const updateMetadata = async (
             collectionDetails: null
           },
       })
-      ],
+    ],
   }).compileToV0Message();
 
   const transaction = new VersionedTransaction(messageV0);
@@ -137,7 +127,6 @@ const main = async () => {
 
   console.log(`Token initiated successfully on address ${tokenPubkey.toBase58()}`);
 
-  // todo initialize metadata
   await updateMetadata(connection, tokenPubkey, authorityKeypair, {
     name: "Access Protocol",
     symbol: "ACS",
