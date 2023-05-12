@@ -64,7 +64,7 @@ const initCentralState = async () => {
     new PublicKey(PROGRAM_PUBKEY)
   );
   // write central state key to file
-  fs.writeFileSync("central_state_pubkey.txt", centralKey.toString());
+  fs.writeFileSync("artifacts/central_state_pubkey.txt", centralKey.toString());
 };
 
 initCentralState()

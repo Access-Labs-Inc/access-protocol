@@ -80,6 +80,23 @@ This will:
 - Run all the instructions of the protocol
 - Verify the states of each account at each step
 
+### Devnet deployment
+
+To deploy the program on devnet run the `yarn deploy` command inside the `scripts` folder. This will:
+
+- Create a SPL token with appropriate metadata.
+- Build and deploy the Solana program (smart contract).
+- Create a `CentralState` data account for the global state of the program.
+- Transfer the SPL token authority to the program (central state). 
+
+The following artifacts will be created during the deployment in the `scripts/artifacts` folder:
+
+- `program.json` - Keypair of the program
+- `authority.json` - Keypair of the program update authority
+- `spl_authority.json` - Keypair of the SPL token authority, not used anymore after the authority transfer
+- `central_state_pubkey.txt` - Pubkey of the `CentralState` data account
+- `mint_address.txt` - Pubkey of the SPL token mint
+
 ### Known shortcomings
 
 - Cannot create two bonds tied to a different pool with the same amount

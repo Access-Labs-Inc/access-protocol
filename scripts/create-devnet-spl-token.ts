@@ -97,8 +97,8 @@ const main = async () => {
 
   // Mint authority keypair
   const authorityKeypair = Keypair.generate();
-  console.log(`Created new Mint Authority Wallet into spl-authority.json`);
-  fs.writeFileSync(`spl-authority.json`,
+  console.log(`Created new Mint Authority Wallet into artifacts/spl_authority.json`);
+  fs.writeFileSync(`artifacts/spl_authority.json`,
     JSON.stringify(authorityKeypair.secretKey
       .toString() //convert secret key to string
       .split(',') //delimit string by commas and convert to an array of strings
@@ -122,7 +122,7 @@ const main = async () => {
 
   console.log(`Token initiated successfully on address ${tokenPubkey.toBase58()}`);
   // write token address to file mint_address.txt
-  fs.writeFileSync(`mint_address.txt`, tokenPubkey.toBase58());
+  fs.writeFileSync(`artifacts/mint_address.txt`, tokenPubkey.toBase58());
 
   await updateMetadata(connection, tokenPubkey, authorityKeypair, {
     name: "Access Protocol",
