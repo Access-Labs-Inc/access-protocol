@@ -2,9 +2,9 @@
 # set -x
 
 pwd=$(pwd)
-NETWORK=devnet
+NETWORK=${NETWORK:-devnet}
 
-pushd access-protocol/smart-contract/program
+pushd ../smart-contract/program
 echo  "Building smart contract program..."
 # IMPORTANT: If not no-mint-check present you need to update MINT_ADDRESS in (state.rs)
 cargo build-bpf --features no-bond-signer no-mint-check
@@ -46,14 +46,13 @@ then
 else
   if [ "$NETWORK" == "devnet" ];
   then
-    echo "Not enough SOL in your pocket. Airdropping..."
-    solana airdrop 1
-    sleep 2
-    solana airdrop 1
-    sleep 2
-    solana airdrop 1
-    sleep 2
-    solana airdrop 1
+    while [ $balance -lt 6 ]
+    do
+      echo "Not enough SOL in your wallet, airdropping..."
+      solana airdrop 1
+      sleep 2
+      balance=$(solana balance -u ${NETWORK} | rev | grep -Eo '[^ ]+$' | rev)
+    done
   else
     echo "You need at least 6 SOL in the wallet to be able to deploy!"
     exit 1

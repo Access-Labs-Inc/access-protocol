@@ -1,26 +1,29 @@
 import fs from "fs";
-import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 import {
-  createInitializeMintInstruction,
+  Connection,
+  Keypair,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+  TransactionMessage,
+  VersionedTransaction
+} from "@solana/web3.js";
+import {
+  createInitializeMintInstruction, createMint,
   getMinimumBalanceForRentExemptMint,
   MintLayout,
   TOKEN_PROGRAM_ID
 } from "@solana/spl-token";
 
 import { findMetadataPda, keypairIdentity, Metaplex } from '@metaplex-foundation/js';
-import {
-  createCreateMetadataAccountV2Instruction,
-  DataV2,
-  TokenStandard
-} from '@metaplex-foundation/mpl-token-metadata';
+import { createCreateMetadataAccountV3Instruction } from '@metaplex-foundation/mpl-token-metadata';
 
 
 const createSPLToken = async (
   connection: Connection,
   decimals: number,
-  tokenKeypair: Keypair,
   mintAuthority: Keypair,
-  programId: PublicKey
 ) => {
   const mintAuthorityKey = mintAuthority.publicKey;
   console.log(`Mint authority key: ${mintAuthorityKey.toBase58()}`);
@@ -28,27 +31,13 @@ const createSPLToken = async (
   const balance = await connection.getBalance(mintAuthorityKey);
   console.log(`Balance of mint authority wallet: ${(balance / LAMPORTS_PER_SOL).toFixed(2)} SOL`);
 
-  const balanceNeeded = await getMinimumBalanceForRentExemptMint(connection);
-  const transaction = new Transaction();
-  transaction.add(SystemProgram.createAccount({
-    fromPubkey: mintAuthorityKey,
-    newAccountPubkey: tokenKeypair.publicKey,
-    lamports: balanceNeeded,
-    space: MintLayout.span,
-    programId
-  }));
-  transaction.add(
-    createInitializeMintInstruction(
-      tokenKeypair.publicKey,
-      decimals,
-      mintAuthorityKey,
-      null,
-      programId
-    )
+  return await createMint(
+    connection,
+    mintAuthority,
+    mintAuthority.publicKey,
+    null,
+    decimals
   );
-  transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
-  transaction.feePayer = mintAuthorityKey;
-  return await connection.sendTransaction(transaction, [mintAuthority, tokenKeypair])
 }
 
 
@@ -72,16 +61,19 @@ const updateMetadata = async (
 
   console.log("Metadata: ", metadata);
 
-  const transaction = new Transaction();
-  transaction.add(
-    createCreateMetadataAccountV2Instruction({
+  // create v0 compatible message
+  const messageV0 = new TransactionMessage({
+    payerKey: mintAuthorityKey,
+    recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
+    instructions: [createCreateMetadataAccountV3Instruction({
         metadata: metadataPDA,
         mint: mintAddress,
         mintAuthority: mintAuthorityKey,
         payer: mintAuthorityKey,
         updateAuthority: mintAuthorityKey,
       },
-      { createMetadataAccountArgsV2:
+      {
+        createMetadataAccountArgsV3:
           {
             data: {
               name: metadata.name,
@@ -92,15 +84,17 @@ const updateMetadata = async (
               collection: null,
               uses: null
             },
-            isMutable: true
-          }
+            isMutable: true,
+            collectionDetails: null
+          },
       })
-  )
+      ],
+  }).compileToV0Message();
 
-  transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
-  transaction.feePayer = mintAuthorityKey;
+  const transaction = new VersionedTransaction(messageV0);
+  transaction.sign([mintAuthority]);
 
-  return await connection.sendTransaction(transaction, [mintAuthority], {
+  await connection.sendTransaction(transaction, {
     preflightCommitment: "confirmed",
     skipPreflight: false
   });
@@ -116,17 +110,6 @@ const main = async () => {
   console.log("RPC provider: ", rpcProviderUrl);
   const connection = new Connection(rpcProviderUrl);
 
-  // SPL token keypair - todo solvve the repetition and saving the keypair
-  const tokenKeypair = Keypair.generate();
-  console.log(`Created new SPL Token Authority Wallet into ${tokenKeypair.publicKey.toBase58()}.json`);
-  fs.writeFileSync(`${tokenKeypair.publicKey.toBase58()}.json`,
-    JSON.stringify(tokenKeypair.secretKey
-      .toString() //convert secret key to string
-      .split(',') //delimit string by commas and convert to an array of strings
-      .map(value => Number(value))
-    )
-  );
-
   // Mint authority keypair
   const authorityKeypair = Keypair.generate();
   console.log(`Created new Mint Authority Wallet into ${authorityKeypair.publicKey.toBase58()}.json`);
@@ -138,37 +121,24 @@ const main = async () => {
     )
   );
 
-  // Mint authority keypair
-  const programKeypair = Keypair.generate();
-  console.log(`Created new Program keypair into ${programKeypair.publicKey.toBase58()}.json`);
-  fs.writeFileSync(`${programKeypair.publicKey.toBase58()}.json`,
-    JSON.stringify(programKeypair.secretKey
-      .toString() //convert secret key to string
-      .split(',') //delimit string by commas and convert to an array of strings
-      .map(value => Number(value))
-    )
-  );
-
   console.log(`Funding mint authority wallet with 1 SOL...`)
   const airdropSignature = await connection.requestAirdrop(authorityKeypair.publicKey, LAMPORTS_PER_SOL);
   await connection.confirmTransaction(airdropSignature);
 
-  console.log(`Waiting one minute to ensure that the airdrop succeeds...`);
-  await new Promise(resolve => setTimeout(resolve, 60000));
+  console.log(`Waiting for 20 seconds to ensure that the airdrop succeeds...`);
+  await new Promise(resolve => setTimeout(resolve, 20000));
 
   // Initialize mint
-  const signature = await createSPLToken(
+  const tokenPubkey = await createSPLToken(
     connection,
     TOKEN_DECIMALS, // Decimals of the token
-    tokenKeypair, // token keypair
     authorityKeypair, // mint authority keypair
-    TOKEN_PROGRAM_ID
   );
 
-  console.log(`Token initiated successfully on address ${tokenKeypair.publicKey.toBase58()}, tx signature: ${signature}`);
+  console.log(`Token initiated successfully on address ${tokenPubkey.toBase58()}`);
 
   // todo initialize metadata
-  await updateMetadata(connection, tokenKeypair.publicKey, authorityKeypair, {
+  await updateMetadata(connection, tokenPubkey, authorityKeypair, {
     name: "Access Protocol",
     symbol: "ACS",
     image: "https://ap-staging.fra1.digitaloceanspaces.com/1663691449945",

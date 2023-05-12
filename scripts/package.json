@@ -9,8 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@metaplex-foundation/js": "^0.17.4",
-    "@metaplex-foundation/mpl-token-metadata": "=2.5.1",
+    "@metaplex-foundation/js": "^0.19.3",
+    "@metaplex-foundation/mpl-token-metadata": "^2.11.1",
     "@solana/spl-token": "^0.3.6",
     "@solana/web3.js": "^1.66.2",
     "js": "^0.1.0",
