@@ -13,7 +13,7 @@ import { keypairIdentity, Metaplex } from '@metaplex-foundation/js';
 import { createCreateMetadataAccountV3Instruction } from '@metaplex-foundation/mpl-token-metadata';
 
 
-const createSPLToken = async (
+const createDevnetSplToken = async (
   connection: Connection,
   decimals: number,
   mintAuthority: Keypair,
@@ -41,11 +41,6 @@ const updateMetadata = async (
   metadata: Metadata,
 ) => {
   const mintAuthorityKey = await mintAuthority.publicKey;
-  console.log(`Mint authority key: ${mintAuthorityKey.toBase58()}`);
-
-  const balance = await connection.getBalance(mintAuthorityKey);
-  console.log(`Balance of mint authority wallet: ${(balance / LAMPORTS_PER_SOL).toFixed(2)} SOL`);
-
   const metaplex = Metaplex.make(connection).use(keypairIdentity(mintAuthority))
   const metadataPDA = metaplex.nfts().pdas().metadata({mint:mintAddress});
 
@@ -102,8 +97,8 @@ const main = async () => {
 
   // Mint authority keypair
   const authorityKeypair = Keypair.generate();
-  console.log(`Created new Mint Authority Wallet into ${authorityKeypair.publicKey.toBase58()}.json`);
-  fs.writeFileSync(`${authorityKeypair.publicKey.toBase58()}.json`,
+  console.log(`Created new Mint Authority Wallet into spl-authority.json`);
+  fs.writeFileSync(`spl-authority.json`,
     JSON.stringify(authorityKeypair.secretKey
       .toString() //convert secret key to string
       .split(',') //delimit string by commas and convert to an array of strings
@@ -119,7 +114,7 @@ const main = async () => {
   await new Promise(resolve => setTimeout(resolve, 20000));
 
   // Initialize mint
-  const tokenPubkey = await createSPLToken(
+  const tokenPubkey = await createDevnetSplToken(
     connection,
     TOKEN_DECIMALS, // Decimals of the token
     authorityKeypair, // mint authority keypair

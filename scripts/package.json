@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "create-spl-token": "ts-node create-spl-token.ts"
+    "create-devnet-spl-token": "ts-node create-devnet-spl-token.ts",
+    "deploy-contract": "./deploy-contract.sh",
+    "init-central-state": "./init-central-state.sh",
+    "spl-set-authority": "./spl-set-authority.sh"
   },
   "author": "",
   "license": "ISC",

@@ -37,6 +37,8 @@ fi
 
 solana config set --keypair $AUTHORITY_KEYPAIR
 
+echo "authority: $(solana address)"
+
 echo "Checking your account balance..."
 balance=$(solana balance -u ${NETWORK} | rev | grep -Eo '[^ ]+$' | rev)
 echo $balance
@@ -46,7 +48,7 @@ then
 else
   if [ "$NETWORK" == "devnet" ];
   then
-    while [ $balance -lt 6 ]
+    while [ ${balance%.*} -lt 4 ]
     do
       echo "Not enough SOL in your wallet, airdropping..."
       solana airdrop 1
