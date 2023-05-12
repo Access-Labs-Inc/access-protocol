@@ -1,10 +1,11 @@
 import fs from "fs";
-import { Connection, Keypair, PublicKey, Transaction } from "@solana/web3.js";
+import { Connection, Keypair, PublicKey, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
 
 import { createCentralState, } from "../smart-contract/js/dist";
+import { CentralState } from "../smart-contract/js/src";
 
 const {
-  SOLANA_RPC_PROVIDER_URL, PROGRAM_PUBKEY, AUTHORITY_KEYPAIR, TOKEN_PUBKEY, YEARLY_INFLATION_IN_ACS
+  SOLANA_RPC_PROVIDER_URL, PROGRAM_PUBKEY, AUTHORITY_KEYPAIR, MINT_ADDRESS, YEARLY_INFLATION_IN_ACS
 } = process.env;
 
 if (SOLANA_RPC_PROVIDER_URL == null)
@@ -13,8 +14,8 @@ if (PROGRAM_PUBKEY == null)
   throw new Error("PROGRAM_PUBKEY must be set.");
 if (AUTHORITY_KEYPAIR == null)
   throw new Error("AUTHORITY_KEYPAIR must be set.");
-if (TOKEN_PUBKEY == null)
-  throw new Error("TOKEN_PUBKEY must be set.");
+if (MINT_ADDRESS == null)
+  throw new Error("MINT_ADDRESS must be set.");
 if (YEARLY_INFLATION_IN_ACS == null)
   throw new Error("YEARLY_INFLATION_IN_ACS must be set.");
 
@@ -31,23 +32,40 @@ const authorityKeypair = Keypair.fromSecretKey(
 const dailyInflation = Math.floor((parseInt(YEARLY_INFLATION_IN_ACS) * (10 ** 6)) / 365);
 console.log("Daily inflation at: ", Number(dailyInflation));
 console.log("Program ID: ", PROGRAM_PUBKEY);
+console.log("Mint address: ", MINT_ADDRESS);
 
 const initCentralState = async () => {
   const ix = await createCentralState(
     Number(dailyInflation),
     authorityKeypair.publicKey, // Central state authority
     authorityKeypair.publicKey, // Fee payer
-    new PublicKey(TOKEN_PUBKEY), // Key to token program
+    new PublicKey(MINT_ADDRESS), // Key to token program
     new PublicKey(PROGRAM_PUBKEY), // Program ID
   );
 
-  const tx = new Transaction();
-  tx.feePayer = authorityKeypair.publicKey;
-  tx.add(ix);
-  const txId = await connection.sendTransaction(tx, [authorityKeypair], {
-    skipPreflight: true,
+
+  const messageV0 = new TransactionMessage({
+    payerKey: authorityKeypair.publicKey,
+    recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
+    instructions: [ix],
+  }).compileToV0Message();
+
+  const transaction = new VersionedTransaction(messageV0);
+  transaction.sign([authorityKeypair]);
+
+  const tx = await connection.sendTransaction(transaction, {
+    preflightCommitment: "confirmed",
+    skipPreflight: false
   });
-  console.log(`Create central state ${txId}`);
+
+  console.log(`Created central state ${tx}`);
+
+  const [centralKey] = PublicKey.findProgramAddressSync(
+    [new PublicKey(PROGRAM_PUBKEY).toBuffer()],
+    new PublicKey(PROGRAM_PUBKEY)
+  );
+  // write central state key to file
+  fs.writeFileSync("central_state_pubkey.txt", centralKey.toString());
 };
 
 initCentralState()

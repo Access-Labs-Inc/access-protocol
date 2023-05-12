@@ -16,7 +16,7 @@ then
   echo "Program ID keypair exists at: $PROGRAM_KEYPAIR"
 else
   echo "Creating program keypair..."
-  solana-keygen new --outfile $PROGRAM_KEYPAIR
+  solana-keygen new --outfile $PROGRAM_KEYPAIR --no-bip39-passphrase
 fi
 
 AUTHORITY_KEYPAIR=${AUTHORITY_KEYPAIR:-"$pwd/authority.json"}
@@ -28,7 +28,7 @@ else
   if [ "$NETWORK" == "devnet" ];
   then
     echo "Creating authority keypair..."
-    solana-keygen new --outfile $AUTHORITY_KEYPAIR
+    solana-keygen new --outfile $AUTHORITY_KEYPAIR --no-bip39-passphrase
   else
     echo "For production env. you need to provide the AUTHORITY_KEYPAIR with SOL inside!"
     exit 1

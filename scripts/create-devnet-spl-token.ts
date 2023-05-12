@@ -121,6 +121,8 @@ const main = async () => {
   );
 
   console.log(`Token initiated successfully on address ${tokenPubkey.toBase58()}`);
+  // write token address to file mint_address.txt
+  fs.writeFileSync(`mint_address.txt`, tokenPubkey.toBase58());
 
   await updateMetadata(connection, tokenPubkey, authorityKeypair, {
     name: "Access Protocol",

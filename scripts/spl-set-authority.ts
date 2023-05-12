@@ -52,7 +52,7 @@ const setNewAuthority = async (
   const transaction = new VersionedTransaction(messageV0);
   transaction.sign([mintAuthority]);
 
-  await connection.sendTransaction(transaction, {
+  return await connection.sendTransaction(transaction, {
     preflightCommitment: "confirmed",
     skipPreflight: false
   });
@@ -61,7 +61,6 @@ const setNewAuthority = async (
 const main = async () => {
   const mintWallet = MINT_ADDRESS
   const newAuthorityWallet = NEW_AUTHORITY_ADDRESS
-  console.log("args", mintWallet, newAuthorityWallet);
   // The Solana RPC connection
   const connection = new Connection(SOLANA_RPC_PROVIDER_URL);
 
