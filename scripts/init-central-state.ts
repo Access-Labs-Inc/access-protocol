@@ -2,7 +2,6 @@ import fs from "fs";
 import { Connection, Keypair, PublicKey, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
 
 import { createCentralState, } from "../smart-contract/js/dist";
-import { CentralState } from "../smart-contract/js/src";
 
 const {
   SOLANA_RPC_PROVIDER_URL, PROGRAM_PUBKEY, AUTHORITY_KEYPAIR, MINT_ADDRESS, YEARLY_INFLATION_IN_ACS
