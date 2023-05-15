@@ -50,7 +50,7 @@ else
   then
     while [ ${balance%.*} -lt 3 ]
     do
-      echo "Not enough SOL in your wallet, airdropping..."
+      echo "Not enough SOL in your wallet, airdropping. If this keeps failing, fund the authority wallet manually."
       solana airdrop 1
       sleep 2
       balance=$(solana balance -u ${NETWORK} | rev | grep -Eo '[^ ]+$' | rev)

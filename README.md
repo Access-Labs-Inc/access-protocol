@@ -84,7 +84,7 @@ This will:
 
 To deploy the program on devnet run the `yarn deploy` command inside the `scripts` folder. This will:
 
-- Create a SPL token with appropriate metadata.
+- Create an SPL token with appropriate metadata.
 - Build and deploy the Solana program (smart contract).
 - Create a `CentralState` data account for the global state of the program.
 - Transfer the SPL token authority to the program (central state). 
