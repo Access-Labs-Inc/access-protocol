@@ -7,3 +7,4 @@ target/
 bin/
 coverage/
 wallet.json
+scripts/artifacts*

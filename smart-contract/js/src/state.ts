@@ -310,7 +310,7 @@ export class CentralState {
    * @returns
    */
   static async getKey(programId: PublicKey) {
-    return await PublicKey.findProgramAddress(
+    return PublicKey.findProgramAddressSync(
       [programId.toBuffer()],
       programId
     );
