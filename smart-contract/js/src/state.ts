@@ -1,7 +1,7 @@
 import { deserialize, Schema } from "borsh";
 import BN from "bn.js";
 import { Connection, PublicKey } from "@solana/web3.js";
-import { u64 } from "./u64";
+import { u64 } from "./u64.js";
 
 /**
  * Lenght of the stake pool circular buffer used to store balances and inflation
@@ -310,10 +310,7 @@ export class CentralState {
    * @returns
    */
   static async getKey(programId: PublicKey) {
-    return PublicKey.findProgramAddressSync(
-      [programId.toBuffer()],
-      programId
-    );
+    return PublicKey.findProgramAddressSync([programId.toBuffer()], programId);
   }
 }
 

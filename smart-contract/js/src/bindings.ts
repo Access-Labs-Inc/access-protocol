@@ -21,21 +21,17 @@ import {
   adminFreezeInstruction,
   changePoolMultiplierInstruction,
   changeCentralStateAuthorityInstruction,
-} from "./raw_instructions";
-import {
-  Connection,
-  PublicKey,
-  SystemProgram,
-} from "@solana/web3.js";
-import { CentralState, StakePool, BondAccount, StakeAccount } from "./state";
+} from "./raw_instructions.js";
+import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
+import { CentralState, StakePool, BondAccount, StakeAccount } from "./state.js";
 import BN from "bn.js";
 import {
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
   getAssociatedTokenAddress,
-  createAssociatedTokenAccountInstruction, getImmutableOwner,
+  createAssociatedTokenAccountInstruction,
 } from "@solana/spl-token";
-import {getBondAccounts} from "./secondary_bindings";
+import { getBondAccounts } from "./secondary_bindings.js";
 
 /**
  * This function can be used to update the inflation schedule of the central state
@@ -403,7 +399,7 @@ export const createCentralState = async (
   authority: PublicKey,
   feePayer: PublicKey,
   mint: PublicKey,
-  programId: PublicKey,
+  programId: PublicKey
 ) => {
   const [centralKey] = await CentralState.getKey(programId);
 
@@ -415,7 +411,7 @@ export const createCentralState = async (
     centralKey,
     SystemProgram.programId,
     feePayer,
-    mint,
+    mint
   );
 
   return ix;
@@ -481,7 +477,7 @@ export const createStakePool = async (
     stakePool,
     true,
     TOKEN_PROGRAM_ID,
-    ASSOCIATED_TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID
   );
 
   const createVaultIx = createAssociatedTokenAccountInstruction(
@@ -490,7 +486,7 @@ export const createStakePool = async (
     stakePool,
     centralState.tokenMint,
     TOKEN_PROGRAM_ID,
-    ASSOCIATED_TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID
   );
 
   const ix = new createStakePoolInstruction({
@@ -549,12 +545,16 @@ export const stake = async (
   const stakePool = await StakePool.retrieve(connection, stake.stakePool);
   const [centralKey] = await CentralState.getKey(programId);
   const centralState = await CentralState.retrieve(connection, centralKey);
-  const bondAccounts = await getBondAccounts(connection, stake.owner, programId);
+  const bondAccounts = await getBondAccounts(
+    connection,
+    stake.owner,
+    programId
+  );
 
   const bondAccountKey = bondAccounts.find(
-    bond =>
+    (bond) =>
       BondAccount.deserialize(bond.account.data).stakePool.toBase58() ===
-      stake.stakePool.toBase58(),
+      stake.stakePool.toBase58()
   )?.pubkey;
 
   const feesAta = await getAssociatedTokenAddress(
@@ -562,7 +562,7 @@ export const stake = async (
     centralState.authority,
     true,
     TOKEN_PROGRAM_ID,
-    ASSOCIATED_TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID
   );
 
   const ix = new stakeInstruction({
@@ -577,7 +577,7 @@ export const stake = async (
     TOKEN_PROGRAM_ID,
     stakePool.vault,
     feesAta,
-    bondAccountKey,
+    bondAccountKey
   );
 
   return ix;
@@ -636,15 +636,19 @@ export const unstake = async (
   const stake = await StakeAccount.retrieve(connection, stakeAccount);
   const stakePool = await StakePool.retrieve(connection, stake.stakePool);
   const [centralKey] = await CentralState.getKey(programId);
-  const bondAccounts = await getBondAccounts(connection, stake.owner, programId);
+  const bondAccounts = await getBondAccounts(
+    connection,
+    stake.owner,
+    programId
+  );
   const bondAccountKey = bondAccounts.find(
-    bond =>
+    (bond) =>
       BondAccount.deserialize(bond.account.data).stakePool.toBase58() ===
-      stake.stakePool.toBase58(),
+      stake.stakePool.toBase58()
   )?.pubkey;
 
   const ix = new unstakeInstruction({
-    amount: new BN(amount)
+    amount: new BN(amount),
   }).getInstruction(
     programId,
     centralKey,
