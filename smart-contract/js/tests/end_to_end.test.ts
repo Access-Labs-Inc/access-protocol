@@ -54,7 +54,6 @@ let payerKeyFile: string;
 let programId: PublicKey;
 let accessToken: TokenMint;
 const delay = 30_000;
-const MAX_i64 = "9223372036854775807";
 const centralStateAuthority = Keypair.generate();
 
 beforeAll(async () => {
@@ -90,8 +89,8 @@ test("End to end test", async () => {
   console.log("Central key pubkey:", centralStateAuthority.publicKey.toBase58());
   const decimals = Math.pow(10, 6);
   const dailyInflation = 1_000_000;
-  accessToken = await TokenMint.init(connection, feePayer, centralStateAuthority, centralKey);
-  const quoteToken = await TokenMint.init(connection, feePayer, undefined, centralKey);
+  accessToken = await TokenMint.init(connection, feePayer, centralStateAuthority);
+  const quoteToken = await TokenMint.init(connection, feePayer, undefined);
   const stakePoolOwner = Keypair.generate();
   const staker = Keypair.generate();
   const minimumStakeAmount = 10_000 * decimals;
@@ -261,7 +260,7 @@ test("End to end test", async () => {
   expect(stakePoolObj.tag).toBe(Tag.StakePool);
 
   // Create stake account
-  const [stakeKey, stakeNonce] = await StakeAccount.getKey(
+  const [stakeKey] = await StakeAccount.getKey(
     programId,
     staker.publicKey,
     stakePoolKey
@@ -440,9 +439,8 @@ test("End to end test", async () => {
    */
 
   console.log("Unlock bond tokens");
-  let preBalance = await (
-    await connection.getTokenAccountBalance(stakerAta)
-  ).value.amount;
+  let preBalance = 
+    (await connection.getTokenAccountBalance(stakerAta)).value.amount;
   expect(preBalance).toBe("0");
   await sleep(15_000);
   const ix_unlock_bond_tokens = await unlockBondTokens(
@@ -470,9 +468,8 @@ test("End to end test", async () => {
   // Verifications
   now = Math.floor(new Date().getTime() / 1_000);
   bondObj = await BondAccount.retrieve(connection, bondKey);
-  let postBalance = await (
-    await connection.getTokenAccountBalance(stakerAta)
-  ).value.amount;
+  let postBalance =
+    (await connection.getTokenAccountBalance(stakerAta)).value.amount;
   expect(postBalance).toBe("5000000499422"); // todo should be 5000000500000 - insignificant rounding error
 
   expect(bondObj.tag).toBe(Tag.BondAccount);
@@ -991,41 +988,11 @@ test("End to end test", async () => {
     feePayer,
     [ix_create_receiver_ata, ix_admin_mint]
   );
-  const postBalancesReceiver = (
-    await connection.getTokenAccountBalance(receiverAta)
-  ).value.amount;
 
   // Check current new supply
 
-  const currentSupply = (
-    await connection.getTokenSupply(accessToken.token.publicKey)
-  ).value.amount;
   // Initial bond amount + admin mint + 2 days for inflation
   // Because of rounding it's slightly below
-  const pool_rewards_new_inflation = new BN(500_000)
-    .mul(new BN(stakeAmount))
-    .div(centralStateObj.totalStaked)
-    .mul(new BN(50))
-    .div(new BN(100));
-
-  const staker_rewards_new_inflation = new BN(stakeAmount)
-    .shln(32)
-    .mul(new BN(500_000))
-    .mul(new BN(50))
-    .div(new BN(100))
-    .div(new BN(centralStateObj.totalStaked))
-    .div(new BN(stakeAmount))
-    .mul(new BN(stakeAmount))
-    .shrn(32);
-
-  const expectedSupply = reward
-    .add(pool_rewards)
-    .mul(new BN(2)) // Two days with first inflation value
-    .add(pool_rewards_new_inflation)
-    .add(staker_rewards_new_inflation)
-    .add(new BN(bondAmount))
-    .add(new BN(adminMintAmount));
-
   /**
    * Freeze the stake pool account
    */
