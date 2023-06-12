@@ -1,6 +1,6 @@
 import { Connection, PublicKey, MemcmpFilter } from "@solana/web3.js";
-import { StakeAccount, BondAccount, StakePool } from './state.js';
-import BN from 'bn.js';
+import { StakeAccount, BondAccount, StakePool } from "./state.js";
+import BN from "bn.js";
 
 /**
  * This function can be used to find all stake accounts of a user
@@ -193,7 +193,7 @@ export const getAllActiveBonds = async (
  * @param programId The program ID
  * @param poolPubkey Public key of pool
  * @param pubkye User's pubkey
- * @returns BN 
+ * @returns BN
  */
 export const getLockedAmountForPool = async (
   connection: Connection,
@@ -201,42 +201,38 @@ export const getLockedAmountForPool = async (
   poolPubkey: PublicKey,
   pubkey: PublicKey
 ): Promise<BN> => {
-  const [stakeKey] = await StakeAccount.getKey(
-    programId,
-    pubkey,
-    poolPubkey
-  )
+  const [stakeKey] = await StakeAccount.getKey(programId, pubkey, poolPubkey);
 
   // SUM of locked tokens (aka Stake Account)
-  let lockedAmount: BN = new BN(0)
+  let lockedAmount: BN = new BN(0);
 
-  let stakeAccount: StakeAccount | undefined = undefined
+  let stakeAccount: StakeAccount | undefined = undefined;
   try {
-    stakeAccount = await StakeAccount.retrieve(connection, stakeKey)
-    lockedAmount = lockedAmount.add(stakeAccount.stakeAmount)
+    stakeAccount = await StakeAccount.retrieve(connection, stakeKey);
+    lockedAmount = lockedAmount.add(stakeAccount.stakeAmount);
   } catch (e) {
-    console.error("Could not find lock account. Error: ", e)
+    console.error("Could not find lock account. Error: ", e);
   }
 
   // SUM of airdrop tokens (aka Bond Accounts)
-  let bondsAmountSum = new BN(0)
+  let bondsAmountSum = new BN(0);
 
   const allBondAccountsForUser = await getBondAccounts(
     connection,
     pubkey,
     programId
-  )
+  );
   if (allBondAccountsForUser != null && allBondAccountsForUser.length > 0) {
     allBondAccountsForUser.forEach((ba) => {
-      const b = BondAccount.deserialize(ba.account.data)
+      const b = BondAccount.deserialize(ba.account.data);
       if (b.stakePool.toBase58() === poolPubkey.toBase58()) {
-        bondsAmountSum = bondsAmountSum.add(b.totalStaked)
+        bondsAmountSum = bondsAmountSum.add(b.totalStaked);
       }
-    })
+    });
   }
 
-  return lockedAmount.add(bondsAmountSum)
-}
+  return lockedAmount.add(bondsAmountSum);
+};
 
 /**
  * This function can be used to get locked amount for specific pool (stake + bonds)
@@ -252,25 +248,21 @@ export const hasValidSubscriptionForPool = async (
   poolPubkey: PublicKey,
   pubkey: PublicKey
 ): Promise<Boolean> => {
-  let poolAccount: StakePool | undefined = undefined
+  let poolAccount: StakePool | undefined = undefined;
   try {
-    poolAccount = await StakePool.retrieve(connection, poolPubkey)
+    poolAccount = await StakePool.retrieve(connection, poolPubkey);
   } catch (e) {
-    console.error("Could not find stake pool account. Error: ", e)
-    return false
+    console.error("Could not find stake pool account. Error: ", e);
+    return false;
   }
 
-  const [stakeKey] = await StakeAccount.getKey(
-    programId,
-    pubkey,
-    poolPubkey
-  )
+  const [stakeKey] = await StakeAccount.getKey(programId, pubkey, poolPubkey);
 
-  let stakeAccount: StakeAccount | undefined = undefined
+  let stakeAccount: StakeAccount | undefined = undefined;
   try {
-    stakeAccount = await StakeAccount.retrieve(connection, stakeKey)
+    stakeAccount = await StakeAccount.retrieve(connection, stakeKey);
   } catch (e) {
-    console.error("Could not find lock account. Error: ", e)
+    console.error("Could not find lock account. Error: ", e);
   }
 
   const requiredMinAmountToLock = stakeAccount
@@ -278,8 +270,13 @@ export const hasValidSubscriptionForPool = async (
         Number(stakeAccount.poolMinimumAtCreation),
         Number(poolAccount.minimumStakeAmount)
       )
-    : Number(poolAccount.minimumStakeAmount)
+    : Number(poolAccount.minimumStakeAmount);
 
-  const lockedAmount = await getLockedAmountForPool(connection, programId, poolPubkey, pubkey)
-  return lockedAmount.toNumber() >= requiredMinAmountToLock
-}
+  const lockedAmount = await getLockedAmountForPool(
+    connection,
+    programId,
+    poolPubkey,
+    pubkey
+  );
+  return lockedAmount.toNumber() >= requiredMinAmountToLock;
+};
