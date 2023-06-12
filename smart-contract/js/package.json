@@ -1,7 +1,8 @@
 {
   "name": "@accessprotocol/js",
-  "version": "1.0.8",
+  "version": "1.0.10",
   "license": "MIT",
+  "type": "module",
   "repository": {
     "type": "git"
   },
@@ -9,13 +10,13 @@
     "access": "public"
   },
   "types": "./dist/esm/types/index.d.ts",
-  "main": "./dist/esm/index.mjs",
+  "main": "./dist/esm/index.js",
   "scripts": {
     "test": "jest --detectOpenHandles --coverage",
     "dev": "tsc && node dist/test.js",
     "clean": "rm -rf ./dist",
     "build": "yarn clean && yarn build:esm && yarn build:cjs",
-    "build:esm": "tsc -p ./tsconfig.esm.json && yarn rename-mjs",
+    "build:esm": "tsc -p ./tsconfig.esm.json",
     "build:cjs": "tsc -p ./tsconfig.cjs.json",
     "rename-mjs": "yarn renamer --find \"/\\.js/i\" --replace \".mjs\" --force \"./dist/esm/*\"",
     "prepack": "yarn build",
@@ -67,7 +68,7 @@
     ".": {
       "import": {
         "types": "./dist/esm/types/index.d.ts",
-        "default": "./dist/esm/index.mjs"
+        "default": "./dist/esm/index.js"
       },
       "require": {
         "types": "./dist/cjs/types/index.d.ts",

@@ -4,8 +4,10 @@ import BN from "bn.js";
  * 64-bit value
  */
 export class u64 extends BN {
-
-  constructor(input: string | number | BN | Uint8Array | Buffer | number[], number?: number) {
+  constructor(
+    input: string | number | BN | Uint8Array | Buffer | number[],
+    number?: number
+  ) {
     super(input, number ?? 10);
   }
   /**
