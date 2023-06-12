@@ -1,4 +1,6 @@
 import { Connection, PublicKey, MemcmpFilter } from "@solana/web3.js";
+import { StakeAccount, BondAccount, StakePool } from './state.js';
+import BN from 'bn.js';
 
 /**
  * This function can be used to find all stake accounts of a user
@@ -184,3 +186,100 @@ export const getAllActiveBonds = async (
     filters,
   });
 };
+
+/**
+ * This function can be used to get locked amount for specific pool (stake + bonds)
+ * @param connection The Solana RPC connection
+ * @param programId The program ID
+ * @param poolPubkey Public key of pool
+ * @param pubkye User's pubkey
+ * @returns BN 
+ */
+export const getLockedAmountForPool = async (
+  connection: Connection,
+  programId: PublicKey,
+  poolPubkey: PublicKey,
+  pubkey: PublicKey
+): Promise<BN> => {
+  const [stakeKey] = await StakeAccount.getKey(
+    programId,
+    pubkey,
+    poolPubkey
+  )
+
+  // SUM of locked tokens (aka Stake Account)
+  let lockedAmount: BN = new BN(0)
+
+  let stakeAccount: StakeAccount | undefined = undefined
+  try {
+    stakeAccount = await StakeAccount.retrieve(connection, stakeKey)
+    lockedAmount = lockedAmount.add(stakeAccount.stakeAmount)
+  } catch (e) {
+    console.error("Could not find lock account. Error: ", e)
+  }
+
+  // SUM of airdrop tokens (aka Bond Accounts)
+  let bondsAmountSum = new BN(0)
+
+  const allBondAccountsForUser = await getBondAccounts(
+    connection,
+    pubkey,
+    programId
+  )
+  if (allBondAccountsForUser != null && allBondAccountsForUser.length > 0) {
+    allBondAccountsForUser.forEach((ba) => {
+      const b = BondAccount.deserialize(ba.account.data)
+      if (b.stakePool.toBase58() === poolPubkey.toBase58()) {
+        bondsAmountSum = bondsAmountSum.add(b.totalStaked)
+      }
+    })
+  }
+
+  return lockedAmount.add(bondsAmountSum)
+}
+
+/**
+ * This function can be used to get locked amount for specific pool (stake + bonds)
+ * @param connection The Solana RPC connection
+ * @param programId The program ID
+ * @param poolPubkey Public key of pool
+ * @param pubkye User's pubkey
+ * @returns Boolean
+ */
+export const hasValidSubscriptionForPool = async (
+  connection: Connection,
+  programId: PublicKey,
+  poolPubkey: PublicKey,
+  pubkey: PublicKey
+): Promise<Boolean> => {
+  let poolAccount: StakePool | undefined = undefined
+  try {
+    poolAccount = await StakePool.retrieve(connection, poolPubkey)
+  } catch (e) {
+    console.error("Could not find stake pool account. Error: ", e)
+    return false
+  }
+
+  const [stakeKey] = await StakeAccount.getKey(
+    programId,
+    pubkey,
+    poolPubkey
+  )
+
+  let stakeAccount: StakeAccount | undefined = undefined
+  try {
+    stakeAccount = await StakeAccount.retrieve(connection, stakeKey)
+  } catch (e) {
+    console.error("Could not find lock account. Error: ", e)
+  }
+
+  const requiredMinAmountToLock = stakeAccount
+    ? Math.min(
+        Number(stakeAccount.poolMinimumAtCreation),
+        Number(poolAccount.minimumStakeAmount)
+      )
+    : Number(poolAccount.minimumStakeAmount)
+
+  const lockedAmount = await getLockedAmountForPool(connection, programId, poolPubkey, pubkey)
+  return lockedAmount.toNumber() >= requiredMinAmountToLock
+}
