@@ -167,6 +167,9 @@ impl PrintProgramError for AccessError {
             AccessError::WrongDestinationAccount => {
                 msg!("Wrong destination account")
             }
+            AccessError::AlreadyUpgradedV2 => {
+                msg!("Already upgraded to V2")
+            }
         }
     }
 }

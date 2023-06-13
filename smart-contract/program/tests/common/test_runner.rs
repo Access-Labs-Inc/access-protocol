@@ -18,7 +18,7 @@ use access_protocol::{
         create_stake_pool, stake, unstake,
     },
 };
-use access_protocol::instruction::{change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards, create_bond, unlock_bond_tokens};
+use access_protocol::instruction::{change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards, create_bond, migrate_stake_pool_v2, unlock_bond_tokens};
 use access_protocol::state::{BondAccount, CentralState, StakeAccount, StakePoolHeader, Tag};
 
 use crate::common::utils::{mint_bootstrap, sign_send_instructions};
@@ -338,6 +338,23 @@ impl TestRunner {
         );
 
         sign_send_instructions(&mut self.prg_test_ctx, vec![crank_ix], vec![])
+            .await
+    }
+
+    pub async fn migrate_pool_v2(&mut self, stake_pool_owner_key: &Pubkey) -> Result<(), BanksClientError> {
+        let stake_pool_key = self.get_pool_pda(stake_pool_owner_key);
+        let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
+
+        let upgrade_pool_ix = migrate_stake_pool_v2(
+            self.program_id,
+            migrate_stake_pool_v2::Accounts {
+                stake_pool: &stake_pool_key,
+                system_program: &system_program::ID, // OK
+                vault: &pool_vault,
+            }, migrate_stake_pool_v2::Params{},
+        );
+
+        sign_send_instructions(&mut self.prg_test_ctx, vec![upgrade_pool_ix], vec![])
             .await
     }
 

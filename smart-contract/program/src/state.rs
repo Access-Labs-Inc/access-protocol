@@ -1,7 +1,11 @@
-use crate::error::AccessError;
+use std::cell::RefMut;
+use std::convert::TryInto;
+use std::mem::size_of;
+use std::ops::DerefMut;
+
 use bonfida_utils::BorshSize;
 use borsh::{BorshDeserialize, BorshSerialize};
-use bytemuck::{cast_slice, from_bytes, from_bytes_mut, try_cast_slice_mut, Pod, Zeroable};
+use bytemuck::{cast_slice, from_bytes, from_bytes_mut, Pod, try_cast_slice_mut, Zeroable};
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
 use solana_program::account_info::AccountInfo;
@@ -11,10 +15,8 @@ use solana_program::msg;
 use solana_program::program_error::ProgramError;
 use solana_program::pubkey::Pubkey;
 use solana_program::sysvar::Sysvar;
-use std::cell::RefMut;
-use std::convert::TryInto;
-use std::mem::size_of;
-use std::ops::DerefMut;
+
+use crate::error::AccessError;
 
 /// ACCESS token mint
 pub const ACCESS_MINT: Pubkey =
@@ -61,6 +63,10 @@ pub enum Tag {
     FrozenStakePool,
     FrozenStakeAccount,
     FrozenBondAccount,
+    // V2 tags
+    StakePoolV2,
+    InactiveStakePoolV2,
+    FrozenStakePoolV2,
 }
 
 impl Tag {
@@ -68,15 +74,35 @@ impl Tag {
     pub fn opposite(&self) -> Result<Tag, ProgramError> {
         let tag = match self {
             Tag::StakePool => Tag::FrozenStakePool,
+            Tag::StakePoolV2 => Tag::FrozenStakePoolV2,
             Tag::StakeAccount => Tag::FrozenStakeAccount,
             Tag::BondAccount => Tag::FrozenBondAccount,
             Tag::FrozenStakePool => Tag::StakePool,
+            Tag::FrozenStakePoolV2 => Tag::StakePoolV2,
             Tag::FrozenStakeAccount => Tag::StakeAccount,
             Tag::FrozenBondAccount => Tag::BondAccount,
             _ => return Err(AccessError::InvalidTagChange.into()),
         };
 
         Ok(tag)
+    }
+
+    pub fn upgradeV2(&self) -> Result<Tag, ProgramError> {
+        let tag = match self {
+            Tag::StakePool => Tag::StakePoolV2,
+            Tag::InactiveStakePool => Tag::InactiveStakePoolV2,
+            Tag::FrozenStakePool => Tag::FrozenStakePoolV2,
+            _ => return Err(AccessError::InvalidTagChange.into()),
+        };
+
+        Ok(tag)
+    }
+
+    pub fn version(&self) -> u8 {
+        match self {
+            Tag::StakePoolV2 | Tag::InactiveStakePoolV2 | Tag::FrozenStakePoolV2 => 2,
+            _ => 1,
+        }
     }
 }
 
@@ -179,7 +205,7 @@ impl StakePoolHeaped {
 }
 
 #[allow(missing_docs)]
-impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [RewardsTuple]>> StakePool<H, B> {
+impl<H: DerefMut<Target=StakePoolHeader>, B: DerefMut<Target=[RewardsTuple]>> StakePool<H, B> {
     pub fn push_balances_buff(
         &mut self,
         current_offset: u64,

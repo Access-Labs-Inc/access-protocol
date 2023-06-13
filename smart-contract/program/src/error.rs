@@ -1,7 +1,6 @@
 use num_derive::FromPrimitive;
-use thiserror::Error;
-
 use solana_program::{decode_error::DecodeError, program_error::ProgramError};
+use thiserror::Error;
 
 #[derive(Clone, Debug, Error, FromPrimitive)]
 pub enum AccessError {
@@ -93,6 +92,8 @@ pub enum AccessError {
     ForbiddenUnlockPeriodZero,
     #[error("Wrong MPL metadata program")]
     WrongMplProgram,
+    #[error("Already upgraded to V2")]
+    AlreadyUpgradedV2,
     #[error("Wrong Destination account")]
     WrongDestinationAccount,
 }

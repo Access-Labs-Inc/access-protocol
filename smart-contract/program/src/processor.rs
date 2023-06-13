@@ -29,6 +29,7 @@ pub mod sign_bond;
 pub mod stake;
 pub mod unlock_bond_tokens;
 pub mod unstake;
+pub mod migrate_stake_pool_v2;
 
 pub struct Processor {}
 
@@ -181,6 +182,10 @@ impl Processor {
                 let params = edit_metadata::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 edit_metadata::process_edit_metadata(program_id, accounts, params)?;
+            }
+            ProgramInstruction::MigrateStakePoolV2 => {
+                msg!("Instruction: Migrate Stake Pool V2");
+                migrate_stake_pool_v2::process_migrate_stake_pool_v2(program_id, accounts)?;
             }
         }
 

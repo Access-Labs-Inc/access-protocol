@@ -3,12 +3,13 @@ pub use crate::processor::{
     change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards,
     claim_pool_rewards, claim_rewards, close_stake_account, close_stake_pool, crank, create_bond,
     create_central_state, create_stake_account, create_stake_pool, edit_metadata, sign_bond, stake,
-    unlock_bond_tokens, unstake,
+    unlock_bond_tokens, unstake, migrate_stake_pool_v2
 };
 use bonfida_utils::InstructionsAccount;
 use borsh::{BorshDeserialize, BorshSerialize};
 use num_derive::FromPrimitive;
 use solana_program::{instruction::Instruction, pubkey::Pubkey};
+
 #[allow(missing_docs)]
 #[derive(BorshDeserialize, BorshSerialize, FromPrimitive)]
 pub enum ProgramInstruction {
@@ -241,6 +242,11 @@ pub enum ProgramInstruction {
     /// | 2     | ✅        | ❌      | The metadata account                       |
     /// | 3     | ❌        | ❌      | The metadata program account               |
     EditMetadata,
+
+    // todo better docs
+    /// Migrate a stake pool
+    /// This instruction allows a pool migration to V2
+    MigrateStakePoolV2,
 }
 #[allow(missing_docs)]
 pub fn create_central_state(
@@ -263,6 +269,18 @@ pub fn create_stake_pool(
     accounts.get_instruction(
         program_id,
         ProgramInstruction::CreateStakePool as u8,
+        params,
+    )
+}
+#[allow(missing_docs)]
+pub fn migrate_stake_pool_v2(
+    program_id: Pubkey,
+    accounts: migrate_stake_pool_v2::Accounts<Pubkey>,
+    params: migrate_stake_pool_v2::Params,
+) -> Instruction {
+    accounts.get_instruction(
+        program_id,
+        ProgramInstruction::MigrateStakePoolV2 as u8,
         params,
     )
 }
