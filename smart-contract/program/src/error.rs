@@ -93,6 +93,8 @@ pub enum AccessError {
     ForbiddenUnlockPeriodZero,
     #[error("Wrong MPL metadata program")]
     WrongMplProgram,
+    #[error("Wrong Destination account")]
+    WrongDestinationAccount,
 }
 
 impl From<AccessError> for ProgramError {

@@ -164,6 +164,9 @@ impl PrintProgramError for AccessError {
             AccessError::WrongBondAccountOwner => {
                 msg!("Wrong bond account owner")
             }
+            AccessError::WrongDestinationAccount => {
+                msg!("Wrong destination account")
+            }
         }
     }
 }

@@ -10,6 +10,9 @@ use solana_program::{
     program_error::ProgramError,
     pubkey::Pubkey,
 };
+use spl_associated_token_account::{
+    get_associated_token_address
+};
 use bonfida_utils::fp_math::safe_downcast;
 use solana_program::program::invoke_signed;
 use spl_math::precise_number::PreciseNumber;
@@ -81,8 +84,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             AccessError::WrongOwner,
         )?;
 
-        // todo check if the destination belongs to the pool owner!!!
-
         check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
         check_account_owner(accounts.mint, &spl_token::ID, AccessError::WrongOwner)?;
 
@@ -101,17 +102,30 @@ pub fn process_crank(
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut central_state = CentralState::from_account_info(accounts.central_state)?;
 
-    let current_offset = central_state.get_current_offset()?;
+    // check if the destination belongs to the pool owner
+    let owner_ata_key = get_associated_token_address(
+        &accounts.owner.key,
+        &accounts.mint.key,
+    );
+    check_account_key(
+        accounts.rewards_destination,
+        &owner_ata_key,
+        AccessError::WrongDestinationAccount,
+    )?;
+
     // check if we need to do a system wide snapshot
+    let current_offset = central_state.get_current_offset()?;
     if central_state.last_snapshot_offset < current_offset {
         central_state.total_staked_snapshot = central_state.total_staked;
         central_state.last_snapshot_offset = current_offset;
         central_state.save(&mut accounts.central_state.data.borrow_mut())?;
     }
 
+    // check that the pool is not already cranked
     if stake_pool.header.current_day_idx as u64 == central_state.last_snapshot_offset {
         return Err(AccessError::NoOp.into());
     }
+
     msg!("Total staked in pool {}", stake_pool.header.total_staked);
     msg!("Daily inflation {}", central_state.daily_inflation);
     msg!("Total staked {}", central_state.total_staked);
