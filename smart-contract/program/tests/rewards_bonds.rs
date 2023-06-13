@@ -1,13 +1,7 @@
-use solana_sdk::signer::{Signer};
-
+use solana_sdk::signer::Signer;
 use solana_test_framework::*;
 
-
-
-
-
 use crate::common::test_runner::TestRunner;
-
 
 pub mod common;
 
@@ -39,7 +33,7 @@ async fn rewards_bonds() {
     assert_eq!(central_state_stats.total_staked, token_amount);
 
     // Create bond account
-    tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), 10_000, 1,1,1).await.unwrap();
+    tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), 10_000, 1, 1, 1).await.unwrap();
     let central_state_stats = tr.central_state_stats().await.unwrap();
     assert_eq!(central_state_stats.total_staked, token_amount);
 

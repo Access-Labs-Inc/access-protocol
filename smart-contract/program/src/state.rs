@@ -183,10 +183,11 @@ impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [RewardsTuple]>
     pub fn push_balances_buff(
         &mut self,
         current_offset: u64,
-        last_crank_offset: u64,
         rewards: RewardsTuple,
     ) -> Result<(), ProgramError> {
-        let nb_days_passed = current_offset - last_crank_offset;
+        let nb_days_passed = current_offset.checked_sub(self.header.current_day_idx as u64).ok_or(
+            AccessError::Overflow,
+        )?;
         for i in 1..nb_days_passed {
             self.balances[(((self.header.current_day_idx as u64)
                 .checked_add(i)

@@ -143,7 +143,6 @@ pub fn process_crank(
 
     stake_pool.push_balances_buff(
         current_offset,
-        stake_pool.header.current_day_idx as u64,
         RewardsTuple {
             pool_reward,
             stakers_reward,

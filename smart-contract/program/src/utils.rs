@@ -22,20 +22,29 @@ pub fn calc_reward_fp32(
     msg!("Nb of days behind {}", nb_days_to_claim);
     msg!("Last claimed offset {}", last_claimed_offset);
     msg!("Current offset {}", current_offset);
-    nb_days_to_claim = std::cmp::min(nb_days_to_claim, STAKE_BUFFER_LEN - 1);
+    nb_days_to_claim = std::cmp::min(nb_days_to_claim, STAKE_BUFFER_LEN);
+    msg!("Nb of days to claim {}", nb_days_to_claim);
+    if nb_days_to_claim == 0 {
+        if !allow_zero_rewards {
+            msg!("No rewards to claim, no operation.");
+            return Err(AccessError::NoOp.into());
+        }
+        return Ok(0);
+    }
 
     if current_offset > stake_pool.header.current_day_idx as u64 {
         #[cfg(not(any(feature = "days-to-sec-10s", feature = "days-to-sec-15m")))]
         return Err(AccessError::PoolMustBeCranked.into());
     }
 
+    msg!("Stake pool current day idx wrapped {}", (stake_pool.header.current_day_idx as u64) % STAKE_BUFFER_LEN);
     // Saturating as we don't want to wrap around when there haven't been sufficient cranks
     let mut i = (stake_pool.header.current_day_idx as u64).saturating_sub(nb_days_to_claim)
         % STAKE_BUFFER_LEN;
 
     // Compute reward for all past days
     let mut reward: u128 = 0;
-    while i != (stake_pool.header.current_day_idx as u64) % STAKE_BUFFER_LEN {
+    loop {
         let curr_day_reward = if staker {
             stake_pool.balances[i as usize].stakers_reward
         } else {
@@ -45,6 +54,9 @@ pub fn calc_reward_fp32(
             .checked_add(curr_day_reward)
             .ok_or(AccessError::Overflow)?;
         i = (i + 1) % STAKE_BUFFER_LEN;
+        if i == (stake_pool.header.current_day_idx as u64) % STAKE_BUFFER_LEN {
+            break;
+        }
     }
 
     msg!("Reward is {}", reward);
