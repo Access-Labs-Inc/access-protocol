@@ -183,8 +183,7 @@ async fn full_system_test() {
     tr.unlock_bond(&pool_owner.pubkey(), &vesting_user1).await.unwrap_err();
     tr.unlock_bond(&pool_owner.pubkey(), &vesting_user2).await.unwrap_err();
 
-    // claim rewards as a pool1 owner
-    tr.claim_pool_rewards(&pool_owner).await.unwrap();
+    // check rewards as a pool1 owner'r rewards
     let pool_owner_stats = tr.staker_stats(pool_owner.pubkey()).await.unwrap();
     assert_eq!(pool_owner_stats.balance,
                (
@@ -221,8 +220,7 @@ async fn full_system_test() {
     tr.claim_bond_rewards(&pool_owner.pubkey(), &vesting_user1).await.unwrap_err();
     tr.unlock_bond(&pool_owner.pubkey(), &vesting_user1).await.unwrap_err();
 
-    // pool1 owner should be able to claim his rewards again
-    tr.claim_pool_rewards(&pool_owner).await.unwrap();
+    // check pool1 owner's rewards
     let pool_owner_stats = tr.staker_stats(pool_owner.pubkey()).await.unwrap();
     assert_eq!(pool_owner_stats.balance,
                (
@@ -298,8 +296,7 @@ async fn full_system_test() {
                ).round() as u64 / 100
     );
 
-    //check that the pool1 owner can claim his rewards
-    tr.claim_pool_rewards(&pool_owner).await.unwrap();
+    // check pool owner's rewards
     let pool_owner_stats = tr.staker_stats(pool_owner.pubkey()).await.unwrap();
     assert_eq!(pool_owner_stats.balance / 10,
                (
@@ -322,8 +319,7 @@ async fn full_system_test() {
     tr.crank_pool(&pool_owner2.pubkey()).await.unwrap();
     tr.crank_pool(&pool_owner3.pubkey()).await.unwrap();
 
-    // check that the pool1 owner can claim his rewards
-    tr.claim_pool_rewards(&pool_owner).await.unwrap();
+    // check pool owner's rewards
     let pool_owner_stats = tr.staker_stats(pool_owner.pubkey()).await.unwrap();
     assert_eq!(pool_owner_stats.balance / 10,
                (

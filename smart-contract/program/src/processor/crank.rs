@@ -4,17 +4,20 @@
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
-    account_info::{next_account_info, AccountInfo},
+    account_info::{AccountInfo, next_account_info},
     entrypoint::ProgramResult,
     msg,
     program_error::ProgramError,
     pubkey::Pubkey,
 };
-use spl_math::{precise_number::PreciseNumber};
+use bonfida_utils::fp_math::safe_downcast;
+use solana_program::program::invoke_signed;
+use spl_math::precise_number::PreciseNumber;
+use spl_token::instruction::mint_to;
 
 use crate::error::AccessError;
 use crate::state::{CentralState, RewardsTuple, StakePool, Tag};
-use crate::utils::check_account_owner;
+use crate::utils::{check_account_key, check_account_owner};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `crank` instruction
@@ -26,10 +29,21 @@ pub struct Accounts<'a, T> {
     /// The stake pool account
     #[cons(writable)]
     pub stake_pool: &'a T,
-
+    /// The stake pool owner account
+    #[cons(writable)]
+    pub owner: &'a T,
+    /// The rewards destination for the pool owner
+    #[cons(writable)]
+    pub rewards_destination: &'a T,
     /// The account of the central state
     #[cons(writable)]
     pub central_state: &'a T,
+    /// The mint address of the ACCESS token
+    #[cons(writable)]
+    pub mint: &'a T,
+    /// The SPL token program account
+    pub spl_token_program: &'a T,
+
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -40,16 +54,37 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
             stake_pool: next_account_info(accounts_iter)?,
+            owner: next_account_info(accounts_iter)?,
+            rewards_destination: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
+            mint: next_account_info(accounts_iter)?,
+            spl_token_program: next_account_info(accounts_iter)?,
         };
+
+        // Check keys
+        check_account_key(
+            accounts.spl_token_program,
+            &spl_token::ID,
+            AccessError::WrongSplTokenProgramId,
+        )?;
 
         // Check ownership
         check_account_owner(
             accounts.stake_pool,
             program_id,
-            AccessError::WrongStakeAccountOwner,
+            AccessError::WrongStakePoolAccountOwner,
         )?;
+
+        check_account_owner(
+            accounts.rewards_destination,
+            &spl_token::ID,
+            AccessError::WrongOwner,
+        )?;
+
+        // todo check if the destination belongs to the pool owner!!!
+
         check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
+        check_account_owner(accounts.mint, &spl_token::ID, AccessError::WrongOwner)?;
 
         Ok(accounts)
     }
@@ -60,6 +95,7 @@ pub fn process_crank(
     accounts: &[AccountInfo],
     _params: Params,
 ) -> ProgramResult {
+    msg!("Processing crank instruction");
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
@@ -74,7 +110,6 @@ pub fn process_crank(
     }
 
     if stake_pool.header.current_day_idx as u64 == central_state.last_snapshot_offset {
-        #[cfg(not(any(feature = "days-to-sec-10s", feature = "days-to-sec-15m")))]
         return Err(AccessError::NoOp.into());
     }
     msg!("Total staked in pool {}", stake_pool.header.total_staked);
@@ -116,8 +151,8 @@ pub fn process_crank(
         .ok_or(AccessError::Overflow)?
         .checked_mul(
             &PreciseNumber::new(100u64
-                .checked_sub(stake_pool.header.stakers_part)
-                .ok_or(AccessError::Overflow)? as u128,
+                                    .checked_sub(stake_pool.header.stakers_part)
+                                    .ok_or(AccessError::Overflow)? as u128,
             ).ok_or(AccessError::Overflow)?,
         )
         .ok_or(AccessError::Overflow)?
@@ -126,7 +161,7 @@ pub fn process_crank(
         .checked_div(&precise_system_staked_snapshot)
         .unwrap_or(PreciseNumber::new(0).ok_or(AccessError::Overflow)?);
 
-    let pool_reward= precise_pool_reward.to_imprecise().ok_or(AccessError::Overflow)?;
+    let pool_reward = precise_pool_reward.to_imprecise().ok_or(AccessError::Overflow)?;
 
     msg!("Pool reward {}", pool_reward);
 
@@ -141,10 +176,30 @@ pub fn process_crank(
     assert!(total_claimable_rewards <= (central_state.daily_inflation as u128)
         .checked_add(1_000_000).ok_or(AccessError::Overflow)?);
 
+    // Mint pool rewards directly to the pool owner
+    let transfer_ix = mint_to(
+        &spl_token::ID,
+        accounts.mint.key,
+        accounts.rewards_destination.key,
+        accounts.central_state.key,
+        &[],
+        safe_downcast(((pool_reward >> 31) + 1) >> 1).ok_or(AccessError::Overflow)?,
+    )?;
+    invoke_signed(
+        &transfer_ix,
+        &[
+            accounts.spl_token_program.clone(),
+            accounts.central_state.clone(),
+            accounts.mint.clone(),
+            accounts.rewards_destination.clone(),
+        ],
+        &[&[&program_id.to_bytes(), &[central_state.signer_nonce]]],
+    )?;
+
     stake_pool.push_balances_buff(
         current_offset,
         RewardsTuple {
-            pool_reward,
+            pool_reward: 0, // todo delete and move from tuple to just number
             stakers_reward,
         },
     )?;

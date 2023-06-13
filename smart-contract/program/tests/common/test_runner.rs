@@ -321,13 +321,18 @@ impl TestRunner {
             .await
     }
 
-    pub async fn crank_pool(&mut self, stake_pool_owner_key: &Pubkey) -> Result<(), BanksClientError> {
-        let stake_pool_key = self.get_pool_pda(stake_pool_owner_key);
+    pub async fn crank_pool(&mut self, stake_pool_owner: &Pubkey) -> Result<(), BanksClientError> {
+        let stake_pool_key = self.get_pool_pda(stake_pool_owner);
+        let stake_pool_owner_token_acc = get_associated_token_address(&stake_pool_owner, &self.mint);
         let crank_ix = crank(
             self.program_id,
             crank::Accounts {
                 stake_pool: &stake_pool_key,
+                owner: &stake_pool_owner,
+                rewards_destination: &stake_pool_owner_token_acc,
                 central_state: &self.central_state,
+                mint: &self.mint,
+                spl_token_program: &spl_token::ID,
             },
             crank::Params {},
         );
