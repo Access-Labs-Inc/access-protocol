@@ -36,6 +36,11 @@ async fn repeated_claim() {
     // Crank pool 1 (+ implicitly the whole system)
     tr.crank_pool(&stake_pool_owner.pubkey()).await.unwrap();
 
+    // Wait 1 day
+    tr.sleep(86_400).await.unwrap();
+
+    // Crank pool 1 (+ implicitly the whole system)
+    tr.crank_pool(&stake_pool_owner.pubkey()).await.unwrap();
 
     let stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
     println!("Pool stats: {:?}", stats);

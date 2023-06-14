@@ -1,9 +1,11 @@
 //! Migrate stake pool V2
 use std::cell::RefMut;
+
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
-use solana_program::{account_info::{AccountInfo, next_account_info}, entrypoint::ProgramResult, msg, program_error::ProgramError, pubkey::Pubkey, system_program};
 use num_traits::FromPrimitive;
+use solana_program::{account_info::{AccountInfo, next_account_info}, entrypoint::ProgramResult, msg, program_error::ProgramError, pubkey::Pubkey, system_program};
+
 use crate::{
     error::AccessError,
     state::{RewardsTuple, STAKE_BUFFER_LEN, StakePoolHeader, Tag},
@@ -56,6 +58,8 @@ pub fn process_migrate_stake_pool_v2(
     accounts: &[AccountInfo],
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
+    let central_state = CentralState::from_account_info(accounts.central_state)?;
+
     let mut v2_balances: Vec<u128>;
     {
         let mut stake_pool_v1 =
@@ -75,23 +79,23 @@ pub fn process_migrate_stake_pool_v2(
         // upgrade to v2
         stake_pool_v1.header.tag = Tag::upgrade_v2(&current_tag)? as u8;
 
-        // filter only every second value
-         v2_balances = stake_pool_v1
+        // filter only stake rewards
+        v2_balances = stake_pool_v1
             .balances
             .iter()
             .map(|RewardsTuple { stakers_reward, .. }| *stakers_reward)
             .collect();
+        msg!("v2_balances: {:?}", v2_balances);
     }
 
     // write all items in v2 balances into stake pool v2 one by one and zero out the rest
     let mut stake_pool_v2 =
         StakePool::get_checked_v2(accounts.stake_pool, vec![Tag::StakePoolV2, Tag::InactiveStakePool])?;
-    for j  in 0..STAKE_BUFFER_LEN {
-        let i = j as usize;
+    for i in 0..STAKE_BUFFER_LEN {
         if i % 2 == 0 {
-            stake_pool_v2.balances[i/2] = v2_balances[i];
+            stake_pool_v2.balances[(i as usize) / 2] = v2_balances[(i as usize) / 2];
         } else {
-            stake_pool_v2.balances[i] = 0;
+            stake_pool_v2.balances[i as usize] = 0;
         }
     }
 
