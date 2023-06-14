@@ -347,13 +347,19 @@ impl TestRunner {
     pub async fn migrate_pool_v2(&mut self, stake_pool_owner_key: &Pubkey) -> Result<(), BanksClientError> {
         let stake_pool_key = self.get_pool_pda(stake_pool_owner_key);
         let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
+        let stake_pool_owner_token_acc = get_associated_token_address(&stake_pool_owner_key, &self.mint);
 
         let upgrade_pool_ix = migrate_stake_pool_v2(
             self.program_id,
             migrate_stake_pool_v2::Accounts {
                 stake_pool: &stake_pool_key,
+                owner: &stake_pool_owner_key,
+                rewards_destination: &stake_pool_owner_token_acc,
                 system_program: &system_program::ID, // OK
                 vault: &pool_vault,
+                central_state: &self.central_state,
+                mint: &self.mint,
+                spl_token_program: &spl_token::ID,
             }, migrate_stake_pool_v2::Params {},
         );
 
