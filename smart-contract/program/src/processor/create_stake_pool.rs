@@ -13,7 +13,7 @@ use solana_program::{
 use crate::{
     cpi::Cpi,
     error::AccessError,
-    state::{RewardsTuple, StakePoolHeader, Tag, STAKE_BUFFER_LEN},
+    state::{RewardsTuple, StakePoolHeader, Tag, STAKE_BUFFER_LEN_V1},
 };
 use crate::{state::StakePool, utils::assert_valid_vault};
 use bonfida_utils::{BorshSize, InstructionsAccount};
@@ -75,6 +75,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     }
 }
 
+// todo - don't create V1s anymore
 pub fn process_create_stake_pool(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
@@ -105,7 +106,8 @@ pub fn process_create_stake_pool(
         accounts.fee_payer,
         accounts.stake_pool_account,
         &[StakePoolHeader::SEED, &params.owner.to_bytes(), &[nonce]],
-        stake_pool_header.borsh_len() + size_of::<RewardsTuple>() * STAKE_BUFFER_LEN as usize,
+        // todo STAKE_BUFFER_LEN_V2
+        stake_pool_header.borsh_len() + size_of::<RewardsTuple>() * STAKE_BUFFER_LEN_V1 as usize,
     )?;
 
     let mut stake_pool =

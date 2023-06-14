@@ -19,6 +19,8 @@ use spl_token::state::Account;
 use crate::error::AccessError;
 use crate::state::StakePool;
 
+// todo maybe delete - not used up until now
+
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `close_stake_pool` instruction
 pub struct Params {}

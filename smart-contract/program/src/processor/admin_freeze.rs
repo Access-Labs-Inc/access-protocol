@@ -14,6 +14,8 @@ use solana_program::{
 
 use crate::utils::{check_account_key, check_account_owner, check_signer};
 
+// todo delete this whole file
+
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 pub struct Params {}
 

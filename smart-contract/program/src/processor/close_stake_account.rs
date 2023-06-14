@@ -17,6 +17,8 @@ use bonfida_utils::InstructionsAccount;
 use crate::error::AccessError;
 use crate::state::StakeAccount;
 
+// todo maybe delete - not used up until now
+
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `close_stake_account` instruction
 pub struct Params {}

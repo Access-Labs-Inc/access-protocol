@@ -3,7 +3,7 @@
 use crate::error::AccessError;
 use crate::state::{CentralState, StakeAccount, StakePool, Tag};
 use crate::utils::{
-    assert_no_close_or_delegate, calc_reward_fp32, check_account_key, check_account_owner,
+    assert_no_close_or_delegate, calc_reward_fp32_v2, check_account_key, check_account_owner,
     check_signer,
 };
 use bonfida_utils::fp_math::safe_downcast;
@@ -111,7 +111,7 @@ pub fn process_claim_rewards(
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let central_state = CentralState::from_account_info(accounts.central_state)?;
-    let stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
+    let stake_pool = StakePool::get_checked_v2(accounts.stake_pool, vec![Tag::StakePoolV2])?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
 
     let destination_token_acc = Account::unpack(&accounts.rewards_destination.data.borrow())?;
@@ -144,11 +144,10 @@ pub fn process_claim_rewards(
         AccessError::WrongMint,
     )?;
 
-    let reward = calc_reward_fp32(
+    let reward = calc_reward_fp32_v2(
         central_state.last_snapshot_offset,
         stake_account.last_claimed_offset,
         &stake_pool,
-        true,
         params.allow_zero_rewards,
     )?
     // Multiply by the staker shares of the total pool

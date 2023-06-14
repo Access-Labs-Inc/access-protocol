@@ -70,6 +70,7 @@ pub fn process_change_pool_minimum(
     let accounts = Accounts::parse(accounts, program_id)?;
     let Params { new_minimum } = params;
 
+    // todo maybe get_checked_v2
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
 
     check_account_key(

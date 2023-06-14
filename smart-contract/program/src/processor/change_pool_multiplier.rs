@@ -71,6 +71,7 @@ pub fn process_change_pool_multiplier(
     let accounts = Accounts::parse(accounts, program_id)?;
     let Params { new_multiplier } = params;
 
+    // todo maybe get_checked_v2
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
 
     if new_multiplier > 100 {

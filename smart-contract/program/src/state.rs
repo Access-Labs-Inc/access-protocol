@@ -39,7 +39,10 @@ pub const STAKER_MULTIPLIER: u64 = 50;
 pub const OWNER_MULTIPLIER: u64 = 100 - STAKER_MULTIPLIER;
 
 /// Length of the circular buffer (stores balances for 1 year)
-pub const STAKE_BUFFER_LEN: u64 = 274; // 9 Months
+pub const STAKE_BUFFER_LEN_V1: u64 = 274; // 9 Months
+
+/// Length of the circular buffer (stores balances for 1 year)
+pub const STAKE_BUFFER_LEN_V2: u64 = 548; // 18 Months
 
 /// Max pending unstake requests
 pub const MAX_UNSTAKE_REQUEST: usize = 10;
@@ -85,6 +88,16 @@ impl Tag {
             _ => return Err(AccessError::InvalidTagChange.into()),
         };
 
+        Ok(tag)
+    }
+
+    pub fn activate(&self) -> Result<Tag, ProgramError> {
+        let tag = match self {
+            Tag::InactiveStakePool => Tag::StakePool,
+            Tag::InactiveStakePoolV2 => Tag::StakePoolV2,
+            Tag::InactiveBondAccount => Tag::BondAccount,
+            _ => return Err(AccessError::InvalidTagChange.into()),
+        };
         Ok(tag)
     }
 
@@ -234,6 +247,7 @@ impl StakePoolHeaped {
 
 #[allow(missing_docs)]
 impl<H: DerefMut<Target=StakePoolHeader>, B: DerefMut<Target=[RewardsTuple]>> StakePool<H, B> {
+    // todo maybe delete and use only the v2
     pub fn push_balances_buff(
         &mut self,
         current_offset: u64,
@@ -246,7 +260,7 @@ impl<H: DerefMut<Target=StakePoolHeader>, B: DerefMut<Target=[RewardsTuple]>> St
             self.balances[(((self.header.current_day_idx as u64)
                 .checked_add(i)
                 .ok_or(AccessError::Overflow)?)
-                % STAKE_BUFFER_LEN) as usize] = RewardsTuple {
+                % STAKE_BUFFER_LEN_V1) as usize] = RewardsTuple {
                 pool_reward: 0,
                 stakers_reward: 0,
             };
@@ -261,7 +275,7 @@ impl<H: DerefMut<Target=StakePoolHeader>, B: DerefMut<Target=[RewardsTuple]>> St
             )
             .ok_or(AccessError::Overflow)?;
 
-        self.balances[(((self.header.current_day_idx - 1) as u64) % STAKE_BUFFER_LEN) as usize] =
+        self.balances[(((self.header.current_day_idx - 1) as u64) % STAKE_BUFFER_LEN_V1) as usize] =
             rewards;
         Ok(())
     }
@@ -273,6 +287,38 @@ impl<H: DerefMut<Target=StakePoolHeader>, B: DerefMut<Target=[RewardsTuple]>> St
     ) -> Result<Pubkey, ProgramError> {
         let seeds: &[&[u8]] = &[StakePoolHeader::SEED, &owner.to_bytes(), &[*nonce]];
         Pubkey::create_program_address(seeds, program_id).map_err(|_| ProgramError::InvalidSeeds)
+    }
+}
+
+#[allow(missing_docs)]
+impl<H: DerefMut<Target=StakePoolHeader>, B: DerefMut<Target=[u128]>> StakePool<H, B> {
+    pub fn push_balances_buff_v2(
+        &mut self,
+        current_offset: u64,
+        user_reward: u128,
+    ) -> Result<(), ProgramError> {
+        let nb_days_passed = current_offset.checked_sub(self.header.current_day_idx as u64).ok_or(
+            AccessError::Overflow,
+        )?;
+        for i in 1..nb_days_passed {
+            self.balances[(((self.header.current_day_idx as u64)
+                .checked_add(i)
+                .ok_or(AccessError::Overflow)?)
+                % STAKE_BUFFER_LEN_V2) as usize] = 0 as u128;
+        }
+        self.header.current_day_idx = self
+            .header
+            .current_day_idx
+            .checked_add(
+                nb_days_passed
+                    .try_into()
+                    .map_err(|_| AccessError::Overflow)?,
+            )
+            .ok_or(AccessError::Overflow)?;
+
+        self.balances[(((self.header.current_day_idx - 1) as u64) % STAKE_BUFFER_LEN_V2) as usize] =
+            user_reward;
+        Ok(())
     }
 }
 

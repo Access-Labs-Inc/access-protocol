@@ -15,6 +15,8 @@ use bonfida_utils::{BorshSize, InstructionsAccount};
 use crate::error::AccessError;
 use crate::state::{BondAccount, BOND_SIGNER_THRESHOLD};
 
+// todo I guess that we don't use this - delete
+
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `sign_bond` instruction
 pub struct Params {

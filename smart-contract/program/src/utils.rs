@@ -1,6 +1,6 @@
 use crate::error::AccessError;
-use crate::state::{BondAccount, AUTHORIZED_BOND_SELLERS};
-use crate::state::{StakeAccount, StakePoolRef, ACCESS_MINT, STAKE_BUFFER_LEN};
+use crate::state::{BondAccount, AUTHORIZED_BOND_SELLERS, STAKE_BUFFER_LEN_V2};
+use crate::state::{StakeAccount, StakePoolRefV2, StakePoolRef, ACCESS_MINT};
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
     program_pack::Pack, pubkey::Pubkey,
@@ -11,18 +11,17 @@ use spl_token::state::Account;
 /// Result is in FP32 format.
 ///
 /// * `staker` Compute the reward for a staker or a pool owner
-pub fn calc_reward_fp32(
+pub fn calc_reward_fp32_v2(
     current_offset: u64,
     last_claimed_offset: u64,
-    stake_pool: &StakePoolRef,
-    staker: bool,
+    stake_pool: &StakePoolRefV2,
     allow_zero_rewards: bool,
 ) -> Result<u128, ProgramError> {
     let mut nb_days_to_claim = current_offset.saturating_sub(last_claimed_offset);
     msg!("Nb of days behind {}", nb_days_to_claim);
     msg!("Last claimed offset {}", last_claimed_offset);
     msg!("Current offset {}", current_offset);
-    nb_days_to_claim = std::cmp::min(nb_days_to_claim, STAKE_BUFFER_LEN);
+    nb_days_to_claim = std::cmp::min(nb_days_to_claim, STAKE_BUFFER_LEN_V2);
     msg!("Nb of days to claim {}", nb_days_to_claim);
     if nb_days_to_claim == 0 {
         if !allow_zero_rewards {
@@ -37,24 +36,20 @@ pub fn calc_reward_fp32(
         return Err(AccessError::PoolMustBeCranked.into());
     }
 
-    msg!("Stake pool current day idx wrapped {}", (stake_pool.header.current_day_idx as u64) % STAKE_BUFFER_LEN);
+    msg!("Stake pool current day idx wrapped {}", (stake_pool.header.current_day_idx as u64) % STAKE_BUFFER_LEN_V2);
     // Saturating as we don't want to wrap around when there haven't been sufficient cranks
     let mut i = (stake_pool.header.current_day_idx as u64).saturating_sub(nb_days_to_claim)
-        % STAKE_BUFFER_LEN;
+        % STAKE_BUFFER_LEN_V2;
 
     // Compute reward for all past days
     let mut reward: u128 = 0;
     loop {
-        let curr_day_reward = if staker {
-            stake_pool.balances[i as usize].stakers_reward
-        } else {
-            stake_pool.balances[i as usize].pool_reward
-        };
+        let curr_day_reward = stake_pool.balances[i as usize];
         reward = reward
             .checked_add(curr_day_reward)
             .ok_or(AccessError::Overflow)?;
-        i = (i + 1) % STAKE_BUFFER_LEN;
-        if i == (stake_pool.header.current_day_idx as u64) % STAKE_BUFFER_LEN {
+        i = (i + 1) % STAKE_BUFFER_LEN_V2;
+        if i == (stake_pool.header.current_day_idx as u64) % STAKE_BUFFER_LEN_V2 {
             break;
         }
     }
@@ -94,6 +89,7 @@ pub fn check_signer(account: &AccountInfo, error: AccessError) -> ProgramResult 
     Ok(())
 }
 
+// todo maybe to V2
 pub fn assert_empty_stake_pool(stake_pool: &StakePoolRef) -> ProgramResult {
     if stake_pool.header.total_staked != 0 {
         msg!("The stake pool must be empty");

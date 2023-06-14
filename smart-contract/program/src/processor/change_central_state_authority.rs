@@ -12,6 +12,8 @@ use bonfida_utils::{BorshSize, InstructionsAccount};
 
 use crate::utils::{check_account_key, check_account_owner, check_signer};
 
+// todo there will be no central authority in v2 - needs to be decentralized
+
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `change_central_state_authority` instruction
 pub struct Params {

@@ -2,25 +2,30 @@
 //! This instructions updates the circular buffer with the pool balances multiplied by the current inflation
 
 use bonfida_utils::{BorshSize, InstructionsAccount};
+use bonfida_utils::fp_math::safe_downcast;
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{AccountInfo, next_account_info},
     entrypoint::ProgramResult,
     msg,
+    program::invoke_signed,
     program_error::ProgramError,
+    program_pack::Pack,
     pubkey::Pubkey,
 };
-use spl_associated_token_account::{
-    get_associated_token_address
+use crate::{
+    error::AccessError,
+    state::{RewardsTuple, StakePoolHeader, Tag},
 };
-use bonfida_utils::fp_math::safe_downcast;
-use solana_program::program::invoke_signed;
+use crate::state::{BondAccount, CentralState, StakePool};
+use spl_associated_token_account::get_associated_token_address;
 use spl_math::precise_number::PreciseNumber;
-use spl_token::instruction::mint_to;
+use spl_token::{instruction::mint_to, state::Account};
 
-use crate::error::AccessError;
-use crate::state::{CentralState, RewardsTuple, StakePool, Tag};
-use crate::utils::{check_account_key, check_account_owner};
+use crate::utils::{
+    assert_no_close_or_delegate, calc_reward_fp32_v2, check_account_key, check_account_owner,
+    check_signer,
+};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `crank` instruction
@@ -99,18 +104,31 @@ pub fn process_crank(
     msg!("Processing crank instruction");
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut central_state = CentralState::from_account_info(accounts.central_state)?;
+    // todo v2 pools
+    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool, Tag::StakePoolV2])?;
+
+    let destination_token_acc = Account::unpack(&accounts.rewards_destination.data.borrow())?;
+
+    if destination_token_acc.mint != central_state.token_mint {
+        return Err(AccessError::WrongMint.into());
+    }
 
     // check if the destination belongs to the pool owner
-    let owner_ata_key = get_associated_token_address(
-        &accounts.owner.key,
-        &accounts.mint.key,
-    );
+    if destination_token_acc.owner.to_bytes() != stake_pool.header.owner {
+        return Err(AccessError::WrongDestinationAccount.into());
+    }
+
+    // Safety checks
     check_account_key(
-        accounts.rewards_destination,
-        &owner_ata_key,
-        AccessError::WrongDestinationAccount,
+        accounts.owner,
+        &Pubkey::new(&stake_pool.header.owner),
+        AccessError::WrongStakePoolAccountOwner,
+    )?;
+    check_account_key(
+        accounts.mint,
+        &central_state.token_mint,
+        AccessError::WrongMint,
     )?;
 
     // check if we need to do a system wide snapshot
@@ -137,10 +155,10 @@ pub fn process_crank(
     // get the pool staked amount at the time of last system snapshot
     let total_staked_snapshot = stake_pool.header.total_staked as u128;
 
-    let mut stakers_reward = 0;
+    let mut supporter_reward_base = 0;
     if total_staked_snapshot != 0 {
         // stakers_reward = [(pool_total_staked << 32) * inflation * stakers_part] / (100 * total_staked * pool_total_staked)
-        stakers_reward = ((central_state.daily_inflation as u128) << 32)
+        supporter_reward_base = ((central_state.daily_inflation as u128) << 32)
             .checked_mul(stake_pool.header.stakers_part as u128)
             .ok_or(AccessError::Overflow)?
             .checked_div(100u128)
@@ -149,7 +167,7 @@ pub fn process_crank(
             .unwrap_or(0);
     };
 
-    msg!("Stakers reward {}", stakers_reward);
+    msg!("Stakers reward {}", supporter_reward_base);
 
     let precise_total_staked_snapshot = PreciseNumber::new(total_staked_snapshot.checked_shl(32)
         .ok_or(AccessError::Overflow)?)
@@ -181,7 +199,7 @@ pub fn process_crank(
 
     let total_claimable_rewards = (((pool_reward >> 31) + 1) >> 1)
         .checked_add(
-            ((stakers_reward.checked_mul(total_staked_snapshot)
+            ((supporter_reward_base.checked_mul(total_staked_snapshot)
                 .ok_or(AccessError::Overflow)? >> 31) + 1) >> 1
         ).ok_or(AccessError::Overflow)?;
 
@@ -210,12 +228,23 @@ pub fn process_crank(
         &[&[&program_id.to_bytes(), &[central_state.signer_nonce]]],
     )?;
 
-    stake_pool.push_balances_buff(
-        current_offset,
-        RewardsTuple {
-            pool_reward: 0, // todo delete and move from tuple to just number
-            stakers_reward,
-        },
-    )?;
+    // todo resolve v2 - if we want to keep v1 as well or not
+    if stake_pool.header.tag == Tag::StakePool as u8 {
+        stake_pool.push_balances_buff(
+            current_offset,
+            RewardsTuple {
+                pool_reward: 0,
+                stakers_reward: supporter_reward_base,
+            },
+        )?;
+    } else if stake_pool.header.tag == Tag::StakePoolV2 as u8{
+        let mut stake_pool_v2 = StakePool::get_checked_v2(accounts.stake_pool, vec![Tag::StakePoolV2])?;
+        stake_pool_v2.push_balances_buff_v2(
+            current_offset,
+            supporter_reward_base,
+        )?;
+    } else {
+        return Err(AccessError::NoOp.into());
+    }
     Ok(())
 }

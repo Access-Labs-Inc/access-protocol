@@ -106,6 +106,7 @@ pub fn process_create_bond(
     let (derived_key, nonce) =
         BondAccount::create_key(&params.buyer, params.total_amount_sold, program_id);
 
+    // todo migrate to V2
     let stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
 
     check_account_key(

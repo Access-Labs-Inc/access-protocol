@@ -41,6 +41,8 @@ pub struct Accounts<'a, T> {
     pub spl_token_program: &'a T,
 }
 
+// todo delete this functionality
+
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     pub fn parse(
         accounts: &'a [AccountInfo<'b>],
