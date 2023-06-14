@@ -162,7 +162,7 @@ pub fn process_claim_bond_rewards(
     msg!("Total staked {}", bond.total_staked);
 
     // Transfer rewards
-    let transfer_ix = mint_to(
+    let mint_ix = mint_to(
         &spl_token::ID,
         accounts.mint.key,
         accounts.rewards_destination.key,
@@ -171,7 +171,7 @@ pub fn process_claim_bond_rewards(
         reward,
     )?;
     invoke_signed(
-        &transfer_ix,
+        &mint_ix,
         &[
             accounts.spl_token_program.clone(),
             accounts.mint.clone(),

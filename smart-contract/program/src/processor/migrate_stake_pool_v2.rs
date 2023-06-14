@@ -37,7 +37,7 @@ pub struct Accounts<'a, T> {
     pub stake_pool: &'a T,
 
     /// The stake pool owner account
-    #[cons(signer)]
+    #[cons(writable)]
     pub owner: &'a T,
 
     /// The rewards destination
@@ -202,7 +202,7 @@ pub fn process_migrate_stake_pool_v2(
         msg!("Claiming pool rewards {}", remaining_rewards);
 
         // Transfer rewards
-        let transfer_ix = mint_to(
+        let mint_ix = mint_to(
             &spl_token::ID,
             accounts.mint.key,
             accounts.rewards_destination.key,
@@ -211,7 +211,7 @@ pub fn process_migrate_stake_pool_v2(
             remaining_rewards,
         )?;
         invoke_signed(
-            &transfer_ix,
+            &mint_ix,
             &[
                 accounts.spl_token_program.clone(),
                 accounts.central_state.clone(),

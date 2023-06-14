@@ -209,7 +209,7 @@ pub fn process_crank(
         .checked_add(1_000_000).ok_or(AccessError::Overflow)?);
 
     // Mint pool rewards directly to the pool owner
-    let transfer_ix = mint_to(
+    let mint_ix = mint_to(
         &spl_token::ID,
         accounts.mint.key,
         accounts.rewards_destination.key,
@@ -218,7 +218,7 @@ pub fn process_crank(
         safe_downcast(((pool_reward >> 31) + 1) >> 1).ok_or(AccessError::Overflow)?,
     )?;
     invoke_signed(
-        &transfer_ix,
+        &mint_ix,
         &[
             accounts.spl_token_program.clone(),
             accounts.central_state.clone(),
