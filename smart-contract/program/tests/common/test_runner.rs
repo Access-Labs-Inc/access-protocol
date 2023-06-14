@@ -1,8 +1,10 @@
+use std::cell::RefMut;
 use std::error::Error;
+use std::mem::size_of;
 
 use borsh::BorshDeserialize;
-use solana_program::{pubkey::Pubkey, system_program};
-
+use bytemuck::{cast_slice, from_bytes, from_bytes_mut, Pod, try_cast_slice, Zeroable};
+use solana_program::{account_info::AccountInfo, pubkey::Pubkey, system_program};
 use solana_program_test::{processor, ProgramTest};
 use solana_sdk::signer::{keypair::Keypair, Signer};
 use solana_sdk::sysvar::clock;
@@ -19,7 +21,7 @@ use access_protocol::{
     },
 };
 use access_protocol::instruction::{change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards, create_bond, migrate_stake_pool_v2, unlock_bond_tokens};
-use access_protocol::state::{BondAccount, CentralState, StakeAccount, StakePoolHeader, Tag};
+use access_protocol::state::{BondAccount, CentralState, RewardsTuple, StakeAccount, StakePool, StakePoolHeader, StakePoolHeaped, Tag};
 
 use crate::common::utils::{mint_bootstrap, sign_send_instructions};
 
@@ -29,7 +31,7 @@ pub struct TestRunner {
     local_env: BanksClient,
     authority_ata: Pubkey,
     central_state: Pubkey,
-    mint : Pubkey,
+    mint: Pubkey,
     // hashmap from user pubkey to a bond account
     bond_accounts: std::collections::HashMap<String, Pubkey>,
     bond_seller: Keypair,
@@ -42,6 +44,7 @@ pub struct StakerStats {
 #[derive(Debug)]
 pub struct PoolOwnerStats {
     pub header: StakePoolHeader,
+    pub rewards: Box<[RewardsTuple]>,
     pub balance: u64,
     pub total_pool_staked: u64,
 }
@@ -149,7 +152,7 @@ impl TestRunner {
         })
     }
 
-    pub async fn create_ata_account(&mut self) ->  Result<Keypair, BanksClientError> {
+    pub async fn create_ata_account(&mut self) -> Result<Keypair, BanksClientError> {
         let owner = Keypair::new();
         let create_ata_stake_pool_owner_ix = create_associated_token_account(
             &self.prg_test_ctx.payer.pubkey(),
@@ -185,7 +188,7 @@ impl TestRunner {
             .await
     }
 
-    pub async fn create_stake_pool(&mut self, stake_pool_owner: &Pubkey, minimum_stake_amount: u64) -> Result<(), BanksClientError>  {
+    pub async fn create_stake_pool(&mut self, stake_pool_owner: &Pubkey, minimum_stake_amount: u64) -> Result<(), BanksClientError> {
         let stake_pool_key = self.get_pool_pda(stake_pool_owner);
         let create_associated_instruction =
             create_associated_token_account(&self.prg_test_ctx.payer.pubkey(), &stake_pool_key, &self.mint, &spl_token::ID);
@@ -265,7 +268,7 @@ impl TestRunner {
         stake_pool_key
     }
 
-    pub async fn create_stake_account(&mut self, stake_pool_owner_key: &Pubkey, staker_key: &Pubkey) -> Result<(), BanksClientError>  {
+    pub async fn create_stake_account(&mut self, stake_pool_owner_key: &Pubkey, staker_key: &Pubkey) -> Result<(), BanksClientError> {
         let stake_pool_key = self.get_pool_pda(stake_pool_owner_key);
         let (stake_acc_key, stake_nonce) = self.get_stake_account_pda(&stake_pool_key, staker_key);
         let create_stake_account_ix = create_stake_account(
@@ -351,7 +354,7 @@ impl TestRunner {
                 stake_pool: &stake_pool_key,
                 system_program: &system_program::ID, // OK
                 vault: &pool_vault,
-            }, migrate_stake_pool_v2::Params{},
+            }, migrate_stake_pool_v2::Params {},
         );
 
         sign_send_instructions(&mut self.prg_test_ctx, vec![upgrade_pool_ix], vec![])
@@ -383,7 +386,7 @@ impl TestRunner {
             .await
     }
 
-    pub async fn claim_staker_rewards(&mut self, stake_pool_owner: &Pubkey, staker: &Keypair) -> Result<(), BanksClientError>  {
+    pub async fn claim_staker_rewards(&mut self, stake_pool_owner: &Pubkey, staker: &Keypair) -> Result<(), BanksClientError> {
         let stake_pool_key = self.get_pool_pda(stake_pool_owner);
         let (stake_acc_key, _) = self.get_stake_account_pda(&stake_pool_key, &staker.pubkey());
         let staker_token_acc = get_associated_token_address(&staker.pubkey(), &self.mint);
@@ -477,10 +480,10 @@ impl TestRunner {
             .await
             .unwrap()
             .unwrap();
-        let pool_header = StakePoolHeader::deserialize(&mut &acc.data[..])?;
-
+        let pool = StakePoolHeaped::from_buffer(&mut &acc.data[..]);
         Ok(PoolOwnerStats {
-            header: pool_header,
+            header: *pool.header,
+            rewards: pool.balances,
             balance,
             total_pool_staked,
         })
@@ -576,7 +579,7 @@ impl TestRunner {
         );
         claim_bond_ix.accounts[1].is_signer = false;
 
-    println!("claiming bond");
+        println!("claiming bond");
         sign_send_instructions(&mut self.prg_test_ctx, vec![claim_bond_ix], vec![])
             .await
     }

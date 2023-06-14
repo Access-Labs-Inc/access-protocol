@@ -36,8 +36,15 @@ async fn repeated_claim() {
     // Crank pool 1 (+ implicitly the whole system)
     tr.crank_pool(&stake_pool_owner.pubkey()).await.unwrap();
 
+
+    let stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
+    println!("Pool stats: {:?}", stats);
+
     // Upgrade the stake pool
     tr.migrate_pool_v2(&stake_pool_owner.pubkey()).await.unwrap();
+
+    let stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
+    println!("Pool stats2: {:?}", stats);
 
     return
     // // Claim staker rewards in pool 1

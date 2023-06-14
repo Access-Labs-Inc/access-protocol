@@ -1,13 +1,8 @@
 //! Migrate stake pool V2
+use std::cell::RefMut;
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
-use solana_program::{
-    account_info::{AccountInfo, next_account_info},
-    entrypoint::ProgramResult,
-    program_error::ProgramError,
-    pubkey::Pubkey,
-    system_program,
-};
+use solana_program::{account_info::{AccountInfo, next_account_info}, entrypoint::ProgramResult, msg, program_error::ProgramError, pubkey::Pubkey, system_program};
 use num_traits::FromPrimitive;
 use crate::{
     error::AccessError,
@@ -61,32 +56,44 @@ pub fn process_migrate_stake_pool_v2(
     accounts: &[AccountInfo],
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
+    let mut v2_balances: Vec<u128>;
+    {
+        let mut stake_pool_v1 =
+            StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool, Tag::InactiveStakePool])?;
 
-    let mut stake_pool =
-        StakePool::get_checked(accounts.stake_pool, vec![Tag::Uninitialized])?;
+        // todo claim pool rewards for the pool owner
+        // (or maybe this should be called by pool owner)
+        // (or maybe we should just throw them away)
+        // (or maybe we should just require them to be claimed for the upgrade to go through)
 
-    // map balances from RewardsTuple to uint by extracting only the staker part
-    let mut v2_balances: Vec<u128> = stake_pool
-        .balances
-        .iter()
-        .map(|RewardsTuple { stakers_reward, .. }| *stakers_reward)
-        .collect();
+        // check if stake pool is already v2
+        let current_tag = Tag::from_u8(stake_pool_v1.header.tag as u8).ok_or(ProgramError::InvalidAccountData)?;
+        if Tag::version(&current_tag) == 2 {
+            return Err(AccessError::AlreadyUpgradedV2.into());
+        }
 
-    // todo claim pool rewards for the pool owner
-    // (or maybe this should be called by pool owner)
-    // (or maybe we should just throw them away)
-    // (or maybe we should just require them to be claimed for the upgrade to go through)
+        // upgrade to v2
+        stake_pool_v1.header.tag = Tag::upgrade_v2(&current_tag)? as u8;
 
-    // check if stake pool is already v2
-    let current_tag = Tag::from_u8(stake_pool.header.tag as u8).ok_or(ProgramError::InvalidAccountData)?;
-    if Tag::version(&current_tag) == 2 {
-        return Err(AccessError::AlreadyUpgradedV2.into());
+        // filter only every second value
+         v2_balances = stake_pool_v1
+            .balances
+            .iter()
+            .map(|RewardsTuple { stakers_reward, .. }| *stakers_reward)
+            .collect();
     }
 
-    // upgrade to v2
-    stake_pool.header.tag = Tag::upgradeV2(&current_tag)? as u8;
-    // todo!!!!
-    // stake_pool.balances = v2_balances;
+    // write all items in v2 balances into stake pool v2 one by one and zero out the rest
+    let mut stake_pool_v2 =
+        StakePool::get_checked_v2(accounts.stake_pool, vec![Tag::StakePoolV2, Tag::InactiveStakePool])?;
+    for j  in 0..STAKE_BUFFER_LEN {
+        let i = j as usize;
+        if i % 2 == 0 {
+            stake_pool_v2.balances[i/2] = v2_balances[i];
+        } else {
+            stake_pool_v2.balances[i] = 0;
+        }
+    }
 
     Ok(())
 }

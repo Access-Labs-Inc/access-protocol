@@ -1,5 +1,6 @@
 use std::cell::RefMut;
 use std::convert::TryInto;
+use std::mem;
 use std::mem::size_of;
 use std::ops::DerefMut;
 
@@ -87,7 +88,7 @@ impl Tag {
         Ok(tag)
     }
 
-    pub fn upgradeV2(&self) -> Result<Tag, ProgramError> {
+    pub fn upgrade_v2(&self) -> Result<Tag, ProgramError> {
         let tag = match self {
             Tag::StakePool => Tag::StakePoolV2,
             Tag::InactiveStakePool => Tag::InactiveStakePoolV2,
@@ -188,15 +189,42 @@ impl<'a> StakePoolRef<'a> {
 }
 
 #[allow(missing_docs)]
+pub type StakePoolRefV2<'a> = StakePool<RefMut<'a, StakePoolHeader>, RefMut<'a, [u128]>>;
+
+#[allow(missing_docs)]
+impl<'a> StakePoolRefV2<'a> {
+    pub fn get_checked_v2<'b: 'a>(
+        account_info: &'a AccountInfo<'b>,
+        allowed_tags: Vec<Tag>,
+    ) -> Result<Self, ProgramError> {
+        let (header, balances) = RefMut::map_split(account_info.data.borrow_mut(), |s| {
+            let (hd, rem) = s.split_at_mut(size_of::<StakePoolHeader>());
+            (
+                from_bytes_mut::<StakePoolHeader>(hd),
+                try_cast_slice_mut(rem).unwrap(),
+            )
+        });
+
+        let tag = FromPrimitive::from_u8(header.tag).ok_or(ProgramError::InvalidAccountData)?;
+        if !allowed_tags.contains(&tag) {
+            return Err(AccessError::DataTypeMismatch.into());
+        }
+
+        Ok(StakePool { header, balances })
+    }
+}
+
+
+#[allow(missing_docs)]
 impl StakePoolHeaped {
     pub fn from_buffer(buf: &[u8]) -> Self {
-        println!("StakePoolHeaped::from_buffer: buf.len() = {}", buf.len());
         let (header, balances) = buf.split_at(size_of::<StakePoolHeader>());
-        println!("StakePoolHeaped::from_buffer: header.len() = {}", header.len());
         let header = from_bytes::<StakePoolHeader>(header);
-        println!("StakePoolHeaped::from_buffer: header = {:?}", header);
-        let balances = cast_slice::<_, RewardsTuple>(balances);
-        println!("StakePoolHeaped::from_buffer: balances.len() = {}", balances.len());
+        // we need to have an aligned slice for the cast_slice to work
+        let mut aligned_balances = Vec::with_capacity(balances.len());
+        aligned_balances.extend_from_slice(balances);
+
+        let balances = cast_slice::<_, RewardsTuple>(aligned_balances.as_slice());
         Self {
             header: Box::new(*header),
             balances: Box::from(balances),
