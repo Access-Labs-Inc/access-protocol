@@ -75,7 +75,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     }
 }
 
-// todo - don't create V1s anymore
 pub fn process_create_stake_pool(
     program_id: &Pubkey,
     accounts: &[AccountInfo],

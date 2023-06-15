@@ -341,7 +341,7 @@ impl StakePoolHeader {
         minimum_stake_amount: u64,
     ) -> Result<Self, ProgramError> {
         Ok(Self {
-            tag: Tag::InactiveStakePool as u8,
+            tag: Tag::InactiveStakePoolV2 as u8,
             total_staked: 0,
             current_day_idx: 0,
             _padding: [0; 4],
