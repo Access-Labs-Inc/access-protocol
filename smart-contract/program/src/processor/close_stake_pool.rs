@@ -69,6 +69,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     }
 }
 
+// todo do we want to support this? If yes, update to v2
 pub fn process_close_stake_pool(
     program_id: &Pubkey,
     accounts: &[AccountInfo],

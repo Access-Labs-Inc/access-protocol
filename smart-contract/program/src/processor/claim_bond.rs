@@ -102,7 +102,7 @@ pub fn process_claim_bond(
     let accounts = Accounts::parse(accounts, program_id)?;
     let mut bond = BondAccount::from_account_info(accounts.bond_account, true)?;
     let mut central_state = CentralState::from_account_info(accounts.central_state)?;
-    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
+    let mut stake_pool = StakePool::get_checked_v2(accounts.stake_pool, vec![Tag::StakePoolV2])?;
 
     check_account_key(
         accounts.stake_pool,

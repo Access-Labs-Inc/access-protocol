@@ -61,6 +61,7 @@ pub fn process_activate_stake_pool(program_id: &Pubkey, accounts: &[AccountInfo]
         &central_state.authority,
         AccessError::WrongCentralStateAuthority,
     )?;
+    // todo check if this is needed, might be covered by the vec![Tag::InactiveStakePoolV2] check above
     if stake_pool.header.tag != Tag::InactiveStakePoolV2 as u8 {
         return Err(AccessError::ActiveStakePoolNotAllowed.into());
     }

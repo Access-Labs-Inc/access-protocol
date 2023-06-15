@@ -71,8 +71,8 @@ pub fn process_change_pool_multiplier(
     let accounts = Accounts::parse(accounts, program_id)?;
     let Params { new_multiplier } = params;
 
-    // todo maybe get_checked_v2
-    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
+    // todo maybe we need the pool to be cranked - doublecheck
+    let mut stake_pool = StakePool::get_checked_v2(accounts.stake_pool, vec![Tag::StakePoolV2])?;
 
     if new_multiplier > 100 {
         msg!("The pool multiplier is a percentage and needs to be smaller than 100 and greater than 0");

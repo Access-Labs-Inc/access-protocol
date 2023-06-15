@@ -1,7 +1,7 @@
 pub use crate::processor::{
     activate_stake_pool, admin_freeze, admin_mint, change_central_state_authority,
     change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards,
-    claim_pool_rewards, claim_rewards, close_stake_account, close_stake_pool, crank, create_bond,
+    claim_rewards, close_stake_account, close_stake_pool, crank, create_bond,
     create_central_state, create_stake_account, create_stake_pool, edit_metadata, sign_bond, stake,
     unlock_bond_tokens, unstake, migrate_stake_pool_v2
 };
@@ -311,23 +311,6 @@ pub fn unstake(
     params: unstake::Params,
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::Unstake as u8, params)
-}
-#[allow(missing_docs)]
-pub fn claim_pool_rewards(
-    program_id: Pubkey,
-    accounts: claim_pool_rewards::Accounts<Pubkey>,
-    params: claim_pool_rewards::Params,
-    owner_must_sign: bool,
-) -> Instruction {
-    let mut ix = accounts.get_instruction(
-        program_id,
-        ProgramInstruction::ClaimPoolRewards as u8,
-        params,
-    );
-    if let Some(acc) = ix.accounts.get_mut(1) {
-        acc.is_signer = owner_must_sign
-    }
-    ix
 }
 #[allow(missing_docs)]
 pub fn claim_rewards(

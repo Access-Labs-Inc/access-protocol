@@ -105,12 +105,11 @@ pub fn process_create_stake_pool(
         accounts.fee_payer,
         accounts.stake_pool_account,
         &[StakePoolHeader::SEED, &params.owner.to_bytes(), &[nonce]],
-        // todo STAKE_BUFFER_LEN_V2
-        stake_pool_header.borsh_len() + size_of::<RewardsTuple>() * STAKE_BUFFER_LEN_V1 as usize,
+        stake_pool_header.borsh_len() + size_of::<u128>() * STAKE_BUFFER_LEN_V2 as usize,
     )?;
 
     let mut stake_pool =
-        StakePool::get_checked(accounts.stake_pool_account, vec![Tag::Uninitialized])?;
+        StakePool::get_checked_v2(accounts.stake_pool_account, vec![Tag::Uninitialized])?;
 
     *stake_pool.header = stake_pool_header;
 

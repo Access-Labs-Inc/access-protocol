@@ -129,8 +129,7 @@ pub fn process_unstake(
     let Params { amount} = params;
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    // todo only v2
-    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool, Tag::StakePoolV2])?;
+    let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePoolV2])?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
     let mut central_state = CentralState::from_account_info(accounts.central_state_account)?;
 

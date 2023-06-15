@@ -209,6 +209,7 @@ pub fn process_crank(
         .checked_add(1_000_000).ok_or(AccessError::Overflow)?);
 
     // Mint pool rewards directly to the pool owner
+    // todo - maybe we need to check if there is a token account, but this check was not there in the old implementation
     let mint_ix = mint_to(
         &spl_token::ID,
         accounts.mint.key,

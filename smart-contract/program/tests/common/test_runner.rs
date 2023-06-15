@@ -15,7 +15,7 @@ use access_protocol::{
     entrypoint::process_instruction,
     instruction::{
         activate_stake_pool, admin_mint,
-        claim_pool_rewards, claim_rewards,
+        claim_rewards,
         crank, create_central_state, create_stake_account,
         create_stake_pool, stake, unstake,
     },
@@ -82,7 +82,7 @@ impl TestRunner {
             Pubkey::find_program_address(&[&program_id.to_bytes()], &program_id);
 
         //
-        // Create mint
+        // Bootstrap mint
         //
         let (mint, _) = mint_bootstrap(Some("acsT7dFjiyevrBbvpsD7Vqcwj1QN96fbWKdq49wcdWZ"), 6, &mut program_test, &central_state);
 
@@ -364,31 +364,6 @@ impl TestRunner {
         );
 
         sign_send_instructions(&mut self.prg_test_ctx, vec![upgrade_pool_ix], vec![])
-            .await
-    }
-
-    pub async fn claim_pool_rewards(&mut self, stake_pool_owner: &Keypair) -> Result<(), BanksClientError> {
-        let stake_pool_key = self.get_pool_pda(&stake_pool_owner.pubkey());
-        let stake_pool_owner_token_acc = get_associated_token_address(&stake_pool_owner.pubkey(), &self.mint);
-        let claim_stake_pool_ix = claim_pool_rewards(
-            self.program_id,
-            claim_pool_rewards::Accounts {
-                stake_pool: &stake_pool_key,
-                owner: &stake_pool_owner.pubkey(),
-                rewards_destination: &stake_pool_owner_token_acc,
-                central_state: &self.central_state,
-                mint: &self.mint,
-                spl_token_program: &spl_token::ID,
-            },
-            claim_pool_rewards::Params {},
-            true,
-        );
-
-        sign_send_instructions(
-            &mut self.prg_test_ctx,
-            vec![claim_stake_pool_ix],
-            vec![stake_pool_owner],
-        )
             .await
     }
 

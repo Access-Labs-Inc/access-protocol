@@ -1,10 +1,12 @@
-use crate::instruction::ProgramInstruction;
 use borsh::BorshDeserialize;
 use num_traits::FromPrimitive;
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
     pubkey::Pubkey,
 };
+
+use crate::error::AccessError;
+use crate::instruction::ProgramInstruction;
 
 pub mod activate_stake_pool;
 pub mod admin_freeze;
@@ -15,7 +17,6 @@ pub mod change_pool_minimum;
 pub mod change_pool_multiplier;
 pub mod claim_bond;
 pub mod claim_bond_rewards;
-pub mod claim_pool_rewards;
 pub mod claim_rewards;
 pub mod close_stake_account;
 pub mod close_stake_pool;
@@ -81,10 +82,8 @@ impl Processor {
                 unstake::process_unstake(program_id, accounts, params)?;
             }
             ProgramInstruction::ClaimPoolRewards => {
-                msg!("Instruction: Claim pool rewards");
-                let params = claim_pool_rewards::Params::try_from_slice(instruction_data)
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
-                claim_pool_rewards::process_claim_pool_rewards(program_id, accounts, params)?;
+                msg!("Instruction: Claim pool rewards not supported in V2");
+                return Err(AccessError::NoOp.into());
             }
             ProgramInstruction::ClaimRewards => {
                 msg!("Instruction: Claim rewards");
