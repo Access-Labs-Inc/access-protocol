@@ -10,15 +10,15 @@ use solana_program::{
     system_program,
 };
 
-use crate::{
+use crate::common::v1_contract::{
     cpi::Cpi,
     error::AccessError,
-    state::{RewardsTuple, StakePoolHeader, Tag, STAKE_BUFFER_LEN_V1, STAKE_BUFFER_LEN_V2},
+    state::{RewardsTuple, StakePoolHeader, Tag, STAKE_BUFFER_LEN},
 };
-use crate::{state::StakePool, utils::assert_valid_vault};
+use crate::common::v1_contract::{state::StakePool, utils::assert_valid_vault};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
-use crate::utils::{check_account_key, check_account_owner};
+use crate::common::v1_contract::utils::{check_account_key, check_account_owner};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `create_stake_pool` instruction
@@ -105,11 +105,11 @@ pub fn process_create_stake_pool(
         accounts.fee_payer,
         accounts.stake_pool_account,
         &[StakePoolHeader::SEED, &params.owner.to_bytes(), &[nonce]],
-        stake_pool_header.borsh_len() + size_of::<u128>() * STAKE_BUFFER_LEN_V2 as usize,
+        stake_pool_header.borsh_len() + size_of::<RewardsTuple>() * STAKE_BUFFER_LEN as usize,
     )?;
 
     let mut stake_pool =
-        StakePool::get_checked_v2(accounts.stake_pool_account, vec![Tag::Uninitialized])?;
+        StakePool::get_checked(accounts.stake_pool_account, vec![Tag::Uninitialized])?;
 
     *stake_pool.header = stake_pool_header;
 
