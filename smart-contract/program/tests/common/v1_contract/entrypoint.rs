@@ -1,5 +1,5 @@
-use crate::error::AccessError;
-use crate::processor::Processor;
+use crate::common::v1_contract::error::AccessError;
+use crate::common::v1_contract::processor::Processor;
 use num_traits::FromPrimitive;
 use solana_program::{
     account_info::AccountInfo, decode_error::DecodeError, entrypoint::ProgramResult, msg,

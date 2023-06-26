@@ -77,44 +77,11 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     }
 }
 
+// todo maybe delete this completely
 pub fn process_admin_mint(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
-    let accounts = Accounts::parse(accounts, program_id)?;
-    let central_state = CentralState::from_account_info(accounts.central_state)?;
-
-    check_account_key(
-        accounts.mint,
-        &central_state.token_mint,
-        AccessError::WrongMint,
-    )?;
-    check_account_key(
-        accounts.authority,
-        &central_state.authority,
-        AccessError::WrongCentralStateAuthority,
-    )?;
-
-    // Transfer tokens
-    let mint_ix = spl_token::instruction::mint_to(
-        &spl_token::ID,
-        accounts.mint.key,
-        accounts.access_token_destination.key,
-        accounts.central_state.key,
-        &[],
-        params.amount,
-    )?;
-    invoke_signed(
-        &mint_ix,
-        &[
-            accounts.spl_token_program.clone(),
-            accounts.central_state.clone(),
-            accounts.mint.clone(),
-            accounts.access_token_destination.clone(),
-        ],
-        &[&[&program_id.to_bytes(), &[central_state.signer_nonce]]],
-    )?;
-
-    Ok(())
+    Err(AccessError::NoOp.into())
 }

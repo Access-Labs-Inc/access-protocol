@@ -75,6 +75,7 @@ pub fn process_create_central_state(
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
+    msg!("process_create_central_state"); // todo delete
     let accounts = Accounts::parse(accounts)?;
     let (derived_state_key, nonce) = CentralState::find_key(program_id);
 

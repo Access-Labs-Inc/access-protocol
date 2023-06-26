@@ -5,7 +5,9 @@ use std::mem::size_of;
 use borsh::BorshDeserialize;
 use bytemuck::{cast_slice, from_bytes, from_bytes_mut, Pod, try_cast_slice, Zeroable};
 use solana_program::{account_info::AccountInfo, pubkey::Pubkey, system_program};
+use solana_program::pubkey::PubkeyError;
 use solana_program_test::{processor, ProgramTest};
+use solana_sdk::account::ReadableAccount;
 use solana_sdk::signer::{keypair::Keypair, Signer};
 use solana_sdk::sysvar::clock;
 use solana_test_framework::*;
@@ -24,6 +26,30 @@ use access_protocol::instruction::{change_central_state_authority, change_inflat
 use access_protocol::state::{BondAccount, CentralState, RewardsTuple, StakeAccount, StakePool, StakePoolHeader, StakePoolHeaped, Tag};
 
 use crate::common::utils::{mint_bootstrap, sign_send_instructions};
+use crate::common::v1_contract::{
+    entrypoint::process_instruction as process_instruction_v1,
+    instruction::{
+        activate_stake_pool as activate_stake_pool_v1,
+        admin_mint as admin_mint_v1,
+        claim_rewards as claim_rewards_v1,
+        crank as crank_v1,
+        create_central_state as create_central_state_v1,
+        create_stake_account as create_stake_account_v1,
+        create_stake_pool as create_stake_pool_v1,
+        stake as stake_v1,
+        unstake as unstake_v1,
+    },
+};
+use crate::common::v1_contract::instruction::{
+    change_central_state_authority as change_central_state_authority_v1,
+    change_inflation as change_inflation_v1,
+    change_pool_minimum as change_pool_minimum_v1,
+    change_pool_multiplier as change_pool_multiplier_v1,
+    claim_bond as claim_bond_v1,
+    claim_bond_rewards as claim_bond_rewards_v1,
+    create_bond as create_bond_v1,
+    unlock_bond_tokens as unlock_bond_tokens_v1,
+};
 
 pub struct TestRunner {
     pub program_id: Pubkey,
@@ -32,9 +58,11 @@ pub struct TestRunner {
     authority_ata: Pubkey,
     central_state: Pubkey,
     mint: Pubkey,
+    contract_version: u8,
     // hashmap from user pubkey to a bond account
     bond_accounts: std::collections::HashMap<String, Pubkey>,
     bond_seller: Keypair,
+    pub program_id_v2: Option<Pubkey>,
 }
 
 pub struct StakerStats {
@@ -59,18 +87,23 @@ pub struct CentralStateStats {
 }
 
 impl TestRunner {
-    pub async fn new(daily_inflation: u64) -> Result<Self, BanksClientError> {
+    async fn new(daily_inflation: u64,
+                 version: u8,
+    ) -> Result<Self, BanksClientError> {
         // Create program and test environment
         let program_id = access_protocol::ID;
+        let mut program_id_v2 = None;
 
         let mut program_test = ProgramTest::default();
 
         program_test.prefer_bpf(true);
-        let mut program_test = ProgramTest::new(
-            "access_protocol",
-            program_id,
-            processor!(process_instruction),
-        );
+        if version == 1 {
+            program_test.add_program("access_protocol_v1", program_id, processor!(process_instruction_v1));
+            program_id_v2 = Some(Keypair::new().pubkey());
+            program_test.add_program("access_protocol", program_id_v2.unwrap(), processor!(process_instruction));
+        } else {
+            program_test.add_program("access_protocol", program_id, processor!(process_instruction));
+        }
         println!("added access_protocol::ID {:?}", access_protocol::ID);
 
         program_test.add_program("mpl_token_metadata", mpl_token_metadata::ID, None);
@@ -84,11 +117,12 @@ impl TestRunner {
         //
         // Bootstrap mint
         //
+        // todo maybe use a different mint for each test
         let (mint, _) = mint_bootstrap(Some("acsT7dFjiyevrBbvpsD7Vqcwj1QN96fbWKdq49wcdWZ"), 6, &mut program_test, &central_state);
 
-        ////
+        //
         // Create test context
-        ////
+        //
         let mut prg_test_ctx = program_test.start_with_context().await;
         let local_env = prg_test_ctx.banks_client.clone();
 
@@ -96,19 +130,36 @@ impl TestRunner {
         //
         // Create central state
         //
-        let create_central_state_ix = create_central_state(
-            program_id,
-            create_central_state::Accounts {
-                central_state: &central_state,
-                system_program: &system_program::ID,
-                fee_payer: &prg_test_ctx.payer.pubkey(),
-                mint: &mint,
-            },
-            create_central_state::Params {
-                daily_inflation,
-                authority: prg_test_ctx.payer.pubkey(),
-            },
-        );
+
+        let create_central_state_ix = if version == 1 {
+            create_central_state_v1(
+                program_id,
+                create_central_state_v1::Accounts {
+                    central_state: &central_state,
+                    system_program: &system_program::ID,
+                    fee_payer: &prg_test_ctx.payer.pubkey(),
+                    mint: &mint,
+                },
+                create_central_state_v1::Params {
+                    daily_inflation,
+                    authority: prg_test_ctx.payer.pubkey(),
+                },
+            )
+        } else {
+            create_central_state(
+                program_id,
+                create_central_state::Accounts {
+                    central_state: &central_state,
+                    system_program: &system_program::ID,
+                    fee_payer: &prg_test_ctx.payer.pubkey(),
+                    mint: &mint,
+                },
+                create_central_state::Params {
+                    daily_inflation,
+                    authority: prg_test_ctx.payer.pubkey(),
+                },
+            )
+        };
         sign_send_instructions(&mut prg_test_ctx, vec![create_central_state_ix], vec![])
             .await?;
 
@@ -146,10 +197,59 @@ impl TestRunner {
             local_env,
             authority_ata,
             central_state,
+            contract_version: version,
             mint,
             bond_accounts: std::collections::HashMap::new(),
             bond_seller,
+            program_id_v2,
         })
+    }
+
+    pub async fn new_v1(daily_inflation: u64) -> Result<Self, BanksClientError> {
+        Self::new(daily_inflation, 1).await
+    }
+
+    pub async fn new_v2(daily_inflation: u64) -> Result<Self, BanksClientError> {
+        Self::new(daily_inflation, 2).await
+    }
+
+    // todo
+    pub async fn upgrade_v2(&mut self) -> Result<(), BanksClientError> {
+        if self.contract_version == 2 {
+            // todo error here
+            return Ok(());
+        }
+        println!("upgrading to v2");
+        let program_account_v2 = self.prg_test_ctx.banks_client.get_account(
+            self.program_id_v2.unwrap(),
+        ).await?.unwrap();
+
+        let program_account = self.prg_test_ctx.banks_client.get_account(
+            self.program_id,
+        ).await?.unwrap();
+
+
+        println!("v2_data : {:?} ", &program_account_v2.to_account_shared_data());
+
+        self.prg_test_ctx.set_account(
+            &self.program_id,
+            &program_account_v2.to_account_shared_data(),
+        );
+
+        let program_account_after = self.prg_test_ctx.banks_client.get_account(
+            self.program_id,
+        ).await?.unwrap();
+
+        // compare the two
+        if program_account == program_account_after {
+            panic!("program account not upgraded");
+        }
+        // print both
+        println!("program_account {:?}", program_account);
+        println!("program_account_after {:?}", program_account_after);
+
+        self.contract_version = 2;
+        Ok(())
     }
 
     pub async fn create_ata_account(&mut self) -> Result<Keypair, BanksClientError> {
@@ -324,48 +424,48 @@ impl TestRunner {
             .await
     }
 
-    pub async fn crank_pool(&mut self, stake_pool_owner: &Pubkey) -> Result<(), BanksClientError> {
-        let stake_pool_key = self.get_pool_pda(stake_pool_owner);
-        let stake_pool_owner_token_acc = get_associated_token_address(&stake_pool_owner, &self.mint);
-        let crank_ix = crank(
-            self.program_id,
-            crank::Accounts {
-                stake_pool: &stake_pool_key,
-                owner: &stake_pool_owner,
-                rewards_destination: &stake_pool_owner_token_acc,
-                central_state: &self.central_state,
-                mint: &self.mint,
-                spl_token_program: &spl_token::ID,
-            },
-            crank::Params {},
-        );
+    // pub async fn crank_pool(&mut self, stake_pool_owner: &Pubkey) -> Result<(), BanksClientError> {
+    //     let stake_pool_key = self.get_pool_pda(stake_pool_owner);
+    //     let stake_pool_owner_token_acc = get_associated_token_address(&stake_pool_owner, &self.mint);
+    //     let crank_ix = crank(
+    //         self.program_id,
+    //         crank::Accounts {
+    //             stake_pool: &stake_pool_key,
+    //             owner: &stake_pool_owner,
+    //             rewards_destination: &stake_pool_owner_token_acc,
+    //             central_state: &self.central_state,
+    //             mint: &self.mint,
+    //             spl_token_program: &spl_token::ID,
+    //         },
+    //         crank::Params {},
+    //     );
+    //
+    //     sign_send_instructions(&mut self.prg_test_ctx, vec![crank_ix], vec![])
+    //         .await
+    // }
 
-        sign_send_instructions(&mut self.prg_test_ctx, vec![crank_ix], vec![])
-            .await
-    }
-
-    pub async fn migrate_pool_v2(&mut self, stake_pool_owner_key: &Pubkey) -> Result<(), BanksClientError> {
-        let stake_pool_key = self.get_pool_pda(stake_pool_owner_key);
-        let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
-        let stake_pool_owner_token_acc = get_associated_token_address(&stake_pool_owner_key, &self.mint);
-
-        let upgrade_pool_ix = migrate_stake_pool_v2(
-            self.program_id,
-            migrate_stake_pool_v2::Accounts {
-                stake_pool: &stake_pool_key,
-                owner: &stake_pool_owner_key,
-                rewards_destination: &stake_pool_owner_token_acc,
-                system_program: &system_program::ID, // OK
-                vault: &pool_vault,
-                central_state: &self.central_state,
-                mint: &self.mint,
-                spl_token_program: &spl_token::ID,
-            }, migrate_stake_pool_v2::Params {},
-        );
-
-        sign_send_instructions(&mut self.prg_test_ctx, vec![upgrade_pool_ix], vec![])
-            .await
-    }
+    // pub async fn migrate_pool_v2(&mut self, stake_pool_owner_key: &Pubkey) -> Result<(), BanksClientError> {
+    //     let stake_pool_key = self.get_pool_pda(stake_pool_owner_key);
+    //     let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
+    //     let stake_pool_owner_token_acc = get_associated_token_address(&stake_pool_owner_key, &self.mint);
+    //
+    //     let upgrade_pool_ix = migrate_stake_pool_v2(
+    //         self.program_id,
+    //         migrate_stake_pool_v2::Accounts {
+    //             stake_pool: &stake_pool_key,
+    //             owner: &stake_pool_owner_key,
+    //             rewards_destination: &stake_pool_owner_token_acc,
+    //             system_program: &system_program::ID, // OK
+    //             vault: &pool_vault,
+    //             central_state: &self.central_state,
+    //             mint: &self.mint,
+    //             spl_token_program: &spl_token::ID,
+    //         }, migrate_stake_pool_v2::Params {},
+    //     );
+    //
+    //     sign_send_instructions(&mut self.prg_test_ctx, vec![upgrade_pool_ix], vec![])
+    //         .await
+    // }
 
     pub async fn claim_staker_rewards(&mut self, stake_pool_owner: &Pubkey, staker: &Keypair) -> Result<(), BanksClientError> {
         let stake_pool_key = self.get_pool_pda(stake_pool_owner);
