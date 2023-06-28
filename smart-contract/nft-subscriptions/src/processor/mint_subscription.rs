@@ -243,30 +243,30 @@ pub fn process_mint_subscription(
             accounts.rent.clone(),
         ],
     )?;
-    //
-    // msg!("Creating master edition metadata account...");
-    // msg!("Master edition metadata account address: {}", &accounts.master_edition.key);
-    // invoke(
-    //     &token_metadata_instruction::create_master_edition_v3(
-    //         TOKEN_METADATA_ID,
-    //         *accounts.master_edition.key,
-    //         *accounts.mint.key,
-    //         *accounts.mint_authority.key,
-    //         *accounts.mint_authority.key,
-    //         *accounts.metadata.key,
-    //         *accounts.fee_payer.key,
-    //         Some(0),
-    //     ),
-    //     &[
-    //         accounts.master_edition.clone(),
-    //         accounts.metadata.clone(),
-    //         accounts.mint.clone(),
-    //         accounts.token_account.clone(),
-    //         accounts.mint_authority.clone(),
-    //         accounts.fee_payer.clone(),
-    //         accounts.rent.clone(),
-    //     ],
-    // )?;
+
+    msg!("Creating master edition metadata account...");
+    msg!("Master edition metadata account address: {}", &accounts.master_edition.key);
+    invoke(
+        &token_metadata_instruction::create_master_edition_v3(
+            TOKEN_METADATA_ID,
+            *accounts.master_edition.key,
+            *accounts.mint.key,
+            *accounts.mint_authority.key,
+            *accounts.mint_authority.key,
+            *accounts.metadata.key,
+            *accounts.fee_payer.key,
+            Some(0),
+        ),
+        &[
+            accounts.master_edition.clone(),
+            accounts.metadata.clone(),
+            accounts.mint.clone(),
+            accounts.token_account.clone(),
+            accounts.mint_authority.clone(),
+            accounts.fee_payer.clone(),
+            accounts.rent.clone(),
+        ],
+    )?;
 
 
     msg!("Token mint process completed successfully.");
