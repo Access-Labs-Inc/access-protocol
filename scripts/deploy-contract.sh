@@ -4,7 +4,7 @@
 pwd=$(pwd)
 NETWORK=${NETWORK:-devnet}
 
-pushd ../smart-contract/program
+pushd ../smart-contract/nft-subscriptions
 echo  "Building smart contract program..."
 # IMPORTANT: If not no-mint-check present you need to update MINT_ADDRESS in (state.rs)
 cargo build-bpf --features no-bond-signer no-mint-check
@@ -66,7 +66,7 @@ program_pubkey=$(solana-keygen pubkey ${PROGRAM_KEYPAIR})
 echo "Program pubkey: $program_pubkey"
 authority_pubkey=$(solana-keygen pubkey ${AUTHORITY_KEYPAIR})
 echo "Authority pubkey: $authority_pubkey"
-solana program deploy ./target/deploy/access_protocol.so \
+solana program deploy ./target/deploy/access_protocol_nft.so \
  --program-id ${PROGRAM_KEYPAIR} \
  --upgrade-authority ${authority_pubkey} \
  -u ${NETWORK}

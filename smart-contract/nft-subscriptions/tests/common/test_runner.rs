@@ -2,6 +2,8 @@ use std::error::Error;
 use std::str::FromStr;
 
 use borsh::BorshDeserialize;
+use mpl_token_metadata::state::get_master_edition;
+use solana_client::rpc_client::RpcClient;
 use solana_program::{pubkey::Pubkey, system_program};
 use solana_program_test::{processor, ProgramTest};
 use solana_sdk::signer::{keypair::Keypair, Signer};
@@ -37,6 +39,7 @@ impl TestRunner {
             processor!(process_instruction),
         );
         println!("added access_protocol::ID {:?}", access_protocol_nft::ID);
+        program_test.add_program("mpl_token_metadata", mpl_token_metadata::ID, None);
 
         let mut prg_test_ctx = program_test.start_with_context().await;
         let local_env = prg_test_ctx.banks_client.clone();
@@ -50,10 +53,27 @@ impl TestRunner {
 
     pub async fn mint_subscription_nft(&mut self,
                                        owner: &Keypair,
+                                       metadata_title: String,
+                                       metadata_symbol: String,
+                                       metadata_uri: String,
     ) -> Result<Pubkey, BanksClientError> {
+        let TOKEN_METADATA_PROGRAM_ID: Pubkey = Pubkey::from_str("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s").unwrap();
         let mint = Keypair::new();
         println!("mint: {:?}", mint);
         let token_account = get_associated_token_address(&owner.pubkey(), &mint.pubkey());
+        let metadata_seeds: &[&[u8]] = &[
+            "metadata".as_bytes(),
+            &TOKEN_METADATA_PROGRAM_ID.to_bytes(),
+            &mint.pubkey().to_bytes(),
+        ];
+
+        let master_edition_seeds: &[&[u8]] = &[
+            "metadata".as_bytes(),
+            &TOKEN_METADATA_PROGRAM_ID.to_bytes(),
+            &mint.pubkey().to_bytes(),
+            "edition".as_bytes(),
+        ];
+
         println!("token_account: {:?}", token_account);
         let mint_subscription_ix = mint_subscription(
             self.program_id,
@@ -65,9 +85,16 @@ impl TestRunner {
                 rent: &Pubkey::from_str("SysvarRent111111111111111111111111111111111").unwrap(),
                 system_program: &system_program::ID,
                 token_program: &Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap(),
+                token_metadata_program: &TOKEN_METADATA_PROGRAM_ID,
                 associated_token_program: &Pubkey::from_str("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL").unwrap(),
+                metadata: &Pubkey::find_program_address(metadata_seeds, &TOKEN_METADATA_PROGRAM_ID).0,
+                master_edition: &Pubkey::find_program_address(master_edition_seeds, &TOKEN_METADATA_PROGRAM_ID).0,
             },
-            mint_subscription::Params {},
+            mint_subscription::Params {
+                metadata_title: metadata_title,
+                metadata_symbol: metadata_symbol,
+                metadata_uri: metadata_uri,
+            },
         );
         println!("mint_subscription_ix: {:?}", mint_subscription_ix);
         sign_send_instructions(&mut self.prg_test_ctx, vec![mint_subscription_ix], vec![owner, &mint])

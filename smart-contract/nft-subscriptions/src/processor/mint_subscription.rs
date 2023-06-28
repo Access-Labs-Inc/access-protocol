@@ -1,6 +1,10 @@
 //! Mint subscription
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
+use mpl_token_metadata::{
+    ID as TOKEN_METADATA_ID,
+    instruction as token_metadata_instruction,
+};
 use solana_program::{account_info::{AccountInfo, next_account_info}, entrypoint::ProgramResult, msg, program_error::ProgramError, pubkey::Pubkey, system_instruction, system_program};
 use solana_program::native_token::LAMPORTS_PER_SOL;
 use solana_program::program::{invoke, invoke_signed};
@@ -26,7 +30,11 @@ use crate::error::AccessError;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `mint_subscription` instruction
-pub struct Params {}
+pub struct Params {
+    pub metadata_title: String,
+    pub metadata_symbol: String,
+    pub metadata_uri: String,
+}
 
 #[derive(InstructionsAccount)]
 /// The required accounts for the `mint_subscription` instruction
@@ -56,8 +64,19 @@ pub struct Accounts<'a, T> {
     /// The SPL token program
     pub token_program: &'a T,
 
+    /// The SPL token metadata program
+    pub token_metadata_program : &'a T,
+
     /// The associated token program
     pub associated_token_program: &'a T,
+
+    /// The SPL token metadata
+    #[cons(writable)]
+    pub metadata: &'a T,
+
+    /// The SPL token master edition
+    #[cons(writable)]
+    pub master_edition: &'a T,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -74,7 +93,10 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             rent: next_account_info(accounts_iter)?,
             system_program: next_account_info(accounts_iter)?,
             token_program: next_account_info(accounts_iter)?,
+            token_metadata_program: next_account_info(accounts_iter)?,
             associated_token_program: next_account_info(accounts_iter)?,
+            metadata: next_account_info(accounts_iter)?,
+            master_edition: next_account_info(accounts_iter)?,
         };
 
         // // Check keys
@@ -127,7 +149,7 @@ pub fn process_mint_subscription(
             accounts.mint.clone(),
             accounts.fee_payer.clone(),
             accounts.token_program.clone(),
-        ]
+        ],
     )?;
 
     msg!("Initializing mint account...");
@@ -145,7 +167,7 @@ pub fn process_mint_subscription(
             accounts.mint_authority.clone(),
             accounts.token_program.clone(),
             accounts.rent.clone(),
-        ]
+        ],
     )?;
 
     msg!("Creating token account...");
@@ -164,7 +186,7 @@ pub fn process_mint_subscription(
             accounts.mint_authority.clone(),
             accounts.token_program.clone(),
             accounts.associated_token_program.clone(),
-        ]
+        ],
     )?;
 
     msg!("Minting token to token account...");
@@ -185,8 +207,67 @@ pub fn process_mint_subscription(
             accounts.token_account.clone(),
             accounts.token_program.clone(),
             accounts.rent.clone(),
-        ]
+        ],
     )?;
+
+    msg!("Creating metadata account...");
+    msg!("Metadata account address: {}", &accounts.metadata.key);
+    invoke(
+        &token_metadata_instruction::create_metadata_accounts_v3(
+            TOKEN_METADATA_ID,
+            *accounts.metadata.key,
+            *accounts.mint.key,
+            *accounts.mint_authority.key,
+            *accounts.fee_payer.key,
+            *accounts.mint_authority.key,
+            params.metadata_title,
+            params.metadata_symbol,
+            params.metadata_uri,
+            None,
+            1,
+            true,
+            false,
+            None,
+            None,
+            None,
+        ),
+        &[
+            accounts.metadata.clone(),
+            accounts.mint.clone(),
+            accounts.mint_authority.clone(),
+            accounts.fee_payer.clone(),
+            accounts.mint_authority.clone(),
+            accounts.token_program.clone(),
+            accounts.token_metadata_program.clone(),
+            accounts.system_program.clone(),
+            accounts.rent.clone(),
+        ],
+    )?;
+    //
+    // msg!("Creating master edition metadata account...");
+    // msg!("Master edition metadata account address: {}", &accounts.master_edition.key);
+    // invoke(
+    //     &token_metadata_instruction::create_master_edition_v3(
+    //         TOKEN_METADATA_ID,
+    //         *accounts.master_edition.key,
+    //         *accounts.mint.key,
+    //         *accounts.mint_authority.key,
+    //         *accounts.mint_authority.key,
+    //         *accounts.metadata.key,
+    //         *accounts.fee_payer.key,
+    //         Some(0),
+    //     ),
+    //     &[
+    //         accounts.master_edition.clone(),
+    //         accounts.metadata.clone(),
+    //         accounts.mint.clone(),
+    //         accounts.token_account.clone(),
+    //         accounts.mint_authority.clone(),
+    //         accounts.fee_payer.clone(),
+    //         accounts.rent.clone(),
+    //     ],
+    // )?;
+
 
     msg!("Token mint process completed successfully.");
     Ok(())
