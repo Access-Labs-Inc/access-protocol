@@ -32,14 +32,9 @@ pub const SECONDS_IN_DAY: u64 = if cfg!(feature = "days-to-sec-15m") {
 /// Percentage of the staking rewards going to stakers
 pub const STAKER_MULTIPLIER: u64 = 50;
 
-/// Percentage of the staking rewards going to the pool owner
-pub const OWNER_MULTIPLIER: u64 = 100 - STAKER_MULTIPLIER;
-
 /// Length of the circular buffer (stores balances for 1 year)
+// todo check where this is used and replace with the constant from utils
 pub const STAKE_BUFFER_LEN: u64 = 274; // 9 Months
-
-/// Max pending unstake requests
-pub const MAX_UNSTAKE_REQUEST: usize = 10;
 
 /// Fees charged on staking instruction in % (i.e FEES = 1 <-> 1% fee charged)
 pub const FEES: u64 = 2;

@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::str::FromStr;
 
 use borsh::BorshDeserialize;
 use solana_program::{pubkey::Pubkey, system_program};
@@ -47,15 +48,30 @@ impl TestRunner {
         })
     }
 
-    pub async fn mint_subscription_nft(&mut self) -> Result<(), BanksClientError> {
+    pub async fn mint_subscription_nft(&mut self,
+                                       owner: &Keypair,
+    ) -> Result<Pubkey, BanksClientError> {
+        let mint = Keypair::new();
+        println!("mint: {:?}", mint);
+        let token_account = get_associated_token_address(&owner.pubkey(), &mint.pubkey());
+        println!("token_account: {:?}", token_account);
         let mint_subscription_ix = mint_subscription(
             self.program_id,
             mint_subscription::Accounts {
-                central_state_account: &Keypair::new().pubkey(),
+                fee_payer: &self.prg_test_ctx.payer.pubkey(),
+                mint: &mint.pubkey(),
+                token_account: &token_account,
+                mint_authority: &owner.pubkey(),
+                rent: &Pubkey::from_str("SysvarRent111111111111111111111111111111111").unwrap(),
+                system_program: &system_program::ID,
+                token_program: &Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap(),
+                associated_token_program: &Pubkey::from_str("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL").unwrap(),
             },
             mint_subscription::Params {},
         );
-        sign_send_instructions(&mut self.prg_test_ctx, vec![mint_subscription_ix], vec![])
-            .await
+        println!("mint_subscription_ix: {:?}", mint_subscription_ix);
+        sign_send_instructions(&mut self.prg_test_ctx, vec![mint_subscription_ix], vec![owner, &mint])
+            .await?;
+        Ok(mint.pubkey())
     }
 }
