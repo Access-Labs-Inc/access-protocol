@@ -1,10 +1,1 @@
-.env
-node_modules
-dist
-.vscode
-__pycache__
-target/
-bin/
-coverage/
-wallet.json
-scripts/artifacts*
+
