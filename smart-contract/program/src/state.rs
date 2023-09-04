@@ -659,13 +659,19 @@ pub struct BondAccountV2 {
 impl BondAccountV2 {
     pub const SEED: &'static [u8; 12] = b"bond_account_v2";
 
-    pub fn create_key(owner: &Pubkey, total_amount_sold: u64, program_id: &Pubkey) -> (Pubkey, u8) {
+    pub fn create_key(
+        owner: &Pubkey,
+        stake_pool: &Pubkey,
+        amount: u64,
+        unlock_date: Option<i64>,
+        program_id: &Pubkey,
+    ) -> (Pubkey, u8) {
         let seeds: &[&[u8]] = &[
             BondAccountV2::SEED,
-            &accounts.owner.key.to_bytes(),
-            &accounts.stake_pool.key.to_bytes(),
-            &params.amount.to_le_bytes(),
-            &params.unlock_date.unwrap_or(0).to_le_bytes(),
+            &owner.to_bytes(),
+            &stake_pool.to_bytes(),
+            &amount.to_le_bytes(),
+            &unlock_date.unwrap_or(0).to_le_bytes(),
         ];
         Pubkey::find_program_address(seeds, program_id)
     }
@@ -678,7 +684,6 @@ impl BondAccountV2 {
         amount: u64,
         unlock_date: Option<i64>,
     ) -> Self {
-        let sellers = vec![seller];
         Self {
             tag: Tag::BondAccountV2,
             owner,
