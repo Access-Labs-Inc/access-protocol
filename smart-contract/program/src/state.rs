@@ -55,12 +55,14 @@ pub enum Tag {
     // Bond accounts are inactive until the buyer transfered the funds
     InactiveBondAccount,
     BondAccount,
+    BondAccountV2,
     CentralState,
     Deleted,
     // Accounts frozen by the central state authority
     FrozenStakePool,
     FrozenStakeAccount,
     FrozenBondAccount,
+    FrozenBondAccountV2, // todo use or delete
 }
 
 impl Tag {
@@ -70,9 +72,11 @@ impl Tag {
             Tag::StakePool => Tag::FrozenStakePool,
             Tag::StakeAccount => Tag::FrozenStakeAccount,
             Tag::BondAccount => Tag::FrozenBondAccount,
+            Tag::BondAccountV2 => Tag::FrozenBondAccountV2,
             Tag::FrozenStakePool => Tag::StakePool,
             Tag::FrozenStakeAccount => Tag::StakeAccount,
             Tag::FrozenBondAccount => Tag::BondAccount,
+            Tag::FrozenBondAccountV2 => Tag::BondAccountV2,
             _ => return Err(AccessError::InvalidTagChange.into()),
         };
 
@@ -620,5 +624,87 @@ impl BondAccount {
                 .checked_sub(self.total_unlocked_amount)
                 .ok_or(AccessError::Overflow)?,
         ))
+    }
+}
+
+
+#[derive(BorshSerialize, BorshDeserialize, BorshSize)]
+#[allow(missing_docs)]
+pub struct BondAccountV2 {
+    /// Tag
+    pub tag: Tag,
+
+    /// Owner of the stake account
+    pub owner: Pubkey,
+
+    /// Amount locked in the account
+    pub amount: u64,
+
+    /// Pool to which the account belongs to
+    pub pool: Pubkey,
+
+    /// Offset of a last day where rewards were claimed from the contract creation date
+    pub last_claimed_offset: u64,
+
+    /// Minimum lockable amount of the pool when the account
+    /// was created
+    pub pool_minimum_at_creation: u64,
+
+    // Unlock start date
+    pub unlock_date: Option<i64>, // todo decide if Option None or -1 for uninitialized
+}
+
+
+#[allow(missing_docs)]
+impl BondAccountV2 {
+    pub const SEED: &'static [u8; 12] = b"bond_account_v2";
+
+    pub fn create_key(owner: &Pubkey, total_amount_sold: u64, program_id: &Pubkey) -> (Pubkey, u8) {
+        let seeds: &[&[u8]] = &[
+            BondAccountV2::SEED,
+            &accounts.owner.key.to_bytes(),
+            &accounts.stake_pool.key.to_bytes(),
+            &params.amount.to_le_bytes(),
+            &params.unlock_date.unwrap_or(0).to_le_bytes(),
+        ];
+        Pubkey::find_program_address(seeds, program_id)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        owner: Pubkey,
+        pool: Pubkey,
+        pool_minimum_at_creation: u64,
+        amount: u64,
+        unlock_date: Option<i64>,
+    ) -> Self {
+        let sellers = vec![seller];
+        Self {
+            tag: Tag::BondAccountV2,
+            owner,
+            amount,
+            pool,
+            last_claimed_offset: 0,
+            pool_minimum_at_creation,
+            unlock_date,
+        }
+    }
+
+    pub fn save(&self, mut dst: &mut [u8]) -> ProgramResult {
+        self.serialize(&mut dst)
+            .map_err(|_| ProgramError::InvalidAccountData)
+    }
+
+    pub fn from_account_info(
+        a: &AccountInfo,
+        allow_inactive: bool,
+    ) -> Result<BondAccountV2, ProgramError> {
+        let mut data = &a.data.borrow() as &[u8];
+        let tag = Tag::BondAccountV2;
+        if data[0] != tag as u8 && data[0] != Tag::Uninitialized as u8 {
+            return Err(AccessError::DataTypeMismatch.into());
+        }
+        let result = BondAccount::deserialize(&mut data)?;
+        Ok(result)
     }
 }

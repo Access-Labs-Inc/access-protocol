@@ -241,6 +241,8 @@ pub enum ProgramInstruction {
     /// | 2     | ✅        | ❌      | The metadata account                       |
     /// | 3     | ❌        | ❌      | The metadata program account               |
     EditMetadata,
+    // tood docs
+    CreateBondV2,
 }
 #[allow(missing_docs)]
 pub fn create_central_state(
