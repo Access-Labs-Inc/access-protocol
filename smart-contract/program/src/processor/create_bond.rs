@@ -72,6 +72,7 @@ pub fn process_create_bond(
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
+    // todo maybe keep the old logic, but add an "expiration date" - to be able to test easily
     // This instruction is not supported in V2 anymore
     Err(AccessError::UnsupportedInstruction.into())
 }
