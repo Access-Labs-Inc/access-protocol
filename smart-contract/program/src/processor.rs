@@ -187,7 +187,7 @@ impl Processor {
                 msg!("Instruction: Create bond V2");
                 let params = create_bond_v2::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
-                create_bond::process_create_bond_v2(program_id, accounts, params)?;
+                create_bond_v2::process_create_bond_v2(program_id, accounts, params)?;
             }
         }
 

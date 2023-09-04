@@ -5,20 +5,20 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{AccountInfo, next_account_info},
     entrypoint::ProgramResult,
+    program::invoke,
     program_error::ProgramError,
     pubkey::Pubkey,
     system_program,
 };
+use spl_token::instruction::transfer;
 
 use crate::{cpi::Cpi, state::Tag};
 use crate::error::AccessError;
-use crate::state::{CentralState, BOND_SIGNER_THRESHOLD, BondAccountV2, StakePool};
+use crate::state::{BOND_SIGNER_THRESHOLD, BondAccountV2, CentralState, StakePool};
 use crate::utils::{
     assert_uninitialized, check_account_key, check_account_owner,
     check_signer,
 };
-use spl_token::instruction::transfer;
-
 #[cfg(not(feature = "no-bond-signer"))]
 use crate::utils::assert_authorized_seller;
 
@@ -37,6 +37,7 @@ pub struct Accounts<'a, T> {
     /// The fee account
     #[cons(writable, signer)]
     pub fee_payer: &'a T,
+
     /// The bond seller account
     #[cons(writable, signer)]
     pub from: &'a T,
@@ -54,6 +55,9 @@ pub struct Accounts<'a, T> {
 
     /// The pool account
     pub pool: &'a T,
+
+    /// Central state
+    pub central_state: &'a T,
 
     /// The vault of the pool
     #[cons(writable)]
@@ -78,6 +82,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             to: next_account_info(accounts_iter)?,
             bond_account_v2: next_account_info(accounts_iter)?,
             pool: next_account_info(accounts_iter)?,
+            central_state: next_account_info(accounts_iter)?,
             pool_vault: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
             system_program: next_account_info(accounts_iter)?,
@@ -109,9 +114,15 @@ pub fn process_create_bond_v2(
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let (derived_key, nonce) =
-        BondAccountV2::create_key(&params.buyer, params.total_amount_sold, program_id);
+        BondAccountV2::create_key(
+            &accounts.to.key,
+            &accounts.pool.key,
+            params.amount,
+            params.unlock_date,
+            program_id
+        );
 
-    let stake_pool = StakePool::get_checked(accounts.pool, vec![Tag::StakePool])?;
+    let mut pool = StakePool::get_checked(accounts.pool, vec![Tag::StakePool])?;
     let mut central_state = CentralState::from_account_info(accounts.central_state)?;
 
     // todo revisit checks
@@ -120,16 +131,12 @@ pub fn process_create_bond_v2(
         &derived_key,
         AccessError::AccountNotDeterministic,
     )?;
-    assert_uninitialized(accounts.bond_account)?;
-
-    if params.unlock_period <= 0 {
-        return Err(AccessError::ForbiddenUnlockPeriodZero.into());
-    }
+    assert_uninitialized(accounts.bond_account_v2)?;
 
     let bond = BondAccountV2::new(
-        accounts.to.key,
-        stake_pool,
-        stake_pool.header.minimum_stake_amount,
+        *accounts.to.key,
+        *accounts.pool.key,
+        pool.header.minimum_stake_amount,
         params.amount,
         params.unlock_date,
     );
@@ -151,12 +158,12 @@ pub fn process_create_bond_v2(
         program_id,
         accounts.system_program,
         accounts.fee_payer,
-        accounts.bond_account,
+        accounts.bond_account_v2,
         seeds,
         bond.borsh_len() + ((BOND_SIGNER_THRESHOLD - 1) * 32) as usize,
     )?;
 
-    bond.save(&mut accounts.bond_account.data.borrow_mut())?;
+    bond.save(&mut accounts.bond_account_v2.data.borrow_mut())?;
 
     // Transfer tokens
     let transfer_instruction = transfer(
@@ -179,10 +186,11 @@ pub fn process_create_bond_v2(
 
     // todo probably transfer fees as well?
 
-    stake_pool.header.deposit(params.amount)?;
+    // Update all the appropriate states
+    pool.header.deposit(params.amount)?;
     central_state.total_staked = central_state
         .total_staked
-        .checked_add(bond.total_amount_sold)
+        .checked_add(params.amount)
         .ok_or(AccessError::Overflow)?;
     central_state.save(&mut accounts.central_state.data.borrow_mut())?;
 

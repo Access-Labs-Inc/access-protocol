@@ -657,11 +657,11 @@ pub struct BondAccountV2 {
 
 #[allow(missing_docs)]
 impl BondAccountV2 {
-    pub const SEED: &'static [u8; 12] = b"bond_account_v2";
+    pub const SEED: &'static [u8; 15] = b"bond_account_v2";
 
     pub fn create_key(
         owner: &Pubkey,
-        stake_pool: &Pubkey,
+        pool: &Pubkey,
         amount: u64,
         unlock_date: Option<i64>,
         program_id: &Pubkey,
@@ -669,7 +669,7 @@ impl BondAccountV2 {
         let seeds: &[&[u8]] = &[
             BondAccountV2::SEED,
             &owner.to_bytes(),
-            &stake_pool.to_bytes(),
+            &pool.to_bytes(),
             &amount.to_le_bytes(),
             &unlock_date.unwrap_or(0).to_le_bytes(),
         ];
@@ -709,7 +709,7 @@ impl BondAccountV2 {
         if data[0] != tag as u8 && data[0] != Tag::Uninitialized as u8 {
             return Err(AccessError::DataTypeMismatch.into());
         }
-        let result = BondAccount::deserialize(&mut data)?;
+        let result = BondAccountV2::deserialize(&mut data)?;
         Ok(result)
     }
 }

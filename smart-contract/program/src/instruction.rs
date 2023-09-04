@@ -3,7 +3,7 @@ pub use crate::processor::{
     change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards,
     claim_pool_rewards, claim_rewards, close_stake_account, close_stake_pool, crank, create_bond,
     create_central_state, create_stake_account, create_stake_pool, edit_metadata, sign_bond, stake,
-    unlock_bond_tokens, unstake,
+    unlock_bond_tokens, unstake, create_bond_v2
 };
 use bonfida_utils::InstructionsAccount;
 use borsh::{BorshDeserialize, BorshSerialize};

@@ -73,5 +73,5 @@ pub fn process_create_bond(
     params: Params,
 ) -> ProgramResult {
     // This instruction is not supported in V2 anymore
-    AccessError::UnsupportedInstruction.into()
+    Err(AccessError::UnsupportedInstruction.into())
 }
