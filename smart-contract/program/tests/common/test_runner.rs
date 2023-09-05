@@ -42,7 +42,7 @@ pub struct StakerStats {
 pub struct PoolOwnerStats {
     pub header: StakePoolHeader,
     pub balance: u64,
-    pub total_pool_staked: u64,
+    pub vault: u64,
 }
 
 #[derive(Debug)]
@@ -446,7 +446,7 @@ impl TestRunner {
 
         let stake_pool_key = self.get_pool_pda(&stake_pool_owner);
         let stake_pool_associated_token_account = get_associated_token_address(&stake_pool_key, &self.mint);
-        let total_pool_staked = self.local_env.get_packed_account_data::<spl_token::state::Account>(stake_pool_associated_token_account).await?.amount;
+        let vault = self.local_env.get_packed_account_data::<spl_token::state::Account>(stake_pool_associated_token_account).await?.amount;
 
         let acc = self.prg_test_ctx
             .banks_client
@@ -459,7 +459,7 @@ impl TestRunner {
         Ok(PoolOwnerStats {
             header: pool_header,
             balance,
-            total_pool_staked,
+            vault,
         })
     }
 

@@ -651,7 +651,7 @@ pub struct BondAccountV2 {
     pub pool_minimum_at_creation: u64,
 
     // Unlock start date
-    pub unlock_date: Option<i64>, // todo decide if Option None or -1 for uninitialized
+    pub unlock_date: Option<i64>
 }
 
 
@@ -669,7 +669,7 @@ impl BondAccountV2 {
             BondAccountV2::SEED,
             &owner.to_bytes(),
             &pool.to_bytes(),
-            &unlock_date.unwrap_or(-1).to_le_bytes(),
+            &unlock_date.unwrap_or(0).to_le_bytes(),
         ];
         Pubkey::find_program_address(seeds, program_id)
     }

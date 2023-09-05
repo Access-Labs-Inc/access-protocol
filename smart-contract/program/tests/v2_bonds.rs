@@ -40,10 +40,8 @@ async fn signed_claim() {
         let staker_stats = tr.staker_stats(from.pubkey()).await.unwrap();
         assert_eq!(staker_stats.balance, 100_000 - bond_amount - bond_amount * FEES / 100);
         let pool_stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
-        assert_eq!(pool_stats.total_pool_staked, bond_amount);
-        let stake_pool_key = tr.get_pool_pda(&stake_pool_owner.pubkey());
-        let pool_vault_amount = tr.get_ata_balance(&stake_pool_key).await.unwrap();
-        assert_eq!(pool_vault_amount, bond_amount);
+        assert_eq!(pool_stats.header.total_staked, bond_amount);
+        assert_eq!(pool_stats.vault, bond_amount);
         let central_state_stats = tr.central_state_stats().await.unwrap();
         assert_eq!(central_state_stats.total_staked, bond_amount);
         let bond = tr.bond_v2_stats(to.pubkey(), stake_pool_owner.pubkey(), Some(unlock_date)).await.unwrap();
@@ -73,14 +71,12 @@ async fn signed_claim() {
         ).await.unwrap();
 
         let staker_stats = tr.staker_stats(from.pubkey()).await.unwrap();
-        assert_eq!(staker_stats.balance, 100_000 - bond_amount - bond_amount * FEES / 100);
+        assert_eq!(staker_stats.balance, 100_000 - 2 * bond_amount - 2 * bond_amount * FEES / 100);
         let pool_stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
-        assert_eq!(pool_stats.total_pool_staked, bond_amount);
-        let stake_pool_key = tr.get_pool_pda(&stake_pool_owner.pubkey());
-        let pool_vault_amount = tr.get_ata_balance(&stake_pool_key).await.unwrap();
-        assert_eq!(pool_vault_amount, bond_amount);
+        assert_eq!(pool_stats.header.total_staked, 2 * bond_amount);
+        assert_eq!(pool_stats.vault, bond_amount); // it got burned so it didn't get to the vault
         let central_state_stats = tr.central_state_stats().await.unwrap();
-        assert_eq!(central_state_stats.total_staked, bond_amount);
+        assert_eq!(central_state_stats.total_staked, 2 * bond_amount);
         let bond = tr.bond_v2_stats(to.pubkey(), stake_pool_owner.pubkey(), None).await.unwrap();
         assert_eq!(bond.tag, BondAccountV2);
         assert_eq!(bond.unlock_date, None);

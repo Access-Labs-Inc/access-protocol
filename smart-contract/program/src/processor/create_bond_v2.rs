@@ -236,15 +236,15 @@ pub fn process_create_bond_v2(
             accounts.source_token.key,
             accounts.mint.key,
             accounts.from.key,
-            &[],
-            params.amount
+            &[accounts.from.key],
+            params.amount,
         )?;
         invoke(
             &burn_instruction,
             &[
-                accounts.spl_token_program.clone(),
                 accounts.source_token.clone(),
                 accounts.mint.clone(),
+                accounts.from.clone(),
                 accounts.from.clone(),
             ],
         )?;
