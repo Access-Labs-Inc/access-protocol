@@ -671,7 +671,7 @@ impl BondAccountV2 {
             &owner.to_bytes(),
             &pool.to_bytes(),
             &amount.to_le_bytes(),
-            &unlock_date.unwrap_or(0).to_le_bytes(),
+            &unlock_date.unwrap_or(-1).to_le_bytes(),
         ];
         Pubkey::find_program_address(seeds, program_id)
     }

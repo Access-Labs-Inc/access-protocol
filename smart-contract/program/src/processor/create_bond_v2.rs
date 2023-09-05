@@ -9,6 +9,7 @@ use solana_program::{
     program_error::ProgramError,
     pubkey::Pubkey,
     system_program,
+    msg,
 };
 use spl_token::instruction::transfer;
 
@@ -54,9 +55,11 @@ pub struct Accounts<'a, T> {
     pub bond_account_v2: &'a T,
 
     /// The pool account
+    #[cons(writable)]
     pub pool: &'a T,
 
     /// Central state
+    #[cons(writable)]
     pub central_state: &'a T,
 
     /// The vault of the pool
@@ -77,6 +80,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     ) -> Result<Self, ProgramError> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
+            fee_payer: next_account_info(accounts_iter)?,
             from: next_account_info(accounts_iter)?,
             source_token: next_account_info(accounts_iter)?,
             to: next_account_info(accounts_iter)?,
@@ -86,7 +90,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             pool_vault: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
             system_program: next_account_info(accounts_iter)?,
-            fee_payer: next_account_info(accounts_iter)?,
         };
 
         // Check keys
@@ -119,7 +122,7 @@ pub fn process_create_bond_v2(
             &accounts.pool.key,
             params.amount,
             params.unlock_date,
-            program_id
+            program_id,
         );
 
     let mut pool = StakePool::get_checked(accounts.pool, vec![Tag::StakePool])?;

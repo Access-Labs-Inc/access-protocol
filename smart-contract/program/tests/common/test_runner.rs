@@ -599,9 +599,16 @@ impl TestRunner {
 
     pub async fn create_bond_v2(&mut self, from: &Keypair, to: &Pubkey, pool_owner: &Pubkey, bond_amount: u64, unlock_after: Option<i64>) -> Result<(), BanksClientError> {
         let pool_key = self.get_pool_pda(pool_owner);
-        let (bond_key, _bond_nonce) =
-            BondAccountV2::create_key(to, &pool_key, bond_amount, unlock_after, &self.program_id);
         let current_time = self.local_env.get_sysvar::<clock::Clock>().await.unwrap().unix_timestamp;
+        let unlock_date = if unlock_after.is_some() { Some(current_time + unlock_after.unwrap()) } else { None };
+        let (bond_key, _bond_nonce) =
+            BondAccountV2::create_key(
+                to,
+                &pool_key,
+                bond_amount,
+                unlock_date,
+                &self.program_id
+            );
 
         let create_bond_v2_ix = access_protocol::instruction::create_bond_v2(
             self.program_id,
@@ -619,7 +626,7 @@ impl TestRunner {
             },
             access_protocol::instruction::create_bond_v2::Params {
                 amount: bond_amount,
-                unlock_date: if unlock_after.is_some() { Some(current_time + unlock_after.unwrap()) } else { None },
+                unlock_date,
             },
         );
         sign_send_instructions(&mut self.prg_test_ctx, vec![create_bond_v2_ix], vec![from])
