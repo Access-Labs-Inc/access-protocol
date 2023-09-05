@@ -465,7 +465,7 @@ impl TestRunner {
 
     // bond stats
     pub async fn bond_stats(&mut self, bond_owner: Pubkey, stake_pool_owner: Pubkey, original_bond_amount: u64) -> Result<BondAccount, BanksClientError> {
-        let _stake_pool_key = self.get_pool_pda(&stake_pool_owner);
+        let stake_pool_key = self.get_pool_pda(&stake_pool_owner);
         let (bond_key, _) =
             BondAccount::create_key(&bond_owner, original_bond_amount, &self.program_id);
 
@@ -480,13 +480,12 @@ impl TestRunner {
     }
 
     // bond v2 stats
-    pub async fn bond_v2_stats(&mut self, bond_owner: Pubkey, stake_pool_owner: Pubkey, original_bond_amount: u64, unlock_date: Option<i64>) -> Result<BondAccountV2, BanksClientError> {
-        let _stake_pool_key = self.get_pool_pda(&stake_pool_owner);
+    pub async fn bond_v2_stats(&mut self, bond_owner: Pubkey, stake_pool_owner: Pubkey, unlock_date: Option<i64>) -> Result<BondAccountV2, BanksClientError> {
+        let stake_pool_key = self.get_pool_pda(&stake_pool_owner);
         let (bond_key, _) =
             BondAccountV2::create_key(
                 &bond_owner,
-                &_stake_pool_key,
-                original_bond_amount,
+                &stake_pool_key,
                 unlock_date,
                 &self.program_id
             );
@@ -625,7 +624,6 @@ impl TestRunner {
             BondAccountV2::create_key(
                 to,
                 &pool_key,
-                bond_amount,
                 unlock_date,
                 &self.program_id
             );

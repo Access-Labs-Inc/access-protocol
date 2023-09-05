@@ -140,7 +140,6 @@ pub fn process_create_bond_v2(
         BondAccountV2::create_key(
             &accounts.to.key,
             &accounts.pool.key,
-            params.amount,
             params.unlock_date,
             program_id,
         );
@@ -189,7 +188,6 @@ pub fn process_create_bond_v2(
         BondAccountV2::SEED,
         &accounts.to.key.to_bytes(),
         &accounts.pool.key.to_bytes(),
-        &params.amount.to_le_bytes(),
         &params.unlock_date.unwrap_or(0).to_le_bytes(),
         &[nonce],
     ];

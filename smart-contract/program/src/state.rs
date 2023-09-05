@@ -640,7 +640,7 @@ pub struct BondAccountV2 {
     /// Amount locked in the account
     pub amount: u64,
 
-    /// Pool to which the account belongs to
+    /// Pool which the account belongs to
     pub pool: Pubkey,
 
     /// Offset of a last day where rewards were claimed from the contract creation date
@@ -662,7 +662,6 @@ impl BondAccountV2 {
     pub fn create_key(
         owner: &Pubkey,
         pool: &Pubkey,
-        amount: u64,
         unlock_date: Option<i64>,
         program_id: &Pubkey,
     ) -> (Pubkey, u8) {
@@ -670,7 +669,6 @@ impl BondAccountV2 {
             BondAccountV2::SEED,
             &owner.to_bytes(),
             &pool.to_bytes(),
-            &amount.to_le_bytes(),
             &unlock_date.unwrap_or(-1).to_le_bytes(),
         ];
         Pubkey::find_program_address(seeds, program_id)
