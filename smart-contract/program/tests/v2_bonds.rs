@@ -23,6 +23,6 @@ async fn signed_claim() {
         &to.pubkey(),
         &stake_pool_owner.pubkey(),
         10000,
-        200,
+        Some(200),
     ).await.unwrap();
 }

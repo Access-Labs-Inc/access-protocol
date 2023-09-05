@@ -375,6 +375,15 @@ pub fn create_bond(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::CreateBond as u8, params)
 }
+
+#[allow(missing_docs)]
+pub fn create_bond_v2(
+    program_id: Pubkey,
+    accounts: create_bond_v2::Accounts<Pubkey>,
+    params: create_bond_v2::Params,
+) -> Instruction {
+    accounts.get_instruction(program_id, ProgramInstruction::CreateBondV2 as u8, params)
+}
 #[allow(missing_docs)]
 pub fn sign_bond(
     program_id: Pubkey,
