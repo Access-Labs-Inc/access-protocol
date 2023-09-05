@@ -9,7 +9,6 @@ use solana_program::{
     program_error::ProgramError,
     pubkey::Pubkey,
     system_program,
-    msg,
 };
 use spl_token::instruction::transfer;
 
@@ -98,11 +97,23 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             &system_program::ID,
             AccessError::WrongSystemProgram,
         )?;
+        check_account_key(
+            accounts.spl_token_program,
+            &spl_token::ID,
+            AccessError::WrongSplTokenProgramId,
+        )?;
+
 
         // Check ownership
-        check_account_owner(accounts.pool, program_id, AccessError::WrongOwner)?;
+        check_account_owner(accounts.pool, program_id, AccessError::WrongStakePoolAccountOwner)?;
+        check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
+        check_account_owner(accounts.source_token, &spl_token::ID, AccessError::WrongTokenAccountOwner)?;
+        check_account_owner(accounts.vault, &spl_token::ID, AccessError::WrongTokenAccountOwner)?;
 
-        // Check signer
+
+        // Check signers
+        // todo - is this really needed? Possibly checked by #[cons(signer)]
+        check_signer(accounts.fee_payer, AccessError::BondSellerMustSign)?;
         check_signer(accounts.from, AccessError::BondSellerMustSign)?;
 
         Ok(accounts)
@@ -128,13 +139,20 @@ pub fn process_create_bond_v2(
     let mut pool = StakePool::get_checked(accounts.pool, vec![Tag::StakePool])?;
     let mut central_state = CentralState::from_account_info(accounts.central_state)?;
 
-    // todo revisit checks
     check_account_key(
         accounts.bond_account_v2,
         &derived_key,
         AccessError::AccountNotDeterministic,
     )?;
     assert_uninitialized(accounts.bond_account_v2)?;
+
+    let source_token_acc = Account::unpack(&accounts.source_token.data.borrow())?;
+    if source_token_acc.mint != central_state.token_mint {
+        return Err(AccessError::WrongMint.into());
+    }
+    if &source_token_acc.owner != accounts.from.key {
+        return Err(AccessError::WrongOwner.into());
+    }
 
     let bond = BondAccountV2::new(
         *accounts.to.key,
