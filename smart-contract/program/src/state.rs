@@ -700,7 +700,6 @@ impl BondAccountV2 {
 
     pub fn from_account_info(
         a: &AccountInfo,
-        allow_inactive: bool,
     ) -> Result<BondAccountV2, ProgramError> {
         let mut data = &a.data.borrow() as &[u8];
         let tag = Tag::BondAccountV2;

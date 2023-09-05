@@ -63,7 +63,9 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub fee_account: &'a T,
 
+
     /// Optional bond account to be able to stake under the minimum
+    // todo extend this by bondV2s
     pub bond_account: Option<&'a T>,
 }
 

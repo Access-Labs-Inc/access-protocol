@@ -22,6 +22,7 @@ pub mod close_stake_pool;
 pub mod crank;
 pub mod create_bond;
 pub mod create_bond_v2;
+pub mod add_to_bond_v2;
 pub mod create_central_state;
 pub mod create_stake_account;
 pub mod create_stake_pool;
@@ -188,6 +189,12 @@ impl Processor {
                 let params = create_bond_v2::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 create_bond_v2::process_create_bond_v2(program_id, accounts, params)?;
+            }
+            ProgramInstruction::AddToBondV2 => {
+                msg!("Instruction: Add to bond V2");
+                let params = add_to_bond_v2::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                add_to_bond_v2::process_add_to_bond_v2(program_id, accounts, params)?;
             }
         }
 

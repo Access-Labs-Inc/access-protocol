@@ -132,46 +132,16 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     }
 }
 
-pub fn process_create_bond_v2(
+pub fn process_add_to_bond_v2(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let (derived_key, nonce) =
-        BondAccountV2::create_key(
-            &accounts.to.key,
-            &accounts.pool.key,
-            params.unlock_date,
-            program_id,
-        );
-
+    let mut bond = BondAccountV2::from_account_info(accounts.bond_account_v2)?;
     let mut pool = StakePool::get_checked(accounts.pool, vec![Tag::StakePool])?;
-    check_account_key(
-        accounts.pool_vault,
-        &Pubkey::new(&pool.header.vault),
-        AccessError::StakePoolVaultMismatch,
-    )?;
-
-    // todo we might want to allow this - or at least check it there are any other accounts and add up the amounts
-    if pool.header.minimum_stake_amount > params.amount {
-        return Err(AccessError::InvalidAmount.into());
-    }
-
     let mut central_state = CentralState::from_account_info(accounts.central_state)?;
-    assert_valid_fee(accounts.fee_account, &central_state.authority)?;
-    check_account_key(
-        accounts.bond_account_v2,
-        &derived_key,
-        AccessError::AccountNotDeterministic,
-    )?;
-    check_account_key(
-        accounts.mint,
-        &central_state.token_mint,
-        AccessError::WrongMint,
-    )?;
-    assert_uninitialized(accounts.bond_account_v2)?;
 
     let source_token_acc = Account::unpack(&accounts.source_token.data.borrow())?;
     if source_token_acc.mint != central_state.token_mint {
@@ -181,33 +151,40 @@ pub fn process_create_bond_v2(
         return Err(AccessError::WrongOwner.into());
     }
 
-    let bond = BondAccountV2::new(
-        *accounts.to.key,
-        *accounts.pool.key,
-        pool.header.minimum_stake_amount,
-        params.amount,
-        params.unlock_date,
-    );
-
-    // Create bond account
-    let seeds: &[&[u8]] = &[
-        BondAccountV2::SEED,
-        &accounts.to.key.to_bytes(),
-        &accounts.pool.key.to_bytes(),
-        &params.unlock_date.unwrap_or(0).to_le_bytes(),
-        &[nonce],
-    ];
-
-    Cpi::create_account(
-        program_id,
-        accounts.system_program,
-        accounts.fee_payer,
-        accounts.bond_account_v2,
-        seeds,
-        bond.borsh_len() + ((BOND_SIGNER_THRESHOLD - 1) * 32) as usize,
+    check_account_key(
+        accounts.to,
+        &bond.owner,
+        AccessError::WrongBondAccountOwner,
+    )?;
+    check_account_key(
+        accounts.pool,
+        &bond.pool,
+        AccessError::StakePoolMismatch,
+    )?;
+    check_account_key(
+        accounts.pool_vault,
+        &Pubkey::new(&pool.header.vault),
+        AccessError::StakePoolVaultMismatch,
     )?;
 
-    bond.save(&mut accounts.bond_account_v2.data.borrow_mut())?;
+    if pool.header.minimum_stake_amount > params.amount {
+        return Err(AccessError::InvalidAmount.into());
+    }
+
+    assert_valid_fee(accounts.fee_account, &central_state.authority)?;
+    check_account_key(
+        accounts.mint,
+        &central_state.token_mint,
+        AccessError::WrongMint,
+    )?;
+
+    let source_token_acc = Account::unpack(&accounts.source_token.data.borrow())?;
+    if source_token_acc.mint != central_state.token_mint {
+        return Err(AccessError::WrongMint.into());
+    }
+    if &source_token_acc.owner != accounts.from.key {
+        return Err(AccessError::WrongOwner.into());
+    }
 
     // Transfer the tokens to pool vault (or burn for forever bonds)
     if params.unlock_date.is_some() {
@@ -269,6 +246,11 @@ pub fn process_create_bond_v2(
     )?;
 
     // Update all the appropriate states
+    bond.amount = bond
+        .amount
+        .checked_add(params.amount)
+        .ok_or(AccessError::Overflow)?;
+    bond.save(&mut accounts.bond_account_v2.data.borrow_mut())?;
     pool.header.deposit(params.amount)?;
     central_state.total_staked = central_state
         .total_staked

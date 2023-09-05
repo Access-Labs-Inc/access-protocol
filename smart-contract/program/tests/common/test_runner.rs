@@ -17,7 +17,7 @@ use access_protocol::{
         create_stake_pool, stake, unstake,
     },
 };
-use access_protocol::instruction::{change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards, create_bond, create_bond_v2, unlock_bond_tokens};
+use access_protocol::instruction::{change_central_state_authority, add_to_bond_v2, change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards, create_bond, unlock_bond_tokens};
 use access_protocol::state::{BondAccount, BondAccountV2, CentralState, StakeAccount, StakePoolHeader, Tag};
 
 use crate::common::utils::{mint_bootstrap, sign_send_instructions};
@@ -487,7 +487,7 @@ impl TestRunner {
                 &bond_owner,
                 &stake_pool_key,
                 unlock_date,
-                &self.program_id
+                &self.program_id,
             );
 
         let acc = self.prg_test_ctx
@@ -620,12 +620,12 @@ impl TestRunner {
 
     pub async fn create_bond_v2(&mut self, from: &Keypair, to: &Pubkey, pool_owner: &Pubkey, bond_amount: u64, unlock_date: Option<i64>) -> Result<(), BanksClientError> {
         let pool_key = self.get_pool_pda(pool_owner);
-        let (bond_key, _bond_nonce) =
+        let (bond_key, _) =
             BondAccountV2::create_key(
                 to,
                 &pool_key,
                 unlock_date,
-                &self.program_id
+                &self.program_id,
             );
 
         let create_bond_v2_ix = access_protocol::instruction::create_bond_v2(
@@ -650,6 +650,42 @@ impl TestRunner {
             },
         );
         sign_send_instructions(&mut self.prg_test_ctx, vec![create_bond_v2_ix], vec![from])
+            .await?;
+        Ok(())
+    }
+
+    pub async fn add_to_bond_v2(&mut self, from: &Keypair, to: &Pubkey, pool_owner: &Pubkey, bond_amount: u64, unlock_date: Option<i64>) -> Result<(), BanksClientError> {
+        let pool_key = self.get_pool_pda(pool_owner);
+        let (bond_key, _) =
+            BondAccountV2::create_key(
+                to,
+                &pool_key,
+                unlock_date,
+                &self.program_id,
+            );
+
+        let add_to_bond_v2_ix = access_protocol::instruction::add_to_bond_v2(
+            self.program_id,
+            access_protocol::instruction::add_to_bond_v2::Accounts {
+                fee_payer: &self.prg_test_ctx.payer.pubkey(),
+                from: &from.pubkey(),
+                source_token: &get_associated_token_address(&from.pubkey(), &self.mint),
+                to: &to,
+                bond_account_v2: &bond_key,
+                pool: &pool_key,
+                central_state: &self.central_state,
+                pool_vault: &get_associated_token_address(&pool_key, &self.mint),
+                fee_account: &self.authority_ata,
+                mint: &self.mint,
+                spl_token_program: &spl_token::ID,
+                system_program: &system_program::ID,
+            },
+            access_protocol::instruction::add_to_bond_v2::Params {
+                amount: bond_amount,
+                unlock_date,
+            },
+        );
+        sign_send_instructions(&mut self.prg_test_ctx, vec![add_to_bond_v2_ix], vec![from])
             .await?;
         Ok(())
     }
