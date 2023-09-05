@@ -479,6 +479,28 @@ impl TestRunner {
         Ok(bond_account)
     }
 
+    // bond v2 stats
+    pub async fn bond_v2_stats(&mut self, bond_owner: Pubkey, stake_pool_owner: Pubkey, original_bond_amount: u64, unlock_date: Option<i64>) -> Result<BondAccountV2, BanksClientError> {
+        let _stake_pool_key = self.get_pool_pda(&stake_pool_owner);
+        let (bond_key, _) =
+            BondAccountV2::create_key(
+                &bond_owner,
+                &_stake_pool_key,
+                original_bond_amount,
+                unlock_date,
+                &self.program_id
+            );
+
+        let acc = self.prg_test_ctx
+            .banks_client
+            .get_account(bond_key)
+            .await
+            .unwrap()
+            .unwrap();
+        let bond_account = BondAccountV2::deserialize(&mut &acc.data[..])?;
+        Ok(bond_account)
+    }
+
     pub async fn central_state_stats(&mut self) -> Result<CentralState, Box<dyn Error>> {
         let acc = self.prg_test_ctx
             .banks_client
@@ -597,10 +619,8 @@ impl TestRunner {
         Ok(())
     }
 
-    pub async fn create_bond_v2(&mut self, from: &Keypair, to: &Pubkey, pool_owner: &Pubkey, bond_amount: u64, unlock_after: Option<i64>) -> Result<(), BanksClientError> {
+    pub async fn create_bond_v2(&mut self, from: &Keypair, to: &Pubkey, pool_owner: &Pubkey, bond_amount: u64, unlock_date: Option<i64>) -> Result<(), BanksClientError> {
         let pool_key = self.get_pool_pda(pool_owner);
-        let current_time = self.local_env.get_sysvar::<clock::Clock>().await.unwrap().unix_timestamp;
-        let unlock_date = if unlock_after.is_some() { Some(current_time + unlock_after.unwrap()) } else { None };
         let (bond_key, _bond_nonce) =
             BondAccountV2::create_key(
                 to,
@@ -621,6 +641,7 @@ impl TestRunner {
                 pool: &pool_key,
                 central_state: &self.central_state,
                 pool_vault: &get_associated_token_address(&pool_key, &self.mint),
+                fee_account: &self.authority_ata,
                 spl_token_program: &spl_token::ID,
                 system_program: &system_program::ID,
             },

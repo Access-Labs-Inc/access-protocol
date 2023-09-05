@@ -134,6 +134,9 @@ impl PrintProgramError for AccessError {
             AccessError::InvalidUnstakeAmount => {
                 msg!("Error: Invalid unstake amount")
             }
+            AccessError::InvalidAmount => {
+                msg!("Error: Invalid amount")
+            }
             AccessError::InactiveStakePoolNotAllowed => {
                 msg!("Error: Inactive stake pool not allowed")
             }

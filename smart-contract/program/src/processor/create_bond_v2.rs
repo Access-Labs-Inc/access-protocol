@@ -11,14 +11,18 @@ use solana_program::{
     system_program,
 };
 use spl_token::instruction::transfer;
+use spl_token::state::Account;
 
 use crate::{cpi::Cpi, state::Tag};
 use crate::error::AccessError;
-use crate::state::{BOND_SIGNER_THRESHOLD, BondAccountV2, CentralState, StakePool};
+use crate::state::{BOND_SIGNER_THRESHOLD, BondAccountV2, CentralState, StakePool, FEES};
 use crate::utils::{
     assert_uninitialized, check_account_key, check_account_owner,
     check_signer,
+    assert_valid_fee,
 };
+use solana_program::program_pack::Pack;
+
 #[cfg(not(feature = "no-bond-signer"))]
 use crate::utils::assert_authorized_seller;
 
@@ -65,6 +69,10 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub pool_vault: &'a T,
 
+    /// The stake fee account
+    #[cons(writable)]
+    pub fee_account: &'a T,
+
     /// The SPL token program account
     pub spl_token_program: &'a T,
 
@@ -87,6 +95,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             pool: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
             pool_vault: next_account_info(accounts_iter)?,
+            fee_account: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
             system_program: next_account_info(accounts_iter)?,
         };
@@ -108,7 +117,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_owner(accounts.pool, program_id, AccessError::WrongStakePoolAccountOwner)?;
         check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
         check_account_owner(accounts.source_token, &spl_token::ID, AccessError::WrongTokenAccountOwner)?;
-        check_account_owner(accounts.vault, &spl_token::ID, AccessError::WrongTokenAccountOwner)?;
+        check_account_owner(accounts.pool_vault, &spl_token::ID, AccessError::WrongTokenAccountOwner)?;
 
 
         // Check signers
@@ -137,8 +146,18 @@ pub fn process_create_bond_v2(
         );
 
     let mut pool = StakePool::get_checked(accounts.pool, vec![Tag::StakePool])?;
-    let mut central_state = CentralState::from_account_info(accounts.central_state)?;
+    check_account_key(
+        accounts.pool_vault,
+        &Pubkey::new(&pool.header.vault),
+        AccessError::StakePoolVaultMismatch,
+    )?;
 
+    if pool.header.minimum_stake_amount > params.amount {
+        return Err(AccessError::InvalidAmount.into());
+    }
+
+    let mut central_state = CentralState::from_account_info(accounts.central_state)?;
+    assert_valid_fee(accounts.fee_account, &central_state.authority)?;
     check_account_key(
         accounts.bond_account_v2,
         &derived_key,
@@ -205,7 +224,25 @@ pub fn process_create_bond_v2(
         ],
     )?;
 
-    // todo probably transfer fees as well?
+    // Transfer fees
+    let fees = (params.amount * FEES) / 100;
+    let transfer_fees = transfer(
+        &spl_token::ID,
+        accounts.source_token.key,
+        accounts.fee_account.key,
+        accounts.from.key,
+        &[],
+        fees,
+    )?;
+    invoke(
+        &transfer_fees,
+        &[
+            accounts.spl_token_program.clone(),
+            accounts.source_token.clone(),
+            accounts.fee_account.clone(),
+            accounts.from.clone(),
+        ],
+    )?;
 
     // Update all the appropriate states
     pool.header.deposit(params.amount)?;
