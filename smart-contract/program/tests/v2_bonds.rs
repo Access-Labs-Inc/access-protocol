@@ -1,6 +1,8 @@
 use solana_sdk::signer::Signer;
+
 use access_protocol::state::FEES;
 use access_protocol::state::Tag::BondAccountV2;
+
 use crate::common::test_runner::TestRunner;
 
 pub mod common;
@@ -19,48 +21,73 @@ async fn signed_claim() {
     tr.create_stake_pool(&stake_pool_owner.pubkey(), 10_000).await.unwrap();
     // Activate stake pool
     tr.activate_stake_pool(&stake_pool_owner.pubkey()).await.unwrap();
-    // Create real bond with quote amount
-    let current_time = tr.get_current_time().await;
-    let unlock_date = current_time + 1000;
-    let bond_amount = 20_000;
-    tr.create_bond_v2(
-        &from,
-        &to.pubkey(),
-        &stake_pool_owner.pubkey(),
-        bond_amount,
-        Some(unlock_date),
-    ).await.unwrap();
+
+    // ---------------------------------------------------------------------------------------------
+    // Unlockable bond
+    // ---------------------------------------------------------------------------------------------
+    {
+        let current_time = tr.get_current_time().await;
+        let unlock_date = current_time + 1000;
+        let bond_amount = 20_000;
+        tr.create_bond_v2(
+            &from,
+            &to.pubkey(),
+            &stake_pool_owner.pubkey(),
+            bond_amount,
+            Some(unlock_date),
+        ).await.unwrap();
 
         let staker_stats = tr.staker_stats(from.pubkey()).await.unwrap();
         assert_eq!(staker_stats.balance, 100_000 - bond_amount - bond_amount * FEES / 100);
-    let pool_stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
-    assert_eq!(pool_stats.total_pool_staked, bond_amount);
+        let pool_stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
+        assert_eq!(pool_stats.total_pool_staked, bond_amount);
+        let stake_pool_key = tr.get_pool_pda(&stake_pool_owner.pubkey());
+        let pool_vault_amount = tr.get_ata_balance(&stake_pool_key).await.unwrap();
+        assert_eq!(pool_vault_amount, bond_amount);
         let central_state_stats = tr.central_state_stats().await.unwrap();
         assert_eq!(central_state_stats.total_staked, bond_amount);
-    let bond = tr.bond_v2_stats(to.pubkey(), stake_pool_owner.pubkey(),  Some(unlock_date)).await.unwrap();
-    assert_eq!(bond.tag, BondAccountV2);
-    assert_eq!(bond.unlock_date, Some(unlock_date));
-    assert_eq!(bond.pool, tr.get_pool_pda(&stake_pool_owner.pubkey()));
-    assert_eq!(bond.amount, bond_amount);
-    assert_eq!(bond.owner, to.pubkey());
-    assert_eq!(bond.last_claimed_offset, 0);
-    assert_eq!(bond.pool_minimum_at_creation, 10_000);
+        let bond = tr.bond_v2_stats(to.pubkey(), stake_pool_owner.pubkey(), Some(unlock_date)).await.unwrap();
+        assert_eq!(bond.tag, BondAccountV2);
+        assert_eq!(bond.unlock_date, Some(unlock_date));
+        assert_eq!(bond.pool, tr.get_pool_pda(&stake_pool_owner.pubkey()));
+        assert_eq!(bond.amount, bond_amount);
+        assert_eq!(bond.owner, to.pubkey());
+        assert_eq!(bond.last_claimed_offset, 0);
+        assert_eq!(bond.pool_minimum_at_creation, 10_000);
 
-    // Wait 5 minutes
-    // tr.sleep(300).await.unwrap();
-    // // Create real bond with quote amount
-    // tr.create_bond_v2(
-    //     &from,
-    //     &to.pubkey(),
-    //     &stake_pool_owner.pubkey(),
-    //     10000,
-    //     Some(unlock_date),
-    // ).await.unwrap();
-    // let staker_stats = tr.staker_stats(from.pubkey()).await.unwrap();
-    // assert_eq!(staker_stats.balance, 100_000 - 10_000 - 200 - 10_000 - 200);
-    // let pool_stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
-    // assert_eq!(pool_stats.total_pool_staked, 10_000 + 10_000);
-    // let central_state_stats = tr.central_state_stats().await.unwrap();
-    // assert_eq!(central_state_stats.total_staked, 10_000 + 10_000);
+        // todo test adding to existing bond
+        // todo test unlocking
+    }
 
+    // ---------------------------------------------------------------------------------------------
+    // Forever bond
+    // ---------------------------------------------------------------------------------------------
+    {
+        let bond_amount = 20_000;
+        tr.create_bond_v2(
+            &from,
+            &to.pubkey(),
+            &stake_pool_owner.pubkey(),
+            bond_amount,
+            None,
+        ).await.unwrap();
+
+        let staker_stats = tr.staker_stats(from.pubkey()).await.unwrap();
+        assert_eq!(staker_stats.balance, 100_000 - bond_amount - bond_amount * FEES / 100);
+        let pool_stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
+        assert_eq!(pool_stats.total_pool_staked, bond_amount);
+        let stake_pool_key = tr.get_pool_pda(&stake_pool_owner.pubkey());
+        let pool_vault_amount = tr.get_ata_balance(&stake_pool_key).await.unwrap();
+        assert_eq!(pool_vault_amount, bond_amount);
+        let central_state_stats = tr.central_state_stats().await.unwrap();
+        assert_eq!(central_state_stats.total_staked, bond_amount);
+        let bond = tr.bond_v2_stats(to.pubkey(), stake_pool_owner.pubkey(), None).await.unwrap();
+        assert_eq!(bond.tag, BondAccountV2);
+        assert_eq!(bond.unlock_date, None);
+        assert_eq!(bond.pool, tr.get_pool_pda(&stake_pool_owner.pubkey()));
+        assert_eq!(bond.amount, bond_amount);
+        assert_eq!(bond.owner, to.pubkey());
+        assert_eq!(bond.last_claimed_offset, 0);
+        assert_eq!(bond.pool_minimum_at_creation, 10_000);
+    }
 }

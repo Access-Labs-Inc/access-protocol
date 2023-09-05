@@ -640,6 +640,7 @@ impl TestRunner {
                 central_state: &self.central_state,
                 pool_vault: &get_associated_token_address(&pool_key, &self.mint),
                 fee_account: &self.authority_ata,
+                mint: &self.mint,
                 spl_token_program: &spl_token::ID,
                 system_program: &system_program::ID,
             },
@@ -824,5 +825,11 @@ impl TestRunner {
         let authority_ata = get_associated_token_address(&self.prg_test_ctx.payer.pubkey(), &self.mint);
         self.authority_ata = authority_ata;
         Ok(())
+    }
+
+    pub async fn get_ata_balance(&mut self, owner: &Pubkey) -> Result<u64, BanksClientError> {
+        let ata = get_associated_token_address(owner, &self.mint);
+        let balance = self.local_env.get_packed_account_data::<spl_token::state::Account>(ata).await?.amount;
+        Ok(balance)
     }
 }

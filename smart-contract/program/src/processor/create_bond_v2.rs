@@ -10,19 +10,18 @@ use solana_program::{
     pubkey::Pubkey,
     system_program,
 };
+use solana_program::program_pack::Pack;
 use spl_token::instruction::transfer;
 use spl_token::state::Account;
 
 use crate::{cpi::Cpi, state::Tag};
 use crate::error::AccessError;
-use crate::state::{BOND_SIGNER_THRESHOLD, BondAccountV2, CentralState, StakePool, FEES};
+use crate::state::{BOND_SIGNER_THRESHOLD, BondAccountV2, CentralState, FEES, StakePool};
 use crate::utils::{
-    assert_uninitialized, check_account_key, check_account_owner,
+    assert_uninitialized, assert_valid_fee, check_account_key,
+    check_account_owner,
     check_signer,
-    assert_valid_fee,
 };
-use solana_program::program_pack::Pack;
-
 #[cfg(not(feature = "no-bond-signer"))]
 use crate::utils::assert_authorized_seller;
 
@@ -73,6 +72,9 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub fee_account: &'a T,
 
+    #[cons(writable)]
+    pub mint: &'a T,
+
     /// The SPL token program account
     pub spl_token_program: &'a T,
 
@@ -96,6 +98,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             central_state: next_account_info(accounts_iter)?,
             pool_vault: next_account_info(accounts_iter)?,
             fee_account: next_account_info(accounts_iter)?,
+            mint: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
             system_program: next_account_info(accounts_iter)?,
         };
@@ -162,6 +165,11 @@ pub fn process_create_bond_v2(
         &derived_key,
         AccessError::AccountNotDeterministic,
     )?;
+    check_account_key(
+        accounts.mint,
+        &central_state.token_mint,
+        AccessError::WrongMint,
+    )?;
     assert_uninitialized(accounts.bond_account_v2)?;
 
     let source_token_acc = Account::unpack(&accounts.source_token.data.borrow())?;
@@ -203,24 +211,44 @@ pub fn process_create_bond_v2(
 
     bond.save(&mut accounts.bond_account_v2.data.borrow_mut())?;
 
-    // Transfer tokens
-    let transfer_instruction = transfer(
-        &spl_token::ID,
-        accounts.source_token.key,
-        accounts.pool_vault.key,
-        accounts.from.key,
-        &[],
-        params.amount,
-    )?;
-    invoke(
-        &transfer_instruction,
-        &[
-            accounts.spl_token_program.clone(),
-            accounts.source_token.clone(),
-            accounts.pool_vault.clone(),
-            accounts.from.clone(),
-        ],
-    )?;
+    // Transfer the tokens to pool vault (or burn for forever bonds)
+    if params.unlock_date.is_some() {
+        let transfer_instruction = transfer(
+            &spl_token::ID,
+            accounts.source_token.key,
+            accounts.pool_vault.key,
+            accounts.from.key,
+            &[],
+            params.amount,
+        )?;
+        invoke(
+            &transfer_instruction,
+            &[
+                accounts.spl_token_program.clone(),
+                accounts.source_token.clone(),
+                accounts.pool_vault.clone(),
+                accounts.from.clone(),
+            ],
+        )?;
+    } else {
+        let burn_instruction = spl_token::instruction::burn(
+            &spl_token::ID,
+            accounts.source_token.key,
+            accounts.mint.key,
+            accounts.from.key,
+            &[],
+            params.amount
+        )?;
+        invoke(
+            &burn_instruction,
+            &[
+                accounts.spl_token_program.clone(),
+                accounts.source_token.clone(),
+                accounts.mint.clone(),
+                accounts.from.clone(),
+            ],
+        )?;
+    }
 
     // Transfer fees
     let fees = (params.amount * FEES) / 100;
