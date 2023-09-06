@@ -17,7 +17,7 @@ use access_protocol::{
         create_stake_pool, stake, unstake,
     },
 };
-use access_protocol::instruction::{change_central_state_authority, add_to_bond_v2, change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards, create_bond, unlock_bond_tokens};
+use access_protocol::instruction::{unlock_bond_v2,change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards, claim_bond_v2_rewards, create_bond, unlock_bond_tokens};
 use access_protocol::state::{BondAccount, BondAccountV2, CentralState, StakeAccount, StakePoolHeader, Tag};
 
 use crate::common::utils::{mint_bootstrap, sign_send_instructions};
@@ -383,6 +383,57 @@ impl TestRunner {
         );
 
         sign_send_instructions(&mut self.prg_test_ctx, vec![claim_ix], vec![staker])
+            .await
+    }
+
+    pub async fn claim_bond_v2_rewards(&mut self, owner: &Keypair, stake_pool_owner: &Pubkey, unlock_date: Option<i64>) -> Result<(), BanksClientError> {
+        let stake_pool_key = self.get_pool_pda(stake_pool_owner);
+        let (bond_v2_acc_key, _) = BondAccountV2::create_key(&owner.pubkey(), &stake_pool_key, unlock_date, &self.program_id);
+        let owner_token_acc = get_associated_token_address(&owner.pubkey(), &self.mint);
+
+        let claim_ix = access_protocol::instruction::claim_bond_v2_rewards(
+            self.program_id,
+            access_protocol::instruction::claim_bond_v2_rewards::Accounts {
+                stake_pool: &stake_pool_key,
+                bond_account_v2: &bond_v2_acc_key,
+                owner: &owner.pubkey(),
+                rewards_destination: &owner_token_acc,
+                central_state: &self.central_state,
+                mint: &self.mint,
+                spl_token_program: &spl_token::ID,
+            },
+            access_protocol::instruction::claim_bond_v2_rewards::Params {
+                allow_zero_rewards: true,
+            },
+            true,
+        );
+
+        sign_send_instructions(&mut self.prg_test_ctx, vec![claim_ix], vec![owner])
+            .await
+    }
+
+    pub async fn unlock_bond_v2_tokens(&mut self, owner: &Keypair, stake_pool_owner: &Pubkey, unlock_date: Option<i64>) -> Result<(), BanksClientError> {
+        let stake_pool_key = self.get_pool_pda(stake_pool_owner);
+        let (bond_v2_acc_key, _) = BondAccountV2::create_key(&owner.pubkey(), &stake_pool_key, unlock_date, &self.program_id);
+        let staker_token_acc = get_associated_token_address(&owner.pubkey(), &self.mint);
+        let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
+
+        // Request Unstake
+        let unstake_ix = unlock_bond_v2(
+            self.program_id,
+            unlock_bond_v2::Accounts {
+                bond_v2_account: &bond_v2_acc_key,
+                stake_pool: &stake_pool_key,
+                owner: &owner.pubkey(),
+                destination_token: &staker_token_acc,
+                spl_token_program: &spl_token::ID,
+                central_state_account: &self.central_state,
+                vault: &pool_vault,
+            },
+            unlock_bond_v2::Params {},
+        );
+        // if error, return
+        sign_send_instructions(&mut self.prg_test_ctx, vec![unstake_ix], vec![owner])
             .await
     }
 

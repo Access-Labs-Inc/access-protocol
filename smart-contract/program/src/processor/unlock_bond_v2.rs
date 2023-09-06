@@ -49,9 +49,6 @@ pub struct Accounts<'a, T> {
     /// The stake pool vault
     #[cons(writable)]
     pub vault: &'a T,
-
-    /// Optional bond account to be able to stake under the minimum
-    pub bond_account: Option<&'a T>,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -68,7 +65,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             destination_token: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
             vault: next_account_info(accounts_iter)?,
-            bond_account: next_account_info(accounts_iter).ok(),
         };
 
         // Check keys
@@ -104,13 +100,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             &spl_token::ID,
             AccessError::WrongTokenAccountOwner,
         )?;
-        if let Some(bond_account) = accounts.bond_account {
-            check_account_owner(
-                bond_account,
-                program_id,
-                AccessError::WrongBondAccountOwner,
-            )?
-        }
 
         // Check signer
         check_signer(accounts.owner, AccessError::StakeAccountOwnerMustSign)?;
