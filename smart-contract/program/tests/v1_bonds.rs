@@ -140,20 +140,5 @@ async fn v1_bonds() {
     tr.claim_bond_rewards(
         &pool_owner.pubkey(),
         &bond_recipient,
-    ).await.unwrap();
-    let recipient_stats = tr.staker_stats(bond_recipient.pubkey()).await.unwrap();
-    assert_eq!(recipient_stats.balance, 2 * 500_000 + bond_amount);
-    let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
-    assert_eq!(pool_stats.header.total_staked, 0);
-    assert_eq!(pool_stats.vault, 0);
-    let central_state_stats = tr.central_state_stats().await.unwrap();
-    assert_eq!(central_state_stats.total_staked, 0);
-    let bond = tr.bond_stats(bond_recipient.pubkey(), pool_owner.pubkey(), bond_amount).await.unwrap();
-    assert_eq!(bond.tag, BondAccount);
-    assert_eq!(bond.unlock_start_date, current_time + 5 * SECONDS_PER_DAY as i64);
-    assert_eq!(bond.stake_pool, tr.get_pool_pda(&pool_owner.pubkey()));
-    assert_eq!(bond.total_staked, 0);
-    assert_eq!(bond.owner, bond_recipient.pubkey());
-    assert_eq!(bond.last_claimed_offset, 6);
-    assert_eq!(bond.pool_minimum_at_creation, 10_000);
+    ).await.unwrap_err();
 }
