@@ -279,7 +279,7 @@ impl StakePoolHeader {
     }
 }
 
-#[derive(BorshSerialize, BorshDeserialize, BorshSize)]
+#[derive(BorshSerialize, BorshDeserialize, BorshSize, Debug)]
 #[allow(missing_docs)]
 pub struct StakeAccount {
     /// Tag
