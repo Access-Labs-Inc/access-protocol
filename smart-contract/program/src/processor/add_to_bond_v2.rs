@@ -3,6 +3,7 @@
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
+    msg,
     account_info::{AccountInfo, next_account_info},
     entrypoint::ProgramResult,
     program::invoke,
@@ -23,6 +24,7 @@ use crate::utils::{
     check_account_owner,
     check_signer,
 };
+use solana_program::sysvar::Sysvar;
 #[cfg(not(feature = "no-bond-signer"))]
 use crate::utils::assert_authorized_seller;
 
@@ -195,16 +197,16 @@ pub fn process_add_to_bond_v2(
     }
 
     if (pool.header.current_day_idx as u64) < central_state.get_current_offset()? {
-        msg!("Pool must be cranked before adding to a bond, {}, {}", stake_pool.header.current_day_idx, central_state.get_current_offset()?);
+        msg!("Pool must be cranked before adding to a bond, {}, {}", pool.header.current_day_idx, central_state.get_current_offset()?);
         return Err(AccessError::PoolMustBeCranked.into());
     }
 
     if bond.amount == 0 {
-        stake_account.last_claimed_offset = central_state.get_current_offset()?;
+        bond.last_claimed_offset = central_state.get_current_offset()?;
     }
 
     let current_time = Clock::get()?.unix_timestamp;
-    if current_time > bond.unlock_start_date {
+    if bond.unlock_date.is_some() && current_time > bond.unlock_date.unwrap() {
         msg!("Cannot add to a bond that has already started unlocking");
         return Err(ProgramError::InvalidArgument);
     }
