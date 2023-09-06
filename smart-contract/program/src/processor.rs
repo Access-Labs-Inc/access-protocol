@@ -24,6 +24,7 @@ pub mod create_bond;
 pub mod create_bond_v2;
 pub mod add_to_bond_v2;
 pub mod claim_bond_v2_rewards;
+pub mod unlock_bond_v2;
 pub mod create_central_state;
 pub mod create_stake_account;
 pub mod create_stake_pool;
@@ -202,6 +203,12 @@ impl Processor {
                 let params = claim_bond_v2_rewards::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 claim_bond_v2_rewards::process_claim_bond_v2_rewards(program_id, accounts, params)?;
+            }
+            ProgramInstruction::UnlockBondV2 => {
+                msg!("Instruction: Unlock bond V2");
+                let params = unlock_bond_v2::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                unlock_bond_v2::process_unlock_bond_v2(program_id, accounts, params)?;
             }
         }
 

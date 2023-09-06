@@ -3,7 +3,7 @@ pub use crate::processor::{
     change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards,
     claim_pool_rewards, claim_rewards, close_stake_account, close_stake_pool, crank, create_bond,
     create_central_state, create_stake_account, create_stake_pool, edit_metadata, sign_bond, stake,
-    unlock_bond_tokens, unstake, create_bond_v2, add_to_bond_v2
+    unlock_bond_tokens, unstake, create_bond_v2, add_to_bond_v2, claim_bond_v2_rewards, unlock_bond_v2,
 };
 use bonfida_utils::InstructionsAccount;
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -247,6 +247,8 @@ pub enum ProgramInstruction {
     AddToBondV2,
     // todo docs
     ClaimBondV2Rewards,
+    // todo docs
+    UnlockBondV2,
 }
 #[allow(missing_docs)]
 pub fn create_central_state(
@@ -412,6 +414,16 @@ pub fn claim_bond_v2_rewards(
     }
     ix
 }
+
+#[allow(missing_docs)]
+pub fn unlock_bond_v2(
+    program_id: Pubkey,
+    accounts: unlock_bond_v2::Accounts<Pubkey>,
+    params: unlock_bond_v2::Params,
+) -> Instruction {
+    accounts.get_instruction(program_id, ProgramInstruction::UnlockBondV2 as u8, params)
+}
+
 #[allow(missing_docs)]
 pub fn sign_bond(
     program_id: Pubkey,

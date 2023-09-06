@@ -709,4 +709,12 @@ impl BondAccountV2 {
         let result = BondAccountV2::deserialize(&mut data)?;
         Ok(result)
     }
+
+    pub fn withdraw(&mut self, amount: u64) -> ProgramResult {
+        self.amount = self
+            .amount
+            .checked_sub(amount)
+            .ok_or(AccessError::Overflow)?;
+        Ok(())
+    }
 }

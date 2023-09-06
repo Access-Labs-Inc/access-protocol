@@ -19,7 +19,7 @@ use solana_program::{
     pubkey::Pubkey,
 };
 use spl_token::{instruction::mint_to, state::Account};
-use crate::state::Tag::BondAccountV2;
+use crate::state::BondAccountV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `claim_rewards` instruction
@@ -118,7 +118,7 @@ pub fn process_claim_bond_v2_rewards(
     let destination_token_acc = Account::unpack(&accounts.rewards_destination.data.borrow())?;
     msg!("Account owner: {}", destination_token_acc.owner);
 
-    if destination_token_acc.owner != stake_account.owner {
+    if destination_token_acc.owner != bond_v2_account.owner {
         // If the destination does not belong to the staker he must sign
         check_signer(accounts.owner, AccessError::StakePoolOwnerMustSign)?;
     } else {
@@ -131,13 +131,13 @@ pub fn process_claim_bond_v2_rewards(
 
     check_account_key(
         accounts.stake_pool,
-        &stake_account.stake_pool,
+        &bond_v2_account.pool,
         AccessError::WrongStakePool,
     )?;
     check_account_key(
         accounts.owner,
-        &stake_account.owner,
-        AccessError::StakeAccountOwnerMismatch,
+        &bond_v2_account.owner,
+        AccessError::WrongOwner,
     )?;
     check_account_key(
         accounts.mint,
