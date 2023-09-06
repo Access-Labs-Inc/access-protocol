@@ -245,6 +245,8 @@ pub enum ProgramInstruction {
     CreateBondV2,
     // todo docs
     AddToBondV2,
+    // todo docs
+    ClaimBondV2Rewards,
 }
 #[allow(missing_docs)]
 pub fn create_central_state(
@@ -394,6 +396,21 @@ pub fn add_to_bond_v2(
     params: add_to_bond_v2::Params,
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::AddToBondV2 as u8, params)
+}
+
+#[allow(missing_docs)]
+pub fn claim_bond_v2_rewards(
+    program_id: Pubkey,
+    accounts: claim_bond_v2_rewards::Accounts<Pubkey>,
+    params: claim_bond_v2_rewards::Params,
+    owner_must_sign: bool,
+) -> Instruction {
+    let mut ix =
+        accounts.get_instruction(program_id, ProgramInstruction::ClaimBondV2Rewards as u8, params);
+    if let Some(acc) = ix.accounts.get_mut(2) {
+        acc.is_signer = owner_must_sign
+    }
+    ix
 }
 #[allow(missing_docs)]
 pub fn sign_bond(
