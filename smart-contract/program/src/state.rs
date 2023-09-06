@@ -1,7 +1,11 @@
-use crate::error::AccessError;
+use std::cell::RefMut;
+use std::convert::TryInto;
+use std::mem::size_of;
+use std::ops::DerefMut;
+
 use bonfida_utils::BorshSize;
 use borsh::{BorshDeserialize, BorshSerialize};
-use bytemuck::{cast_slice, from_bytes, from_bytes_mut, try_cast_slice_mut, Pod, Zeroable};
+use bytemuck::{cast_slice, from_bytes, from_bytes_mut, Pod, try_cast_slice_mut, Zeroable};
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
 use solana_program::account_info::AccountInfo;
@@ -11,10 +15,8 @@ use solana_program::msg;
 use solana_program::program_error::ProgramError;
 use solana_program::pubkey::Pubkey;
 use solana_program::sysvar::Sysvar;
-use std::cell::RefMut;
-use std::convert::TryInto;
-use std::mem::size_of;
-use std::ops::DerefMut;
+
+use crate::error::AccessError;
 
 /// ACCESS token mint
 pub const ACCESS_MINT: Pubkey =
@@ -183,7 +185,7 @@ impl StakePoolHeaped {
 }
 
 #[allow(missing_docs)]
-impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [RewardsTuple]>> StakePool<H, B> {
+impl<H: DerefMut<Target=StakePoolHeader>, B: DerefMut<Target=[RewardsTuple]>> StakePool<H, B> {
     pub fn push_balances_buff(
         &mut self,
         current_offset: u64,
@@ -612,18 +614,18 @@ impl BondAccount {
         let cumulated_unlock_amnt = (missed_periods)
             .checked_mul(self.unlock_amount)
             .ok_or(AccessError::Overflow)?;
-        msg!(
-            "Unlock amount {} Total amount {}",
-            cumulated_unlock_amnt,
-            self.total_amount_sold
-        );
-
-        Ok(std::cmp::min(
+        let unlock_amnt = std::cmp::min(
             cumulated_unlock_amnt,
             self.total_amount_sold
                 .checked_sub(self.total_unlocked_amount)
                 .ok_or(AccessError::Overflow)?,
-        ))
+        );
+        msg!(
+            "Unlock amount {} Total amount {}",
+            unlock_amnt,
+            self.total_amount_sold
+        );
+        Ok(unlock_amnt)
     }
 }
 
@@ -651,7 +653,7 @@ pub struct BondAccountV2 {
     pub pool_minimum_at_creation: u64,
 
     // Unlock start date
-    pub unlock_date: Option<i64>
+    pub unlock_date: Option<i64>,
 }
 
 

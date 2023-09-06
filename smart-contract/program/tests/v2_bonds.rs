@@ -57,7 +57,7 @@ async fn signed_claim() {
         assert_eq!(bond.pool_minimum_at_creation, 10_000);
 
         // Add to bond
-        let add_amount = 10_000;
+        let add_amount = 10;
         tr.add_to_bond_v2(
             &bond_creator,
             &bond_recipient.pubkey(),

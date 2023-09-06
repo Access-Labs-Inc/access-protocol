@@ -402,9 +402,7 @@ impl TestRunner {
                 mint: &self.mint,
                 spl_token_program: &spl_token::ID,
             },
-            access_protocol::instruction::claim_bond_v2_rewards::Params {
-                allow_zero_rewards: true,
-            },
+            access_protocol::instruction::claim_bond_v2_rewards::Params {},
             true,
         );
 

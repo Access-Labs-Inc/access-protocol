@@ -9,6 +9,7 @@ use solana_program::{
     program_error::ProgramError,
     pubkey::Pubkey,
     system_program,
+    clock::Clock,
 };
 use solana_program::program_pack::Pack;
 use spl_token::instruction::transfer;
@@ -117,8 +118,13 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
 
         // Check ownership
-        check_account_owner(accounts.pool, program_id, AccessError::WrongStakePoolAccountOwner)?;
         check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
+        check_account_owner(
+            accounts.bond_account_v2,
+            program_id,
+            AccessError::WrongStakeAccountOwner,
+        )?;
+        check_account_owner(accounts.pool, program_id, AccessError::WrongStakePoolAccountOwner)?;
         check_account_owner(accounts.source_token, &spl_token::ID, AccessError::WrongTokenAccountOwner)?;
         check_account_owner(accounts.pool_vault, &spl_token::ID, AccessError::WrongTokenAccountOwner)?;
 
@@ -137,11 +143,18 @@ pub fn process_add_to_bond_v2(
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
+    let Params { amount, unlock_date} = params;
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let mut bond = BondAccountV2::from_account_info(accounts.bond_account_v2)?;
     let mut pool = StakePool::get_checked(accounts.pool, vec![Tag::StakePool])?;
+    let mut bond = BondAccountV2::from_account_info(accounts.bond_account_v2)?;
     let mut central_state = CentralState::from_account_info(accounts.central_state)?;
+
+    check_account_key(
+        accounts.mint,
+        &central_state.token_mint,
+        AccessError::WrongMint,
+    )?;
 
     let source_token_acc = Account::unpack(&accounts.source_token.data.borrow())?;
     if source_token_acc.mint != central_state.token_mint {
@@ -167,34 +180,45 @@ pub fn process_add_to_bond_v2(
         AccessError::StakePoolVaultMismatch,
     )?;
 
-    if pool.header.minimum_stake_amount > params.amount {
-        return Err(AccessError::InvalidAmount.into());
-    }
-
     assert_valid_fee(accounts.fee_account, &central_state.authority)?;
-    check_account_key(
-        accounts.mint,
-        &central_state.token_mint,
-        AccessError::WrongMint,
-    )?;
 
-    let source_token_acc = Account::unpack(&accounts.source_token.data.borrow())?;
-    if source_token_acc.mint != central_state.token_mint {
-        return Err(AccessError::WrongMint.into());
+    let fees = (amount * FEES) / 100;
+
+    if amount == 0 {
+        return Err(AccessError::CannotStakeZero.into());
     }
-    if &source_token_acc.owner != accounts.from.key {
-        return Err(AccessError::WrongOwner.into());
+
+    if bond.amount > 0
+        && bond.last_claimed_offset < pool.header.current_day_idx as u64
+    {
+        return Err(AccessError::UnclaimedRewards.into());
     }
+
+    if (pool.header.current_day_idx as u64) < central_state.get_current_offset()? {
+        msg!("Pool must be cranked before adding to a bond, {}, {}", stake_pool.header.current_day_idx, central_state.get_current_offset()?);
+        return Err(AccessError::PoolMustBeCranked.into());
+    }
+
+    if bond.amount == 0 {
+        stake_account.last_claimed_offset = central_state.get_current_offset()?;
+    }
+
+    let current_time = Clock::get()?.unix_timestamp;
+    if current_time > bond.unlock_start_date {
+        msg!("Cannot add to a bond that has already started unlocking");
+        return Err(ProgramError::InvalidArgument);
+    }
+
 
     // Transfer the tokens to pool vault (or burn for forever bonds)
-    if params.unlock_date.is_some() {
+    if unlock_date.is_some() {
         let transfer_instruction = transfer(
             &spl_token::ID,
             accounts.source_token.key,
             accounts.pool_vault.key,
             accounts.from.key,
             &[],
-            params.amount,
+            amount,
         )?;
         invoke(
             &transfer_instruction,
@@ -212,7 +236,7 @@ pub fn process_add_to_bond_v2(
             accounts.mint.key,
             accounts.from.key,
             &[accounts.from.key],
-            params.amount,
+            amount,
         )?;
         invoke(
             &burn_instruction,
@@ -226,7 +250,6 @@ pub fn process_add_to_bond_v2(
     }
 
     // Transfer fees
-    let fees = (params.amount * FEES) / 100;
     let transfer_fees = transfer(
         &spl_token::ID,
         accounts.source_token.key,
@@ -248,13 +271,13 @@ pub fn process_add_to_bond_v2(
     // Update all the appropriate states
     bond.amount = bond
         .amount
-        .checked_add(params.amount)
+        .checked_add(amount)
         .ok_or(AccessError::Overflow)?;
     bond.save(&mut accounts.bond_account_v2.data.borrow_mut())?;
-    pool.header.deposit(params.amount)?;
+    pool.header.deposit(amount)?;
     central_state.total_staked = central_state
         .total_staked
-        .checked_add(params.amount)
+        .checked_add(amount)
         .ok_or(AccessError::Overflow)?;
     central_state.save(&mut accounts.central_state.data.borrow_mut())?;
 
