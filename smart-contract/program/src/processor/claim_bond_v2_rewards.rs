@@ -19,6 +19,7 @@ use solana_program::{
     pubkey::Pubkey,
 };
 use spl_token::{instruction::mint_to, state::Account};
+use crate::state::Tag::BondAccountV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `claim_rewards` instruction
@@ -36,7 +37,7 @@ pub struct Accounts<'a, T> {
 
     /// The stake account
     #[cons(writable)]
-    pub stake_account: &'a T,
+    pub bond_account_v2: &'a T,
 
     /// The owner of the stake account
     #[cons(signer)]
@@ -65,7 +66,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
             stake_pool: next_account_info(accounts_iter)?,
-            stake_account: next_account_info(accounts_iter)?,
+            bond_account_v2: next_account_info(accounts_iter)?,
             owner: next_account_info(accounts_iter)?,
             rewards_destination: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
@@ -87,9 +88,9 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             AccessError::WrongStakePoolAccountOwner,
         )?;
         check_account_owner(
-            accounts.stake_account,
+            accounts.bond_account_v2,
             program_id,
-            AccessError::WrongStakeAccountOwner,
+            AccessError::WrongBondAccountOwner,
         )?;
         check_account_owner(
             accounts.rewards_destination,
@@ -112,7 +113,7 @@ pub fn process_claim_bond_v2_rewards(
 
     let central_state = CentralState::from_account_info(accounts.central_state)?;
     let stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
-    let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
+    let mut bond_v2_account = BondAccountV2::from_account_info(accounts.bond_account_v2)?;
 
     let destination_token_acc = Account::unpack(&accounts.rewards_destination.data.borrow())?;
     msg!("Account owner: {}", destination_token_acc.owner);
@@ -146,13 +147,13 @@ pub fn process_claim_bond_v2_rewards(
 
     let reward = calc_reward_fp32(
         central_state.last_snapshot_offset,
-        stake_account.last_claimed_offset,
+        bond_v2_account.last_claimed_offset,
         &stake_pool,
         true,
         params.allow_zero_rewards,
     )?
         // Multiply by the staker shares of the total pool
-        .checked_mul(stake_account.stake_amount as u128)
+        .checked_mul(bond_v2_account.amount as u128)
         .map(|r| ((r >> 31) + 1) >> 1)
         .and_then(safe_downcast)
         .ok_or(AccessError::Overflow)?;
@@ -180,8 +181,8 @@ pub fn process_claim_bond_v2_rewards(
     )?;
 
     // Update states
-    stake_account.last_claimed_offset = central_state.last_snapshot_offset;
-    stake_account.save(&mut accounts.stake_account.data.borrow_mut())?;
+    bond_v2_account.last_claimed_offset = central_state.last_snapshot_offset;
+    bond_v2_account.save(&mut accounts.bond_account_v2.data.borrow_mut())?;
 
     Ok(())
 }
