@@ -23,10 +23,7 @@ use crate::state::BondAccountV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `claim_rewards` instruction
-pub struct Params {
-    // Should be false by default
-    pub allow_zero_rewards: bool,
-}
+pub struct Params {}
 
 #[derive(InstructionsAccount)]
 /// The required accounts for the `claim_rewards` instruction
@@ -150,7 +147,7 @@ pub fn process_claim_bond_v2_rewards(
         bond_v2_account.last_claimed_offset,
         &stake_pool,
         true,
-        params.allow_zero_rewards,
+        false,
     )?
         // Multiply by the staker shares of the total pool
         .checked_mul(bond_v2_account.amount as u128)
