@@ -32,7 +32,7 @@ async fn common_unstake_limit() {
     let result = tr.unstake(&stake_pool_owner.pubkey(), &staker, 200).await;
     assert!(result.is_err());
     let pool_stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
-    assert_eq!(pool_stats.total_pool_staked, 1100);
+    assert_eq!(pool_stats.header.total_staked, 1100);
 
     // todo investigate why this is needed and if we can get rid of it
     tr.sleep(1).await.unwrap();
@@ -40,7 +40,7 @@ async fn common_unstake_limit() {
     // unstake above the pool minimum should work
     tr.unstake(&stake_pool_owner.pubkey(), &staker, 100).await.unwrap();
     let pool_stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
-    assert_eq!(pool_stats.total_pool_staked, 1000);
+    assert_eq!(pool_stats.header.total_staked, 1000);
 
     // todo investigate why this is needed and if we can get rid of it
     tr.sleep(1).await.unwrap();
@@ -48,7 +48,7 @@ async fn common_unstake_limit() {
     // full unstake should work
     tr.unstake(&stake_pool_owner.pubkey(), &staker, 1000).await.unwrap();
     let pool_stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
-    assert_eq!(pool_stats.total_pool_staked, 0);
+    assert_eq!(pool_stats.header.total_staked, 0);
 
     // change the pool minimum
     tr.change_pool_minimum(&stake_pool_owner, 9000).await.unwrap();

@@ -17,7 +17,7 @@ use access_protocol::{
         create_stake_pool, stake, unstake,
     },
 };
-use access_protocol::instruction::{unlock_bond_v2,change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards, claim_bond_v2_rewards, create_bond, unlock_bond_tokens};
+use access_protocol::instruction::{unlock_bond_v2,change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards, create_bond, unlock_bond_tokens};
 use access_protocol::state::{BondAccount, BondAccountV2, CentralState, StakeAccount, StakePoolHeader, Tag};
 
 use crate::common::utils::{mint_bootstrap, sign_send_instructions};
@@ -514,7 +514,7 @@ impl TestRunner {
 
     // bond stats
     pub async fn bond_stats(&mut self, bond_owner: Pubkey, stake_pool_owner: Pubkey, original_bond_amount: u64) -> Result<BondAccount, BanksClientError> {
-        let stake_pool_key = self.get_pool_pda(&stake_pool_owner);
+        let _stake_pool_key = self.get_pool_pda(&stake_pool_owner);
         let (bond_key, _) =
             BondAccount::create_key(&bond_owner, original_bond_amount, &self.program_id);
 
@@ -683,7 +683,7 @@ impl TestRunner {
                 fee_payer: &self.prg_test_ctx.payer.pubkey(),
                 from: &from.pubkey(),
                 source_token: &get_associated_token_address(&from.pubkey(), &self.mint),
-                to: &to,
+                to,
                 bond_account_v2: &bond_key,
                 pool: &pool_key,
                 central_state: &self.central_state,
@@ -719,7 +719,7 @@ impl TestRunner {
                 fee_payer: &self.prg_test_ctx.payer.pubkey(),
                 from: &from.pubkey(),
                 source_token: &get_associated_token_address(&from.pubkey(), &self.mint),
-                to: &to,
+                to,
                 bond_account_v2: &bond_key,
                 pool: &pool_key,
                 central_state: &self.central_state,

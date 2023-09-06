@@ -1,22 +1,22 @@
 use std::fs;
 use std::str::FromStr;
-use std::thread::sleep;
-use std::time::Duration;
+
+
 
 use borsh::BorshDeserialize;
 use solana_client::rpc_client::RpcClient;
-use solana_client::rpc_config::RpcSendTransactionConfig;
+
 use solana_program::pubkey::Pubkey;
-use solana_program::system_program;
+
 use solana_sdk::account::ReadableAccount;
-use solana_sdk::commitment_config::CommitmentLevel;
+
 use solana_sdk::signature::Keypair;
-use solana_sdk::signer::Signer;
-use solana_sdk::transaction::Transaction;
-use spl_associated_token_account::get_associated_token_address;
-use access_protocol::instruction::ProgramInstruction::Stake;
+
+
+
+
 use access_protocol::state::StakeAccount;
-use crate::common::test_runner::TestRunner;
+
 
 pub mod common;
 
@@ -43,7 +43,7 @@ fn mainnet() {
 
     let program_id = Pubkey::from_str("6HW8dXjtiTGkD4jzXs7igdFmZExPpmwUrRN5195xGup").unwrap();
 
-    let (stake_acc_key, stake_nonce) = Pubkey::find_program_address(
+    let (stake_acc_key, _stake_nonce) = Pubkey::find_program_address(
         &[
             "stake_account".as_bytes(),
             &Pubkey::from_str("BySCc6DnNEeparG8kYHiWHQ4yi2rAaxJHdmYsJ3r8vXU").unwrap().to_bytes(),

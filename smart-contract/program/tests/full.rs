@@ -59,7 +59,7 @@ async fn full_system_test() {
     tr.claim_bond(&pool_owner.pubkey(), &airdrop_user2.pubkey()).await.unwrap();
 
     let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
-    assert_eq!(pool_stats.total_pool_staked, 200_000_000_000);
+    assert_eq!(pool_stats.header.total_staked, 200_000_000_000);
     let central_state = tr.central_state_stats().await.unwrap();
     assert_eq!(central_state.total_staked, 200_000_000_000);
 
@@ -89,11 +89,11 @@ async fn full_system_test() {
 
     // check that the totalStaked and pool stats are correct
     let pool1_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
-    assert_eq!(pool1_stats.total_pool_staked, 210_000_000_000);
+    assert_eq!(pool1_stats.header.total_staked, 210_000_000_000);
     let pool2_stats = tr.pool_stats(pool_owner2.pubkey()).await.unwrap();
-    assert_eq!(pool2_stats.total_pool_staked, 110_000_000_000);
+    assert_eq!(pool2_stats.header.total_staked, 110_000_000_000);
     let pool3_stats = tr.pool_stats(pool_owner3.pubkey()).await.unwrap();
-    assert_eq!(pool3_stats.total_pool_staked, 10_000_000_000);
+    assert_eq!(pool3_stats.header.total_staked, 10_000_000_000);
     let central_state = tr.central_state_stats().await.unwrap();
     assert_eq!(central_state.total_staked, 330_000_000_000);
 
@@ -118,11 +118,11 @@ async fn full_system_test() {
 
     // check that the totalStaked and pool stats are correct
     let pool1_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
-    assert_eq!(pool1_stats.total_pool_staked, 230_000_000_000);
+    assert_eq!(pool1_stats.header.total_staked, 230_000_000_000);
     let pool2_stats = tr.pool_stats(pool_owner2.pubkey()).await.unwrap();
-    assert_eq!(pool2_stats.total_pool_staked, 110_000_000_000);
+    assert_eq!(pool2_stats.header.total_staked, 110_000_000_000);
     let pool3_stats = tr.pool_stats(pool_owner3.pubkey()).await.unwrap();
-    assert_eq!(pool3_stats.total_pool_staked, 30_000_000_020);
+    assert_eq!(pool3_stats.header.total_staked, 30_000_000_020);
     let central_state = tr.central_state_stats().await.unwrap();
     assert_eq!(central_state.total_staked, 370_000_000_020);
 
@@ -142,11 +142,11 @@ async fn full_system_test() {
 
     // check that the totalStaked and pool stats are correct
     let pool1_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
-    assert_eq!(pool1_stats.total_pool_staked, 225_000_000_000);
+    assert_eq!(pool1_stats.header.total_staked, 225_000_000_000);
     let pool2_stats = tr.pool_stats(pool_owner2.pubkey()).await.unwrap();
-    assert_eq!(pool2_stats.total_pool_staked, 110_000_000_000);
+    assert_eq!(pool2_stats.header.total_staked, 110_000_000_000);
     let pool3_stats = tr.pool_stats(pool_owner3.pubkey()).await.unwrap();
-    assert_eq!(pool3_stats.total_pool_staked, 30_000_000_020);
+    assert_eq!(pool3_stats.header.total_staked, 30_000_000_020);
     let central_state = tr.central_state_stats().await.unwrap();
     assert_eq!(central_state.total_staked, 365_000_000_020);
     let staker_stats = tr.staker_stats(staker.pubkey()).await.unwrap();

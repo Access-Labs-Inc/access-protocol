@@ -22,8 +22,7 @@ use crate::utils::{
     check_account_owner,
     check_signer,
 };
-#[cfg(not(feature = "no-bond-signer"))]
-use crate::utils::assert_authorized_seller;
+
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `create_bond` instruction
@@ -142,8 +141,8 @@ pub fn process_create_bond_v2(
 
     let (derived_key, nonce) =
         BondAccountV2::create_key(
-            &accounts.to.key,
-            &accounts.pool.key,
+            accounts.to.key,
+            accounts.pool.key,
             unlock_date,
             program_id,
         );

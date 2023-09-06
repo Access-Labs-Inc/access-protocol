@@ -1,7 +1,7 @@
 //! Claim rewards of a stake account
 //! This instruction can be used by stakers to claim their staking rewards
 use crate::error::AccessError;
-use crate::state::{CentralState, StakeAccount, StakePool, Tag};
+use crate::state::{CentralState, StakePool, Tag};
 use crate::utils::{
     assert_no_close_or_delegate, calc_reward_fp32, check_account_key, check_account_owner,
     check_signer,
@@ -104,7 +104,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 pub fn process_claim_bond_v2_rewards(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
-    params: Params,
+    _params: Params,
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 

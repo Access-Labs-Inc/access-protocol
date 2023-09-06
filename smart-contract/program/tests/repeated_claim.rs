@@ -88,9 +88,9 @@ async fn repeated_claim() {
     assert_eq!(stats.balance, 499_800);
     let pool_stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
     assert_eq!(pool_stats.balance, 500_000);
-    assert_eq!(pool_stats.total_pool_staked, 0);
+    assert_eq!(pool_stats.header.total_staked, 0);
     let pool_stats2 = tr.pool_stats(stake_pool2_owner.pubkey()).await.unwrap();
     assert_eq!(pool_stats2.balance, 0);
-    assert_eq!(pool_stats2.total_pool_staked, 10_000);
+    assert_eq!(pool_stats2.header.total_staked, 10_000);
 
 }

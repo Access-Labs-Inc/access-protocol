@@ -16,17 +16,16 @@ use solana_program::program_pack::Pack;
 use spl_token::instruction::transfer;
 use spl_token::state::Account;
 
-use crate::{cpi::Cpi, state::Tag};
+use crate::{state::Tag};
 use crate::error::AccessError;
-use crate::state::{BOND_SIGNER_THRESHOLD, BondAccountV2, CentralState, FEES, StakePool};
+use crate::state::{BondAccountV2, CentralState, FEES, StakePool};
 use crate::utils::{
-    assert_uninitialized, assert_valid_fee, check_account_key,
+    assert_valid_fee, check_account_key,
     check_account_owner,
     check_signer,
 };
 use solana_program::sysvar::Sysvar;
-#[cfg(not(feature = "no-bond-signer"))]
-use crate::utils::assert_authorized_seller;
+
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `create_bond` instruction
