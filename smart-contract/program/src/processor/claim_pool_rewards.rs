@@ -126,14 +126,13 @@ pub fn process_claim_pool_rewards(
         AccessError::WrongMint,
     )?;
 
-    let reward =
-        calc_reward_fp32(
-            central_state.last_snapshot_offset,
-            stake_pool.header.last_claimed_offset,
-            &stake_pool,
-            false,
-            false,
-        )?;
+    let reward = calc_reward_fp32(
+        central_state.last_snapshot_offset,
+        stake_pool.header.last_claimed_offset,
+        &stake_pool,
+        false,
+        false,
+    )?;
 
     let reward = safe_downcast(((reward >> 31) + 1) >> 1).ok_or(AccessError::Overflow)?;
 

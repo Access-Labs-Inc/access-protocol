@@ -18,7 +18,9 @@ async fn v1_bonds() {
     let pool_owner = tr.create_ata_account().await.unwrap();
     let bond_recipient = tr.create_ata_account().await.unwrap();
     // Create stake pool
-    tr.create_stake_pool(&pool_owner.pubkey(), 10_000).await.unwrap();
+    tr.create_stake_pool(&pool_owner.pubkey(), 10_000)
+        .await
+        .unwrap();
     // Activate stake pool
     tr.activate_stake_pool(&pool_owner.pubkey()).await.unwrap();
 
@@ -33,17 +35,27 @@ async fn v1_bonds() {
         1,
         5 * SECONDS_PER_DAY as i64,
         1,
-    ).await.unwrap();
-    tr.claim_bond(&pool_owner.pubkey(), &bond_recipient.pubkey()).await.unwrap();
+    )
+    .await
+    .unwrap();
+    tr.claim_bond(&pool_owner.pubkey(), &bond_recipient.pubkey())
+        .await
+        .unwrap();
 
     let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
     assert_eq!(pool_stats.header.total_staked, bond_amount);
     assert_eq!(pool_stats.vault, bond_amount);
     let central_state_stats = tr.central_state_stats().await.unwrap();
     assert_eq!(central_state_stats.total_staked, bond_amount);
-    let bond = tr.bond_stats(bond_recipient.pubkey(), pool_owner.pubkey(), bond_amount).await.unwrap();
+    let bond = tr
+        .bond_stats(bond_recipient.pubkey(), pool_owner.pubkey(), bond_amount)
+        .await
+        .unwrap();
     assert_eq!(bond.tag, BondAccount);
-    assert_eq!(bond.unlock_start_date, current_time + 5 * SECONDS_PER_DAY as i64);
+    assert_eq!(
+        bond.unlock_start_date,
+        current_time + 5 * SECONDS_PER_DAY as i64
+    );
     assert_eq!(bond.stake_pool, tr.get_pool_pda(&pool_owner.pubkey()));
     assert_eq!(bond.total_staked, bond_amount);
     assert_eq!(bond.owner, bond_recipient.pubkey());
@@ -53,48 +65,42 @@ async fn v1_bonds() {
     // Claim zero rewards
     let recipient_stats = tr.staker_stats(bond_recipient.pubkey()).await.unwrap();
     assert_eq!(recipient_stats.balance, 0);
-    tr.claim_bond_rewards(
-        &pool_owner.pubkey(),
-        &bond_recipient,
-    ).await.unwrap_err();
+    tr.claim_bond_rewards(&pool_owner.pubkey(), &bond_recipient)
+        .await
+        .unwrap_err();
     let recipient_stats = tr.staker_stats(bond_recipient.pubkey()).await.unwrap();
     assert_eq!(recipient_stats.balance, 0);
 
     // Claim rewards
-    tr.sleep(SECONDS_PER_DAY).await;
+    _ = tr.sleep(SECONDS_PER_DAY).await;
     tr.crank_pool(&pool_owner.pubkey()).await.unwrap();
-    tr.claim_bond_rewards(
-        &pool_owner.pubkey(),
-        &bond_recipient,
-    ).await.unwrap();
+    tr.claim_bond_rewards(&pool_owner.pubkey(), &bond_recipient)
+        .await
+        .unwrap();
     let recipient_stats = tr.staker_stats(bond_recipient.pubkey()).await.unwrap();
     assert_eq!(recipient_stats.balance, 500_000);
 
     // Try unlocking - shouldn't be possible
-    tr.unlock_bond(
-        &pool_owner.pubkey(),
-        &bond_recipient,
-    ).await.unwrap_err();
+    tr.unlock_bond(&pool_owner.pubkey(), &bond_recipient)
+        .await
+        .unwrap_err();
 
     // Move 5 days to the future
-    tr.sleep(5 * SECONDS_PER_DAY).await;
+    _ = tr.sleep(5 * SECONDS_PER_DAY).await;
     tr.crank_pool(&pool_owner.pubkey()).await.unwrap();
     // Unlocking should not be possible before reward claim
-    tr.unlock_bond(
-        &pool_owner.pubkey(),
-        &bond_recipient,
-    ).await.unwrap_err();
-    tr.sleep(1).await;
+    tr.unlock_bond(&pool_owner.pubkey(), &bond_recipient)
+        .await
+        .unwrap_err();
+    _ = tr.sleep(1).await;
     // Claim rewards
-    tr.claim_bond_rewards(
-        &pool_owner.pubkey(),
-        &bond_recipient,
-    ).await.unwrap();
+    tr.claim_bond_rewards(&pool_owner.pubkey(), &bond_recipient)
+        .await
+        .unwrap();
     // Unlocking should be possible now
-    tr.unlock_bond(
-        &pool_owner.pubkey(),
-        &bond_recipient,
-    ).await.unwrap();
+    tr.unlock_bond(&pool_owner.pubkey(), &bond_recipient)
+        .await
+        .unwrap();
     // Check all the stats
     let recipient_stats = tr.staker_stats(bond_recipient.pubkey()).await.unwrap();
     assert_eq!(recipient_stats.balance, 2 * 500_000 + bond_amount);
@@ -103,9 +109,15 @@ async fn v1_bonds() {
     assert_eq!(pool_stats.vault, 0);
     let central_state_stats = tr.central_state_stats().await.unwrap();
     assert_eq!(central_state_stats.total_staked, 0);
-    let bond = tr.bond_stats(bond_recipient.pubkey(), pool_owner.pubkey(), bond_amount).await.unwrap();
+    let bond = tr
+        .bond_stats(bond_recipient.pubkey(), pool_owner.pubkey(), bond_amount)
+        .await
+        .unwrap();
     assert_eq!(bond.tag, BondAccount);
-    assert_eq!(bond.unlock_start_date, current_time + 5 * SECONDS_PER_DAY as i64);
+    assert_eq!(
+        bond.unlock_start_date,
+        current_time + 5 * SECONDS_PER_DAY as i64
+    );
     assert_eq!(bond.stake_pool, tr.get_pool_pda(&pool_owner.pubkey()));
     assert_eq!(bond.total_staked, 0);
     assert_eq!(bond.owner, bond_recipient.pubkey());
@@ -114,10 +126,9 @@ async fn v1_bonds() {
 
     // Second unlock should not be possible
     // fixme but it is - what does it do?
-    tr.unlock_bond(
-        &pool_owner.pubkey(),
-        &bond_recipient,
-    ).await.unwrap();
+    tr.unlock_bond(&pool_owner.pubkey(), &bond_recipient)
+        .await
+        .unwrap();
     let recipient_stats = tr.staker_stats(bond_recipient.pubkey()).await.unwrap();
     assert_eq!(recipient_stats.balance, 2 * 500_000 + bond_amount);
     let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
@@ -125,9 +136,15 @@ async fn v1_bonds() {
     assert_eq!(pool_stats.vault, 0);
     let central_state_stats = tr.central_state_stats().await.unwrap();
     assert_eq!(central_state_stats.total_staked, 0);
-    let bond = tr.bond_stats(bond_recipient.pubkey(), pool_owner.pubkey(), bond_amount).await.unwrap();
+    let bond = tr
+        .bond_stats(bond_recipient.pubkey(), pool_owner.pubkey(), bond_amount)
+        .await
+        .unwrap();
     assert_eq!(bond.tag, BondAccount);
-    assert_eq!(bond.unlock_start_date, current_time + 5 * SECONDS_PER_DAY as i64);
+    assert_eq!(
+        bond.unlock_start_date,
+        current_time + 5 * SECONDS_PER_DAY as i64
+    );
     assert_eq!(bond.stake_pool, tr.get_pool_pda(&pool_owner.pubkey()));
     assert_eq!(bond.total_staked, 0);
     assert_eq!(bond.owner, bond_recipient.pubkey());
@@ -135,10 +152,9 @@ async fn v1_bonds() {
     assert_eq!(bond.pool_minimum_at_creation, 10_000);
 
     // Claim rewards in another 5 days
-    tr.sleep(5 * SECONDS_PER_DAY).await;
+    _ = tr.sleep(5 * SECONDS_PER_DAY).await;
     tr.crank_pool(&pool_owner.pubkey()).await.unwrap();
-    tr.claim_bond_rewards(
-        &pool_owner.pubkey(),
-        &bond_recipient,
-    ).await.unwrap_err();
+    tr.claim_bond_rewards(&pool_owner.pubkey(), &bond_recipient)
+        .await
+        .unwrap_err();
 }

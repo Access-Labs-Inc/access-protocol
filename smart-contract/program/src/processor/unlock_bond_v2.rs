@@ -6,12 +6,19 @@ use crate::{
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 
-use solana_program::{clock::Clock, msg, account_info::{next_account_info, AccountInfo}, entrypoint::ProgramResult, program_error::ProgramError, pubkey::Pubkey};
 use solana_program::program::invoke_signed;
 use solana_program::program_pack::Pack;
+use solana_program::sysvar::Sysvar;
+use solana_program::{
+    account_info::{next_account_info, AccountInfo},
+    clock::Clock,
+    entrypoint::ProgramResult,
+    msg,
+    program_error::ProgramError,
+    pubkey::Pubkey,
+};
 use spl_token::instruction::transfer;
 use spl_token::state::Account;
-use solana_program::sysvar::Sysvar;
 
 use crate::error::AccessError;
 use crate::state::{BondAccountV2, StakePool, StakePoolHeader};
@@ -157,7 +164,7 @@ pub fn process_unlock_bond_v2(
         return Err(ProgramError::InvalidArgument);
     }
     let current_time = Clock::get()?.unix_timestamp;
-    if current_time < bond_v2_account.unlock_date.unwrap()   {
+    if current_time < bond_v2_account.unlock_date.unwrap() {
         msg!("The bond tokens have not started unlocking yet");
         return Err(ProgramError::InvalidArgument);
     }

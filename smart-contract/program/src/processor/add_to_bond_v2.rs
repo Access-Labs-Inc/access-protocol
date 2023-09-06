@@ -2,30 +2,25 @@
 //! This instruction can be used by authorized sellers to create a bond
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
+use solana_program::program_pack::Pack;
 use solana_program::{
-    msg,
-    account_info::{AccountInfo, next_account_info},
+    account_info::{next_account_info, AccountInfo},
+    clock::Clock,
     entrypoint::ProgramResult,
+    msg,
     program::invoke,
     program_error::ProgramError,
     pubkey::Pubkey,
     system_program,
-    clock::Clock,
 };
-use solana_program::program_pack::Pack;
 use spl_token::instruction::transfer;
 use spl_token::state::Account;
 
-use crate::{state::Tag};
 use crate::error::AccessError;
-use crate::state::{BondAccountV2, CentralState, FEES, StakePool};
-use crate::utils::{
-    assert_valid_fee, check_account_key,
-    check_account_owner,
-    check_signer,
-};
+use crate::state::Tag;
+use crate::state::{BondAccountV2, CentralState, StakePool, FEES};
+use crate::utils::{assert_valid_fee, check_account_key, check_account_owner, check_signer};
 use solana_program::sysvar::Sysvar;
-
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `create_bond` instruction
@@ -117,7 +112,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             AccessError::WrongSplTokenProgramId,
         )?;
 
-
         // Check ownership
         check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
         check_account_owner(
@@ -125,10 +119,21 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             program_id,
             AccessError::WrongStakeAccountOwner,
         )?;
-        check_account_owner(accounts.pool, program_id, AccessError::WrongStakePoolAccountOwner)?;
-        check_account_owner(accounts.source_token, &spl_token::ID, AccessError::WrongTokenAccountOwner)?;
-        check_account_owner(accounts.pool_vault, &spl_token::ID, AccessError::WrongTokenAccountOwner)?;
-
+        check_account_owner(
+            accounts.pool,
+            program_id,
+            AccessError::WrongStakePoolAccountOwner,
+        )?;
+        check_account_owner(
+            accounts.source_token,
+            &spl_token::ID,
+            AccessError::WrongTokenAccountOwner,
+        )?;
+        check_account_owner(
+            accounts.pool_vault,
+            &spl_token::ID,
+            AccessError::WrongTokenAccountOwner,
+        )?;
 
         // Check signers
         // todo - is this really needed? Possibly checked by #[cons(signer)]
@@ -144,7 +149,10 @@ pub fn process_add_to_bond_v2(
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
-    let Params { amount, unlock_date} = params;
+    let Params {
+        amount,
+        unlock_date,
+    } = params;
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let mut pool = StakePool::get_checked(accounts.pool, vec![Tag::StakePool])?;
@@ -165,16 +173,8 @@ pub fn process_add_to_bond_v2(
         return Err(AccessError::WrongOwner.into());
     }
 
-    check_account_key(
-        accounts.to,
-        &bond.owner,
-        AccessError::WrongBondAccountOwner,
-    )?;
-    check_account_key(
-        accounts.pool,
-        &bond.pool,
-        AccessError::StakePoolMismatch,
-    )?;
+    check_account_key(accounts.to, &bond.owner, AccessError::WrongBondAccountOwner)?;
+    check_account_key(accounts.pool, &bond.pool, AccessError::StakePoolMismatch)?;
     check_account_key(
         accounts.pool_vault,
         &Pubkey::new(&pool.header.vault),
@@ -189,14 +189,16 @@ pub fn process_add_to_bond_v2(
         return Err(AccessError::CannotStakeZero.into());
     }
 
-    if bond.amount > 0
-        && bond.last_claimed_offset < pool.header.current_day_idx as u64
-    {
+    if bond.amount > 0 && bond.last_claimed_offset < pool.header.current_day_idx as u64 {
         return Err(AccessError::UnclaimedRewards.into());
     }
 
     if (pool.header.current_day_idx as u64) < central_state.get_current_offset()? {
-        msg!("Pool must be cranked before adding to a bond, {}, {}", pool.header.current_day_idx, central_state.get_current_offset()?);
+        msg!(
+            "Pool must be cranked before adding to a bond, {}, {}",
+            pool.header.current_day_idx,
+            central_state.get_current_offset()?
+        );
         return Err(AccessError::PoolMustBeCranked.into());
     }
 
@@ -209,7 +211,6 @@ pub fn process_add_to_bond_v2(
         msg!("Cannot add to a bond that has already started unlocking");
         return Err(ProgramError::InvalidArgument);
     }
-
 
     // Transfer the tokens to pool vault (or burn for forever bonds)
     if unlock_date.is_some() {

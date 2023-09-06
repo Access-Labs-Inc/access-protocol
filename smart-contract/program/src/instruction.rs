@@ -1,9 +1,10 @@
 pub use crate::processor::{
-    activate_stake_pool, admin_freeze, admin_mint, change_central_state_authority,
+    activate_stake_pool, add_to_bond_v2, admin_freeze, admin_mint, change_central_state_authority,
     change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards,
-    claim_pool_rewards, claim_rewards, close_stake_account, close_stake_pool, crank, create_bond,
-    create_central_state, create_stake_account, create_stake_pool, edit_metadata, sign_bond, stake,
-    unlock_bond_tokens, unstake, create_bond_v2, add_to_bond_v2, claim_bond_v2_rewards, unlock_bond_v2,
+    claim_bond_v2_rewards, claim_pool_rewards, claim_rewards, close_stake_account,
+    close_stake_pool, crank, create_bond, create_bond_v2, create_central_state,
+    create_stake_account, create_stake_pool, edit_metadata, sign_bond, stake, unlock_bond_tokens,
+    unlock_bond_v2, unstake,
 };
 use bonfida_utils::InstructionsAccount;
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -407,8 +408,11 @@ pub fn claim_bond_v2_rewards(
     params: claim_bond_v2_rewards::Params,
     owner_must_sign: bool,
 ) -> Instruction {
-    let mut ix =
-        accounts.get_instruction(program_id, ProgramInstruction::ClaimBondV2Rewards as u8, params);
+    let mut ix = accounts.get_instruction(
+        program_id,
+        ProgramInstruction::ClaimBondV2Rewards as u8,
+        params,
+    );
     if let Some(acc) = ix.accounts.get_mut(2) {
         acc.is_signer = owner_must_sign
     }

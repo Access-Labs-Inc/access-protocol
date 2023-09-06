@@ -17,8 +17,8 @@ use access_protocol::{
     },
     state::BondAccount,
 };
-use mpl_token_metadata::{instruction::create_metadata_accounts_v3, pda::find_metadata_account};
 use mpl_token_metadata::instruction::update_metadata_accounts;
+use mpl_token_metadata::{instruction::create_metadata_accounts_v3, pda::find_metadata_account};
 use spl_token::{instruction::set_authority, instruction::AuthorityType};
 
 #[tokio::test]
@@ -200,8 +200,12 @@ async fn functional_10s() {
     .await
     .unwrap();
 
-    let create_ata_staker_ix =
-        create_associated_token_account(&prg_test_ctx.payer.pubkey(), &staker.pubkey(), &mint, &spl_token::ID,);
+    let create_ata_staker_ix = create_associated_token_account(
+        &prg_test_ctx.payer.pubkey(),
+        &staker.pubkey(),
+        &mint,
+        &spl_token::ID,
+    );
     sign_send_instructions(&mut prg_test_ctx, vec![create_ata_staker_ix], vec![])
         .await
         .unwrap();
@@ -242,8 +246,12 @@ async fn functional_10s() {
         &program_id,
     );
 
-    let create_associated_instruction =
-        create_associated_token_account(&prg_test_ctx.payer.pubkey(), &stake_pool_key, &mint, &spl_token::ID,);
+    let create_associated_instruction = create_associated_token_account(
+        &prg_test_ctx.payer.pubkey(),
+        &stake_pool_key,
+        &mint,
+        &spl_token::ID,
+    );
     let pool_vault = get_associated_token_address(&stake_pool_key, &mint);
     sign_send_instructions(
         &mut prg_test_ctx,

@@ -1,40 +1,12 @@
-use std::fs;
 use std::str::FromStr;
-
-
 
 use borsh::BorshDeserialize;
 use solana_client::rpc_client::RpcClient;
-
 use solana_program::pubkey::Pubkey;
-
-use solana_sdk::account::ReadableAccount;
-
-use solana_sdk::signature::Keypair;
-
-
-
 
 use access_protocol::state::StakeAccount;
 
-
 pub mod common;
-
-
-fn parse_byte_array(byte_array: &str) -> Vec<u8> {
-    byte_array
-        .trim_matches(|c| c == '[' || c == ']')
-        .split(',')
-        .filter_map(|s| s.parse::<u8>().ok())
-        .collect()
-}
-
-fn load_keypair_from_file(path: &str) -> Result<Keypair, Box<dyn std::error::Error>> {
-    let keypair_str = fs::read_to_string(path)?;
-    let keypair_bytes = parse_byte_array(&keypair_str);
-    let keypair = Keypair::from_bytes(&keypair_bytes)?;
-    Ok(keypair)
-}
 
 #[test]
 fn mainnet() {
@@ -46,16 +18,18 @@ fn mainnet() {
     let (stake_acc_key, _stake_nonce) = Pubkey::find_program_address(
         &[
             "stake_account".as_bytes(),
-            &Pubkey::from_str("BySCc6DnNEeparG8kYHiWHQ4yi2rAaxJHdmYsJ3r8vXU").unwrap().to_bytes(),
-            &Pubkey::from_str("Fxh4hDFHJuTfD3Eq4en36dTk8QvbsSMoTE5Y2hVX3qVt").unwrap().to_bytes(),
+            &Pubkey::from_str("BySCc6DnNEeparG8kYHiWHQ4yi2rAaxJHdmYsJ3r8vXU")
+                .unwrap()
+                .to_bytes(),
+            &Pubkey::from_str("Fxh4hDFHJuTfD3Eq4en36dTk8QvbsSMoTE5Y2hVX3qVt")
+                .unwrap()
+                .to_bytes(),
         ],
         &program_id,
     );
     println!("stake_acc_key: {:?}", stake_acc_key);
 
-    let acc = rpc_client
-        .get_account(&stake_acc_key)
-        .unwrap();
+    let acc = rpc_client.get_account(&stake_acc_key).unwrap();
 
     let account = StakeAccount::deserialize(&mut &acc.data[..]).unwrap();
     println!("account: {:?}", account);

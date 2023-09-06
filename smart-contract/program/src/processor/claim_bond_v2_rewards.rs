@@ -1,6 +1,7 @@
 //! Claim rewards of a stake account
 //! This instruction can be used by stakers to claim their staking rewards
 use crate::error::AccessError;
+use crate::state::BondAccountV2;
 use crate::state::{CentralState, StakePool, Tag};
 use crate::utils::{
     assert_no_close_or_delegate, calc_reward_fp32, check_account_key, check_account_owner,
@@ -19,7 +20,6 @@ use solana_program::{
     pubkey::Pubkey,
 };
 use spl_token::{instruction::mint_to, state::Account};
-use crate::state::BondAccountV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `claim_rewards` instruction
@@ -149,11 +149,11 @@ pub fn process_claim_bond_v2_rewards(
         true,
         false,
     )?
-        // Multiply by the staker shares of the total pool
-        .checked_mul(bond_v2_account.amount as u128)
-        .map(|r| ((r >> 31) + 1) >> 1)
-        .and_then(safe_downcast)
-        .ok_or(AccessError::Overflow)?;
+    // Multiply by the staker shares of the total pool
+    .checked_mul(bond_v2_account.amount as u128)
+    .map(|r| ((r >> 31) + 1) >> 1)
+    .and_then(safe_downcast)
+    .ok_or(AccessError::Overflow)?;
 
     msg!("Claiming rewards {}", reward);
 

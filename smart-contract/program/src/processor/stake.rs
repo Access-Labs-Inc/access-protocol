@@ -63,7 +63,6 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub fee_account: &'a T,
 
-
     /// Optional bond account to be able to stake under the minimum
     // todo extend this by bondV2s
     pub bond_account: Option<&'a T>,
@@ -121,11 +120,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             AccessError::WrongTokenAccountOwner,
         )?;
         if let Some(bond_account) = accounts.bond_account {
-            check_account_owner(
-                bond_account,
-                program_id,
-                AccessError::WrongBondAccountOwner,
-            )?
+            check_account_owner(bond_account, program_id, AccessError::WrongBondAccountOwner)?
         }
 
         // Check signer
@@ -140,7 +135,7 @@ pub fn process_stake(
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
-    let Params { amount} = params;
+    let Params { amount } = params;
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
@@ -174,11 +169,7 @@ pub fn process_stake(
     let mut amount_in_bonds: u64 = 0;
     if let Some(bond_account) = accounts.bond_account {
         let bond_account = BondAccount::from_account_info(bond_account, false)?;
-        check_account_key(
-            accounts.owner,
-            &bond_account.owner,
-            AccessError::WrongOwner,
-        )?;
+        check_account_key(accounts.owner, &bond_account.owner, AccessError::WrongOwner)?;
         check_account_key(
             accounts.stake_pool,
             &bond_account.stake_pool,
@@ -189,10 +180,14 @@ pub fn process_stake(
     }
 
     // if we were previously under the minimum stake limit it gets reset to the pool's one
-    if stake_account.stake_amount.checked_add(amount_in_bonds).ok_or(AccessError::Overflow)? < stake_account.pool_minimum_at_creation {
+    if stake_account
+        .stake_amount
+        .checked_add(amount_in_bonds)
+        .ok_or(AccessError::Overflow)?
+        < stake_account.pool_minimum_at_creation
+    {
         stake_account.pool_minimum_at_creation = stake_pool.header.minimum_stake_amount;
     }
-
 
     assert_valid_fee(accounts.fee_account, &central_state.authority)?;
 
@@ -209,7 +204,11 @@ pub fn process_stake(
     }
 
     if (stake_pool.header.current_day_idx as u64) < central_state.get_current_offset()? {
-        msg!("Pool must be cranked before staking, {}, {}", stake_pool.header.current_day_idx, central_state.get_current_offset()?);
+        msg!(
+            "Pool must be cranked before staking, {}, {}",
+            stake_pool.header.current_day_idx,
+            central_state.get_current_offset()?
+        );
         return Err(AccessError::PoolMustBeCranked.into());
     }
 

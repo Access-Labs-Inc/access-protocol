@@ -5,7 +5,7 @@ use std::ops::DerefMut;
 
 use bonfida_utils::BorshSize;
 use borsh::{BorshDeserialize, BorshSerialize};
-use bytemuck::{cast_slice, from_bytes, from_bytes_mut, Pod, try_cast_slice_mut, Zeroable};
+use bytemuck::{cast_slice, from_bytes, from_bytes_mut, try_cast_slice_mut, Pod, Zeroable};
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
 use solana_program::account_info::AccountInfo;
@@ -46,7 +46,9 @@ pub const MAX_UNSTAKE_REQUEST: usize = 10;
 /// Fees charged on staking instruction in % (i.e FEES = 1 <-> 1% fee charged)
 pub const FEES: u64 = 2;
 
-#[derive(BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive, Debug)]
+#[derive(
+    BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive, Debug,
+)]
 #[repr(u8)]
 #[allow(missing_docs)]
 pub enum Tag {
@@ -172,11 +174,17 @@ impl StakePoolHeaped {
     pub fn from_buffer(buf: &[u8]) -> Self {
         println!("StakePoolHeaped::from_buffer: buf.len() = {}", buf.len());
         let (header, balances) = buf.split_at(size_of::<StakePoolHeader>());
-        println!("StakePoolHeaped::from_buffer: header.len() = {}", header.len());
+        println!(
+            "StakePoolHeaped::from_buffer: header.len() = {}",
+            header.len()
+        );
         let header = from_bytes::<StakePoolHeader>(header);
         println!("StakePoolHeaped::from_buffer: header = {:?}", header);
         let balances = cast_slice::<_, RewardsTuple>(balances);
-        println!("StakePoolHeaped::from_buffer: balances.len() = {}", balances.len());
+        println!(
+            "StakePoolHeaped::from_buffer: balances.len() = {}",
+            balances.len()
+        );
         Self {
             header: Box::new(*header),
             balances: Box::from(balances),
@@ -185,15 +193,15 @@ impl StakePoolHeaped {
 }
 
 #[allow(missing_docs)]
-impl<H: DerefMut<Target=StakePoolHeader>, B: DerefMut<Target=[RewardsTuple]>> StakePool<H, B> {
+impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [RewardsTuple]>> StakePool<H, B> {
     pub fn push_balances_buff(
         &mut self,
         current_offset: u64,
         rewards: RewardsTuple,
     ) -> Result<(), ProgramError> {
-        let nb_days_passed = current_offset.checked_sub(self.header.current_day_idx as u64).ok_or(
-            AccessError::Overflow,
-        )?;
+        let nb_days_passed = current_offset
+            .checked_sub(self.header.current_day_idx as u64)
+            .ok_or(AccessError::Overflow)?;
         for i in 1..nb_days_passed {
             self.balances[(((self.header.current_day_idx as u64)
                 .checked_add(i)
@@ -629,7 +637,6 @@ impl BondAccount {
     }
 }
 
-
 #[derive(BorshSerialize, BorshDeserialize, BorshSize)]
 #[allow(missing_docs)]
 pub struct BondAccountV2 {
@@ -655,7 +662,6 @@ pub struct BondAccountV2 {
     // Unlock start date
     pub unlock_date: Option<i64>,
 }
-
 
 #[allow(missing_docs)]
 impl BondAccountV2 {
@@ -701,9 +707,7 @@ impl BondAccountV2 {
             .map_err(|_| ProgramError::InvalidAccountData)
     }
 
-    pub fn from_account_info(
-        a: &AccountInfo,
-    ) -> Result<BondAccountV2, ProgramError> {
+    pub fn from_account_info(a: &AccountInfo) -> Result<BondAccountV2, ProgramError> {
         let mut data = &a.data.borrow() as &[u8];
         let tag = Tag::BondAccountV2;
         if data[0] != tag as u8 && data[0] != Tag::Uninitialized as u8 {

@@ -2,27 +2,24 @@
 //! This instruction can be used by authorized sellers to create a bond
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
+use solana_program::program_pack::Pack;
 use solana_program::{
-    account_info::{AccountInfo, next_account_info},
+    account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
     program::invoke,
     program_error::ProgramError,
     pubkey::Pubkey,
     system_program,
 };
-use solana_program::program_pack::Pack;
 use spl_token::instruction::transfer;
 use spl_token::state::Account;
 
-use crate::{cpi::Cpi, state::Tag};
 use crate::error::AccessError;
-use crate::state::{BOND_SIGNER_THRESHOLD, BondAccountV2, CentralState, FEES, StakePool};
+use crate::state::{BondAccountV2, CentralState, StakePool, BOND_SIGNER_THRESHOLD, FEES};
 use crate::utils::{
-    assert_uninitialized, assert_valid_fee, check_account_key,
-    check_account_owner,
-    check_signer,
+    assert_uninitialized, assert_valid_fee, check_account_key, check_account_owner, check_signer,
 };
-
+use crate::{cpi::Cpi, state::Tag};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `create_bond` instruction
@@ -114,13 +111,23 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             AccessError::WrongSplTokenProgramId,
         )?;
 
-
         // Check ownership
-        check_account_owner(accounts.pool, program_id, AccessError::WrongStakePoolAccountOwner)?;
+        check_account_owner(
+            accounts.pool,
+            program_id,
+            AccessError::WrongStakePoolAccountOwner,
+        )?;
         check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
-        check_account_owner(accounts.source_token, &spl_token::ID, AccessError::WrongTokenAccountOwner)?;
-        check_account_owner(accounts.pool_vault, &spl_token::ID, AccessError::WrongTokenAccountOwner)?;
-
+        check_account_owner(
+            accounts.source_token,
+            &spl_token::ID,
+            AccessError::WrongTokenAccountOwner,
+        )?;
+        check_account_owner(
+            accounts.pool_vault,
+            &spl_token::ID,
+            AccessError::WrongTokenAccountOwner,
+        )?;
 
         // Check signers
         // todo - is this really needed? Possibly checked by #[cons(signer)]
@@ -136,16 +143,14 @@ pub fn process_create_bond_v2(
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
-    let Params { amount, unlock_date } = params;
+    let Params {
+        amount,
+        unlock_date,
+    } = params;
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let (derived_key, nonce) =
-        BondAccountV2::create_key(
-            accounts.to.key,
-            accounts.pool.key,
-            unlock_date,
-            program_id,
-        );
+        BondAccountV2::create_key(accounts.to.key, accounts.pool.key, unlock_date, program_id);
 
     let mut pool = StakePool::get_checked(accounts.pool, vec![Tag::StakePool])?;
     check_account_key(

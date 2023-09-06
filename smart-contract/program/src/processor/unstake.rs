@@ -6,9 +6,14 @@ use crate::{
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 
-use solana_program::{account_info::{next_account_info, AccountInfo}, entrypoint::ProgramResult, program_error::ProgramError, pubkey::Pubkey};
 use solana_program::program::invoke_signed;
 use solana_program::program_pack::Pack;
+use solana_program::{
+    account_info::{next_account_info, AccountInfo},
+    entrypoint::ProgramResult,
+    program_error::ProgramError,
+    pubkey::Pubkey,
+};
 use spl_token::instruction::transfer;
 use spl_token::state::Account;
 
@@ -107,11 +112,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             AccessError::WrongTokenAccountOwner,
         )?;
         if let Some(bond_account) = accounts.bond_account {
-            check_account_owner(
-                bond_account,
-                program_id,
-                AccessError::WrongBondAccountOwner,
-            )?
+            check_account_owner(bond_account, program_id, AccessError::WrongBondAccountOwner)?
         }
 
         // Check signer
@@ -126,7 +127,7 @@ pub fn process_unstake(
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
-    let Params { amount} = params;
+    let Params { amount } = params;
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
@@ -164,11 +165,7 @@ pub fn process_unstake(
     let mut amount_in_bonds: u64 = 0;
     if let Some(bond_account) = accounts.bond_account {
         let bond_account = BondAccount::from_account_info(bond_account, false)?;
-        check_account_key(
-            accounts.owner,
-            &bond_account.owner,
-            AccessError::WrongOwner,
-        )?;
+        check_account_key(accounts.owner, &bond_account.owner, AccessError::WrongOwner)?;
         check_account_key(
             accounts.stake_pool,
             &bond_account.stake_pool,
@@ -183,12 +180,15 @@ pub fn process_unstake(
     }
 
     // Can unstake either above the minimum or everything - includes the bond account
-    let new_total_in_pool = stake_account.stake_amount
+    let new_total_in_pool = stake_account
+        .stake_amount
         .checked_add(amount_in_bonds)
         .ok_or(AccessError::Overflow)?
         .checked_sub(amount)
         .ok_or(AccessError::Overflow)?;
-    if stake_account.stake_amount != amount && new_total_in_pool < stake_account.pool_minimum_at_creation {
+    if stake_account.stake_amount != amount
+        && new_total_in_pool < stake_account.pool_minimum_at_creation
+    {
         return Err(AccessError::InvalidUnstakeAmount.into());
     }
 
