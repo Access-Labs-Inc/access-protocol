@@ -89,7 +89,7 @@ async fn signed_claim() {
             &bond_recipient,
             &pool_owner.pubkey(),
             Some(unlock_date),
-        ).await.unwrap();
+        ).await.unwrap_err();
         let recipient_stats = tr.staker_stats(bond_recipient.pubkey()).await.unwrap();
         assert_eq!(recipient_stats.balance, 0);
 
@@ -153,6 +153,7 @@ async fn signed_claim() {
         assert_eq!(bond.pool_minimum_at_creation, 10_000);
 
         // Second unlock should not be possible
+        tr.sleep(1).await;
         tr.unlock_bond_v2_tokens(
             &bond_recipient,
             &pool_owner.pubkey(),
@@ -198,7 +199,7 @@ async fn signed_claim() {
         assert_eq!(bond.pool, tr.get_pool_pda(&pool_owner.pubkey()));
         assert_eq!(bond.amount, bond_amount);
         assert_eq!(bond.owner, bond_recipient.pubkey());
-        assert_eq!(bond.last_claimed_offset, 0);
+        assert_eq!(bond.last_claimed_offset, 6);
         assert_eq!(bond.pool_minimum_at_creation, 10_000);
 
         // Add to bond
@@ -224,7 +225,7 @@ async fn signed_claim() {
         assert_eq!(bond.pool, tr.get_pool_pda(&pool_owner.pubkey()));
         assert_eq!(bond.amount, (bond_amount + add_amount));
         assert_eq!(bond.owner, bond_recipient.pubkey());
-        assert_eq!(bond.last_claimed_offset, 0);
+        assert_eq!(bond.last_claimed_offset, 6);
         assert_eq!(bond.pool_minimum_at_creation, 10_000);
 
         // Try unlocking - shouldn't be possible

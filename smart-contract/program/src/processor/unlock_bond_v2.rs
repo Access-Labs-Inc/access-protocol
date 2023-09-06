@@ -162,8 +162,14 @@ pub fn process_unlock_bond_v2(
         return Err(ProgramError::InvalidArgument);
     }
 
-    // Update bond v2 account
     let amount = bond_v2_account.amount;
+    msg!("Unlocking {} tokens", amount);
+    if amount == 0 {
+        msg!("All tokens have been unlocked");
+        return Err(ProgramError::InvalidArgument);
+    }
+
+    // Update bond v2 account
     bond_v2_account.withdraw(amount)?;
     stake_pool.header.withdraw(amount)?;
 

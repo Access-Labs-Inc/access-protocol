@@ -137,13 +137,14 @@ pub fn process_create_bond_v2(
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
+    let Params { amount, unlock_date } = params;
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let (derived_key, nonce) =
         BondAccountV2::create_key(
             &accounts.to.key,
             &accounts.pool.key,
-            params.unlock_date,
+            unlock_date,
             program_id,
         );
 
@@ -155,7 +156,7 @@ pub fn process_create_bond_v2(
     )?;
 
     // todo we might want to allow this - or at least check it there are any other accounts and add up the amounts
-    if pool.header.minimum_stake_amount > params.amount {
+    if pool.header.minimum_stake_amount > amount {
         return Err(AccessError::InvalidAmount.into());
     }
 
@@ -185,8 +186,9 @@ pub fn process_create_bond_v2(
         *accounts.to.key,
         *accounts.pool.key,
         pool.header.minimum_stake_amount,
-        params.amount,
-        params.unlock_date,
+        amount,
+        unlock_date,
+        central_state.last_snapshot_offset,
     );
 
     // Create bond account
@@ -194,7 +196,7 @@ pub fn process_create_bond_v2(
         BondAccountV2::SEED,
         &accounts.to.key.to_bytes(),
         &accounts.pool.key.to_bytes(),
-        &params.unlock_date.unwrap_or(0).to_le_bytes(),
+        &unlock_date.unwrap_or(0).to_le_bytes(),
         &[nonce],
     ];
 
@@ -210,14 +212,14 @@ pub fn process_create_bond_v2(
     bond.save(&mut accounts.bond_account_v2.data.borrow_mut())?;
 
     // Transfer the tokens to pool vault (or burn for forever bonds)
-    if params.unlock_date.is_some() {
+    if unlock_date.is_some() {
         let transfer_instruction = transfer(
             &spl_token::ID,
             accounts.source_token.key,
             accounts.pool_vault.key,
             accounts.from.key,
             &[],
-            params.amount,
+            amount,
         )?;
         invoke(
             &transfer_instruction,
@@ -235,7 +237,7 @@ pub fn process_create_bond_v2(
             accounts.mint.key,
             accounts.from.key,
             &[accounts.from.key],
-            params.amount,
+            amount,
         )?;
         invoke(
             &burn_instruction,
@@ -249,7 +251,7 @@ pub fn process_create_bond_v2(
     }
 
     // Transfer fees
-    let fees = (params.amount * FEES) / 100;
+    let fees = (amount * FEES) / 100;
     let transfer_fees = transfer(
         &spl_token::ID,
         accounts.source_token.key,
@@ -269,10 +271,10 @@ pub fn process_create_bond_v2(
     )?;
 
     // Update all the appropriate states
-    pool.header.deposit(params.amount)?;
+    pool.header.deposit(amount)?;
     central_state.total_staked = central_state
         .total_staked
-        .checked_add(params.amount)
+        .checked_add(amount)
         .ok_or(AccessError::Overflow)?;
     central_state.save(&mut accounts.central_state.data.borrow_mut())?;
 

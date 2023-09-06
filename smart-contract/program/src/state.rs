@@ -683,13 +683,14 @@ impl BondAccountV2 {
         pool_minimum_at_creation: u64,
         amount: u64,
         unlock_date: Option<i64>,
+        current_offset: u64,
     ) -> Self {
         Self {
             tag: Tag::BondAccountV2,
             owner,
             amount,
             pool,
-            last_claimed_offset: 0,
+            last_claimed_offset: current_offset,
             pool_minimum_at_creation,
             unlock_date,
         }
