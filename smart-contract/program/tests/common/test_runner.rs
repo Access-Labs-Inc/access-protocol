@@ -189,6 +189,20 @@ impl TestRunner {
 
     pub async fn setup_fee_split(&mut self, recipients: Vec<FeeRecipient>) -> Result<(), BanksClientError> {
         let (fee_split_key, _) = FeeSplit::find_key(&self.program_id);
+        // todo do this conditionally - only once
+        let vault = get_associated_token_address(&fee_split_key, &self.mint);
+        let create_ata_vault_ix = create_associated_token_account(
+            &self.prg_test_ctx.payer.pubkey(),
+            &fee_split_key,
+            &self.mint,
+            &spl_token::ID,
+        );
+        sign_send_instructions(
+            &mut self.prg_test_ctx,
+            vec![create_ata_vault_ix],
+            vec![],
+        )
+            .await?;
         let admin_setup_fee_split_ix = admin_setup_fee_split(
             self.program_id,
             admin_setup_fee_split::Accounts {
@@ -196,7 +210,7 @@ impl TestRunner {
                 fee_spit_account: &fee_split_key,
                 central_state: &self.central_state,
                 system_program: &system_program::ID,
-                mint: &self.mint,
+                vault: &vault,
             },
             admin_setup_fee_split::Params { recipients });
         sign_send_instructions(&mut self.prg_test_ctx, vec![admin_setup_fee_split_ix], vec![]).await
