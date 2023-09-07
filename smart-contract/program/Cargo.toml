@@ -13,6 +13,7 @@ days-to-sec-10s = []
 days-to-sec-15m = []
 no-bond-signer = []
 claim-bond-rewards-off = []
+v1-instructions-allowed = []
 
 [dependencies]
 solana-program = "1.10.30"

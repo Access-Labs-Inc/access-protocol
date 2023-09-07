@@ -31,6 +31,13 @@ pub const SECONDS_IN_DAY: u64 = if cfg!(feature = "days-to-sec-15m") {
     3600 * 24
 };
 
+/// Specify it the calling of the V1 instructions is allowed
+pub const V1_INSTRUCTIONS_ALLOWED: bool = if cfg!(feature = "v1-instructions-allowed") {
+    true
+} else {
+    false
+};
+
 /// Percentage of the staking rewards going to stakers
 pub const STAKER_MULTIPLIER: u64 = 50;
 

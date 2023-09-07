@@ -12,6 +12,22 @@ pub mod common;
 async fn signed_claim() {
     // Setup the token + basic accounts
     let mut tr = TestRunner::new(1_000_000).await.unwrap();
+
+    // ---------------------------------------------------------------------------------------------
+    // V1 bond creation should be deprecated
+    // ---------------------------------------------------------------------------------------------
+    {
+            let pool_owner = tr.create_ata_account().await.unwrap();
+            let bond_creator = tr.create_ata_account().await.unwrap();
+        tr.create_bond(
+            &pool_owner.pubkey(),
+            &bond_creator.pubkey(),
+            10_000,
+            1,
+            1,
+            1,
+        ).await.unwrap_err();
+    }
     // ---------------------------------------------------------------------------------------------
     // Unlockable bond
     // ---------------------------------------------------------------------------------------------

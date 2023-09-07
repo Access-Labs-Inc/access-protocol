@@ -170,6 +170,9 @@ impl PrintProgramError for AccessError {
             AccessError::UnsupportedInstruction => {
                 msg!("Unsupported instruction")
             }
+            AccessError::DeprecatedInstruction => {
+                msg!("Deprecated instruction")
+            }
         }
     }
 }

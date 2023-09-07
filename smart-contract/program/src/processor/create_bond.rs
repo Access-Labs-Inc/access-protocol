@@ -7,17 +7,18 @@ use solana_program::{
     program_error::ProgramError,
     pubkey::Pubkey,
     system_program,
+    clock::Clock,
+    sysvar::Sysvar,
 };
 
 use crate::error::AccessError;
-use crate::state::{BondAccount, StakePool, BOND_SIGNER_THRESHOLD};
+use crate::state::{BondAccount, StakePool, BOND_SIGNER_THRESHOLD, V1_INSTRUCTIONS_ALLOWED};
 #[cfg(not(feature = "no-bond-signer"))]
 use crate::utils::assert_authorized_seller;
 use crate::utils::{assert_uninitialized, check_account_key, check_account_owner, check_signer};
 use crate::{cpi::Cpi, state::Tag};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
-// todo possibly delete - obsolete
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `create_bond` instruction
 pub struct Params {
@@ -41,7 +42,6 @@ pub struct Params {
     pub seller_index: u64,
 }
 
-// todo possibly delete - obsolete
 #[derive(InstructionsAccount)]
 /// The required accounts for the `create_bond` instruction
 pub struct Accounts<'a, T> {
@@ -100,6 +100,11 @@ pub fn process_create_bond(
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
+    // find out what the current block is
+    if !V1_INSTRUCTIONS_ALLOWED {
+        return Err(AccessError::DeprecatedInstruction.into());
+    }
+
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let (derived_key, nonce) =

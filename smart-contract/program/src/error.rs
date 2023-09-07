@@ -97,6 +97,8 @@ pub enum AccessError {
     WrongMplProgram,
     #[error("Unsupported instruction")]
     UnsupportedInstruction,
+    #[error("DeprecatedInstruction")]
+    DeprecatedInstruction,
 }
 
 impl From<AccessError> for ProgramError {
