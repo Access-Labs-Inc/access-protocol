@@ -7,8 +7,6 @@ use solana_program::{
     program_error::ProgramError,
     pubkey::Pubkey,
     system_program,
-    clock::Clock,
-    sysvar::Sysvar,
 };
 
 use crate::error::AccessError;
