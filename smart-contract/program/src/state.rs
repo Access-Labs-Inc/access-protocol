@@ -1,4 +1,8 @@
-use crate::error::AccessError;
+use std::cell::RefMut;
+use std::convert::TryInto;
+use std::mem::size_of;
+use std::ops::DerefMut;
+
 use bonfida_utils::BorshSize;
 use borsh::{BorshDeserialize, BorshSerialize};
 use bytemuck::{cast_slice, from_bytes, from_bytes_mut, try_cast_slice_mut, Pod, Zeroable};
@@ -11,10 +15,8 @@ use solana_program::msg;
 use solana_program::program_error::ProgramError;
 use solana_program::pubkey::Pubkey;
 use solana_program::sysvar::Sysvar;
-use std::cell::RefMut;
-use std::convert::TryInto;
-use std::mem::size_of;
-use std::ops::DerefMut;
+
+use crate::error::AccessError;
 
 /// ACCESS token mint
 pub const ACCESS_MINT: Pubkey =
@@ -28,6 +30,9 @@ pub const SECONDS_IN_DAY: u64 = if cfg!(feature = "days-to-sec-15m") {
 } else {
     3600 * 24
 };
+
+/// Specify it the calling of the V1 instructions is allowed
+pub const V1_INSTRUCTIONS_ALLOWED: bool = cfg!(feature = "v1-instructions-allowed");
 
 /// Percentage of the staking rewards going to stakers
 pub const STAKER_MULTIPLIER: u64 = 50;
@@ -44,7 +49,9 @@ pub const MAX_UNSTAKE_REQUEST: usize = 10;
 /// Fees charged on staking instruction in % (i.e FEES = 1 <-> 1% fee charged)
 pub const FEES: u64 = 2;
 
-#[derive(BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive, Debug)]
+#[derive(
+    BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive, Debug,
+)]
 #[repr(u8)]
 #[allow(missing_docs)]
 pub enum Tag {
@@ -55,12 +62,14 @@ pub enum Tag {
     // Bond accounts are inactive until the buyer transfered the funds
     InactiveBondAccount,
     BondAccount,
+    BondAccountV2,
     CentralState,
     Deleted,
     // Accounts frozen by the central state authority
     FrozenStakePool,
     FrozenStakeAccount,
     FrozenBondAccount,
+    FrozenBondAccountV2, // todo use or delete
 }
 
 impl Tag {
@@ -70,9 +79,11 @@ impl Tag {
             Tag::StakePool => Tag::FrozenStakePool,
             Tag::StakeAccount => Tag::FrozenStakeAccount,
             Tag::BondAccount => Tag::FrozenBondAccount,
+            Tag::BondAccountV2 => Tag::FrozenBondAccountV2,
             Tag::FrozenStakePool => Tag::StakePool,
             Tag::FrozenStakeAccount => Tag::StakeAccount,
             Tag::FrozenBondAccount => Tag::BondAccount,
+            Tag::FrozenBondAccountV2 => Tag::BondAccountV2,
             _ => return Err(AccessError::InvalidTagChange.into()),
         };
 
@@ -166,11 +177,17 @@ impl StakePoolHeaped {
     pub fn from_buffer(buf: &[u8]) -> Self {
         println!("StakePoolHeaped::from_buffer: buf.len() = {}", buf.len());
         let (header, balances) = buf.split_at(size_of::<StakePoolHeader>());
-        println!("StakePoolHeaped::from_buffer: header.len() = {}", header.len());
+        println!(
+            "StakePoolHeaped::from_buffer: header.len() = {}",
+            header.len()
+        );
         let header = from_bytes::<StakePoolHeader>(header);
         println!("StakePoolHeaped::from_buffer: header = {:?}", header);
         let balances = cast_slice::<_, RewardsTuple>(balances);
-        println!("StakePoolHeaped::from_buffer: balances.len() = {}", balances.len());
+        println!(
+            "StakePoolHeaped::from_buffer: balances.len() = {}",
+            balances.len()
+        );
         Self {
             header: Box::new(*header),
             balances: Box::from(balances),
@@ -185,9 +202,9 @@ impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [RewardsTuple]>
         current_offset: u64,
         rewards: RewardsTuple,
     ) -> Result<(), ProgramError> {
-        let nb_days_passed = current_offset.checked_sub(self.header.current_day_idx as u64).ok_or(
-            AccessError::Overflow,
-        )?;
+        let nb_days_passed = current_offset
+            .checked_sub(self.header.current_day_idx as u64)
+            .ok_or(AccessError::Overflow)?;
         for i in 1..nb_days_passed {
             self.balances[(((self.header.current_day_idx as u64)
                 .checked_add(i)
@@ -275,7 +292,7 @@ impl StakePoolHeader {
     }
 }
 
-#[derive(BorshSerialize, BorshDeserialize, BorshSize)]
+#[derive(BorshSerialize, BorshDeserialize, BorshSize, Debug)]
 #[allow(missing_docs)]
 pub struct StakeAccount {
     /// Tag
@@ -608,17 +625,106 @@ impl BondAccount {
         let cumulated_unlock_amnt = (missed_periods)
             .checked_mul(self.unlock_amount)
             .ok_or(AccessError::Overflow)?;
-        msg!(
-            "Unlock amount {} Total amount {}",
-            cumulated_unlock_amnt,
-            self.total_amount_sold
-        );
-
-        Ok(std::cmp::min(
+        let unlock_amnt = std::cmp::min(
             cumulated_unlock_amnt,
             self.total_amount_sold
                 .checked_sub(self.total_unlocked_amount)
                 .ok_or(AccessError::Overflow)?,
-        ))
+        );
+        msg!(
+            "Unlock amount {} Total amount {}",
+            unlock_amnt,
+            self.total_amount_sold
+        );
+        Ok(unlock_amnt)
+    }
+}
+
+#[derive(BorshSerialize, BorshDeserialize, BorshSize)]
+#[allow(missing_docs)]
+pub struct BondAccountV2 {
+    /// Tag
+    pub tag: Tag,
+
+    /// Owner of the stake account
+    pub owner: Pubkey,
+
+    /// Amount locked in the account
+    pub amount: u64,
+
+    /// Pool which the account belongs to
+    pub pool: Pubkey,
+
+    /// Offset of a last day where rewards were claimed from the contract creation date
+    pub last_claimed_offset: u64,
+
+    /// Minimum lockable amount of the pool when the account
+    /// was created
+    pub pool_minimum_at_creation: u64,
+
+    // Unlock start date
+    pub unlock_date: Option<i64>,
+}
+
+#[allow(missing_docs)]
+impl BondAccountV2 {
+    pub const SEED: &'static [u8; 15] = b"bond_account_v2";
+
+    pub fn create_key(
+        owner: &Pubkey,
+        pool: &Pubkey,
+        unlock_date: Option<i64>,
+        program_id: &Pubkey,
+    ) -> (Pubkey, u8) {
+        let seeds: &[&[u8]] = &[
+            BondAccountV2::SEED,
+            &owner.to_bytes(),
+            &pool.to_bytes(),
+            &unlock_date.unwrap_or(0).to_le_bytes(),
+        ];
+        Pubkey::find_program_address(seeds, program_id)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        owner: Pubkey,
+        pool: Pubkey,
+        pool_minimum_at_creation: u64,
+        amount: u64,
+        unlock_date: Option<i64>,
+        current_offset: u64,
+    ) -> Self {
+        Self {
+            tag: Tag::BondAccountV2,
+            owner,
+            amount,
+            pool,
+            last_claimed_offset: current_offset,
+            pool_minimum_at_creation,
+            unlock_date,
+        }
+    }
+
+    pub fn save(&self, mut dst: &mut [u8]) -> ProgramResult {
+        self.serialize(&mut dst)
+            .map_err(|_| ProgramError::InvalidAccountData)
+    }
+
+    pub fn from_account_info(a: &AccountInfo) -> Result<BondAccountV2, ProgramError> {
+        let mut data = &a.data.borrow() as &[u8];
+        let tag = Tag::BondAccountV2;
+        if data[0] != tag as u8 && data[0] != Tag::Uninitialized as u8 {
+            return Err(AccessError::DataTypeMismatch.into());
+        }
+        let result = BondAccountV2::deserialize(&mut data)?;
+        Ok(result)
+    }
+
+    pub fn withdraw(&mut self, amount: u64) -> ProgramResult {
+        self.amount = self
+            .amount
+            .checked_sub(amount)
+            .ok_or(AccessError::Overflow)?;
+        Ok(())
     }
 }

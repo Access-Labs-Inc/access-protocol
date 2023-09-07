@@ -75,6 +75,8 @@ pub enum AccessError {
     CannotUnstake,
     #[error("Invalid unstake amount")]
     InvalidUnstakeAmount,
+    #[error("Invalid amount")]
+    InvalidAmount,
     #[error("Inactive stake pool not allowed")]
     InactiveStakePoolNotAllowed,
     #[error("Active stake pool not allowed")]
@@ -93,6 +95,10 @@ pub enum AccessError {
     ForbiddenUnlockPeriodZero,
     #[error("Wrong MPL metadata program")]
     WrongMplProgram,
+    #[error("Unsupported instruction")]
+    UnsupportedInstruction,
+    #[error("DeprecatedInstruction")]
+    DeprecatedInstruction,
 }
 
 impl From<AccessError> for ProgramError {

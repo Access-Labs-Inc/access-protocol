@@ -134,6 +134,9 @@ impl PrintProgramError for AccessError {
             AccessError::InvalidUnstakeAmount => {
                 msg!("Error: Invalid unstake amount")
             }
+            AccessError::InvalidAmount => {
+                msg!("Error: Invalid amount")
+            }
             AccessError::InactiveStakePoolNotAllowed => {
                 msg!("Error: Inactive stake pool not allowed")
             }
@@ -163,6 +166,12 @@ impl PrintProgramError for AccessError {
             }
             AccessError::WrongBondAccountOwner => {
                 msg!("Wrong bond account owner")
+            }
+            AccessError::UnsupportedInstruction => {
+                msg!("Unsupported instruction")
+            }
+            AccessError::DeprecatedInstruction => {
+                msg!("Deprecated instruction")
             }
         }
     }

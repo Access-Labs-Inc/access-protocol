@@ -7,6 +7,7 @@ use solana_program::{
 };
 
 pub mod activate_stake_pool;
+pub mod add_to_bond_v2;
 pub mod admin_freeze;
 pub mod admin_mint;
 pub mod change_central_state_authority;
@@ -15,12 +16,14 @@ pub mod change_pool_minimum;
 pub mod change_pool_multiplier;
 pub mod claim_bond;
 pub mod claim_bond_rewards;
+pub mod claim_bond_v2_rewards;
 pub mod claim_pool_rewards;
 pub mod claim_rewards;
 pub mod close_stake_account;
 pub mod close_stake_pool;
 pub mod crank;
 pub mod create_bond;
+pub mod create_bond_v2;
 pub mod create_central_state;
 pub mod create_stake_account;
 pub mod create_stake_pool;
@@ -28,6 +31,7 @@ pub mod edit_metadata;
 pub mod sign_bond;
 pub mod stake;
 pub mod unlock_bond_tokens;
+pub mod unlock_bond_v2;
 pub mod unstake;
 
 pub struct Processor {}
@@ -181,6 +185,30 @@ impl Processor {
                 let params = edit_metadata::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 edit_metadata::process_edit_metadata(program_id, accounts, params)?;
+            }
+            ProgramInstruction::CreateBondV2 => {
+                msg!("Instruction: Create bond V2");
+                let params = create_bond_v2::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                create_bond_v2::process_create_bond_v2(program_id, accounts, params)?;
+            }
+            ProgramInstruction::AddToBondV2 => {
+                msg!("Instruction: Add to bond V2");
+                let params = add_to_bond_v2::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                add_to_bond_v2::process_add_to_bond_v2(program_id, accounts, params)?;
+            }
+            ProgramInstruction::ClaimBondV2Rewards => {
+                msg!("Instruction: Claim bond V2 rewards");
+                let params = claim_bond_v2_rewards::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                claim_bond_v2_rewards::process_claim_bond_v2_rewards(program_id, accounts, params)?;
+            }
+            ProgramInstruction::UnlockBondV2 => {
+                msg!("Instruction: Unlock bond V2");
+                let params = unlock_bond_v2::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                unlock_bond_v2::process_unlock_bond_v2(program_id, accounts, params)?;
             }
         }
 

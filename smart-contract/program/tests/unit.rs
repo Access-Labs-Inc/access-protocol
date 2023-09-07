@@ -30,7 +30,9 @@ mod basic_functionality {
         let new_authority = Keypair::new();
         let stats = tr.central_state_stats().await.unwrap();
         println!("old authority: {:?}", stats.authority);
-        tr.change_central_state_authority(&new_authority).await.unwrap();
+        tr.change_central_state_authority(&new_authority)
+            .await
+            .unwrap();
         // Check the authority
         let stats = tr.central_state_stats().await.unwrap();
         assert_eq!(stats.authority, new_authority.pubkey());
@@ -41,17 +43,24 @@ mod basic_functionality {
         // Setup the token + basic accounts
         let mut tr = TestRunner::new(0).await.unwrap();
         // Sleep for 5 days
-        tr.sleep(5*86400).await.unwrap();
+        tr.sleep(5 * 86400).await.unwrap();
         // Create users
         let stake_pool_owner = tr.create_ata_account().await.unwrap();
         // Create a pool
-        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000).await.unwrap();
+        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000)
+            .await
+            .unwrap();
         // Check the pool
         let stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
-        assert_eq!(Pubkey::new(&stats.header.owner).to_string(), stake_pool_owner.pubkey().to_string());
+        assert_eq!(
+            Pubkey::new(&stats.header.owner).to_string(),
+            stake_pool_owner.pubkey().to_string()
+        );
         assert_eq!(stats.header.tag, Tag::InactiveStakePool as u8);
         // Activate stake pool
-        tr.activate_stake_pool(&stake_pool_owner.pubkey()).await.unwrap();
+        tr.activate_stake_pool(&stake_pool_owner.pubkey())
+            .await
+            .unwrap();
         // Crank
         tr.crank_pool(&stake_pool_owner.pubkey()).await.unwrap();
         // Check the central state
@@ -72,16 +81,26 @@ mod pool_creation_and_activation {
         // Create users
         let stake_pool_owner = tr.create_ata_account().await.unwrap();
         // Create stake pool on day 1 12:00
-        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000).await.unwrap();
+        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000)
+            .await
+            .unwrap();
         // Check the pool
         let stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
-        assert_eq!(Pubkey::new(&stats.header.owner).to_string(), stake_pool_owner.pubkey().to_string());
+        assert_eq!(
+            Pubkey::new(&stats.header.owner).to_string(),
+            stake_pool_owner.pubkey().to_string()
+        );
         assert_eq!(stats.header.tag, Tag::InactiveStakePool as u8);
         // Activate stake pool
-        tr.activate_stake_pool(&stake_pool_owner.pubkey()).await.unwrap();
+        tr.activate_stake_pool(&stake_pool_owner.pubkey())
+            .await
+            .unwrap();
         // Check the pool
         let stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
-        assert_eq!(Pubkey::new(&stats.header.owner).to_string(), stake_pool_owner.pubkey().to_string());
+        assert_eq!(
+            Pubkey::new(&stats.header.owner).to_string(),
+            stake_pool_owner.pubkey().to_string()
+        );
         assert_eq!(stats.header.tag, Tag::StakePool as u8);
     }
 
@@ -92,11 +111,17 @@ mod pool_creation_and_activation {
         // Create users
         let stake_pool_owner = tr.create_ata_account().await.unwrap();
         // Create stake pool
-        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000).await.unwrap();
+        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000)
+            .await
+            .unwrap();
         // Activate stake pool
-        tr.activate_stake_pool(&stake_pool_owner.pubkey()).await.unwrap();
+        tr.activate_stake_pool(&stake_pool_owner.pubkey())
+            .await
+            .unwrap();
         // Try to change the stakers part to 0
-        tr.change_pool_multiplier(&stake_pool_owner, 0).await.unwrap();
+        tr.change_pool_multiplier(&stake_pool_owner, 0)
+            .await
+            .unwrap();
         // Try to change the stakers part to 101
         let result = tr.change_pool_multiplier(&stake_pool_owner, 10000).await;
         assert!(result.is_err());
@@ -120,7 +145,9 @@ mod pool_creation_and_activation {
         // Create users
         let stake_pool_owner = tr.create_ata_account().await.unwrap();
         // Create stake pool
-        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000).await.unwrap();
+        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000)
+            .await
+            .unwrap();
         // Try to create stake pool again
         let result = tr.create_stake_pool(&stake_pool_owner.pubkey(), 1000).await;
         assert!(result.is_err());
@@ -133,9 +160,13 @@ mod pool_creation_and_activation {
         // Create users
         let stake_pool_owner = tr.create_ata_account().await.unwrap();
         // Create stake pool
-        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000).await.unwrap();
+        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000)
+            .await
+            .unwrap();
         // Activate stake pool
-        tr.activate_stake_pool(&stake_pool_owner.pubkey()).await.unwrap();
+        tr.activate_stake_pool(&stake_pool_owner.pubkey())
+            .await
+            .unwrap();
         tr.sleep(1).await.unwrap();
         // Try to activate stake pool again
         let result = tr.activate_stake_pool(&stake_pool_owner.pubkey()).await;
@@ -149,15 +180,19 @@ mod pool_creation_and_activation {
         // Create users
         let stake_pool_owner = tr.create_ata_account().await.unwrap();
         let staker = tr.create_ata_account().await.unwrap();
-         // Mint to staker
+        // Mint to staker
         tr.mint(&staker.pubkey(), 100_000_000_000).await.unwrap();
         // Create stake pool
-        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000).await.unwrap();
+        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000)
+            .await
+            .unwrap();
         // Try to stake
-        let result = tr.stake(&stake_pool_owner.pubkey(), &staker,  100000).await;
+        let result = tr.stake(&stake_pool_owner.pubkey(), &staker, 100000).await;
         assert!(result.is_err());
         // Try to create a bond
-        let result = tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), 10000, 1, 1, 1).await;
+        let result = tr
+            .create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), 10000, 1, 1, 1)
+            .await;
         assert!(result.is_err());
     }
 }
@@ -172,11 +207,17 @@ mod pool_settings {
         // Create users
         let stake_pool_owner = tr.create_ata_account().await.unwrap();
         // Create stake pool
-        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000).await.unwrap();
+        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000)
+            .await
+            .unwrap();
         // Activate stake pool
-        tr.activate_stake_pool(&stake_pool_owner.pubkey()).await.unwrap();
+        tr.activate_stake_pool(&stake_pool_owner.pubkey())
+            .await
+            .unwrap();
         // Change the minimum stake amount
-        tr.change_pool_minimum(&stake_pool_owner, 1000).await.unwrap();
+        tr.change_pool_minimum(&stake_pool_owner, 1000)
+            .await
+            .unwrap();
         // Check the pool
         let stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
         assert_eq!(stats.header.minimum_stake_amount, 1000);
@@ -189,11 +230,17 @@ mod pool_settings {
         // Create users
         let stake_pool_owner = tr.create_ata_account().await.unwrap();
         // Create stake pool
-        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000).await.unwrap();
+        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000)
+            .await
+            .unwrap();
         // Activate stake pool
-        tr.activate_stake_pool(&stake_pool_owner.pubkey()).await.unwrap();
+        tr.activate_stake_pool(&stake_pool_owner.pubkey())
+            .await
+            .unwrap();
         // Change the stakers part
-        tr.change_pool_multiplier(&stake_pool_owner, 20).await.unwrap();
+        tr.change_pool_multiplier(&stake_pool_owner, 20)
+            .await
+            .unwrap();
         // Check the pool
         let stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
         assert_eq!(stats.header.stakers_part, 20);
@@ -210,9 +257,13 @@ mod bonds {
         let stake_pool_owner = tr.create_ata_account().await.unwrap();
         let _staker = tr.create_ata_account().await.unwrap();
         // Create stake pool
-        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000).await.unwrap();
+        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000)
+            .await
+            .unwrap();
         // Activate stake pool
-        tr.activate_stake_pool(&stake_pool_owner.pubkey()).await.unwrap();
+        tr.activate_stake_pool(&stake_pool_owner.pubkey())
+            .await
+            .unwrap();
         // Create bond
         // tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), 10000, 1).await.unwrap();
         // // Claim bond
@@ -229,14 +280,25 @@ mod bonds {
         // Mint to staker
         tr.mint(&staker.pubkey(), 100_000_000_000).await.unwrap();
         // Create stake pool
-        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000).await.unwrap();
+        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000)
+            .await
+            .unwrap();
         // Activate stake pool
-        tr.activate_stake_pool(&stake_pool_owner.pubkey()).await.unwrap();
+        tr.activate_stake_pool(&stake_pool_owner.pubkey())
+            .await
+            .unwrap();
         // Create real bond with quote amount
-        tr.create_bond_with_quote(&stake_pool_owner.pubkey(), &staker.pubkey(), 10000, 200, 1).await.unwrap();
+        tr.create_bond_with_quote(&stake_pool_owner.pubkey(), &staker.pubkey(), 10000, 200, 1)
+            .await
+            .unwrap();
         // Claim bond without signature should fail
-        assert!(tr.claim_bond(&stake_pool_owner.pubkey(), &staker.pubkey()).await.is_err());
+        assert!(tr
+            .claim_bond(&stake_pool_owner.pubkey(), &staker.pubkey())
+            .await
+            .is_err());
         // Claim bond with signature should succeed
-        tr.claim_bond_with_quote(&stake_pool_owner.pubkey(), &staker).await.unwrap();
+        tr.claim_bond_with_quote(&stake_pool_owner.pubkey(), &staker)
+            .await
+            .unwrap();
     }
 }
