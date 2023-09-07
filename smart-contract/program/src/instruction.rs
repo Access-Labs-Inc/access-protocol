@@ -4,7 +4,7 @@ pub use crate::processor::{
     claim_bond_v2_rewards, claim_pool_rewards, claim_rewards, close_stake_account,
     close_stake_pool, crank, create_bond, create_bond_v2, create_central_state,
     create_stake_account, create_stake_pool, edit_metadata, sign_bond, stake, unlock_bond_tokens,
-    unlock_bond_v2, unstake,
+    unlock_bond_v2, unstake, admin_setup_fee_split,
 };
 use bonfida_utils::InstructionsAccount;
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -250,6 +250,8 @@ pub enum ProgramInstruction {
     ClaimBondV2Rewards,
     // todo docs
     UnlockBondV2,
+    // todo docs
+    AdminSetupFeeSplit,
 }
 #[allow(missing_docs)]
 pub fn create_central_state(
@@ -537,6 +539,7 @@ pub fn change_central_state_authority(
         params,
     )
 }
+
 #[allow(missing_docs)]
 pub fn edit_metadata(
     program_id: Pubkey,
@@ -545,3 +548,13 @@ pub fn edit_metadata(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::EditMetadata as u8, params)
 }
+
+#[allow(missing_docs)]
+pub fn admin_setup_fee_split(
+    program_id: Pubkey,
+    accounts: admin_setup_fee_split::Accounts<Pubkey>,
+    params: admin_setup_fee_split::Params,
+) -> Instruction {
+    accounts.get_instruction(program_id, ProgramInstruction::AdminSetupFeeSplit as u8, params)
+}
+

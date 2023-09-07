@@ -5,7 +5,7 @@ use std::ops::DerefMut;
 
 use bonfida_utils::BorshSize;
 use borsh::{BorshDeserialize, BorshSerialize};
-use bytemuck::{cast_slice, from_bytes, from_bytes_mut, try_cast_slice_mut, Pod, Zeroable};
+use bytemuck::{cast_slice, from_bytes, from_bytes_mut, Pod, try_cast_slice_mut, Zeroable};
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
 use solana_program::account_info::AccountInfo;
@@ -43,6 +43,9 @@ pub const OWNER_MULTIPLIER: u64 = 100 - STAKER_MULTIPLIER;
 /// Length of the circular buffer (stores balances for 1 year)
 pub const STAKE_BUFFER_LEN: u64 = 274; // 9 Months
 
+/// Max count of recipients of the fees
+pub const MAX_FEE_RECIPIENTS: usize = 20;
+
 /// Max pending unstake requests
 pub const MAX_UNSTAKE_REQUEST: usize = 10;
 
@@ -50,7 +53,7 @@ pub const MAX_UNSTAKE_REQUEST: usize = 10;
 pub const FEES: u64 = 2;
 
 #[derive(
-    BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive, Debug,
+BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive, Debug,
 )]
 #[repr(u8)]
 #[allow(missing_docs)]
@@ -65,6 +68,7 @@ pub enum Tag {
     BondAccountV2,
     CentralState,
     Deleted,
+    FeeSplit,
     // Accounts frozen by the central state authority
     FrozenStakePool,
     FrozenStakeAccount,
@@ -196,7 +200,7 @@ impl StakePoolHeaped {
 }
 
 #[allow(missing_docs)]
-impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [RewardsTuple]>> StakePool<H, B> {
+impl<H: DerefMut<Target=StakePoolHeader>, B: DerefMut<Target=[RewardsTuple]>> StakePool<H, B> {
     pub fn push_balances_buff(
         &mut self,
         current_offset: u64,
@@ -726,5 +730,62 @@ impl BondAccountV2 {
             .checked_sub(amount)
             .ok_or(AccessError::Overflow)?;
         Ok(())
+    }
+}
+
+#[derive(BorshSerialize, BorshDeserialize, BorshSize, Clone)]
+#[allow(missing_docs)]
+pub struct FeeRecipient {
+    pub address: Pubkey,
+    pub percentage: u64,
+}
+
+#[derive(BorshSerialize, BorshDeserialize, BorshSize)]
+#[allow(missing_docs)]
+pub struct FeeSplit {
+    /// Tag
+    pub tag: Tag,
+
+    /// Bump seed
+    pub bump_seed: u8,
+
+    /// List of fee recipients
+    pub recipients: Vec<FeeRecipient>,
+}
+
+impl FeeSplit {
+    pub const SEED: &'static [u8; 9] = b"fee_split";
+
+    #[allow(missing_docs)]
+    pub fn new(bump_seed: u8, recipients: Vec<FeeRecipient>) -> Self {
+        Self {
+            tag: Tag::FeeSplit,
+            bump_seed,
+            recipients,
+        }
+    }
+    #[allow(missing_docs)]
+    pub fn create_key(signer_nonce: &u8, program_id: &Pubkey) -> Result<Pubkey, ProgramError> {
+        let signer_seeds: &[&[u8]] = &[Self::SEED, &program_id.to_bytes(), &[*signer_nonce]];
+        Pubkey::create_program_address(signer_seeds, program_id)
+            .map_err(|_| ProgramError::InvalidSeeds)
+    }
+    #[allow(missing_docs)]
+    pub fn find_key(program_id: &Pubkey) -> (Pubkey, u8) {
+        Pubkey::find_program_address(&[Self::SEED, &program_id.to_bytes()], program_id)
+    }
+    #[allow(missing_docs)]
+    pub fn save(&self, mut dst: &mut [u8]) -> ProgramResult {
+        self.serialize(&mut dst)
+            .map_err(|_| ProgramError::InvalidAccountData)
+    }
+    #[allow(missing_docs)]
+    pub fn from_account_info(a: &AccountInfo) -> Result<FeeSplit, ProgramError> {
+        let mut data = &a.data.borrow() as &[u8];
+        if data[0] != Tag::FeeSplit as u8 && data[0] != Tag::Uninitialized as u8 {
+            return Err(AccessError::DataTypeMismatch.into());
+        }
+        let result = FeeSplit::deserialize(&mut data)?;
+        Ok(result)
     }
 }
