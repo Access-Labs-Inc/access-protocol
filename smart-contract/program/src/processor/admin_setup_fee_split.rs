@@ -11,7 +11,7 @@ use solana_program::{
 };
 
 use std::mem::size_of;
-
+use crate::{state::StakePool, utils::assert_valid_vault};
 use crate::{cpi::Cpi, error::AccessError};
 use crate::state::{FeeSplit, CentralState, FeeRecipient, MAX_FEE_RECIPIENTS};
 use crate::utils::{check_account_key, check_account_owner};
@@ -39,8 +39,8 @@ pub struct Accounts<'a, T> {
     /// The system program account
     pub system_program: &'a T,
 
-    /// The mint of the ACCESS token
-    pub mint: &'a T,
+    /// The stake pool vault account
+    pub vault: &'a T,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -51,7 +51,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             fee_spit_account: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
             system_program: next_account_info(accounts_iter)?,
-            mint: next_account_info(accounts_iter)?,
+            vault: next_account_info(accounts_iter)?,
         };
 
         // Check keys - todo more
@@ -78,9 +78,10 @@ pub fn process_admin_setup_fee_split(
     params: Params,
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
-    let (derived_state_key, bump_seed) = FeeSplit::find_key(program_id);
+    let (fee_split_pda, bump_seed) = FeeSplit::find_key(program_id);
     let mut central_state = CentralState::from_account_info(accounts.central_state)?;
 
+    assert_valid_vault(accounts.vault, &fee_split_pda)?;
     check_account_key(
         accounts.authority,
         &central_state.authority,
@@ -89,7 +90,7 @@ pub fn process_admin_setup_fee_split(
 
     check_account_key(
         accounts.fee_spit_account,
-        &derived_state_key,
+        &fee_split_pda,
         AccessError::AccountNotDeterministic,
     )?;
     // todo more checks
@@ -97,7 +98,7 @@ pub fn process_admin_setup_fee_split(
     // todo check if the percentages add up to 100
 
     let mut fee_split:FeeSplit;
-    if !accounts.fee_spit_account.data_is_empty() {
+    if accounts.fee_spit_account.data_is_empty() {
         msg!("Creating Fee split account");
         fee_split = FeeSplit::new(
             bump_seed,
