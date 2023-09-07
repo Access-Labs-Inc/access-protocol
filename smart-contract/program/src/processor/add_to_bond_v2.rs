@@ -181,7 +181,7 @@ pub fn process_add_to_bond_v2(
         AccessError::StakePoolVaultMismatch,
     )?;
 
-    assert_valid_fee(accounts.fee_account, &central_state.authority)?;
+    assert_valid_fee(accounts.fee_account, &[central_state.authority])?;
 
     let fees = (amount * FEES) / 100;
 

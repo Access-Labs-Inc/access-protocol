@@ -165,7 +165,7 @@ pub fn process_create_bond_v2(
     }
 
     let mut central_state = CentralState::from_account_info(accounts.central_state)?;
-    assert_valid_fee(accounts.fee_account, &central_state.authority)?;
+    assert_valid_fee(accounts.fee_account, &[central_state.authority])?;
     check_account_key(
         accounts.bond_account_v2,
         &derived_key,

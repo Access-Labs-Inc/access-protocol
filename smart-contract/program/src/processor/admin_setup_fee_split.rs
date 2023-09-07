@@ -96,6 +96,7 @@ pub fn process_admin_setup_fee_split(
     // todo more checks
     // todo check if more recipients than allowed
     // todo check if the percentages add up to 100
+    // todo only allow change if all the fees are distributed
 
     let mut fee_split:FeeSplit;
     if accounts.fee_spit_account.data_is_empty() {

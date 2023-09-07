@@ -356,6 +356,8 @@ impl TestRunner {
         let staker_key = staker.pubkey();
         let stake_pool_key = self.get_pool_pda(stake_pool_owner_key);
         let (stake_acc_key, _) = self.get_stake_account_pda(&stake_pool_key, &staker_key);
+        let (fee_split_key, _) = FeeSplit::find_key(&self.program_id);
+        let fee_split_ata = get_associated_token_address(&fee_split_key, &self.mint);
         let staker_token_acc = get_associated_token_address(&staker_key, &self.mint);
         let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
         // get the staker's bond from the hash map if it exists
@@ -373,7 +375,7 @@ impl TestRunner {
                 spl_token_program: &spl_token::ID,
                 vault: &pool_vault,
                 central_state_account: &self.central_state,
-                fee_account: &self.authority_ata,
+                fee_account: &fee_split_ata,
                 bond_account: staker_bond,
             },
             stake::Params {
