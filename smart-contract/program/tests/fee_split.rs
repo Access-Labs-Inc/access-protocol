@@ -2,7 +2,6 @@ use solana_sdk::signer::Signer;
 use spl_associated_token_account::get_associated_token_address;
 
 use access_protocol::state::FeeRecipient;
-
 use crate::common::test_runner::TestRunner;
 
 pub mod common;
@@ -18,10 +17,25 @@ async fn fee_split() {
         .unwrap();
     tr.activate_stake_pool(&pool_owner.pubkey()).await.unwrap();
 
-    let recipient1 = tr.create_ata_account().await.unwrap();
-    let recipient2 = tr.create_ata_account().await.unwrap();
-    let recipient1_ata = tr.get_ata(&recipient1.pubkey());
-        let recipient2_ata = tr.get_ata(&recipient2.pubkey());
+    // random 20 recipients
+    let mut recipients = vec![];
+    for _ in 0..20 {
+        recipients.push(tr.create_ata_account().await.unwrap());
+    }
+    let recipient_atas = recipients
+        .iter()
+        .map(|r| tr.get_ata(&r.pubkey()))
+        .collect::<Vec<_>>();
+    // 19 random numbers between 1 and 5
+    let recipient_percentages = (0..19)
+        .map(|_| rand::random::<u64>() % 5 + 1)
+        .collect::<Vec<_>>();
+    // add one number so that the sum is 100
+    let recipient_percentages = {
+        let mut recipient_percentages = recipient_percentages;
+        recipient_percentages.push(100 - recipient_percentages.iter().sum::<u64>());
+        recipient_percentages
+    };
 
     let staker = tr.create_ata_account().await.unwrap();
     tr.mint(&staker.pubkey(), 1_000_000_000).await.unwrap();
@@ -29,10 +43,17 @@ async fn fee_split() {
         .await
         .unwrap();
 
-    let fee_recipients = vec![
-        FeeRecipient { ata: recipient1_ata, percentage: 30 },
-        FeeRecipient { ata: recipient2_ata, percentage: 70 },
-    ];
+    // todo test sum != 100
+
+    // FeeRecipient { ata: recipient1_ata, percentage: 30 },
+    let fee_recipients = recipients
+        .iter()
+        .zip(recipient_percentages.iter())
+        .map(|(r, p)| FeeRecipient {
+            ata: tr.get_ata(&r.pubkey()),
+            percentage: *p,
+        })
+        .collect::<Vec<_>>();
 
     tr.setup_fee_split(fee_recipients).await.unwrap();
 
@@ -43,16 +64,21 @@ async fn fee_split() {
 
     let fee_split_stats = tr.fee_split_stats().await.unwrap();
         assert_eq!(fee_split_stats.balance, 10_000_000);
-    assert_eq!(fee_split_stats.recipients.len(), 2);
+    assert_eq!(fee_split_stats.recipients.len(), 20);
 
 
     tr.distribute_fees().await.unwrap();
-    let recipient1_stats = tr.staker_stats(recipient1.pubkey()).await.unwrap();
-    assert_eq!(recipient1_stats.balance, 3_000_000);
-    let recipient2_stats = tr.staker_stats(recipient2.pubkey()).await.unwrap();
-    assert_eq!(recipient2_stats.balance, 7_000_000);
+    for (recipient, percentage) in recipients.iter().zip(recipient_percentages.iter()) {
+        let recipient_stats = tr.staker_stats(recipient.pubkey()).await.unwrap();
+        assert_eq!(recipient_stats.balance, 10_000_000 / 100 * percentage);
+    }
 
     // todo check what happens when distributing 0 fees
+    tr.sleep(1).await;
+    for (recipient, percentage) in recipients.iter().zip(recipient_percentages.iter()) {
+        let recipient_stats = tr.staker_stats(recipient.pubkey()).await.unwrap();
+        assert_eq!(recipient_stats.balance, 10_000_000 / 100 * percentage);
+    }
 }
 
 

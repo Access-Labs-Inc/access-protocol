@@ -21,7 +21,7 @@ use crate::{
     utils::{assert_empty_stake_pool, check_account_key, check_account_owner, check_signer},
 };
 use crate::error::AccessError;
-use crate::state::StakePool;
+use crate::state::{MAX_FEE_RECIPIENTS, StakePool};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `close_stake_pool` instruction
@@ -107,6 +107,15 @@ pub fn process_distribute_fees(
     _params: Params,
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
+    if accounts.token_accounts.len() == 0 {
+        msg!("No token accounts to distribute to");
+     return  Err(AccessError::InvalidTokenAccount.into())
+    }
+    if accounts.token_accounts.len() > MAX_FEE_RECIPIENTS {
+        msg!("Too many token accounts to distribute to");
+        return Err(AccessError::InvalidTokenAccount.into())
+    }
+
     let mut central_state = CentralState::from_account_info(accounts.central_state_account)?;
     let fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
 

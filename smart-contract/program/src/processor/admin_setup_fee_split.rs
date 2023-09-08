@@ -105,6 +105,7 @@ pub fn process_admin_setup_fee_split(
                     return Err(AccessError::InvalidPercentages.into());
                 }
 
+    // todo disable 0 percentage
     // todo Check that the recipients are valid ATAs for our mint
 
     let mut fee_split:FeeSplit;
