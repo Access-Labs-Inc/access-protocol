@@ -54,6 +54,12 @@ pub struct CentralStateStats {
     pub total_staked: u64,
 }
 
+#[derive(Debug)]
+pub struct FeeSplitStats {
+    pub balance: u64,
+    pub recipients: Vec<FeeRecipient>,
+}
+
 impl TestRunner {
     pub async fn new(daily_inflation: u64) -> Result<Self, BanksClientError> {
         // Create program and test environment
@@ -385,6 +391,38 @@ impl TestRunner {
         sign_send_instructions(&mut self.prg_test_ctx, vec![stake_ix], vec![staker]).await
     }
 
+    pub async fn distribute_fees(&mut self) -> Result<(), BanksClientError> {
+        let (fee_split_key, _) = FeeSplit::find_key(&self.program_id);
+        let fee_split_ata = get_associated_token_address(&fee_split_key, &self.mint);
+        // get account info
+        let acc = self
+            .prg_test_ctx
+            .banks_client
+            .get_account(fee_split_key)
+            .await
+            .unwrap()
+            .unwrap();
+        let fee_split_data = FeeSplit::deserialize(&mut &acc.data[..])?;
+        let mut recipient_pubkeys: Vec<Pubkey> = fee_split_data
+            .recipients
+            .iter()
+            .map(|r| r.ata)
+            .collect();
+        let distribute_fees_ix = access_protocol::instruction::distribute_fees(
+            self.program_id,
+            access_protocol::instruction::distribute_fees::Accounts {
+                fee_payer: &self.prg_test_ctx.payer.pubkey(),
+                fee_split_pda: &fee_split_key,
+                fee_split_ata: &fee_split_ata,
+                mint: &self.mint,
+                spl_token_program: &spl_token::ID,
+                token_accounts: recipient_pubkeys.leak(),
+            },
+            access_protocol::instruction::distribute_fees::Params {},
+        );
+        sign_send_instructions(&mut self.prg_test_ctx, vec![distribute_fees_ix], vec![]).await
+    }
+
     pub async fn crank_pool(
         &mut self,
         stake_pool_owner_key: &Pubkey,
@@ -689,6 +727,25 @@ impl TestRunner {
             .unwrap();
         let cs = CentralState::deserialize(&mut &acc.data[..])?;
         Ok(cs)
+    }
+
+    pub async fn fee_split_stats(&mut self) -> Result<FeeSplitStats, Box<dyn Error>> {
+        let (fee_split_key, _) = FeeSplit::find_key(&self.program_id);
+        let acc = self
+            .prg_test_ctx
+            .banks_client
+            .get_account(fee_split_key)
+            .await
+            .unwrap()
+            .unwrap();
+        let fs = FeeSplit::deserialize(&mut &acc.data[..])?;
+        let fee_split_ata = self.get_ata(&fee_split_key);
+        let balance = self
+            .local_env
+            .get_packed_account_data::<spl_token::state::Account>(fee_split_ata)
+            .await?
+            .amount;
+        Ok(FeeSplitStats { recipients: fs.recipients, balance })
     }
 
     pub async fn create_bond(
@@ -1131,5 +1188,9 @@ impl TestRunner {
             .await?
             .amount;
         Ok(balance)
+    }
+
+    pub fn get_ata(&mut self, owner: &Pubkey) -> Pubkey {
+        get_associated_token_address(owner, &self.mint)
     }
 }
