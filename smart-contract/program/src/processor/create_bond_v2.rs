@@ -15,7 +15,7 @@ use spl_token::instruction::transfer;
 use spl_token::state::Account;
 
 use crate::error::AccessError;
-use crate::state::{BondAccountV2, CentralState, StakePool, BOND_SIGNER_THRESHOLD, FEES};
+use crate::state::{BondAccountV2, FeeSplit, CentralState, StakePool, BOND_SIGNER_THRESHOLD, FEES};
 use crate::utils::{
     assert_uninitialized, assert_valid_fee, check_account_key, check_account_owner, check_signer,
 };
@@ -165,7 +165,8 @@ pub fn process_create_bond_v2(
     }
 
     let mut central_state = CentralState::from_account_info(accounts.central_state)?;
-    assert_valid_fee(accounts.fee_account, &[central_state.authority])?;
+    let (fee_split_pda, _) = FeeSplit::find_key(program_id);
+    assert_valid_fee(accounts.fee_account, &fee_split_pda)?;
     check_account_key(
         accounts.bond_account_v2,
         &derived_key,
