@@ -29,7 +29,7 @@ pub struct Accounts<'a, T> {
     #[cons(signer)]
     pub authority: &'a T,
 
-    /// The central state account
+    /// The fee split account
     #[cons(writable)]
     pub fee_spit_account: &'a T,
 
@@ -93,10 +93,19 @@ pub fn process_admin_setup_fee_split(
         &fee_split_pda,
         AccessError::AccountNotDeterministic,
     )?;
-    // todo more checks
-    // todo check if more recipients than allowed
-    // todo check if the percentages add up to 100
-    // todo only allow change if all the fees are distributed
+    // Check if more recipients than allowed
+        if params.recipients.len() > MAX_FEE_RECIPIENTS as usize {
+            msg!("Too many recipients");
+            return Err(AccessError::TooManyRecipients.into());
+        }
+    // Check if the percentages add up to 100
+    // todo maybe safe math
+                if params.recipients.iter().map(|r| r.percentage).sum::<u64>() != 100 {
+                    msg!("Percentages don't add up to 100");
+                    return Err(AccessError::InvalidPercentages.into());
+                }
+
+    // todo Check that the recipients are valid ATAs for our mint
 
     let mut fee_split:FeeSplit;
     if accounts.fee_spit_account.data_is_empty() {
@@ -115,7 +124,6 @@ pub fn process_admin_setup_fee_split(
             fee_split.borsh_len() + size_of::<FeeRecipient>() * MAX_FEE_RECIPIENTS as usize
         )?;
 
-        // todo setup ATA
     } else {
         fee_split = FeeSplit::from_account_info(accounts.fee_spit_account)?;
         fee_split.recipients = params.recipients.clone();

@@ -733,10 +733,10 @@ impl BondAccountV2 {
     }
 }
 
-#[derive(BorshSerialize, BorshDeserialize, BorshSize, Clone)]
+#[derive(BorshSerialize, BorshDeserialize, BorshSize, Clone, Debug)]
 #[allow(missing_docs)]
 pub struct FeeRecipient {
-    pub address: Pubkey,
+    pub ata: Pubkey,
     pub percentage: u64,
 }
 

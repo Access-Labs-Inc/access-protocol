@@ -34,6 +34,7 @@ pub mod stake;
 pub mod unlock_bond_tokens;
 pub mod unlock_bond_v2;
 pub mod unstake;
+pub mod distribute_fees;
 
 pub struct Processor {}
 
@@ -216,6 +217,12 @@ impl Processor {
                 let params = admin_setup_fee_split::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 admin_setup_fee_split::process_admin_setup_fee_split(program_id, accounts, params)?;
+            }
+            ProgramInstruction::DistributeFees => {
+                msg!("Instruction: Distribute fees");
+                let params = distribute_fees::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                distribute_fees::process_distribute_fees(program_id, accounts, params)?;
             }
         }
 

@@ -99,6 +99,12 @@ pub enum AccessError {
     UnsupportedInstruction,
     #[error("DeprecatedInstruction")]
     DeprecatedInstruction,
+    #[error("Too many recipients")]
+    TooManyRecipients,
+    #[error("Invalid percentages")]
+    InvalidPercentages,
+    #[error("Invalid token account")]
+    InvalidTokenAccount,
 }
 
 impl From<AccessError> for ProgramError {
