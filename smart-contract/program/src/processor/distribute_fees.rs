@@ -2,6 +2,7 @@
 //! This instruction can be used to close an empty stake pool and collect the lamports
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
+use mpl_token_metadata::utils::assert_owned_by;
 use solana_program::{
     program::invoke_signed,
     account_info::{AccountInfo, next_account_info},
@@ -11,11 +12,12 @@ use solana_program::{
     program_pack::Pack,
     pubkey::Pubkey,
 };
+use spl_associated_token_account::get_associated_token_address;
 use spl_token::state::Account;
 use spl_token::instruction::transfer;
 
 use crate::{
-    state::{Tag, FeeSplit},
+    state::{Tag, FeeSplit, CentralState},
     utils::{assert_empty_stake_pool, check_account_key, check_account_owner, check_signer},
 };
 use crate::error::AccessError;
@@ -38,6 +40,8 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub fee_split_ata: &'a T,
 
+    pub central_state_account: &'a T,
+
     pub spl_token_program: &'a T,
     /// Pool vault
     #[cons(writable)]
@@ -54,6 +58,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             fee_payer: next_account_info(accounts_iter)?,
             fee_split_pda: next_account_info(accounts_iter)?,
             fee_split_ata: next_account_info(accounts_iter)?,
+            central_state_account: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
             token_accounts: accounts_iter.as_slice(),
         };
@@ -66,6 +71,11 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         )?;
 
         // Check ownership
+        check_account_owner(
+            accounts.central_state_account,
+            program_id,
+            AccessError::WrongOwner,
+        )?;
         check_account_owner(
             accounts.fee_split_pda,
             program_id,
@@ -97,25 +107,46 @@ pub fn process_distribute_fees(
     _params: Params,
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
-    // todo all checks!!!
-
+    let mut central_state = CentralState::from_account_info(accounts.central_state_account)?;
     let fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
 
-    let fee_split_ata = Account::unpack(&accounts.fee_split_ata.data.borrow())?;
-    let total_balance = fee_split_ata.amount;
-    msg!("Balance to distribute: {}", total_balance);
-
+    // check recipient count
     if accounts.token_accounts.len() != fee_split.recipients.len() {
         msg!("Invalid count of the token accounts");
         return Err(AccessError::InvalidTokenAccount.into());
     }
+
+    // check ATA mints
+    let fee_split_ata = Account::unpack(&accounts.fee_split_ata.data.borrow())?;
+    if fee_split_ata.mint != central_state.token_mint {
+        return Err(AccessError::WrongMint.into());
+    }
+    if &fee_split_ata.owner != accounts.fee_split_pda.key {
+        return Err(AccessError::WrongOwner.into());
+    }
+
+    for token_account in accounts.token_accounts {
+        let token_account = Account::unpack(&token_account.data.borrow())?;
+        if token_account.mint != central_state.token_mint {
+            return Err(AccessError::WrongMint.into());
+        }
+    }
+
+    // distribute
+    let total_balance = fee_split_ata.amount;
+    msg!("Balance to distribute: {}", total_balance);
+
     // todo check how many this can handle
     for (token_account, recipient) in accounts.token_accounts.iter().zip(fee_split.recipients.iter()) {
         if *token_account.key != recipient.ata {
-            msg!("Invalid order of the token accounts");
+            msg!("Invalid ordering of the token accounts");
             return Err(AccessError::InvalidTokenAccount.into());
         }
-        let amount = total_balance * recipient.percentage / 100; // todo safe math
+        let amount = total_balance * recipient.percentage / 100; // todo safe math // todo overflow
+        if amount == 0 {
+            msg!("Skipping zero amount for {}", recipient.ata);
+            continue;
+        }
         let ix = spl_token::instruction::transfer(
             &spl_token::ID,
             accounts.fee_split_ata.key,

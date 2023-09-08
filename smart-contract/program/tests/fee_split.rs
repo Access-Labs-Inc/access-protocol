@@ -51,6 +51,8 @@ async fn fee_split() {
     assert_eq!(recipient1_stats.balance, 3_000_000);
     let recipient2_stats = tr.staker_stats(recipient2.pubkey()).await.unwrap();
     assert_eq!(recipient2_stats.balance, 7_000_000);
+
+    // todo check what happens when distributing 0 fees
 }
 
 

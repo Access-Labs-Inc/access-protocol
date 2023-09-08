@@ -414,7 +414,7 @@ impl TestRunner {
                 fee_payer: &self.prg_test_ctx.payer.pubkey(),
                 fee_split_pda: &fee_split_key,
                 fee_split_ata: &fee_split_ata,
-                mint: &self.mint,
+                central_state_account: &self.central_state,
                 spl_token_program: &spl_token::ID,
                 token_accounts: recipient_pubkeys.leak(),
             },
