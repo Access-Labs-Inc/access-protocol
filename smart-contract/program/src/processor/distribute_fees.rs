@@ -38,10 +38,7 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub fee_split_ata: &'a T,
 
-    pub mint: &'a T,
-
     pub spl_token_program: &'a T,
-    // todo more
     /// Pool vault
     #[cons(writable)]
     pub token_accounts: &'a [T],
@@ -57,14 +54,39 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             fee_payer: next_account_info(accounts_iter)?,
             fee_split_pda: next_account_info(accounts_iter)?,
             fee_split_ata: next_account_info(accounts_iter)?,
-            mint: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
             token_accounts: accounts_iter.as_slice(),
         };
 
-        // todo Check keys
-        // todo Check ownership
+        // Check keys
+        check_account_key(
+            accounts.spl_token_program,
+            &spl_token::ID,
+            AccessError::WrongSplTokenProgramId,
+        )?;
 
+        // Check ownership
+        check_account_owner(
+            accounts.fee_split_pda,
+            program_id,
+            AccessError::WrongOwner,
+        )?;
+        check_account_owner(
+            accounts.fee_split_ata,
+            &spl_token::ID,
+            AccessError::WrongTokenAccountOwner,
+        )?;
+        for token_account in accounts.token_accounts {
+            check_account_owner(
+                token_account,
+                &spl_token::ID,
+                AccessError::WrongTokenAccountOwner,
+            )?;
+        }
+
+        // todo is this needed?
+        // Check signer
+        check_signer(accounts.fee_payer, AccessError::StakeAccountOwnerMustSign)?;
         Ok(accounts)
     }
 }
