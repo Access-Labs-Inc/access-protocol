@@ -145,13 +145,12 @@ pub fn process_distribute_fees(
     let total_balance = fee_split_ata.amount;
     msg!("Balance to distribute: {}", total_balance);
 
-    // todo check how many this can handle
     for (token_account, recipient) in accounts.token_accounts.iter().zip(fee_split.recipients.iter()) {
         if *token_account.key != recipient.ata {
             msg!("Invalid ordering of the token accounts");
             return Err(AccessError::InvalidTokenAccount.into());
         }
-        let amount = total_balance * recipient.percentage / 100; // todo safe math // todo overflow
+        let amount = total_balance.checked_mul(recipient.percentage).ok_or(AccessError::Overflow). / 100; // todo safe math // todo overflow
         if amount == 0 {
             msg!("Skipping zero amount for {}", recipient.ata);
             continue;

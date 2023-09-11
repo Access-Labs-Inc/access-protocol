@@ -73,7 +73,7 @@ async fn fee_split() {
         assert_eq!(recipient_stats.balance, 10_000_000 / 100 * percentage);
     }
 
-    // todo check what happens when distributing 0 fees
+    // check what happens when distributing 0 fees
     tr.sleep(1).await;
     for (recipient, percentage) in recipients.iter().zip(recipient_percentages.iter()) {
         let recipient_stats = tr.staker_stats(recipient.pubkey()).await.unwrap();

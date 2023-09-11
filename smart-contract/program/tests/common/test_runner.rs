@@ -213,7 +213,7 @@ impl TestRunner {
             self.program_id,
             admin_setup_fee_split::Accounts {
                 authority: &self.prg_test_ctx.payer.pubkey(),
-                fee_spit_account: &fee_split_key,
+                fee_spit_pda: &fee_split_key,
                 central_state: &self.central_state,
                 system_program: &system_program::ID,
                 vault: &vault,
