@@ -196,7 +196,7 @@ impl TestRunner {
     pub async fn setup_fee_split(&mut self, recipients: Vec<FeeRecipient>) -> Result<(), BanksClientError> {
         let (fee_split_key, _) = FeeSplit::find_key(&self.program_id);
         // todo do this conditionally - only once
-        let vault = get_associated_token_address(&fee_split_key, &self.mint);
+        let fee_split_ata = get_associated_token_address(&fee_split_key, &self.mint);
         let create_ata_vault_ix = create_associated_token_account(
             &self.prg_test_ctx.payer.pubkey(),
             &fee_split_key,
@@ -213,10 +213,10 @@ impl TestRunner {
             self.program_id,
             admin_setup_fee_split::Accounts {
                 authority: &self.prg_test_ctx.payer.pubkey(),
-                fee_spit_pda: &fee_split_key,
+                fee_split_pda: &fee_split_key,
+                fee_split_ata: &fee_split_ata,
                 central_state: &self.central_state,
                 system_program: &system_program::ID,
-                vault: &vault,
             },
             admin_setup_fee_split::Params { recipients });
         sign_send_instructions(&mut self.prg_test_ctx, vec![admin_setup_fee_split_ix], vec![]).await
@@ -406,7 +406,7 @@ impl TestRunner {
         let mut recipient_pubkeys: Vec<Pubkey> = fee_split_data
             .recipients
             .iter()
-            .map(|r| r.ata)
+            .map(|r| r.ata(&self.mint))
             .collect();
         let distribute_fees_ix = access_protocol::instruction::distribute_fees(
             self.program_id,

@@ -744,7 +744,7 @@ pub struct FeeRecipient {
 impl FeeRecipient {
     #[allow(missing_docs)]
     pub fn ata(&self, mint: &Pubkey) -> Pubkey {
-        get_associated_token_address(self.owner, mint)
+        get_associated_token_address(&self.owner, mint)
     }
 }
 

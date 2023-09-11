@@ -143,7 +143,7 @@ pub fn process_distribute_fees(
     msg!("Balance to distribute: {}", total_balance);
 
     for (token_account, recipient) in accounts.token_accounts.iter().zip(fee_split.recipients.iter()) {
-        let recipient_ata = recipient.ata(central_state.token_mint);
+        let recipient_ata = recipient.ata(&central_state.token_mint);
         if *token_account.key != recipient_ata {
             msg!("Invalid ordering of the token accounts");
             return Err(AccessError::InvalidTokenAccount.into());

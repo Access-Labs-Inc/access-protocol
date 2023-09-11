@@ -50,7 +50,7 @@ async fn fee_split() {
         .iter()
         .zip(recipient_percentages.iter())
         .map(|(r, p)| FeeRecipient {
-            ata: tr.get_ata(&r.pubkey()),
+            owner: r.pubkey(),
             percentage: *p,
         })
         .collect::<Vec<_>>();

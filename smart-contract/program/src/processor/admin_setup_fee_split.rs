@@ -1,6 +1,6 @@
 //! Create central state
 use std::mem::size_of;
-
+use solana_program::program_pack::Pack;
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
@@ -12,10 +12,11 @@ use solana_program::{
     system_program,
 };
 
+use spl_token::state::Account;
 use crate::utils::assert_valid_vault;
 use crate::{cpi::Cpi, error::AccessError};
-use crate::state::{CentralState, FeeRecipient, FeeRecipientATA, FeeSplit, MAX_FEE_RECIPIENTS};
-use crate::utils::{check_account_key, check_account_owner};
+use crate::state::{CentralState, FeeRecipient, FeeSplit, MAX_FEE_RECIPIENTS};
+use crate::utils::{check_signer, check_account_key, check_account_owner};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `create_central_state` instruction
@@ -32,7 +33,7 @@ pub struct Accounts<'a, T> {
 
     /// The fee split account
     #[cons(writable)]
-    pub fee_spit_pda: &'a T,
+    pub fee_split_pda: &'a T,
 
     /// The stake pool vault account
     pub fee_split_ata: &'a T,
@@ -49,7 +50,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
             authority: next_account_info(accounts_iter)?,
-            fee_spit_pda: next_account_info(accounts_iter)?,
+            fee_split_pda: next_account_info(accounts_iter)?,
             fee_split_ata: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
             system_program: next_account_info(accounts_iter)?,
@@ -69,7 +70,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             AccessError::WrongOwner,
         )?;
         check_account_owner(
-            accounts.fee_spit_pda,
+            accounts.fee_split_pda,
             program_id,
             AccessError::WrongOwner,
         )?;
@@ -100,10 +101,18 @@ pub fn process_admin_setup_fee_split(
     )?;
     assert_valid_vault(accounts.fee_split_ata, &fee_split_pda)?;
     check_account_key(
-        accounts.fee_spit_pda,
+        accounts.fee_split_pda,
         &fee_split_pda,
         AccessError::AccountNotDeterministic,
     )?;
+
+    let fee_split_ata = Account::unpack(&accounts.fee_split_ata.data.borrow())?;
+    if fee_split_ata.mint != central_state.token_mint {
+        return Err(AccessError::WrongMint.into());
+    }
+    if &fee_split_ata.owner != accounts.fee_split_pda.key {
+        return Err(AccessError::WrongOwner.into());
+    }
 
     // Check if more recipients than allowed
     if params.recipients.len() > MAX_FEE_RECIPIENTS as usize {
@@ -112,23 +121,24 @@ pub fn process_admin_setup_fee_split(
     }
 
     // Check recipients
-    let mut percentage_sum = 0;
-    params.recipients.iter().for_each(|r| {
+    let mut percentage_sum: u64 = 0;
+    params.recipients.iter().try_for_each(|r| -> ProgramResult {
         if r.percentage == 0 {
             msg!("Recipient percentage 0 not allowed");
             return Err(AccessError::InvalidPercentages.into());
         }
-        percentage_sum = percentage_sum.safe_add(r.percentage).ok_or(AccessError::Overflow)?;
+        percentage_sum = percentage_sum.checked_add(r.percentage).ok_or(AccessError::Overflow)?;
         if percentage_sum > 100 {
             msg!("Percentages add up to more than 100");
             return Err(AccessError::InvalidPercentages.into());
         }
-    });
+        Ok(())
+    })?;
 
 
 
     let mut fee_split: FeeSplit;
-    if accounts.fee_spit_pda.data_is_empty() {
+    if accounts.fee_split_pda.data_is_empty() {
         msg!("Creating Fee split account");
         fee_split = FeeSplit::new(
             bump_seed,
@@ -139,23 +149,23 @@ pub fn process_admin_setup_fee_split(
             program_id,
             accounts.system_program,
             accounts.authority,
-            accounts.fee_spit_pda,
+            accounts.fee_split_pda,
             &[FeeSplit::SEED, &program_id.to_bytes(), &[bump_seed]],
             fee_split.borsh_len() + size_of::<FeeRecipient>() * MAX_FEE_RECIPIENTS as usize,
         )?;
     } else {
         check_account_owner(
-            accounts.fee_spit_pda,
+            accounts.fee_split_pda,
             program_id,
             AccessError::WrongOwner,
         )?;
-        fee_split = FeeSplit::from_account_info(accounts.fee_spit_pda)?;
+        fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
 
         // Check that the fee split ATA balance is 0. We require this so that all the fees are fairly distributed before the change of balace.
         // Practically this means that you need to send two instructions in one tx: one to distribute the fees from the fee split ATA, and one to change the recipients.
         // todo test if this adds any limitations on the tx size (recitipient count)
-        if fee_split.balance != 0 {
-            msg!("Fee split balance must be 0");
+        if fee_split_ata.amount != 0 {
+            msg!("Fee split ATA balance must be 0");
             return Err(AccessError::NonzeroBallance.into());
         }
 
@@ -163,6 +173,6 @@ pub fn process_admin_setup_fee_split(
     }
 
     // replace the recipients
-    fee_split.save(&mut accounts.fee_spit_pda.data.borrow_mut())?;
+    fee_split.save(&mut accounts.fee_split_pda.data.borrow_mut())?;
     Ok(())
 }
