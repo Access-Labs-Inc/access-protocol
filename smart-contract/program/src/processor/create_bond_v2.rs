@@ -256,7 +256,8 @@ pub fn process_create_bond_v2(
     }
 
     // Transfer fees
-    let fees = (amount * FEES) / 100;
+    // +99 accounts for rounding up
+    let fees = (amount * FEES + 99) / 100;
     let transfer_fees = transfer(
         &spl_token::ID,
         accounts.source_token.key,
