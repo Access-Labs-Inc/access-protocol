@@ -110,29 +110,21 @@ pub fn process_admin_setup_fee_split(
         msg!("Too many recipients");
         return Err(AccessError::TooManyRecipients.into());
     }
-    // Check if the percentages add up to 100
-    // todo maybe < 100 and burn the rest
-    // todo maybe safe math
-    if params.recipients.iter().map(|r| r.percentage).sum::<u64>() != 100 {
-        msg!("Percentages don't add up to 100");
-        return Err(AccessError::InvalidPercentages.into());
-    }
 
     // Check recipients
-    let percentage_sum = 0;
+    let mut percentage_sum = 0;
     params.recipients.iter().for_each(|r| {
         if r.percentage == 0 {
             msg!("Recipient percentage 0 not allowed");
             return Err(AccessError::InvalidPercentages.into());
         }
-        if percentage_sum.safe_add(r.percentage).ok_or(AccessError::Overflow) > 100 {
+        percentage_sum = percentage_sum.safe_add(r.percentage).ok_or(AccessError::Overflow)?;
+        if percentage_sum > 100 {
             msg!("Percentages add up to more than 100");
             return Err(AccessError::InvalidPercentages.into());
         }
+        // todo check ATAs (need to change input params)
     });
-    // todo check ATAs (need to change input params)
-
-    // todo check that the balance is "near" 0 (or 0 if we implement burn)
 
     let mut fee_split: FeeSplit;
     if accounts.fee_spit_pda.data_is_empty() {
@@ -157,6 +149,15 @@ pub fn process_admin_setup_fee_split(
             AccessError::WrongOwner,
         )?;
         fee_split = FeeSplit::from_account_info(accounts.fee_spit_pda)?;
+
+        // Check that the fee split ATA balance is 0. We require this so that all the fees are fairly distributed before the change of balace.
+        // Practically this means that you need to send two instructions in one tx: one to distribute the fees from the fee split ATA, and one to change the recipients.
+        // todo test if this adds any limitations on the tx size (recitipient count)
+        if fee_split.balance != 0 {
+            msg!("Fee split balance must be 0");
+            return Err(AccessError::NonzeroBallance.into());
+        }
+
         fee_split.recipients = params.recipients.clone();
     }
 

@@ -182,6 +182,9 @@ impl PrintProgramError for AccessError {
             AccessError::InvalidTokenAccount => {
                 msg!("Invalid token account")
             }
+            AccessError::NonzeroBallance => {
+                msg!("Nonzero balance")
+            }
         }
     }
 }

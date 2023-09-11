@@ -105,6 +105,8 @@ pub enum AccessError {
     InvalidPercentages,
     #[error("Invalid token account")]
     InvalidTokenAccount,
+    #[error("Nonzero balance")]
+    NonzeroBallance,
 }
 
 impl From<AccessError> for ProgramError {

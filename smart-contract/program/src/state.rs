@@ -736,6 +736,11 @@ impl BondAccountV2 {
 #[derive(BorshSerialize, BorshDeserialize, BorshSize, Clone, Debug)]
 #[allow(missing_docs)]
 pub struct FeeRecipient {
+    pub recipient: Pubkey,
+    pub percentage: u64,
+}
+
+pub struct FeeRecipientATA {
     pub ata: Pubkey,
     pub percentage: u64,
 }
@@ -750,14 +755,14 @@ pub struct FeeSplit {
     pub bump_seed: u8,
 
     /// List of fee recipients
-    pub recipients: Vec<FeeRecipient>,
+    pub recipients: Vec<FeeRecipientATA>,
 }
 
 impl FeeSplit {
     pub const SEED: &'static [u8; 9] = b"fee_split";
 
     #[allow(missing_docs)]
-    pub fn new(bump_seed: u8, recipients: Vec<FeeRecipient>) -> Self {
+    pub fn new(bump_seed: u8, recipients: Vec<FeeRecipientATA>) -> Self {
         Self {
             tag: Tag::FeeSplit,
             bump_seed,
