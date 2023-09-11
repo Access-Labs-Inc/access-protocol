@@ -45,7 +45,7 @@ pub const OWNER_MULTIPLIER: u64 = 100 - STAKER_MULTIPLIER;
 pub const STAKE_BUFFER_LEN: u64 = 274; // 9 Months
 
 /// Max count of recipients of the fees
-pub const MAX_FEE_RECIPIENTS: usize = 20;
+pub const MAX_FEE_RECIPIENTS: usize = 10;
 
 /// Max pending unstake requests
 pub const MAX_UNSTAKE_REQUEST: usize = 10;

@@ -69,11 +69,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             program_id,
             AccessError::WrongOwner,
         )?;
-        check_account_owner(
-            accounts.fee_split_pda,
-            program_id,
-            AccessError::WrongOwner,
-        )?;
 
         // Check signer
         check_signer(

@@ -1,6 +1,6 @@
 use solana_sdk::signer::Signer;
 use spl_associated_token_account::get_associated_token_address;
-
+use access_protocol::state::MAX_FEE_RECIPIENTS;
 use access_protocol::state::FeeRecipient;
 use crate::common::test_runner::TestRunner;
 
@@ -17,17 +17,17 @@ async fn fee_split() {
         .unwrap();
     tr.activate_stake_pool(&pool_owner.pubkey()).await.unwrap();
 
-    // random 20 recipients
+    // random MAX_FEE_RECIPIENTS recipients
     let mut recipients = vec![];
-    for _ in 0..20 {
+    for _ in 0..MAX_FEE_RECIPIENTS {
         recipients.push(tr.create_ata_account().await.unwrap());
     }
     let recipient_atas = recipients
         .iter()
         .map(|r| tr.get_ata(&r.pubkey()))
         .collect::<Vec<_>>();
-    // 19 random numbers between 1 and 5
-    let recipient_percentages = (0..19)
+    // MAX_FEE_RECIPIENTS - 1 random numbers between 1 and 5
+    let recipient_percentages = (0..MAX_FEE_RECIPIENTS - 1)
         .map(|_| rand::random::<u64>() % 5 + 1)
         .collect::<Vec<_>>();
     // add one number so that the sum is 100
@@ -64,7 +64,7 @@ async fn fee_split() {
 
     let fee_split_stats = tr.fee_split_stats().await.unwrap();
         assert_eq!(fee_split_stats.balance, 10_000_000);
-    assert_eq!(fee_split_stats.recipients.len(), 20);
+    assert_eq!(fee_split_stats.recipients.len(), MAX_FEE_RECIPIENTS);
 
 
     tr.distribute_fees().await.unwrap();
@@ -75,6 +75,7 @@ async fn fee_split() {
 
     // check what happens when distributing 0 fees
     tr.sleep(1).await;
+    tr.distribute_fees().await.unwrap();
     for (recipient, percentage) in recipients.iter().zip(recipient_percentages.iter()) {
         let recipient_stats = tr.staker_stats(recipient.pubkey()).await.unwrap();
         assert_eq!(recipient_stats.balance, 10_000_000 / 100 * percentage);
