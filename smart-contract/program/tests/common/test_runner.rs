@@ -416,6 +416,7 @@ impl TestRunner {
                 fee_split_ata: &fee_split_ata,
                 central_state_account: &self.central_state,
                 spl_token_program: &spl_token::ID,
+                mint: &self.mint,
                 token_accounts: recipient_pubkeys.leak(),
             },
             access_protocol::instruction::distribute_fees::Params {},

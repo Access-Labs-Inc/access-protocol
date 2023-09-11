@@ -40,6 +40,9 @@ pub struct Accounts<'a, T> {
     pub central_state_account: &'a T,
 
     pub spl_token_program: &'a T,
+
+    #[cons(writable)]
+    pub mint: &'a T,
     /// Pool vault
     #[cons(writable)]
     pub token_accounts: &'a [T],
@@ -57,6 +60,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             fee_split_ata: next_account_info(accounts_iter)?,
             central_state_account: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
+            mint: next_account_info(accounts_iter)?,
             token_accounts: accounts_iter.as_slice(),
         };
 
@@ -116,6 +120,12 @@ pub fn process_distribute_fees(
     let mut central_state = CentralState::from_account_info(accounts.central_state_account)?;
     let fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
 
+    check_account_key(
+        accounts.mint,
+        &central_state.token_mint,
+        AccessError::WrongMint,
+    )?;
+
     // check recipient count
     if accounts.token_accounts.len() != fee_split.recipients.len() {
         msg!("Invalid count of the token accounts");
@@ -141,6 +151,7 @@ pub fn process_distribute_fees(
     // distribute
     let total_balance = fee_split_ata.amount;
     msg!("Balance to distribute: {}", total_balance);
+    let mut remaining_balance = total_balance;
 
     for (token_account, recipient) in accounts.token_accounts.iter().zip(fee_split.recipients.iter()) {
         let recipient_ata = recipient.ata(&central_state.token_mint);
@@ -171,6 +182,30 @@ pub fn process_distribute_fees(
             ],
             &[&[FeeSplit::SEED, &program_id.to_bytes(), &[fee_split.bump_seed]]],
         )?;
+        remaining_balance = remaining_balance.checked_sub(amount).ok_or(AccessError::Overflow)?;
     }
+
+    if remaining_balance > 0 {
+        let burn_instruction = spl_token::instruction::burn(
+            &spl_token::ID,
+            accounts.fee_split_ata.key,
+            accounts.mint.key,
+            accounts.fee_split_pda.key,
+            &[],
+            remaining_balance,
+        )?;
+        invoke_signed(
+            &burn_instruction,
+            &[
+                accounts.fee_split_ata.clone(),
+                accounts.mint.clone(),
+                accounts.fee_split_pda.clone(),
+                accounts.fee_split_pda.clone(),
+            ],
+            &[&[FeeSplit::SEED, &program_id.to_bytes(), &[fee_split.bump_seed]]],
+        )?;
+        msg!("Burned {} tokens", remaining_balance);
+    }
+
     Ok(())
 }

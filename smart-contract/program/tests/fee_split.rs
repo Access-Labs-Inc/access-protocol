@@ -33,7 +33,7 @@ async fn fee_split() {
     // add one number so that the sum is 100
     let recipient_percentages = {
         let mut recipient_percentages = recipient_percentages;
-        recipient_percentages.push(100 - recipient_percentages.iter().sum::<u64>());
+        recipient_percentages.push( 99- recipient_percentages.iter().sum::<u64>());
         recipient_percentages
     };
 
