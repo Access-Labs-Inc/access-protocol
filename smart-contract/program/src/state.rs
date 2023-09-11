@@ -15,6 +15,7 @@ use solana_program::msg;
 use solana_program::program_error::ProgramError;
 use solana_program::pubkey::Pubkey;
 use solana_program::sysvar::Sysvar;
+use spl_associated_token_account::get_associated_token_address;
 
 use crate::error::AccessError;
 
@@ -736,13 +737,15 @@ impl BondAccountV2 {
 #[derive(BorshSerialize, BorshDeserialize, BorshSize, Clone, Debug)]
 #[allow(missing_docs)]
 pub struct FeeRecipient {
-    pub recipient: Pubkey,
+    pub owner: Pubkey,
     pub percentage: u64,
 }
 
-pub struct FeeRecipientATA {
-    pub ata: Pubkey,
-    pub percentage: u64,
+impl FeeRecipient {
+    #[allow(missing_docs)]
+    pub fn ata(&self, mint: &Pubkey) -> Pubkey {
+        get_associated_token_address(self.owner, mint)
+    }
 }
 
 #[derive(BorshSerialize, BorshDeserialize, BorshSize)]
@@ -755,14 +758,14 @@ pub struct FeeSplit {
     pub bump_seed: u8,
 
     /// List of fee recipients
-    pub recipients: Vec<FeeRecipientATA>,
+    pub recipients: Vec<FeeRecipient>,
 }
 
 impl FeeSplit {
     pub const SEED: &'static [u8; 9] = b"fee_split";
 
     #[allow(missing_docs)]
-    pub fn new(bump_seed: u8, recipients: Vec<FeeRecipientATA>) -> Self {
+    pub fn new(bump_seed: u8, recipients: Vec<FeeRecipient>) -> Self {
         Self {
             tag: Tag::FeeSplit,
             bump_seed,

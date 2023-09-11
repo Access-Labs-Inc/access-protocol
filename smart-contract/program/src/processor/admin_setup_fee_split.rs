@@ -14,7 +14,7 @@ use solana_program::{
 
 use crate::utils::assert_valid_vault;
 use crate::{cpi::Cpi, error::AccessError};
-use crate::state::{CentralState, FeeRecipient, FeeSplit, MAX_FEE_RECIPIENTS};
+use crate::state::{CentralState, FeeRecipient, FeeRecipientATA, FeeSplit, MAX_FEE_RECIPIENTS};
 use crate::utils::{check_account_key, check_account_owner};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -123,8 +123,9 @@ pub fn process_admin_setup_fee_split(
             msg!("Percentages add up to more than 100");
             return Err(AccessError::InvalidPercentages.into());
         }
-        // todo check ATAs (need to change input params)
     });
+
+
 
     let mut fee_split: FeeSplit;
     if accounts.fee_spit_pda.data_is_empty() {

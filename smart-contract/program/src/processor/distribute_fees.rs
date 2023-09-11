@@ -2,26 +2,23 @@
 //! This instruction can be used to close an empty stake pool and collect the lamports
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
-use mpl_token_metadata::utils::assert_owned_by;
 use solana_program::{
-    program::invoke_signed,
     account_info::{AccountInfo, next_account_info},
     entrypoint::ProgramResult,
     msg,
+    program::invoke_signed,
     program_error::ProgramError,
     program_pack::Pack,
     pubkey::Pubkey,
 };
-use spl_associated_token_account::get_associated_token_address;
 use spl_token::state::Account;
-use spl_token::instruction::transfer;
 
 use crate::{
-    state::{Tag, FeeSplit, CentralState},
-    utils::{assert_empty_stake_pool, check_account_key, check_account_owner, check_signer},
+    state::{CentralState, FeeSplit},
+    utils::{check_account_key, check_account_owner, check_signer},
 };
 use crate::error::AccessError;
-use crate::state::{MAX_FEE_RECIPIENTS, StakePool};
+use crate::state::MAX_FEE_RECIPIENTS;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `close_stake_pool` instruction
@@ -109,11 +106,11 @@ pub fn process_distribute_fees(
     let accounts = Accounts::parse(accounts, program_id)?;
     if accounts.token_accounts.len() == 0 {
         msg!("No token accounts to distribute to");
-     return  Err(AccessError::InvalidTokenAccount.into())
+        return Err(AccessError::InvalidTokenAccount.into());
     }
     if accounts.token_accounts.len() > MAX_FEE_RECIPIENTS {
         msg!("Too many token accounts to distribute to");
-        return Err(AccessError::InvalidTokenAccount.into())
+        return Err(AccessError::InvalidTokenAccount.into());
     }
 
     let mut central_state = CentralState::from_account_info(accounts.central_state_account)?;
@@ -146,19 +143,20 @@ pub fn process_distribute_fees(
     msg!("Balance to distribute: {}", total_balance);
 
     for (token_account, recipient) in accounts.token_accounts.iter().zip(fee_split.recipients.iter()) {
-        if *token_account.key != recipient.ata {
+        let recipient_ata = recipient.ata(central_state.token_mint);
+        if *token_account.key != recipient_ata {
             msg!("Invalid ordering of the token accounts");
             return Err(AccessError::InvalidTokenAccount.into());
         }
-        let amount = total_balance.checked_mul(recipient.percentage).ok_or(AccessError::Overflow). / 100; // todo safe math // todo overflow
+        let amount = total_balance.checked_mul(recipient.percentage).ok_or(AccessError::Overflow)?.checked_div(100).ok_or(AccessError::Overflow)?;
         if amount == 0 {
-            msg!("Skipping zero amount for {}", recipient.ata);
+            msg!("Skipping zero amount for {}", recipient_ata);
             continue;
         }
         let ix = spl_token::instruction::transfer(
             &spl_token::ID,
             accounts.fee_split_ata.key,
-            &recipient.ata,
+            &recipient_ata,
             accounts.fee_split_pda.key,
             &[],
             amount,
