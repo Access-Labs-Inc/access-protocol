@@ -12,7 +12,7 @@ use solana_program::{
 use spl_token::instruction::transfer;
 
 use crate::{
-    state::{CentralState, Tag, FEES, FeeSplit},
+    state::{CentralState, FeeSplit, Tag, FEES},
     utils::{assert_valid_fee, check_account_key, check_account_owner, check_signer},
 };
 use bonfida_utils::{BorshSize, InstructionsAccount};

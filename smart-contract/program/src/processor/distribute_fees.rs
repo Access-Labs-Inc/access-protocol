@@ -3,7 +3,7 @@
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
-    account_info::{AccountInfo, next_account_info},
+    account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
     msg,
     program::invoke_signed,
@@ -13,12 +13,12 @@ use solana_program::{
 };
 use spl_token::state::Account;
 
+use crate::error::AccessError;
+use crate::state::MAX_FEE_RECIPIENTS;
 use crate::{
     state::{CentralState, FeeSplit, MIN_DISTRIBUTE_AMOUNT},
     utils::{check_account_key, check_account_owner, check_signer},
 };
-use crate::error::AccessError;
-use crate::state::MAX_FEE_RECIPIENTS;
 use solana_program::clock::Clock;
 use solana_program::sysvar::Sysvar;
 
@@ -79,11 +79,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             program_id,
             AccessError::WrongOwner,
         )?;
-        check_account_owner(
-            accounts.fee_split_pda,
-            program_id,
-            AccessError::WrongOwner,
-        )?;
+        check_account_owner(accounts.fee_split_pda, program_id, AccessError::WrongOwner)?;
         check_account_owner(
             accounts.fee_split_ata,
             &spl_token::ID,
@@ -161,13 +157,21 @@ pub fn process_distribute_fees(
         return Err(AccessError::InvalidAmount.into());
     }
 
-    for (token_account, recipient) in accounts.token_accounts.iter().zip(fee_split.recipients.iter()) {
+    for (token_account, recipient) in accounts
+        .token_accounts
+        .iter()
+        .zip(fee_split.recipients.iter())
+    {
         let recipient_ata = recipient.ata(&central_state.token_mint);
         if *token_account.key != recipient_ata {
             msg!("Invalid ordering of the token accounts");
             return Err(AccessError::InvalidTokenAccount.into());
         }
-        let amount = total_balance.checked_mul(recipient.percentage).ok_or(AccessError::Overflow)?.checked_div(100).ok_or(AccessError::Overflow)?;
+        let amount = total_balance
+            .checked_mul(recipient.percentage)
+            .ok_or(AccessError::Overflow)?
+            .checked_div(100)
+            .ok_or(AccessError::Overflow)?;
         if amount == 0 {
             msg!("Skipping zero amount for {}", recipient_ata);
             continue;
@@ -179,7 +183,8 @@ pub fn process_distribute_fees(
             accounts.fee_split_pda.key,
             &[],
             amount,
-        ).unwrap();
+        )
+        .unwrap();
         invoke_signed(
             &ix,
             &[
@@ -188,9 +193,15 @@ pub fn process_distribute_fees(
                 token_account.clone(),
                 accounts.fee_split_pda.clone(),
             ],
-            &[&[FeeSplit::SEED, &program_id.to_bytes(), &[fee_split.bump_seed]]],
+            &[&[
+                FeeSplit::SEED,
+                &program_id.to_bytes(),
+                &[fee_split.bump_seed],
+            ]],
         )?;
-        remaining_balance = remaining_balance.checked_sub(amount).ok_or(AccessError::Overflow)?;
+        remaining_balance = remaining_balance
+            .checked_sub(amount)
+            .ok_or(AccessError::Overflow)?;
     }
 
     if remaining_balance > 0 {
@@ -210,11 +221,14 @@ pub fn process_distribute_fees(
                 accounts.fee_split_pda.clone(),
                 accounts.fee_split_pda.clone(),
             ],
-            &[&[FeeSplit::SEED, &program_id.to_bytes(), &[fee_split.bump_seed]]],
+            &[&[
+                FeeSplit::SEED,
+                &program_id.to_bytes(),
+                &[fee_split.bump_seed],
+            ]],
         )?;
         msg!("Burned {} tokens", remaining_balance);
     }
-
 
     fee_split.last_distribution_time = Clock::get()?.unix_timestamp;
     fee_split.save(&mut accounts.fee_split_pda.data.borrow_mut())?;

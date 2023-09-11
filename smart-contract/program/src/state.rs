@@ -5,7 +5,7 @@ use std::ops::DerefMut;
 
 use bonfida_utils::BorshSize;
 use borsh::{BorshDeserialize, BorshSerialize};
-use bytemuck::{cast_slice, from_bytes, from_bytes_mut, Pod, try_cast_slice_mut, Zeroable};
+use bytemuck::{cast_slice, from_bytes, from_bytes_mut, try_cast_slice_mut, Pod, Zeroable};
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
 use solana_program::account_info::AccountInfo;
@@ -57,7 +57,7 @@ pub const MAX_FEE_SPLIT_SETUP_DELAY: u64 = 5 * 60; // 5 minutes
 pub const FEES: u64 = 2;
 
 #[derive(
-BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive, Debug,
+    BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive, Debug,
 )]
 #[repr(u8)]
 #[allow(missing_docs)]
@@ -204,7 +204,7 @@ impl StakePoolHeaped {
 }
 
 #[allow(missing_docs)]
-impl<H: DerefMut<Target=StakePoolHeader>, B: DerefMut<Target=[RewardsTuple]>> StakePool<H, B> {
+impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [RewardsTuple]>> StakePool<H, B> {
     pub fn push_balances_buff(
         &mut self,
         current_offset: u64,

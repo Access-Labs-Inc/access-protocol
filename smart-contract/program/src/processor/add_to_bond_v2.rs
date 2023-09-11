@@ -18,7 +18,7 @@ use spl_token::state::Account;
 
 use crate::error::AccessError;
 use crate::state::Tag;
-use crate::state::{BondAccountV2, CentralState, FeeSplit,StakePool, FEES};
+use crate::state::{BondAccountV2, CentralState, FeeSplit, StakePool, FEES};
 use crate::utils::{assert_valid_fee, check_account_key, check_account_owner, check_signer};
 use solana_program::sysvar::Sysvar;
 

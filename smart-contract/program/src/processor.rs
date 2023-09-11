@@ -28,13 +28,13 @@ pub mod create_bond_v2;
 pub mod create_central_state;
 pub mod create_stake_account;
 pub mod create_stake_pool;
+pub mod distribute_fees;
 pub mod edit_metadata;
 pub mod sign_bond;
 pub mod stake;
 pub mod unlock_bond_tokens;
 pub mod unlock_bond_v2;
 pub mod unstake;
-pub mod distribute_fees;
 
 pub struct Processor {}
 

@@ -3,23 +3,25 @@ use std::mem::size_of;
 
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
+use solana_program::clock::Clock;
+use solana_program::program_pack::Pack;
+use solana_program::sysvar::Sysvar;
 use solana_program::{
-    account_info::{AccountInfo, next_account_info},
+    account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
     msg,
     program_error::ProgramError,
     pubkey::Pubkey,
     system_program,
 };
-use solana_program::clock::Clock;
-use solana_program::program_pack::Pack;
-use solana_program::sysvar::Sysvar;
 use spl_token::state::Account;
 
-use crate::{cpi::Cpi, error::AccessError};
-use crate::state::{CentralState, FeeRecipient, FeeSplit, MAX_FEE_RECIPIENTS, MAX_FEE_SPLIT_SETUP_DELAY};
-use crate::utils::{check_account_key, check_account_owner, check_signer};
+use crate::state::{
+    CentralState, FeeRecipient, FeeSplit, MAX_FEE_RECIPIENTS, MAX_FEE_SPLIT_SETUP_DELAY,
+};
 use crate::utils::assert_valid_vault;
+use crate::utils::{check_account_key, check_account_owner, check_signer};
+use crate::{cpi::Cpi, error::AccessError};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `create_central_state` instruction
@@ -49,7 +51,10 @@ pub struct Accounts<'a, T> {
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
-    pub fn parse(accounts: &'a [AccountInfo<'b>], program_id: &Pubkey) -> Result<Self, ProgramError> {
+    pub fn parse(
+        accounts: &'a [AccountInfo<'b>],
+        program_id: &Pubkey,
+    ) -> Result<Self, ProgramError> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
             authority: next_account_info(accounts_iter)?,
@@ -67,11 +72,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         )?;
 
         // Check ownership
-        check_account_owner(
-            accounts.central_state,
-            program_id,
-            AccessError::WrongOwner,
-        )?;
+        check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
 
         // Check signer
         check_signer(
@@ -130,7 +131,9 @@ pub fn process_admin_setup_fee_split(
             msg!("Recipient percentage 0 not allowed");
             return Err(AccessError::InvalidPercentages.into());
         }
-        percentage_sum = percentage_sum.checked_add(r.percentage).ok_or(AccessError::Overflow)?;
+        percentage_sum = percentage_sum
+            .checked_add(r.percentage)
+            .ok_or(AccessError::Overflow)?;
         if percentage_sum > 100 {
             msg!("Percentages add up to more than 100");
             return Err(AccessError::InvalidPercentages.into());
@@ -138,14 +141,10 @@ pub fn process_admin_setup_fee_split(
         Ok(())
     })?;
 
-
     let mut fee_split: FeeSplit;
     if accounts.fee_split_pda.data_is_empty() {
         msg!("Creating Fee split account");
-        fee_split = FeeSplit::new(
-            bump_seed,
-            recipients,
-        )?;
+        fee_split = FeeSplit::new(bump_seed, recipients)?;
 
         Cpi::create_account(
             program_id,
@@ -156,11 +155,7 @@ pub fn process_admin_setup_fee_split(
             fee_split.borsh_len() + size_of::<FeeRecipient>() * MAX_FEE_RECIPIENTS,
         )?;
     } else {
-        check_account_owner(
-            accounts.fee_split_pda,
-            program_id,
-            AccessError::WrongOwner,
-        )?;
+        check_account_owner(accounts.fee_split_pda, program_id, AccessError::WrongOwner)?;
         fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
 
         let current_time = Clock::get()?.unix_timestamp as u64;
