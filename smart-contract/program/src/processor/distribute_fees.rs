@@ -14,7 +14,7 @@ use solana_program::{
 use spl_token::state::Account;
 
 use crate::{
-    state::{CentralState, FeeSplit},
+    state::{CentralState, FeeSplit, MIN_DISTRIBUTE_AMOUNT},
     utils::{check_account_key, check_account_owner, check_signer},
 };
 use crate::error::AccessError;
@@ -148,10 +148,16 @@ pub fn process_distribute_fees(
         }
     }
 
-    // distribute
+    // Distribute
     let total_balance = fee_split_ata.amount;
     msg!("Balance to distribute: {}", total_balance);
     let mut remaining_balance = total_balance;
+
+    // This covers us against someone calling it too often and thereby burning too many excess tokens
+    if total_balance < MIN_DISTRIBUTE_AMOUNT {
+        msg!("Not enough tokens to distribute");
+        return Err(AccessError::InvalidAmount.into());
+    }
 
     for (token_account, recipient) in accounts.token_accounts.iter().zip(fee_split.recipients.iter()) {
         let recipient_ata = recipient.ata(&central_state.token_mint);

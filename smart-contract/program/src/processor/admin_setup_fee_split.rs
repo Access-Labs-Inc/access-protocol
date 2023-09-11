@@ -85,6 +85,7 @@ pub fn process_admin_setup_fee_split(
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
+    let Params { recipients } =params;
     let accounts = Accounts::parse(accounts, program_id)?;
     let (fee_split_pda, bump_seed) = FeeSplit::find_key(program_id);
     let mut central_state = CentralState::from_account_info(accounts.central_state)?;
@@ -110,14 +111,18 @@ pub fn process_admin_setup_fee_split(
     }
 
     // Check if more recipients than allowed
-    if params.recipients.len() > MAX_FEE_RECIPIENTS as usize {
+    if recipients.len() > MAX_FEE_RECIPIENTS as usize {
         msg!("Too many recipients");
         return Err(AccessError::TooManyRecipients.into());
+    }
+    if recipients.len() == 0 {
+        msg!("No recipients");
+        return Err(AccessError::NoRecipients.into());
     }
 
     // Check recipients
     let mut percentage_sum: u64 = 0;
-    params.recipients.iter().try_for_each(|r| -> ProgramResult {
+    recipients.iter().try_for_each(|r| -> ProgramResult {
         if r.percentage == 0 {
             msg!("Recipient percentage 0 not allowed");
             return Err(AccessError::InvalidPercentages.into());
@@ -137,7 +142,7 @@ pub fn process_admin_setup_fee_split(
         msg!("Creating Fee split account");
         fee_split = FeeSplit::new(
             bump_seed,
-            params.recipients,
+            recipients,
         );
 
         Cpi::create_account(
@@ -164,7 +169,7 @@ pub fn process_admin_setup_fee_split(
             return Err(AccessError::NonzeroBallance.into());
         }
 
-        fee_split.recipients = params.recipients.clone();
+        fee_split.recipients = recipients.clone();
     }
 
     // replace the recipients

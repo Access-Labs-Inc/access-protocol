@@ -176,6 +176,9 @@ impl PrintProgramError for AccessError {
             AccessError::TooManyRecipients => {
                 msg!("Too many recipients")
             }
+            AccessError::NoRecipients => {
+                msg!("No recipients")
+            }
             AccessError::InvalidPercentages => {
                 msg!("Invalid percentages")
             }

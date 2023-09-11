@@ -1,7 +1,6 @@
 use num_derive::FromPrimitive;
-use thiserror::Error;
-
 use solana_program::{decode_error::DecodeError, program_error::ProgramError};
+use thiserror::Error;
 
 #[derive(Clone, Debug, Error, FromPrimitive)]
 pub enum AccessError {
@@ -101,6 +100,8 @@ pub enum AccessError {
     DeprecatedInstruction,
     #[error("Too many recipients")]
     TooManyRecipients,
+    #[error("No recipients")]
+    NoRecipients,
     #[error("Invalid percentages")]
     InvalidPercentages,
     #[error("Invalid token account")]

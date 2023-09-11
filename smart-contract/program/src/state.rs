@@ -47,6 +47,9 @@ pub const STAKE_BUFFER_LEN: u64 = 274; // 9 Months
 /// Max count of recipients of the fees
 pub const MAX_FEE_RECIPIENTS: usize = 10;
 
+/// Minimum balance of the fee split account allowed for token distribution
+pub const MIN_DISTRIBUTE_AMOUNT: u64 = 100_000_000;
+
 /// Max pending unstake requests
 pub const MAX_UNSTAKE_REQUEST: usize = 10;
 

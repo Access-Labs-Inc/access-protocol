@@ -197,18 +197,24 @@ impl TestRunner {
         let (fee_split_key, _) = FeeSplit::find_key(&self.program_id);
         // todo do this conditionally - only once
         let fee_split_ata = get_associated_token_address(&fee_split_key, &self.mint);
+
         let create_ata_vault_ix = create_associated_token_account(
             &self.prg_test_ctx.payer.pubkey(),
             &fee_split_key,
             &self.mint,
             &spl_token::ID,
         );
-        sign_send_instructions(
+        if let Err(e) = sign_send_instructions(
             &mut self.prg_test_ctx,
             vec![create_ata_vault_ix],
             vec![],
         )
-            .await?;
+            .await {
+            println!("error creating vault (probably already exists): {:?}", e);
+        }
+
+
+
         let admin_setup_fee_split_ix = admin_setup_fee_split(
             self.program_id,
             admin_setup_fee_split::Accounts {
