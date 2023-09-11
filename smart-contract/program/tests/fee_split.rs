@@ -1,7 +1,7 @@
 use solana_sdk::signer::Signer;
 
 use access_protocol::state::FeeRecipient;
-use access_protocol::state::MAX_FEE_RECIPIENTS;
+use access_protocol::state::{MAX_FEE_RECIPIENTS, MAX_FEE_SPLIT_SETUP_DELAY};
 
 use crate::common::test_runner::TestRunner;
 
@@ -23,15 +23,11 @@ async fn fee_split() {
     for _ in 0..MAX_FEE_RECIPIENTS {
         recipients.push(tr.create_ata_account().await.unwrap());
     }
-    let recipient_atas = recipients
-        .iter()
-        .map(|r| tr.get_ata(&r.pubkey()))
-        .collect::<Vec<_>>();
     // MAX_FEE_RECIPIENTS - 1 random numbers between 1 and 5
     let recipient_percentages = (0..MAX_FEE_RECIPIENTS - 1)
         .map(|_| rand::random::<u64>() % 5 + 1)
         .collect::<Vec<_>>();
-    // add one number so that the sum is 100
+    // add one number so that the sum is 99 (leaving 1% for the burn)
     let recipient_percentages = {
         let mut recipient_percentages = recipient_percentages;
         recipient_percentages.push(99 - recipient_percentages.iter().sum::<u64>());
@@ -39,14 +35,11 @@ async fn fee_split() {
     };
 
     let staker = tr.create_ata_account().await.unwrap();
-    tr.mint(&staker.pubkey(), 10_000_000_000).await.unwrap();
+    tr.mint(&staker.pubkey(), 100_000_000_000).await.unwrap();
     tr.create_stake_account(&pool_owner.pubkey(), &staker.pubkey())
         .await
         .unwrap();
 
-    // todo test sum != 100
-
-    // FeeRecipient { ata: recipient1_ata, percentage: 30 },
     let fee_recipients = recipients
         .iter()
         .zip(recipient_percentages.iter())
@@ -58,28 +51,39 @@ async fn fee_split() {
 
     tr.setup_fee_split(fee_recipients).await.unwrap();
 
-    // this will add 10_000_000 to the fee split ata
-    tr.stake(&pool_owner.pubkey(), &staker, 500_000_000)
+    // this adds 99_999_999 to the fee split ata
+    tr.stake(&pool_owner.pubkey(), &staker, 4_999_999_949)
         .await
         .unwrap();
 
     let fee_split_stats = tr.fee_split_stats().await.unwrap();
-    assert_eq!(fee_split_stats.balance, 10_000_000);
+    assert_eq!(fee_split_stats.balance, 99_999_999);
     assert_eq!(fee_split_stats.recipients.len(), MAX_FEE_RECIPIENTS);
 
+    tr.distribute_fees().await.unwrap_err(); // not enough in account
 
-    tr.distribute_fees().await.unwrap();
+    // this adds 1 to the fee split ata
+    tr.stake(&pool_owner.pubkey(), &staker, 1)
+        .await
+        .unwrap();
+    let fee_split_stats = tr.fee_split_stats().await.unwrap();
+    assert_eq!(fee_split_stats.balance, 100_000_000);
+    assert_eq!(fee_split_stats.recipients.len(), MAX_FEE_RECIPIENTS);
+
+    tr.sleep(1).await;
+    tr.distribute_fees().await.unwrap(); // not enough in account
+
     for (recipient, percentage) in recipients.iter().zip(recipient_percentages.iter()) {
         let recipient_stats = tr.staker_stats(recipient.pubkey()).await.unwrap();
-        assert_eq!(recipient_stats.balance, 10_000_000 / 100 * percentage);
+        assert_eq!(recipient_stats.balance, 100_000_000 * percentage/ 100);
     }
 
     // check what happens when distributing 0 fees
     tr.sleep(1).await;
-    tr.distribute_fees().await.unwrap();
+    tr.distribute_fees().await.unwrap_err();
     for (recipient, percentage) in recipients.iter().zip(recipient_percentages.iter()) {
         let recipient_stats = tr.staker_stats(recipient.pubkey()).await.unwrap();
-        assert_eq!(recipient_stats.balance, 10_000_000 / 100 * percentage);
+        assert_eq!(recipient_stats.balance, 100_000_000 * percentage/ 100);
     }
 
     // change the fee recipients
@@ -112,12 +116,16 @@ async fn fee_split() {
     // try changing with no recipients
     tr.setup_fee_split(vec![]).await.unwrap_err();
 
-    // this will add 2469135 to the fee split ata
-    tr.stake(&pool_owner.pubkey(), &staker, 123_456_789)
+    // this will add 224691358 to the fee split ata
+    tr.stake(&pool_owner.pubkey(), &staker, 11_234_567_891)
         .await
         .unwrap();
 
+    let fee_split_stats = tr.fee_split_stats().await.unwrap();
+    assert_eq!(fee_split_stats.balance, 224691358);
+
     // try changing the recipients without distributing the fees
+    tr.sleep(MAX_FEE_SPLIT_SETUP_DELAY + 1).await;
     tr.setup_fee_split(vec![
         FeeRecipient {
             owner: new_recipient1.pubkey(),
@@ -128,14 +136,11 @@ async fn fee_split() {
     tr.distribute_fees().await.unwrap();
 
     let recipient1_stats = tr.staker_stats(new_recipient1.pubkey()).await.unwrap();
-    assert_eq!(recipient1_stats.balance, 10_000_000 / 100 * 3);
+    assert_eq!(recipient1_stats.balance, 224691358 * 30 / 100);
     let recipient2_stats = tr.staker_stats(new_recipient2.pubkey()).await.unwrap();
-    assert_eq!(recipient2_stats.balance, 10_000_000 / 100 * 7);
+    assert_eq!(recipient2_stats.balance, 224691358 * 70 / 100);
     let fee_split_stats = tr.fee_split_stats().await.unwrap();
     assert_eq!(fee_split_stats.balance, 0);
-
-
-    // todo try empty recipients
 }
 
 
