@@ -1,4 +1,6 @@
 //! Create central state
+use std::mem::size_of;
+
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
@@ -10,10 +12,9 @@ use solana_program::{
     system_program,
 };
 
-use std::mem::size_of;
-use crate::{state::StakePool, utils::assert_valid_vault};
+use crate::utils::assert_valid_vault;
 use crate::{cpi::Cpi, error::AccessError};
-use crate::state::{FeeSplit, CentralState, FeeRecipient, MAX_FEE_RECIPIENTS};
+use crate::state::{CentralState, FeeRecipient, FeeSplit, MAX_FEE_RECIPIENTS};
 use crate::utils::{check_account_key, check_account_owner};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -105,22 +106,35 @@ pub fn process_admin_setup_fee_split(
     )?;
 
     // Check if more recipients than allowed
-        if params.recipients.len() > MAX_FEE_RECIPIENTS as usize {
-            msg!("Too many recipients");
-            return Err(AccessError::TooManyRecipients.into());
-        }
+    if params.recipients.len() > MAX_FEE_RECIPIENTS as usize {
+        msg!("Too many recipients");
+        return Err(AccessError::TooManyRecipients.into());
+    }
     // Check if the percentages add up to 100
+    // todo maybe < 100 and burn the rest
     // todo maybe safe math
-                if params.recipients.iter().map(|r| r.percentage).sum::<u64>() != 100 {
-                    msg!("Percentages don't add up to 100");
-                    return Err(AccessError::InvalidPercentages.into());
-                }
+    if params.recipients.iter().map(|r| r.percentage).sum::<u64>() != 100 {
+        msg!("Percentages don't add up to 100");
+        return Err(AccessError::InvalidPercentages.into());
+    }
 
-    // todo disable 0 percentage
-    // todo Check that the recipients are valid ATAs for our mint
-    // todo check that the balance is near 0
+    // Check recipients
+    let percentage_sum = 0;
+    params.recipients.iter().for_each(|r| {
+        if r.percentage == 0 {
+            msg!("Recipient percentage 0 not allowed");
+            return Err(AccessError::InvalidPercentages.into());
+        }
+        if percentage_sum.safe_add(r.percentage).ok_or(AccessError::Overflow) > 100 {
+            msg!("Percentages add up to more than 100");
+            return Err(AccessError::InvalidPercentages.into());
+        }
+    });
+    // todo check ATAs (need to change input params)
 
-    let mut fee_split:FeeSplit;
+    // todo check that the balance is "near" 0 (or 0 if we implement burn)
+
+    let mut fee_split: FeeSplit;
     if accounts.fee_spit_pda.data_is_empty() {
         msg!("Creating Fee split account");
         fee_split = FeeSplit::new(
@@ -134,9 +148,8 @@ pub fn process_admin_setup_fee_split(
             accounts.authority,
             accounts.fee_spit_pda,
             &[FeeSplit::SEED, &program_id.to_bytes(), &[bump_seed]],
-            fee_split.borsh_len() + size_of::<FeeRecipient>() * MAX_FEE_RECIPIENTS as usize
+            fee_split.borsh_len() + size_of::<FeeRecipient>() * MAX_FEE_RECIPIENTS as usize,
         )?;
-
     } else {
         check_account_owner(
             accounts.fee_spit_pda,
