@@ -10,6 +10,7 @@ pub mod activate_stake_pool;
 pub mod add_to_bond_v2;
 pub mod admin_freeze;
 pub mod admin_mint;
+pub mod admin_setup_fee_split;
 pub mod change_central_state_authority;
 pub mod change_inflation;
 pub mod change_pool_minimum;
@@ -27,6 +28,7 @@ pub mod create_bond_v2;
 pub mod create_central_state;
 pub mod create_stake_account;
 pub mod create_stake_pool;
+pub mod distribute_fees;
 pub mod edit_metadata;
 pub mod sign_bond;
 pub mod stake;
@@ -209,6 +211,18 @@ impl Processor {
                 let params = unlock_bond_v2::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 unlock_bond_v2::process_unlock_bond_v2(program_id, accounts, params)?;
+            }
+            ProgramInstruction::AdminSetupFeeSplit => {
+                msg!("Instruction: Admin setup fee split");
+                let params = admin_setup_fee_split::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                admin_setup_fee_split::process_admin_setup_fee_split(program_id, accounts, params)?;
+            }
+            ProgramInstruction::DistributeFees => {
+                msg!("Instruction: Distribute fees");
+                let params = distribute_fees::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                distribute_fees::process_distribute_fees(program_id, accounts, params)?;
             }
         }
 

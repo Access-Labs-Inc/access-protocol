@@ -12,7 +12,7 @@ use solana_program::{
 use spl_token::instruction::transfer;
 
 use crate::{
-    state::{CentralState, Tag, FEES},
+    state::{CentralState, FeeSplit, Tag, FEES},
     utils::{assert_valid_fee, check_account_key, check_account_owner, check_signer},
 };
 use bonfida_utils::{BorshSize, InstructionsAccount};
@@ -189,9 +189,11 @@ pub fn process_stake(
         stake_account.pool_minimum_at_creation = stake_pool.header.minimum_stake_amount;
     }
 
-    assert_valid_fee(accounts.fee_account, &central_state.authority)?;
+    let (fee_split_pda, _) = FeeSplit::find_key(program_id);
+    assert_valid_fee(accounts.fee_account, &fee_split_pda)?;
 
-    let fees = (amount * FEES) / 100;
+    // +99 accounts for rounding up
+    let fees = (amount * FEES + 99) / 100;
 
     if amount == 0 {
         return Err(AccessError::CannotStakeZero.into());

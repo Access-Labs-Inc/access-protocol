@@ -18,7 +18,7 @@ use spl_token::state::Account;
 
 use crate::error::AccessError;
 use crate::state::Tag;
-use crate::state::{BondAccountV2, CentralState, StakePool, FEES};
+use crate::state::{BondAccountV2, CentralState, FeeSplit, StakePool, FEES};
 use crate::utils::{assert_valid_fee, check_account_key, check_account_owner, check_signer};
 use solana_program::sysvar::Sysvar;
 
@@ -181,9 +181,11 @@ pub fn process_add_to_bond_v2(
         AccessError::StakePoolVaultMismatch,
     )?;
 
-    assert_valid_fee(accounts.fee_account, &central_state.authority)?;
+    let (fee_split_pda, _) = FeeSplit::find_key(program_id);
+    assert_valid_fee(accounts.fee_account, &fee_split_pda)?;
 
-    let fees = (amount * FEES) / 100;
+    // +99 accounts for rounding up
+    let fees = (amount * FEES + 99) / 100;
 
     if amount == 0 {
         return Err(AccessError::CannotStakeZero.into());

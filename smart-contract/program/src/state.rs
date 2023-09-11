@@ -15,6 +15,7 @@ use solana_program::msg;
 use solana_program::program_error::ProgramError;
 use solana_program::pubkey::Pubkey;
 use solana_program::sysvar::Sysvar;
+use spl_associated_token_account::get_associated_token_address;
 
 use crate::error::AccessError;
 
@@ -43,8 +44,14 @@ pub const OWNER_MULTIPLIER: u64 = 100 - STAKER_MULTIPLIER;
 /// Length of the circular buffer (stores balances for 1 year)
 pub const STAKE_BUFFER_LEN: u64 = 274; // 9 Months
 
-/// Max pending unstake requests
-pub const MAX_UNSTAKE_REQUEST: usize = 10;
+/// Max count of recipients of the fees
+pub const MAX_FEE_RECIPIENTS: usize = 10;
+
+/// Minimum balance of the fee split account allowed for token distribution
+pub const MIN_DISTRIBUTE_AMOUNT: u64 = 100_000_000;
+
+/// Maximum delay between last fee split distribution and fee split account setup
+pub const MAX_FEE_SPLIT_SETUP_DELAY: u64 = 5 * 60; // 5 minutes
 
 /// Fees charged on staking instruction in % (i.e FEES = 1 <-> 1% fee charged)
 pub const FEES: u64 = 2;
@@ -65,6 +72,7 @@ pub enum Tag {
     BondAccountV2,
     CentralState,
     Deleted,
+    FeeSplit,
     // Accounts frozen by the central state authority
     FrozenStakePool,
     FrozenStakeAccount,
@@ -726,5 +734,73 @@ impl BondAccountV2 {
             .checked_sub(amount)
             .ok_or(AccessError::Overflow)?;
         Ok(())
+    }
+}
+
+#[derive(BorshSerialize, BorshDeserialize, BorshSize, Clone, Debug)]
+#[allow(missing_docs)]
+pub struct FeeRecipient {
+    pub owner: Pubkey,
+    pub percentage: u64,
+}
+
+impl FeeRecipient {
+    #[allow(missing_docs)]
+    pub fn ata(&self, mint: &Pubkey) -> Pubkey {
+        get_associated_token_address(&self.owner, mint)
+    }
+}
+
+#[derive(BorshSerialize, BorshDeserialize, BorshSize)]
+#[allow(missing_docs)]
+pub struct FeeSplit {
+    /// Tag
+    pub tag: Tag,
+
+    /// Last distribution timestamp
+    pub last_distribution_time: i64,
+
+    /// Bump seed
+    pub bump_seed: u8,
+
+    /// List of fee recipients
+    pub recipients: Vec<FeeRecipient>,
+}
+#[allow(missing_docs)]
+impl FeeSplit {
+    pub const SEED: &'static [u8; 9] = b"fee_split";
+
+    #[allow(missing_docs)]
+    pub fn new(bump_seed: u8, recipients: Vec<FeeRecipient>) -> Result<Self, ProgramError> {
+        Ok(Self {
+            tag: Tag::FeeSplit,
+            last_distribution_time: Clock::get()?.unix_timestamp,
+            bump_seed,
+            recipients,
+        })
+    }
+    #[allow(missing_docs)]
+    pub fn create_key(signer_nonce: &u8, program_id: &Pubkey) -> Result<Pubkey, ProgramError> {
+        let signer_seeds: &[&[u8]] = &[Self::SEED, &program_id.to_bytes(), &[*signer_nonce]];
+        Pubkey::create_program_address(signer_seeds, program_id)
+            .map_err(|_| ProgramError::InvalidSeeds)
+    }
+    #[allow(missing_docs)]
+    pub fn find_key(program_id: &Pubkey) -> (Pubkey, u8) {
+        Pubkey::find_program_address(&[Self::SEED, &program_id.to_bytes()], program_id)
+    }
+    #[allow(missing_docs)]
+    pub fn save(&self, mut dst: &mut [u8]) -> ProgramResult {
+        self.serialize(&mut dst)
+            .map_err(|_| ProgramError::InvalidAccountData)
+    }
+    #[allow(missing_docs)]
+    pub fn from_account_info(a: &AccountInfo) -> Result<FeeSplit, ProgramError> {
+        let mut data = &a.data.borrow() as &[u8];
+        if data[0] != Tag::FeeSplit as u8 && data[0] != Tag::Uninitialized as u8 {
+            return Err(AccessError::DataTypeMismatch.into());
+        }
+        let result = FeeSplit::deserialize(&mut data)?;
+        Ok(result)
     }
 }

@@ -1,10 +1,10 @@
 pub use crate::processor::{
-    activate_stake_pool, add_to_bond_v2, admin_freeze, admin_mint, change_central_state_authority,
-    change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards,
-    claim_bond_v2_rewards, claim_pool_rewards, claim_rewards, close_stake_account,
-    close_stake_pool, crank, create_bond, create_bond_v2, create_central_state,
-    create_stake_account, create_stake_pool, edit_metadata, sign_bond, stake, unlock_bond_tokens,
-    unlock_bond_v2, unstake,
+    activate_stake_pool, add_to_bond_v2, admin_freeze, admin_mint, admin_setup_fee_split,
+    change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier,
+    claim_bond, claim_bond_rewards, claim_bond_v2_rewards, claim_pool_rewards, claim_rewards,
+    close_stake_account, close_stake_pool, crank, create_bond, create_bond_v2,
+    create_central_state, create_stake_account, create_stake_pool, distribute_fees, edit_metadata,
+    sign_bond, stake, unlock_bond_tokens, unlock_bond_v2, unstake,
 };
 use bonfida_utils::InstructionsAccount;
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -250,6 +250,10 @@ pub enum ProgramInstruction {
     ClaimBondV2Rewards,
     // todo docs
     UnlockBondV2,
+    // todo docs
+    AdminSetupFeeSplit,
+    // todo docs
+    DistributeFees,
 }
 #[allow(missing_docs)]
 pub fn create_central_state(
@@ -537,6 +541,7 @@ pub fn change_central_state_authority(
         params,
     )
 }
+
 #[allow(missing_docs)]
 pub fn edit_metadata(
     program_id: Pubkey,
@@ -544,4 +549,26 @@ pub fn edit_metadata(
     params: edit_metadata::Params,
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::EditMetadata as u8, params)
+}
+
+#[allow(missing_docs)]
+pub fn admin_setup_fee_split(
+    program_id: Pubkey,
+    accounts: admin_setup_fee_split::Accounts<Pubkey>,
+    params: admin_setup_fee_split::Params,
+) -> Instruction {
+    accounts.get_instruction(
+        program_id,
+        ProgramInstruction::AdminSetupFeeSplit as u8,
+        params,
+    )
+}
+
+#[allow(missing_docs)]
+pub fn distribute_fees(
+    program_id: Pubkey,
+    accounts: distribute_fees::Accounts<Pubkey>,
+    params: distribute_fees::Params,
+) -> Instruction {
+    accounts.get_instruction(program_id, ProgramInstruction::DistributeFees as u8, params)
 }

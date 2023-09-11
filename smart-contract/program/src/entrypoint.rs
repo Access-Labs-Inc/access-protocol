@@ -173,6 +173,24 @@ impl PrintProgramError for AccessError {
             AccessError::DeprecatedInstruction => {
                 msg!("Deprecated instruction")
             }
+            AccessError::TooManyRecipients => {
+                msg!("Too many recipients")
+            }
+            AccessError::NoRecipients => {
+                msg!("No recipients")
+            }
+            AccessError::InvalidPercentages => {
+                msg!("Invalid percentages")
+            }
+            AccessError::InvalidTokenAccount => {
+                msg!("Invalid token account")
+            }
+            AccessError::NonzeroBallance => {
+                msg!("Nonzero balance")
+            }
+            AccessError::DelayTooLong => {
+                msg!("Delay too long")
+            }
         }
     }
 }
