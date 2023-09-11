@@ -188,6 +188,9 @@ impl PrintProgramError for AccessError {
             AccessError::NonzeroBallance => {
                 msg!("Nonzero balance")
             }
+            AccessError::DelayTooLong => {
+                msg!("Delay too long")
+            }
         }
     }
 }

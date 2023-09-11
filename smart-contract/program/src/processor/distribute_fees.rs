@@ -155,7 +155,7 @@ pub fn process_distribute_fees(
 
     // This covers us against someone calling it too often and thereby burning too many excess tokens
     if total_balance < MIN_DISTRIBUTE_AMOUNT {
-        msg!("Not enough tokens to distribute");
+        msg!("Not enough tokens to distribute: {}", total_balance);
         return Err(AccessError::InvalidAmount.into());
     }
 

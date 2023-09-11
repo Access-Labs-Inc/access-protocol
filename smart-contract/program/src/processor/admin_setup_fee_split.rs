@@ -1,6 +1,6 @@
 //! Create central state
 use std::mem::size_of;
-use solana_program::program_pack::Pack;
+
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
@@ -11,12 +11,15 @@ use solana_program::{
     pubkey::Pubkey,
     system_program,
 };
-
+use solana_program::clock::Clock;
+use solana_program::program_pack::Pack;
+use solana_program::sysvar::Sysvar;
 use spl_token::state::Account;
-use crate::utils::assert_valid_vault;
+
 use crate::{cpi::Cpi, error::AccessError};
-use crate::state::{CentralState, FeeRecipient, FeeSplit, MAX_FEE_RECIPIENTS};
-use crate::utils::{check_signer, check_account_key, check_account_owner};
+use crate::state::{CentralState, FeeRecipient, FeeSplit, MAX_FEE_RECIPIENTS, MAX_FEE_SPLIT_SETUP_DELAY};
+use crate::utils::{check_account_key, check_account_owner, check_signer};
+use crate::utils::assert_valid_vault;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `create_central_state` instruction
@@ -85,7 +88,7 @@ pub fn process_admin_setup_fee_split(
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
-    let Params { recipients } =params;
+    let Params { recipients } = params;
     let accounts = Accounts::parse(accounts, program_id)?;
     let (fee_split_pda, bump_seed) = FeeSplit::find_key(program_id);
     let mut central_state = CentralState::from_account_info(accounts.central_state)?;
@@ -110,7 +113,7 @@ pub fn process_admin_setup_fee_split(
         return Err(AccessError::WrongOwner.into());
     }
 
-    // Check if more recipients than allowed
+    // Check if right number of recipients
     if recipients.len() > MAX_FEE_RECIPIENTS as usize {
         msg!("Too many recipients");
         return Err(AccessError::TooManyRecipients.into());
@@ -136,14 +139,13 @@ pub fn process_admin_setup_fee_split(
     })?;
 
 
-
     let mut fee_split: FeeSplit;
     if accounts.fee_split_pda.data_is_empty() {
         msg!("Creating Fee split account");
         fee_split = FeeSplit::new(
             bump_seed,
             recipients,
-        );
+        )?;
 
         Cpi::create_account(
             program_id,
@@ -161,12 +163,10 @@ pub fn process_admin_setup_fee_split(
         )?;
         fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
 
-        // Check that the fee split ATA balance is 0. We require this so that all the fees are fairly distributed before the change of balace.
-        // Practically this means that you need to send two instructions in one tx: one to distribute the fees from the fee split ATA, and one to change the recipients.
-        // todo test if this adds any limitations on the tx size (recitipient count)
-        if fee_split_ata.amount != 0 {
-            msg!("Fee split ATA balance must be 0");
-            return Err(AccessError::NonzeroBallance.into());
+        let current_time = Clock::get()?.unix_timestamp as u64;
+        if current_time - fee_split.last_distribution_time as u64 > MAX_FEE_SPLIT_SETUP_DELAY {
+            msg!("Delay between fee distribution and fee split setup too long");
+            return Err(AccessError::DelayTooLong.into());
         }
 
         fee_split.recipients = recipients.clone();

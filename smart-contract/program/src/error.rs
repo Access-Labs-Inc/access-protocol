@@ -108,6 +108,8 @@ pub enum AccessError {
     InvalidTokenAccount,
     #[error("Nonzero balance")]
     NonzeroBallance,
+    #[error("Delay too long")]
+    DelayTooLong,
 }
 
 impl From<AccessError> for ProgramError {
