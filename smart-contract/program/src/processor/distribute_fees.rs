@@ -19,6 +19,8 @@ use crate::{
 };
 use crate::error::AccessError;
 use crate::state::MAX_FEE_RECIPIENTS;
+use solana_program::clock::Clock;
+use solana_program::sysvar::Sysvar;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `close_stake_pool` instruction
@@ -117,8 +119,8 @@ pub fn process_distribute_fees(
         return Err(AccessError::InvalidTokenAccount.into());
     }
 
-    let mut central_state = CentralState::from_account_info(accounts.central_state_account)?;
-    let fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
+    let central_state = CentralState::from_account_info(accounts.central_state_account)?;
+    let mut fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
 
     check_account_key(
         accounts.mint,
@@ -213,5 +215,8 @@ pub fn process_distribute_fees(
         msg!("Burned {} tokens", remaining_balance);
     }
 
+
+    fee_split.last_distribution_time = Clock::get()?.unix_timestamp;
+    fee_split.save(&mut accounts.fee_split_pda.data.borrow_mut())?;
     Ok(())
 }
