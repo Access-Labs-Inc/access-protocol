@@ -766,7 +766,7 @@ pub struct FeeSplit {
     /// List of fee recipients
     pub recipients: Vec<FeeRecipient>,
 }
-
+#[allow(missing_docs)]
 impl FeeSplit {
     pub const SEED: &'static [u8; 9] = b"fee_split";
 

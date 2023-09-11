@@ -409,7 +409,7 @@ impl TestRunner {
             .unwrap()
             .unwrap();
         let fee_split_data = FeeSplit::deserialize(&mut &acc.data[..])?;
-        let mut recipient_pubkeys: Vec<Pubkey> = fee_split_data
+        let recipient_pubkeys: Vec<Pubkey> = fee_split_data
             .recipients
             .iter()
             .map(|r| r.ata(&self.mint))

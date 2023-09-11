@@ -4,8 +4,8 @@ use access_protocol::state::FeeRecipient;
 use access_protocol::state::{MAX_FEE_RECIPIENTS, MAX_FEE_SPLIT_SETUP_DELAY};
 
 use crate::common::test_runner::TestRunner;
-use solana_program::clock::Clock;
-use solana_program::sysvar::Sysvar;
+
+
 
 pub mod common;
 
@@ -72,7 +72,7 @@ async fn fee_split() {
     assert_eq!(fee_split_stats.balance, 100_000_000);
     assert_eq!(fee_split_stats.recipients.len(), MAX_FEE_RECIPIENTS);
 
-    tr.sleep(1).await;
+    tr.sleep(1).await.unwrap();
     tr.distribute_fees().await.unwrap(); // not enough in account
 
     for (recipient, percentage) in recipients.iter().zip(recipient_percentages.iter()) {
@@ -81,7 +81,7 @@ async fn fee_split() {
     }
 
     // check what happens when distributing 0 fees
-    tr.sleep(1).await;
+    tr.sleep(1).await.unwrap();
     tr.distribute_fees().await.unwrap_err();
     for (recipient, percentage) in recipients.iter().zip(recipient_percentages.iter()) {
         let recipient_stats = tr.staker_stats(recipient.pubkey()).await.unwrap();
@@ -127,7 +127,7 @@ async fn fee_split() {
     assert_eq!(fee_split_stats.balance, 224691358);
 
     // try changing the recipients too late after the last distribution
-    tr.sleep(MAX_FEE_SPLIT_SETUP_DELAY + 1).await;
+    tr.sleep(MAX_FEE_SPLIT_SETUP_DELAY + 1).await.unwrap();
     tr.setup_fee_split(vec![
         FeeRecipient {
             owner: new_recipient1.pubkey(),
@@ -144,7 +144,7 @@ async fn fee_split() {
     assert_eq!(fee_split_stats.balance, 0);
 
     // now the change should be possible
-    tr.sleep(1).await;
+    tr.sleep(1).await.unwrap();
     tr.setup_fee_split(vec![
         FeeRecipient {
             owner: new_recipient1.pubkey(),

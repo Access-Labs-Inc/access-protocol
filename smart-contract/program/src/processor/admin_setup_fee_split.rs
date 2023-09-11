@@ -91,7 +91,7 @@ pub fn process_admin_setup_fee_split(
     let Params { recipients } = params;
     let accounts = Accounts::parse(accounts, program_id)?;
     let (fee_split_pda, bump_seed) = FeeSplit::find_key(program_id);
-    let mut central_state = CentralState::from_account_info(accounts.central_state)?;
+    let central_state = CentralState::from_account_info(accounts.central_state)?;
 
     check_account_key(
         accounts.authority,
@@ -114,11 +114,11 @@ pub fn process_admin_setup_fee_split(
     }
 
     // Check if right number of recipients
-    if recipients.len() > MAX_FEE_RECIPIENTS as usize {
+    if recipients.len() > MAX_FEE_RECIPIENTS {
         msg!("Too many recipients");
         return Err(AccessError::TooManyRecipients.into());
     }
-    if recipients.len() == 0 {
+    if recipients.is_empty() {
         msg!("No recipients");
         return Err(AccessError::NoRecipients.into());
     }
@@ -153,7 +153,7 @@ pub fn process_admin_setup_fee_split(
             accounts.authority,
             accounts.fee_split_pda,
             &[FeeSplit::SEED, &program_id.to_bytes(), &[bump_seed]],
-            fee_split.borsh_len() + size_of::<FeeRecipient>() * MAX_FEE_RECIPIENTS as usize,
+            fee_split.borsh_len() + size_of::<FeeRecipient>() * MAX_FEE_RECIPIENTS,
         )?;
     } else {
         check_account_owner(
@@ -169,7 +169,7 @@ pub fn process_admin_setup_fee_split(
             return Err(AccessError::DelayTooLong.into());
         }
 
-        fee_split.recipients = recipients.clone();
+        fee_split.recipients = recipients;
     }
 
     // replace the recipients

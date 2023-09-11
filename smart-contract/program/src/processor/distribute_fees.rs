@@ -110,7 +110,7 @@ pub fn process_distribute_fees(
     _params: Params,
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
-    if accounts.token_accounts.len() == 0 {
+    if accounts.token_accounts.is_empty() {
         msg!("No token accounts to distribute to");
         return Err(AccessError::InvalidTokenAccount.into());
     }
