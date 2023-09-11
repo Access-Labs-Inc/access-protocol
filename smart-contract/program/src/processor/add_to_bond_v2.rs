@@ -184,7 +184,7 @@ pub fn process_add_to_bond_v2(
     let (fee_split_pda, _) = FeeSplit::find_key(program_id);
     assert_valid_fee(accounts.fee_account, &fee_split_pda)?;
 
-    // +99 accounts for rounding up
+    // +99 to round up
     let fees = (amount * FEES + 99) / 100;
 
     if amount == 0 {

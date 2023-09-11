@@ -17,8 +17,8 @@ async fn signed_claim() {
     // V1 bond creation should be deprecated
     // ---------------------------------------------------------------------------------------------
     {
-            let pool_owner = tr.create_ata_account().await.unwrap();
-            let bond_creator = tr.create_ata_account().await.unwrap();
+        let pool_owner = tr.create_ata_account().await.unwrap();
+        let bond_creator = tr.create_ata_account().await.unwrap();
         tr.create_bond(
             &pool_owner.pubkey(),
             &bond_creator.pubkey(),
@@ -26,7 +26,9 @@ async fn signed_claim() {
             1,
             1,
             1,
-        ).await.unwrap_err();
+        )
+        .await
+        .unwrap_err();
     }
     // ---------------------------------------------------------------------------------------------
     // Unlockable bond

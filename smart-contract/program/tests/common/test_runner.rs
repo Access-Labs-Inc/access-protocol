@@ -10,6 +10,15 @@ use spl_associated_token_account::{
     get_associated_token_address, instruction::create_associated_token_account,
 };
 
+use access_protocol::instruction::{
+    admin_setup_fee_split, change_central_state_authority, change_inflation, change_pool_minimum,
+    change_pool_multiplier, claim_bond, claim_bond_rewards, create_bond, unlock_bond_tokens,
+    unlock_bond_v2,
+};
+use access_protocol::state::{
+    BondAccount, BondAccountV2, CentralState, FeeRecipient, FeeSplit, StakeAccount,
+    StakePoolHeader, Tag,
+};
 use access_protocol::{
     entrypoint::process_instruction,
     instruction::{
@@ -17,8 +26,6 @@ use access_protocol::{
         create_central_state, create_stake_account, create_stake_pool, stake, unstake,
     },
 };
-use access_protocol::instruction::{admin_setup_fee_split, change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards, create_bond, unlock_bond_tokens, unlock_bond_v2};
-use access_protocol::state::{BondAccount, BondAccountV2, CentralState, FeeRecipient, FeeSplit, StakeAccount, StakePoolHeader, Tag};
 
 use crate::common::utils::{mint_bootstrap, sign_send_instructions};
 
@@ -142,7 +149,7 @@ impl TestRunner {
             vec![create_ata_stake_pool_owner_ix],
             vec![],
         )
-            .await?;
+        .await?;
 
         Ok(Self {
             program_id,
@@ -169,7 +176,7 @@ impl TestRunner {
             vec![create_ata_stake_pool_owner_ix],
             vec![],
         )
-            .await?;
+        .await?;
         Ok(owner)
     }
 
@@ -193,7 +200,10 @@ impl TestRunner {
         sign_send_instructions(&mut self.prg_test_ctx, vec![admin_mint_ix], vec![]).await
     }
 
-    pub async fn setup_fee_split(&mut self, recipients: Vec<FeeRecipient>) -> Result<(), BanksClientError> {
+    pub async fn setup_fee_split(
+        &mut self,
+        recipients: Vec<FeeRecipient>,
+    ) -> Result<(), BanksClientError> {
         let (fee_split_key, _) = FeeSplit::find_key(&self.program_id);
         // todo do this conditionally - only once
         let fee_split_ata = get_associated_token_address(&fee_split_key, &self.mint);
@@ -204,16 +214,11 @@ impl TestRunner {
             &self.mint,
             &spl_token::ID,
         );
-        if let Err(e) = sign_send_instructions(
-            &mut self.prg_test_ctx,
-            vec![create_ata_vault_ix],
-            vec![],
-        )
-            .await {
+        if let Err(e) =
+            sign_send_instructions(&mut self.prg_test_ctx, vec![create_ata_vault_ix], vec![]).await
+        {
             println!("error creating vault (probably already exists): {:?}", e);
         }
-
-
 
         let admin_setup_fee_split_ix = admin_setup_fee_split(
             self.program_id,
@@ -224,8 +229,14 @@ impl TestRunner {
                 central_state: &self.central_state,
                 system_program: &system_program::ID,
             },
-            admin_setup_fee_split::Params { recipients });
-        sign_send_instructions(&mut self.prg_test_ctx, vec![admin_setup_fee_split_ix], vec![]).await
+            admin_setup_fee_split::Params { recipients },
+        );
+        sign_send_instructions(
+            &mut self.prg_test_ctx,
+            vec![admin_setup_fee_split_ix],
+            vec![],
+        )
+        .await
     }
 
     pub async fn create_stake_pool(
@@ -252,13 +263,13 @@ impl TestRunner {
             vec![create_ata_pool_vault_ix],
             vec![],
         )
-            .await?;
+        .await?;
         sign_send_instructions(
             &mut self.prg_test_ctx,
             vec![create_associated_instruction],
             vec![],
         )
-            .await?;
+        .await?;
 
         let create_stake_pool_ix = create_stake_pool(
             self.program_id,
@@ -343,7 +354,7 @@ impl TestRunner {
             vec![create_stake_account_ix],
             vec![],
         )
-            .await
+        .await
     }
 
     pub async fn sleep(&mut self, duration: u64) -> Result<(), ProgramTestError> {
@@ -473,7 +484,7 @@ impl TestRunner {
             vec![claim_stake_pool_ix],
             vec![stake_pool_owner],
         )
-            .await
+        .await
     }
 
     pub async fn claim_staker_rewards(
@@ -752,7 +763,10 @@ impl TestRunner {
             .get_packed_account_data::<spl_token::state::Account>(fee_split_ata)
             .await?
             .amount;
-        Ok(FeeSplitStats { recipients: fs.recipients, balance })
+        Ok(FeeSplitStats {
+            recipients: fs.recipients,
+            balance,
+        })
     }
 
     pub async fn create_bond(
@@ -805,7 +819,7 @@ impl TestRunner {
             vec![create_bond_ix],
             vec![&self.bond_seller],
         )
-            .await?;
+        .await?;
 
         // add bond account to the map
         self.bond_accounts.insert(
@@ -899,7 +913,7 @@ impl TestRunner {
             vec![create_bond_ix],
             vec![&self.bond_seller],
         )
-            .await?;
+        .await?;
 
         // add bond account to the map
         self.bond_accounts.insert(
@@ -1016,7 +1030,7 @@ impl TestRunner {
             vec![claim_bond_ix],
             vec![bond_owner],
         )
-            .await
+        .await
     }
 
     pub async fn unlock_bond(
@@ -1124,7 +1138,7 @@ impl TestRunner {
             vec![change_min_ix],
             vec![stake_pool_owner],
         )
-            .await
+        .await
     }
 
     pub async fn change_pool_multiplier(
@@ -1147,7 +1161,7 @@ impl TestRunner {
             vec![change_min_ix],
             vec![stake_pool_owner],
         )
-            .await
+        .await
     }
 
     pub async fn change_inflation(&mut self, new_inflation: u64) -> Result<(), BanksClientError> {
