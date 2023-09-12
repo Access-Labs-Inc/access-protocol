@@ -1,24 +1,22 @@
 //! Stake
+use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
-    account_info::{next_account_info, AccountInfo},
+    account_info::{AccountInfo, next_account_info},
     entrypoint::ProgramResult,
     msg,
     program::invoke,
     program_error::ProgramError,
     pubkey::Pubkey,
 };
-
-use spl_token::instruction::transfer;
-
-use crate::{
-    state::{CentralState, FeeSplit, Tag, FEES},
-    utils::{assert_valid_fee, check_account_key, check_account_owner, check_signer},
-};
-use bonfida_utils::{BorshSize, InstructionsAccount};
 use solana_program::program_pack::Pack;
+use spl_token::instruction::transfer;
 use spl_token::state::Account;
 
+use crate::{
+    state::{CentralState, FeeSplit, Tag},
+    utils::{assert_valid_fee, check_account_key, check_account_owner, check_signer},
+};
 use crate::error::AccessError;
 use crate::state::{BondAccount, StakeAccount, StakePool};
 
@@ -34,7 +32,10 @@ pub struct Params {
 pub struct Accounts<'a, T> {
     /// The central state account
     #[cons(writable)]
-    pub central_state_account: &'a T,
+    pub central_state: &'a T,
+
+    /// The fee split account
+    pub fee_split_pda: &'a T,
 
     /// The stake account
     #[cons(writable)]
@@ -75,7 +76,8 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     ) -> Result<Self, ProgramError> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
-            central_state_account: next_account_info(accounts_iter)?,
+            central_state: next_account_info(accounts_iter)?,
+            fee_split_pda: next_account_info(accounts_iter)?,
             stake_account: next_account_info(accounts_iter)?,
             stake_pool: next_account_info(accounts_iter)?,
             owner: next_account_info(accounts_iter)?,
@@ -95,7 +97,12 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
         // Check ownership
         check_account_owner(
-            accounts.central_state_account,
+            accounts.central_state,
+            program_id,
+            AccessError::WrongOwner,
+        )?;
+        check_account_owner(
+            accounts.fee_split_pda,
             program_id,
             AccessError::WrongOwner,
         )?;
@@ -140,7 +147,8 @@ pub fn process_stake(
 
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
-    let mut central_state = CentralState::from_account_info(accounts.central_state_account)?;
+    let mut central_state = CentralState::from_account_info(accounts.central_state)?;
+    let mut fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
 
     let source_token_acc = Account::unpack(&accounts.source_token.data.borrow())?;
     if source_token_acc.mint != central_state.token_mint {
@@ -192,9 +200,6 @@ pub fn process_stake(
     let (fee_split_pda, _) = FeeSplit::find_key(program_id);
     assert_valid_fee(accounts.fee_account, &fee_split_pda)?;
 
-    // +99 to round up
-    let fees = (amount * FEES + 99) / 100;
-
     if amount == 0 {
         return Err(AccessError::CannotStakeZero.into());
     }
@@ -244,7 +249,7 @@ pub fn process_stake(
         accounts.fee_account.key,
         accounts.owner.key,
         &[],
-        fees,
+        fee_split_pda.calculate_fee(amount)?,
     )?;
     invoke(
         &transfer_fees,
@@ -263,9 +268,9 @@ pub fn process_stake(
         .checked_add(amount_in_bonds)
         .ok_or(AccessError::Overflow)?
         < std::cmp::min(
-            stake_account.pool_minimum_at_creation,
-            stake_pool.header.minimum_stake_amount,
-        )
+        stake_account.pool_minimum_at_creation,
+        stake_pool.header.minimum_stake_amount,
+    )
     {
         msg!(
             "The minimum stake amount must be > {}",
@@ -286,7 +291,7 @@ pub fn process_stake(
 
     // Save states
     stake_account.save(&mut accounts.stake_account.data.borrow_mut())?;
-    central_state.save(&mut accounts.central_state_account.data.borrow_mut())?;
+    central_state.save(&mut accounts.central_state.data.borrow_mut())?;
 
     Ok(())
 }

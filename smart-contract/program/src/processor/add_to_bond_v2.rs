@@ -2,9 +2,8 @@
 //! This instruction can be used by authorized sellers to create a bond
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
-use solana_program::program_pack::Pack;
 use solana_program::{
-    account_info::{next_account_info, AccountInfo},
+    account_info::{AccountInfo, next_account_info},
     clock::Clock,
     entrypoint::ProgramResult,
     msg,
@@ -13,14 +12,15 @@ use solana_program::{
     pubkey::Pubkey,
     system_program,
 };
+use solana_program::program_pack::Pack;
+use solana_program::sysvar::Sysvar;
 use spl_token::instruction::transfer;
 use spl_token::state::Account;
 
 use crate::error::AccessError;
+use crate::state::{BondAccountV2, CentralState, FEES, FeeSplit, StakePool};
 use crate::state::Tag;
-use crate::state::{BondAccountV2, CentralState, FeeSplit, StakePool, FEES};
 use crate::utils::{assert_valid_fee, check_account_key, check_account_owner, check_signer};
-use solana_program::sysvar::Sysvar;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `create_bond` instruction
@@ -61,13 +61,16 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub central_state: &'a T,
 
+    /// The fee split account
+    pub fee_split_pda: &'a T,
+
     /// The vault of the pool
     #[cons(writable)]
     pub pool_vault: &'a T,
 
     /// The stake fee account
     #[cons(writable)]
-    pub fee_account: &'a T,
+    pub fee_split_ata: &'a T,
 
     #[cons(writable)]
     pub mint: &'a T,
@@ -93,8 +96,9 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             bond_account_v2: next_account_info(accounts_iter)?,
             pool: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
+            fee_split_pda: next_account_info(accounts_iter)?,
             pool_vault: next_account_info(accounts_iter)?,
-            fee_account: next_account_info(accounts_iter)?,
+            fee_split_ata: next_account_info(accounts_iter)?,
             mint: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
             system_program: next_account_info(accounts_iter)?,
@@ -114,6 +118,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
         // Check ownership
         check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
+        check_account_owner(accounts.fee_split_pda, program_id, AccessError::WrongOwner)?;
         check_account_owner(
             accounts.bond_account_v2,
             program_id,
@@ -158,6 +163,7 @@ pub fn process_add_to_bond_v2(
     let mut pool = StakePool::get_checked(accounts.pool, vec![Tag::StakePool])?;
     let mut bond = BondAccountV2::from_account_info(accounts.bond_account_v2)?;
     let mut central_state = CentralState::from_account_info(accounts.central_state)?;
+    let mut fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
 
     check_account_key(
         accounts.mint,
@@ -181,11 +187,7 @@ pub fn process_add_to_bond_v2(
         AccessError::StakePoolVaultMismatch,
     )?;
 
-    let (fee_split_pda, _) = FeeSplit::find_key(program_id);
-    assert_valid_fee(accounts.fee_account, &fee_split_pda)?;
-
-    // +99 to round up
-    let fees = (amount * FEES + 99) / 100;
+    assert_valid_fee(accounts.fee_split_ata, &accounts.fee_split_pda.key)?;
 
     if amount == 0 {
         return Err(AccessError::CannotStakeZero.into());
@@ -257,17 +259,17 @@ pub fn process_add_to_bond_v2(
     let transfer_fees = transfer(
         &spl_token::ID,
         accounts.source_token.key,
-        accounts.fee_account.key,
+        accounts.fee_split_ata.key,
         accounts.from.key,
         &[],
-        fees,
+        fee_split.calculate_fee(amount)?,
     )?;
     invoke(
         &transfer_fees,
         &[
             accounts.spl_token_program.clone(),
             accounts.source_token.clone(),
-            accounts.fee_account.clone(),
+            accounts.fee_split_ata.clone(),
             accounts.from.clone(),
         ],
     )?;

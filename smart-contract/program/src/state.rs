@@ -5,7 +5,7 @@ use std::ops::DerefMut;
 
 use bonfida_utils::BorshSize;
 use borsh::{BorshDeserialize, BorshSerialize};
-use bytemuck::{cast_slice, from_bytes, from_bytes_mut, try_cast_slice_mut, Pod, Zeroable};
+use bytemuck::{cast_slice, from_bytes, from_bytes_mut, Pod, try_cast_slice_mut, Zeroable};
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
 use solana_program::account_info::AccountInfo;
@@ -53,11 +53,8 @@ pub const MIN_DISTRIBUTE_AMOUNT: u64 = 100_000_000;
 /// Maximum delay between last fee split distribution and fee split account setup
 pub const MAX_FEE_SPLIT_SETUP_DELAY: u64 = 5 * 60; // 5 minutes
 
-/// Fees charged on staking instruction in % (i.e FEES = 1 <-> 1% fee charged)
-pub const FEES: u64 = 2;
-
 #[derive(
-    BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive, Debug,
+BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive, Debug,
 )]
 #[repr(u8)]
 #[allow(missing_docs)]
@@ -204,7 +201,7 @@ impl StakePoolHeaped {
 }
 
 #[allow(missing_docs)]
-impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [RewardsTuple]>> StakePool<H, B> {
+impl<H: DerefMut<Target=StakePoolHeader>, B: DerefMut<Target=[RewardsTuple]>> StakePool<H, B> {
     pub fn push_balances_buff(
         &mut self,
         current_offset: u64,
@@ -757,25 +754,31 @@ pub struct FeeSplit {
     /// Tag
     pub tag: Tag,
 
-    /// Last distribution timestamp
-    pub last_distribution_time: i64,
+    /// Fee percentage basis points (i.e 1% = 100)
+    pub fee_basis_points: u8,
 
     /// Bump seed
     pub bump_seed: u8,
 
+    /// Last distribution timestamp
+    pub last_distribution_time: i64,
+
     /// List of fee recipients
     pub recipients: Vec<FeeRecipient>,
 }
+
 #[allow(missing_docs)]
 impl FeeSplit {
     pub const SEED: &'static [u8; 9] = b"fee_split";
+    pub const DEFAULT_FEE_BASIS_POINTS: u8 = 200;
 
     #[allow(missing_docs)]
     pub fn new(bump_seed: u8, recipients: Vec<FeeRecipient>) -> Result<Self, ProgramError> {
         Ok(Self {
             tag: Tag::FeeSplit,
-            last_distribution_time: Clock::get()?.unix_timestamp,
+            fee_basis_points: Self::DEFAULT_FEE_BASIS_POINTS,
             bump_seed,
+            last_distribution_time: Clock::get()?.unix_timestamp,
             recipients,
         })
     }
@@ -802,5 +805,16 @@ impl FeeSplit {
         }
         let result = FeeSplit::deserialize(&mut data)?;
         Ok(result)
+    }
+    #[allow(missing_docs)]
+    pub fn calculate_fee(&self, amount: u64) -> Result<u64, ProgramError> {
+        let fee = amount
+            .checked_mul(self.fee_basis_points as u64)
+            .ok_or(AccessError::Overflow)?
+            .checked_add(9_999)// rounding
+            .ok_or(AccessError::Overflow)?
+            .checked_div(10_000)
+            .ok_or(AccessError::Overflow)?;
+        Ok(fee)
     }
 }
