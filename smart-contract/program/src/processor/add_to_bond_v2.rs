@@ -18,7 +18,7 @@ use spl_token::instruction::transfer;
 use spl_token::state::Account;
 
 use crate::error::AccessError;
-use crate::state::{BondAccountV2, CentralState, FEES, FeeSplit, StakePool};
+use crate::state::{BondAccountV2, CentralState, FeeSplit, StakePool};
 use crate::state::Tag;
 use crate::utils::{assert_valid_fee, check_account_key, check_account_owner, check_signer};
 

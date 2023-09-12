@@ -249,7 +249,7 @@ pub fn process_stake(
         accounts.fee_account.key,
         accounts.owner.key,
         &[],
-        fee_split_pda.calculate_fee(amount)?,
+        fee_split.calculate_fee(amount)?,
     )?;
     invoke(
         &transfer_fees,
