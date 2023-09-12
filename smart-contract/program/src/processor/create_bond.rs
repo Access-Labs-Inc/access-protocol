@@ -98,7 +98,6 @@ pub fn process_create_bond(
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
-    // find out what the current block is
     if !V1_INSTRUCTIONS_ALLOWED {
         return Err(AccessError::DeprecatedInstruction.into());
     }
