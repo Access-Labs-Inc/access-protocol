@@ -10,6 +10,7 @@ use solana_sdk::{signature::Keypair, transaction::Transaction};
 use spl_token::state::Mint;
 
 // Utils
+// todo maybe don't sign everything with an authority here
 pub async fn sign_send_instructions(
     ctx: &mut ProgramTestContext,
     instructions: Vec<Instruction>,
