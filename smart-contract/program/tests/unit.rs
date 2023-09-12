@@ -1,6 +1,7 @@
 use solana_program::pubkey::Pubkey;
 use solana_sdk::signer::{keypair::Keypair, Signer};
 use solana_test_framework::*;
+use solana_test_framework::*;
 
 use access_protocol::state::Tag;
 
@@ -15,12 +16,25 @@ mod basic_functionality {
     async fn change_inflation() {
         // Setup the token + basic accounts
         let mut tr = TestRunner::new(1_000_000).await.unwrap();
-        // Set daily inflation
-        tr.change_inflation(200_000_000_000).await.unwrap();
+
+        let staker = tr.create_ata_account().await.unwrap();
+        tr.mint(&staker.pubkey(), 729_999_999_999).await.unwrap();
+        // Set daily inflation - should fail as it is over 100% per year
+        tr.change_inflation(2_000_000_000).await.unwrap_err();
         // Check the inflation
         let stats = tr.central_state_stats().await.unwrap();
-        assert_eq!(stats.daily_inflation, 200_000_000_000);
+        assert_eq!(stats.daily_inflation, 1_000_000);
+
+        // increase supply
+        tr.mint(&staker.pubkey(), 1).await.unwrap();
+        tr.sleep(1).await.unwrap();
+        // Set daily inflation - should succeed
+        tr.change_inflation(2_000_000_000).await.unwrap();
+        // Check the inflation
+        let stats = tr.central_state_stats().await.unwrap();
+        assert_eq!(stats.daily_inflation, 2_000_000_000);
     }
+
 
     #[tokio::test]
     async fn change_authority() {
@@ -249,6 +263,7 @@ mod pool_settings {
 
 mod bonds {
     use super::*;
+
     #[tokio::test]
     async fn permissionless_claim() {
         // Setup the token + basic accounts

@@ -138,7 +138,7 @@ impl TestRunner {
 
         // Create bond seller
         let bond_seller = Keypair::new();
-        let create_ata_stake_pool_owner_ix = create_associated_token_account(
+        let create_ata_bond_seller_ix = create_associated_token_account(
             &prg_test_ctx.payer.pubkey(),
             &bond_seller.pubkey(),
             &mint,
@@ -146,7 +146,7 @@ impl TestRunner {
         );
         sign_send_instructions(
             &mut prg_test_ctx,
-            vec![create_ata_stake_pool_owner_ix],
+            vec![create_ata_bond_seller_ix],
             vec![],
         )
         .await?;
@@ -1170,6 +1170,7 @@ impl TestRunner {
             change_inflation::Accounts {
                 central_state: &self.central_state,
                 authority: &self.prg_test_ctx.payer.pubkey(),
+                mint: &self.mint,
             },
             change_inflation::Params {
                 daily_inflation: new_inflation,

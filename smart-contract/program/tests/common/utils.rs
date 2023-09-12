@@ -35,7 +35,7 @@ pub fn mint_bootstrap(
         .unwrap_or_else(Pubkey::new_unique);
     let mint_info = Mint {
         mint_authority: Some(*mint_authority).into(),
-        supply: u32::MAX.into(),
+        supply: 0,
         decimals,
         is_initialized: true,
         freeze_authority: None.into(),

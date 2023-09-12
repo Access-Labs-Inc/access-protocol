@@ -1,18 +1,19 @@
 //! Edit metadata
-use crate::{error::AccessError, state::CentralState};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use mpl_token_metadata::{
     instruction::update_metadata_accounts_v2, pda::find_metadata_account, state::DataV2,
 };
 use solana_program::{
-    account_info::{next_account_info, AccountInfo},
+    account_info::{AccountInfo, next_account_info},
     entrypoint::ProgramResult,
     program::invoke_signed,
     program_error::ProgramError,
     pubkey::Pubkey,
 };
 
+use crate::{error::AccessError, state::CentralState};
+use crate::state::V1_INSTRUCTIONS_ALLOWED;
 use crate::utils::{check_account_key, check_account_owner, check_signer};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -87,6 +88,10 @@ pub fn process_edit_metadata(
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
+    if !V1_INSTRUCTIONS_ALLOWED {
+        return Err(AccessError::DeprecatedInstruction.into());
+    }
+
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let central_state = CentralState::from_account_info(accounts.central_state)?;

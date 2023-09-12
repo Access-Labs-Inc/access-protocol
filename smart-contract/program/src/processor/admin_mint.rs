@@ -1,7 +1,8 @@
 //! Allows central state authority to mint ACCESS tokens
+use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
-    account_info::{next_account_info, AccountInfo},
+    account_info::{AccountInfo, next_account_info},
     entrypoint::ProgramResult,
     program::invoke_signed,
     program_error::ProgramError,
@@ -9,9 +10,7 @@ use solana_program::{
 };
 
 use crate::error::AccessError;
-use crate::state::CentralState;
-use bonfida_utils::{BorshSize, InstructionsAccount};
-
+use crate::state::{CentralState, V1_INSTRUCTIONS_ALLOWED};
 use crate::utils::{check_account_key, check_account_owner, check_signer};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -80,6 +79,10 @@ pub fn process_admin_mint(
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
+    if !V1_INSTRUCTIONS_ALLOWED {
+        return Err(AccessError::DeprecatedInstruction.into());
+    }
+
     let accounts = Accounts::parse(accounts, program_id)?;
     let central_state = CentralState::from_account_info(accounts.central_state)?;
 

@@ -1,16 +1,17 @@
 //! Activate a stake pool
-use crate::error::AccessError;
-use crate::state::{CentralState, StakePool, Tag};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
-    account_info::{next_account_info, AccountInfo},
+    account_info::{AccountInfo, next_account_info},
     entrypoint::ProgramResult,
     msg,
     program_error::ProgramError,
     pubkey::Pubkey,
 };
 
+use crate::error::AccessError;
+use crate::state::{CentralState, StakePool, Tag};
+use crate::state::V1_INSTRUCTIONS_ALLOWED;
 use crate::utils::{check_account_key, check_account_owner, check_signer};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -62,13 +63,16 @@ pub fn process_activate_stake_pool(program_id: &Pubkey, accounts: &[AccountInfo]
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::InactiveStakePool])?;
     let central_state = CentralState::from_account_info(accounts.central_state)?;
 
-    check_account_key(
-        accounts.authority,
-        &central_state.authority,
-        AccessError::WrongCentralStateAuthority,
-    )?;
-    if stake_pool.header.tag != Tag::InactiveStakePool as u8 {
-        return Err(AccessError::ActiveStakePoolNotAllowed.into());
+    // in v2 this is permissionless
+    if !V1_INSTRUCTIONS_ALLOWED {
+        check_account_key(
+            accounts.authority,
+            &central_state.authority,
+            AccessError::WrongCentralStateAuthority,
+        )?;
+        if stake_pool.header.tag != Tag::InactiveStakePool as u8 {
+            return Err(AccessError::ActiveStakePoolNotAllowed.into());
+        }
     }
 
     stake_pool.header.tag = Tag::StakePool as u8;
