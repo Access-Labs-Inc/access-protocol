@@ -20,6 +20,7 @@ use access_protocol::{
 use mpl_token_metadata::instruction::update_metadata_accounts;
 use mpl_token_metadata::{instruction::create_metadata_accounts_v3, pda::find_metadata_account};
 use spl_token::{instruction::set_authority, instruction::AuthorityType};
+use access_protocol::state::FeeSplit;
 
 #[tokio::test]
 async fn functional_10s() {
@@ -41,6 +42,8 @@ async fn functional_10s() {
         Pubkey::find_program_address(&[&program_id.to_bytes()], &program_id);
 
     let authority = Keypair::new();
+
+    let (fee_split_key, _) = FeeSplit::find_key(&program_id);
 
     //
     // Create mint
@@ -436,7 +439,6 @@ async fn functional_10s() {
     // Stake
     //
     let token_amount = 10_000_000;
-
     let stake_ix = stake(
         program_id,
         stake::Accounts {
@@ -446,9 +448,10 @@ async fn functional_10s() {
             source_token: &staker_token_acc,
             spl_token_program: &spl_token::ID,
             vault: &pool_vault,
-            central_state_account: &central_state,
+            central_state: &central_state,
             fee_account: &authority_ata,
             bond_account: None,
+            fee_split_pda: &fee_split_key,
         },
         stake::Params {
             amount: token_amount,
@@ -639,6 +642,7 @@ async fn functional_10s() {
         change_inflation::Accounts {
             central_state: &central_state,
             authority: &prg_test_ctx.payer.pubkey(),
+            mint: &mint,
         },
         change_inflation::Params {
             daily_inflation: new_inflation,

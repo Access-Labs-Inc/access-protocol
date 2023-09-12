@@ -2,7 +2,6 @@ use solana_program::clock::SECONDS_PER_DAY;
 use solana_sdk::signer::Signer;
 
 use access_protocol::state::Tag::BondAccountV2;
-use access_protocol::state::FEES;
 
 use crate::common::test_runner::TestRunner;
 
@@ -65,7 +64,7 @@ async fn signed_claim() {
         let staker_stats = tr.staker_stats(bond_creator.pubkey()).await.unwrap();
         assert_eq!(
             staker_stats.balance,
-            100_000 - bond_amount - bond_amount * FEES / 100
+            100_000 - bond_amount - bond_amount * tr.get_protocol_fees().await / 100
         );
         let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
         assert_eq!(pool_stats.header.total_staked, bond_amount);
@@ -103,7 +102,7 @@ async fn signed_claim() {
         let staker_stats = tr.staker_stats(bond_creator.pubkey()).await.unwrap();
         assert_eq!(
             staker_stats.balance,
-            100_000 - (bond_amount + add_amount) - (bond_amount + add_amount) * FEES / 100
+            100_000 - (bond_amount + add_amount) - (bond_amount + add_amount) * tr.get_protocol_fees().await / 100
         );
         let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
         assert_eq!(pool_stats.header.total_staked, (bond_amount + add_amount));
@@ -169,7 +168,7 @@ async fn signed_claim() {
         let creator_stats = tr.staker_stats(bond_creator.pubkey()).await.unwrap();
         assert_eq!(
             creator_stats.balance,
-            100_000 - (bond_amount + add_amount) - (bond_amount + add_amount) * FEES / 100
+            100_000 - (bond_amount + add_amount) - (bond_amount + add_amount) * tr.get_protocol_fees().await / 100
         );
         let recipient_stats = tr.staker_stats(bond_recipient.pubkey()).await.unwrap();
         assert_eq!(
@@ -236,7 +235,7 @@ async fn signed_claim() {
         let staker_stats = tr.staker_stats(bond_creator.pubkey()).await.unwrap();
         assert_eq!(
             staker_stats.balance,
-            100_000 - bond_amount - bond_amount * FEES / 100
+            100_000 - bond_amount - bond_amount * tr.get_protocol_fees().await / 100
         );
         let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
         assert_eq!(pool_stats.header.total_staked, bond_amount);
@@ -270,7 +269,7 @@ async fn signed_claim() {
         let staker_stats = tr.staker_stats(bond_creator.pubkey()).await.unwrap();
         assert_eq!(
             staker_stats.balance,
-            100_000 - (bond_amount + add_amount) - (bond_amount + add_amount) * FEES / 100
+            100_000 - (bond_amount + add_amount) - (bond_amount + add_amount) * tr.get_protocol_fees().await / 100
         );
         let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
         assert_eq!(pool_stats.header.total_staked, (bond_amount + add_amount));

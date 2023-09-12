@@ -1,10 +1,11 @@
-use crate::instruction::ProgramInstruction;
 use borsh::BorshDeserialize;
 use num_traits::FromPrimitive;
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
     pubkey::Pubkey,
 };
+
+use crate::instruction::ProgramInstruction;
 
 pub mod activate_stake_pool;
 pub mod add_to_bond_v2;
@@ -35,6 +36,7 @@ pub mod stake;
 pub mod unlock_bond_tokens;
 pub mod unlock_bond_v2;
 pub mod unstake;
+pub mod admin_set_protocol_fee;
 
 pub struct Processor {}
 
@@ -223,6 +225,12 @@ impl Processor {
                 let params = distribute_fees::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 distribute_fees::process_distribute_fees(program_id, accounts, params)?;
+            }
+            ProgramInstruction::AdminSetProtocolFee => {
+                msg!("Instruction: Admin set protocol fee");
+                let params = admin_set_protocol_fee::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                admin_set_protocol_fee::process_admin_set_protocol_fee(program_id, accounts, params)?;
             }
         }
 
