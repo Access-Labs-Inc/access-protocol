@@ -65,7 +65,7 @@ pub struct CentralStateStats {
 pub struct FeeSplitStats {
     pub balance: u64,
     pub recipients: Vec<FeeRecipient>,
-    pub fee_basis_points: u8,
+    pub fee_basis_points: u16,
 }
 
 impl TestRunner {
