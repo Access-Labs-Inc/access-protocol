@@ -65,6 +65,7 @@ pub struct CentralStateStats {
 pub struct FeeSplitStats {
     pub balance: u64,
     pub recipients: Vec<FeeRecipient>,
+    pub fee_basis_points: u8,
 }
 
 impl TestRunner {
@@ -397,7 +398,8 @@ impl TestRunner {
                 source_token: &staker_token_acc,
                 spl_token_program: &spl_token::ID,
                 vault: &pool_vault,
-                central_state_account: &self.central_state,
+                central_state: &self.central_state,
+                fee_split_pda:  &fee_split_key,
                 fee_account: &fee_split_ata,
                 bond_account: staker_bond,
             },
@@ -765,6 +767,7 @@ impl TestRunner {
             .amount;
         Ok(FeeSplitStats {
             recipients: fs.recipients,
+            fee_basis_points: fs.fee_basis_points,
             balance,
         })
     }
@@ -933,6 +936,7 @@ impl TestRunner {
     ) -> Result<(), BanksClientError> {
         let pool_key = self.get_pool_pda(pool_owner);
         let (bond_key, _) = BondAccountV2::create_key(to, &pool_key, unlock_date, &self.program_id);
+        let (fee_split_key, _) = FeeSplit::find_key(&self.program_id);
 
         let create_bond_v2_ix = access_protocol::instruction::create_bond_v2(
             self.program_id,
@@ -944,6 +948,7 @@ impl TestRunner {
                 bond_account_v2: &bond_key,
                 pool: &pool_key,
                 central_state: &self.central_state,
+                fee_split_pda: &fee_split_key,
                 pool_vault: &get_associated_token_address(&pool_key, &self.mint),
                 fee_account: &self.authority_ata,
                 mint: &self.mint,
@@ -969,6 +974,7 @@ impl TestRunner {
     ) -> Result<(), BanksClientError> {
         let pool_key = self.get_pool_pda(pool_owner);
         let (bond_key, _) = BondAccountV2::create_key(to, &pool_key, unlock_date, &self.program_id);
+        let (fee_split_key, _) = FeeSplit::find_key(&self.program_id);
 
         let add_to_bond_v2_ix = access_protocol::instruction::add_to_bond_v2(
             self.program_id,
@@ -980,8 +986,9 @@ impl TestRunner {
                 bond_account_v2: &bond_key,
                 pool: &pool_key,
                 central_state: &self.central_state,
+                fee_split_pda: &fee_split_key,
                 pool_vault: &get_associated_token_address(&pool_key, &self.mint),
-                fee_account: &self.authority_ata,
+                fee_split_ata: &self.authority_ata,
                 mint: &self.mint,
                 spl_token_program: &spl_token::ID,
                 system_program: &system_program::ID,
@@ -1214,5 +1221,14 @@ impl TestRunner {
 
     pub fn get_ata(&mut self, owner: &Pubkey) -> Pubkey {
         get_associated_token_address(owner, &self.mint)
+    }
+
+    pub async fn get_protocol_fees(&mut self) -> f64 {
+        let res = self.fee_split_stats().await;
+        if let Ok(fs) = res {
+            fs.fee_basis_points as f64 / 100.0
+        } else {
+            2.0
+        }
     }
 }
