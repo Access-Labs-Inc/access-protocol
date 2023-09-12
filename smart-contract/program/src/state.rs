@@ -755,7 +755,7 @@ pub struct FeeSplit {
     pub tag: Tag,
 
     /// Fee percentage basis points (i.e 1% = 100)
-    pub fee_basis_points: u8,
+    pub fee_basis_points: u16,
 
     /// Bump seed
     pub bump_seed: u8,
@@ -770,7 +770,7 @@ pub struct FeeSplit {
 #[allow(missing_docs)]
 impl FeeSplit {
     pub const SEED: &'static [u8; 9] = b"fee_split";
-    pub const DEFAULT_FEE_BASIS_POINTS: u8 = 200;
+    pub const DEFAULT_FEE_BASIS_POINTS: u16 = 200;
 
     #[allow(missing_docs)]
     pub fn new(bump_seed: u8, recipients: Vec<FeeRecipient>) -> Result<Self, ProgramError> {
