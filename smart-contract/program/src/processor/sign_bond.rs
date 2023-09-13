@@ -56,6 +56,10 @@ pub fn process_sign_bond(
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
+    if !V1_INSTRUCTIONS_ALLOWED {
+        return Err(AccessError::DeprecatedInstruction.into());
+    }
+
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let mut bond = BondAccount::from_account_info(accounts.bond_account, true)?;

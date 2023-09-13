@@ -99,6 +99,10 @@ pub fn process_claim_bond(
     accounts: &[AccountInfo],
     _params: Params,
 ) -> ProgramResult {
+    if !V1_INSTRUCTIONS_ALLOWED {
+        return Err(AccessError::DeprecatedInstruction.into());
+    }
+
     let accounts = Accounts::parse(accounts, program_id)?;
     let mut bond = BondAccount::from_account_info(accounts.bond_account, true)?;
     let mut central_state = CentralState::from_account_info(accounts.central_state)?;

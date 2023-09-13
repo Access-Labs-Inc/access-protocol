@@ -55,6 +55,10 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 }
 
 pub fn process_close_stake_account(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
+    if !V1_INSTRUCTIONS_ALLOWED {
+        return Err(AccessError::DeprecatedInstruction.into());
+    }
+
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
