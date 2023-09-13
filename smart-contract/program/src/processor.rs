@@ -37,6 +37,7 @@ pub mod unlock_bond_tokens;
 pub mod unlock_bond_v2;
 pub mod unstake;
 pub mod admin_set_protocol_fee;
+pub mod migrate_central_state_v2;
 
 pub struct Processor {}
 
@@ -231,6 +232,14 @@ impl Processor {
                 let params = admin_set_protocol_fee::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 admin_set_protocol_fee::process_admin_set_protocol_fee(program_id, accounts, params)?;
+            }
+            ProgramInstruction::MigrateCentralStateV2 => {
+                msg!("Instruction: Migrate central state V2");
+                let params = migrate_central_state_v2::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                migrate_central_state_v2::process_migrate_central_state_v2(
+                    program_id, accounts, params,
+                )?;
             }
         }
 

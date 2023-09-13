@@ -258,6 +258,8 @@ pub enum ProgramInstruction {
     DistributeFees,
     // todo docs
     AdminSetProtocolFee,
+    // todo docs
+    MigrateCentralStateV2,
 }
 
 #[allow(missing_docs)]
@@ -607,6 +609,19 @@ pub fn admin_set_protocol_fee(
     accounts.get_instruction(
         program_id,
         ProgramInstruction::AdminSetProtocolFee as u8,
+        params,
+    )
+}
+
+#[allow(missing_docs)]
+pub fn migrate_central_state_v2(
+    program_id: Pubkey,
+    accounts: migrate_central_state_v2::Accounts<Pubkey>,
+    params: migrate_central_state_v2::Params,
+) -> Instruction {
+    accounts.get_instruction(
+        program_id,
+        ProgramInstruction::MigrateCentralStateV2 as u8,
         params,
     )
 }

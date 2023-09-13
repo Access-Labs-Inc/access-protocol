@@ -481,7 +481,8 @@ impl CentralState {
     }
 }
 
-
+#[derive(BorshSerialize, BorshDeserialize, BorshSize)]
+#[allow(missing_docs)]
 pub struct CentralStateV2 {
     /// Tag
     pub tag: Tag,
@@ -538,6 +539,21 @@ impl CentralStateV2 {
             last_snapshot_offset: 0,
             ix_gate: u128::MAX, // all instructions enabled
         })
+    }
+    #[allow(missing_docs)]
+    pub fn from_central_state(central_state: CentralState) -> Self {
+        Self {
+            tag: Tag::CentralStateV2,
+            signer_nonce: central_state.signer_nonce,
+            daily_inflation: central_state.daily_inflation,
+            token_mint: central_state.token_mint,
+            authority: central_state.authority,
+            creation_time: central_state.creation_time,
+            total_staked: central_state.total_staked,
+            total_staked_snapshot: central_state.total_staked_snapshot,
+            last_snapshot_offset: central_state.last_snapshot_offset,
+            ix_gate: u128::MAX, // all instructions enabled
+        }
     }
     #[allow(missing_docs)]
     pub fn create_key(signer_nonce: &u8, program_id: &Pubkey) -> Result<Pubkey, ProgramError> {
