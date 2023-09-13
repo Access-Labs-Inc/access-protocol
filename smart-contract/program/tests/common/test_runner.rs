@@ -18,10 +18,10 @@ use access_protocol::{
         create_central_state, create_stake_account, create_stake_pool, stake, unstake,
     },
 };
-use access_protocol::instruction::{admin_setup_fee_split, change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, admin_set_protocol_fee, claim_bond, claim_bond_rewards, create_bond, unlock_bond_tokens, unlock_bond_v2, migrate_central_state_v2};
+use access_protocol::instruction::{admin_setup_fee_split, change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, admin_set_protocol_fee, claim_bond, claim_bond_rewards, create_bond, unlock_bond_tokens, unlock_bond_v2, migrate_central_state_v2, admin_program_freeze};
 use access_protocol::state::{
     BondAccount, BondAccountV2, CentralState, FeeRecipient, FeeSplit, StakeAccount,
-    StakePoolHeader, Tag,
+    StakePoolHeader, Tag, CentralStateV2
 };
 
 use crate::common::utils::{mint_bootstrap, sign_send_instructions};
@@ -750,7 +750,7 @@ impl TestRunner {
         Ok(bond_account)
     }
 
-    pub async fn central_state_stats(&mut self) -> Result<CentralState, Box<dyn Error>> {
+    pub async fn central_state_stats(&mut self) -> Result<CentralStateV2, Box<dyn Error>> {
         let acc = self
             .prg_test_ctx
             .banks_client
@@ -758,8 +758,20 @@ impl TestRunner {
             .await
             .unwrap()
             .unwrap();
-        let cs = CentralState::deserialize(&mut &acc.data[..])?;
+        let cs = CentralStateV2::deserialize(&mut &acc.data[..])?;
         Ok(cs)
+    }
+    
+    pub async fn freeze_program(&mut self, ix_gate: u128) -> Result<(), BanksClientError> {
+        let freeze_ix = admin_program_freeze(
+            self.program_id,
+            admin_program_freeze::Accounts {
+                authority: &self.prg_test_ctx.payer.pubkey(),
+                central_state: &self.central_state,
+            },
+            admin_program_freeze::Params { ix_gate: ix_gate },
+        );
+        sign_send_instructions(&mut self.prg_test_ctx, vec![freeze_ix], vec![]).await
     }
 
     pub async fn fee_split_stats(&mut self) -> Result<FeeSplitStats, Box<dyn Error>> {
