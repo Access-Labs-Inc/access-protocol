@@ -13,7 +13,7 @@ use crate::utils::{assert_authorized_seller, check_account_owner, check_signer};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 
 use crate::error::AccessError;
-use crate::state::{BondAccount, BOND_SIGNER_THRESHOLD};
+use crate::state::{BondAccount, BOND_SIGNER_THRESHOLD, V1_INSTRUCTIONS_ALLOWED};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `sign_bond` instruction

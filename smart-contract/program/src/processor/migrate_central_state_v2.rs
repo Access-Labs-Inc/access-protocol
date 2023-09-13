@@ -1,19 +1,20 @@
-//! Create central state
-use std::alloc::realloc;
+use solana_program::sysvar::Sysvar;
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
-    account_info::{next_account_info, AccountInfo},
+    account_info::{AccountInfo, next_account_info},
     entrypoint::ProgramResult,
-    msg,
+    program::invoke,
     program_error::ProgramError,
     pubkey::Pubkey,
+    rent::Rent,
+    system_instruction,
     system_program,
+    msg,
 };
 
+use crate::error::AccessError;
 use crate::state::{CentralState, CentralStateV2};
-use crate::{cpi::Cpi, error::AccessError};
-
 use crate::utils::{check_account_key, check_account_owner};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -36,7 +37,10 @@ pub struct Accounts<'a, T> {
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
-    pub fn parse(accounts: &'a [AccountInfo<'b>]) -> Result<Self, ProgramError> {
+    pub fn parse(
+        accounts: &'a [AccountInfo<'b>],
+        program_id: &Pubkey,
+    ) -> Result<Self, ProgramError> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
             central_state: next_account_info(accounts_iter)?,
@@ -67,12 +71,31 @@ pub fn process_migrate_central_state_v2(
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
-    let accounts = Accounts::parse(accounts)?;
+    let accounts = Accounts::parse(accounts, program_id)?;
 
-    let mut central_state = CentralState::from_account_info(accounts.central_state)?;
+    let central_state = CentralState::from_account_info(accounts.central_state)?;
+    msg!("Central state v1: {:?}", central_state);
 
-    let state_v2 = CentralStateV2::from_central_state(central_state)?;
-    accounts.central_state.realloc(state_v2.borsh_size(), false)?;
+    // Migrate data
+    let state_v2 = CentralStateV2::from_central_state(central_state);
+
+    // Resize account
+    let new_minimum_balance = Rent::get()?.minimum_balance(state_v2.borsh_len());
+    let lamports_diff = new_minimum_balance
+        .checked_sub(accounts.central_state.lamports())
+        .ok_or(AccessError::Overflow)?;
+
+    invoke(
+        &system_instruction::transfer(accounts.fee_payer.key, accounts.central_state.key, lamports_diff),
+        &[
+            accounts.fee_payer.clone(),
+            accounts.central_state.clone(),
+            accounts.system_program.clone(),
+        ],
+    )?;
+    accounts.central_state.realloc(state_v2.borsh_len(), false)?;
+
+    // Save new data
     state_v2.save(&mut accounts.central_state.data.borrow_mut())?;
 
     Ok(())

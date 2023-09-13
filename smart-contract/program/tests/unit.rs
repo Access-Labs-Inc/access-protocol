@@ -13,6 +13,16 @@ mod basic_functionality {
     use super::*;
 
     #[tokio::test]
+    async fn migrate_v2() {
+        // Setup the token + basic accounts
+        let mut tr = TestRunner::new(1_000_000).await.unwrap();
+        tr.migrate_v2().await.unwrap();
+        // Migration should be possible only once
+        tr.sleep(1).await.unwrap();
+        tr.migrate_v2().await.unwrap_err();
+    }
+
+    #[tokio::test]
     async fn change_inflation() {
         // Setup the token + basic accounts
         let mut tr = TestRunner::new(1_000_000).await.unwrap();

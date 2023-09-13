@@ -2,6 +2,7 @@ use std::error::Error;
 
 use borsh::BorshDeserialize;
 use solana_program::{pubkey::Pubkey, system_program};
+use solana_program::native_token::LAMPORTS_PER_SOL;
 use solana_program_test::{processor, ProgramTest};
 use solana_sdk::signer::{keypair::Keypair, Signer};
 use solana_sdk::sysvar::clock;
@@ -17,11 +18,7 @@ use access_protocol::{
         create_central_state, create_stake_account, create_stake_pool, stake, unstake,
     },
 };
-use access_protocol::instruction::{
-    admin_setup_fee_split, change_central_state_authority, change_inflation, change_pool_minimum,
-    change_pool_multiplier, admin_set_protocol_fee, claim_bond, claim_bond_rewards, create_bond,
-    unlock_bond_tokens, unlock_bond_v2,
-};
+use access_protocol::instruction::{admin_setup_fee_split, change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, admin_set_protocol_fee, claim_bond, claim_bond_rewards, create_bond, unlock_bond_tokens, unlock_bond_v2, migrate_central_state_v2};
 use access_protocol::state::{
     BondAccount, BondAccountV2, CentralState, FeeRecipient, FeeSplit, StakeAccount,
     StakePoolHeader, Tag,
@@ -99,6 +96,7 @@ impl TestRunner {
             6,
             &mut program_test,
             &central_state,
+            LAMPORTS_PER_SOL
         );
 
         ////
@@ -162,6 +160,19 @@ impl TestRunner {
             bond_accounts: std::collections::HashMap::new(),
             bond_seller,
         })
+    }
+
+    pub async fn migrate_v2(&mut self) -> Result<(), BanksClientError> {
+        let migrate_ix = migrate_central_state_v2(
+            self.program_id,
+            migrate_central_state_v2::Accounts {
+                fee_payer: &self.prg_test_ctx.payer.pubkey(),
+                central_state: &self.central_state,
+                system_program: &system_program::ID,
+            },
+            migrate_central_state_v2::Params {},
+        );
+        sign_send_instructions(&mut self.prg_test_ctx, vec![migrate_ix], vec![]).await
     }
 
     pub async fn create_ata_account(&mut self) -> Result<Keypair, BanksClientError> {

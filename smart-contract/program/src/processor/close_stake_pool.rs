@@ -17,7 +17,7 @@ use solana_program::{
 use spl_token::state::Account;
 
 use crate::error::AccessError;
-use crate::state::StakePool;
+use crate::state::{StakePool, V1_INSTRUCTIONS_ALLOWED};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `close_stake_pool` instruction

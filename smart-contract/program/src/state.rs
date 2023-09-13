@@ -396,7 +396,7 @@ impl StakeAccount {
     }
 }
 
-#[derive(BorshSerialize, BorshDeserialize, BorshSize)]
+#[derive(BorshSerialize, BorshDeserialize, BorshSize, Debug)]
 #[allow(missing_docs)]
 pub struct CentralState {
     /// Tag
@@ -481,7 +481,7 @@ impl CentralState {
     }
 }
 
-#[derive(BorshSerialize, BorshDeserialize, BorshSize)]
+#[derive(BorshSerialize, BorshDeserialize, BorshSize, Debug)]
 #[allow(missing_docs)]
 pub struct CentralStateV2 {
     /// Tag
@@ -586,10 +586,10 @@ impl CentralStateV2 {
     }
 
     #[allow(missing_docs)]
-    pub fn assert_instruction_allowed(ix: ProgramInstruction) -> ProgramResult {
-        let ix_num = ix as usize;
-        let ix_mask = ix_mask.checked_shl(ix_num as u32).ok_or(AccessError::Overflow)?;
-        if ix_mask & self::ix_gate == 0 {
+    pub fn assert_instruction_allowed(&self, ix: ProgramInstruction) -> ProgramResult {
+        let ix_num = ix as u32;
+        let ix_mask = 1_u128.checked_shl(ix_num).ok_or(AccessError::Overflow)?;
+        if ix_mask & self.ix_gate == 0 {
             return Err(AccessError::FrozenInstruction.into());
         }
         Ok(())

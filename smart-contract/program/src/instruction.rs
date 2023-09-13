@@ -9,7 +9,7 @@ pub use crate::processor::{
     change_pool_multiplier, claim_bond, claim_bond_rewards, claim_bond_v2_rewards, claim_pool_rewards,
     claim_rewards, close_stake_account, close_stake_pool, crank, create_bond,
     create_bond_v2, create_central_state, create_stake_account, create_stake_pool, distribute_fees,
-    edit_metadata, sign_bond, stake, unlock_bond_tokens, unlock_bond_v2, unstake,
+    edit_metadata, sign_bond, stake, unlock_bond_tokens, unlock_bond_v2, unstake, migrate_central_state_v2,
 };
 
 #[allow(missing_docs)]

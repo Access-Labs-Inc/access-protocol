@@ -15,7 +15,7 @@ use bonfida_utils::BorshSize;
 use bonfida_utils::InstructionsAccount;
 
 use crate::error::AccessError;
-use crate::state::StakeAccount;
+use crate::state::{StakeAccount, V1_INSTRUCTIONS_ALLOWED};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `close_stake_account` instruction

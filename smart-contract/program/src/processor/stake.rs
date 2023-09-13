@@ -148,7 +148,7 @@ pub fn process_stake(
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
     let mut central_state = CentralState::from_account_info(accounts.central_state)?;
-    let mut fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
+    let fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
 
     let source_token_acc = Account::unpack(&accounts.source_token.data.borrow())?;
     if source_token_acc.mint != central_state.token_mint {

@@ -10,7 +10,7 @@ use solana_program::{
     pubkey::Pubkey,
 };
 
-use crate::state::{BondAccount, CentralState, StakePool, BOND_SIGNER_THRESHOLD};
+use crate::state::{BondAccount, CentralState, StakePool, BOND_SIGNER_THRESHOLD, V1_INSTRUCTIONS_ALLOWED};
 use crate::{error::AccessError, state::Tag};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use spl_token;

@@ -163,7 +163,7 @@ pub fn process_add_to_bond_v2(
     let mut pool = StakePool::get_checked(accounts.pool, vec![Tag::StakePool])?;
     let mut bond = BondAccountV2::from_account_info(accounts.bond_account_v2)?;
     let mut central_state = CentralState::from_account_info(accounts.central_state)?;
-    let mut fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
+    let fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
 
     check_account_key(
         accounts.mint,
@@ -187,7 +187,7 @@ pub fn process_add_to_bond_v2(
         AccessError::StakePoolVaultMismatch,
     )?;
 
-    assert_valid_fee(accounts.fee_split_ata, &accounts.fee_split_pda.key)?;
+    assert_valid_fee(accounts.fee_split_ata, accounts.fee_split_pda.key)?;
 
     if amount == 0 {
         return Err(AccessError::CannotStakeZero.into());

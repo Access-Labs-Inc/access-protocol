@@ -156,7 +156,7 @@ pub fn process_create_bond_v2(
 
     let mut pool = StakePool::get_checked(accounts.pool, vec![Tag::StakePool])?;
     let mut central_state = CentralState::from_account_info(accounts.central_state)?;
-    let mut fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
+    let fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
 
     let (derived_key, nonce) =
         BondAccountV2::create_key(accounts.to.key, accounts.pool.key, unlock_date, program_id);

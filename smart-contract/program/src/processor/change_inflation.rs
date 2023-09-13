@@ -70,7 +70,7 @@ pub fn process_change_inflation(
         AccessError::WrongMint,
     )?;
 
-    let token_mint = spl_token::state::Mint::unpack_from_slice(&*accounts.mint.data.clone().borrow_mut())?;
+    let token_mint = spl_token::state::Mint::unpack_from_slice(&accounts.mint.data.clone().borrow_mut())?;
 
     let supply = token_mint.supply;
     let annual_inflation = params.daily_inflation * 365;
