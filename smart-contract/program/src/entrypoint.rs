@@ -191,6 +191,9 @@ impl PrintProgramError for AccessError {
             AccessError::DelayTooLong => {
                 msg!("Delay too long")
             }
+            AccessError::FrozenInstruction => {
+                msg!("Frozen instruction")
+            }
         }
     }
 }

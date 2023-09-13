@@ -18,6 +18,7 @@ use solana_program::sysvar::Sysvar;
 use spl_associated_token_account::get_associated_token_address;
 
 use crate::error::AccessError;
+use crate::instruction::ProgramInstruction;
 
 /// ACCESS token mint
 pub const ACCESS_MINT: Pubkey =
@@ -75,6 +76,7 @@ pub enum Tag {
     FrozenStakeAccount,
     FrozenBondAccount,
     FrozenBondAccountV2, // todo use or delete
+    CentralStateV2,
 }
 
 impl Tag {
@@ -427,42 +429,6 @@ pub struct CentralState {
     pub last_snapshot_offset: u64,
 }
 
-pub struct CentralStateV2 {
-    /// Tag
-    pub tag: Tag,
-
-    /// Central state nonce
-    pub signer_nonce: u8,
-
-    /// Daily inflation in token amount, inflation is paid from
-    /// the reserve owned by the central state
-    pub daily_inflation: u64,
-
-    /// Mint of the token being emitted
-    pub token_mint: Pubkey,
-
-    /// Authority
-    /// The public key that can change the inflation
-    pub authority: Pubkey,
-
-    /// Creation timestamp
-    pub creation_time: i64,
-
-    /// Total amount of staked tokens
-    pub total_staked: u64,
-
-    /// The daily total_staked snapshot to calculate correctly calculate the pool rewards
-    pub total_staked_snapshot: u64,
-
-    /// The offset of the total_staked_snapshot from the creation_time in days
-    pub last_snapshot_offset: u64,
-
-    /// Map of ixs and their state of gating
-    /// 1 is chosen as enabled, 0 is disabled
-    pub ix_gate: u128,
-}
-
-
 impl CentralState {
     #[allow(missing_docs)]
     pub fn new(
@@ -512,6 +478,105 @@ impl CentralState {
     pub fn get_current_offset(&self) -> Result<u64, ProgramError> {
         let current_time = Clock::get()?.unix_timestamp as u64;
         Ok((current_time - self.creation_time as u64) / SECONDS_IN_DAY)
+    }
+}
+
+
+pub struct CentralStateV2 {
+    /// Tag
+    pub tag: Tag,
+
+    /// Central state nonce
+    pub signer_nonce: u8,
+
+    /// Daily inflation in token amount, inflation is paid from
+    /// the reserve owned by the central state
+    pub daily_inflation: u64,
+
+    /// Mint of the token being emitted
+    pub token_mint: Pubkey,
+
+    /// Authority
+    /// The public key that can change the inflation
+    pub authority: Pubkey,
+
+    /// Creation timestamp
+    pub creation_time: i64,
+
+    /// Total amount of staked tokens
+    pub total_staked: u64,
+
+    /// The daily total_staked snapshot to calculate correctly calculate the pool rewards
+    pub total_staked_snapshot: u64,
+
+    /// The offset of the total_staked_snapshot from the creation_time in days
+    pub last_snapshot_offset: u64,
+
+    /// Map of ixs and their state of gating
+    /// 1 is chosen as enabled, 0 is disabled
+    pub ix_gate: u128,
+}
+
+impl CentralStateV2 {
+    #[allow(missing_docs)]
+    pub fn new(
+        signer_nonce: u8,
+        daily_inflation: u64,
+        token_mint: Pubkey,
+        authority: Pubkey,
+        total_staked: u64,
+    ) -> Result<Self, ProgramError> {
+        Ok(Self {
+            tag: Tag::CentralStateV2,
+            signer_nonce,
+            daily_inflation,
+            token_mint,
+            authority,
+            creation_time: Clock::get()?.unix_timestamp,
+            total_staked,
+            total_staked_snapshot: 0,
+            last_snapshot_offset: 0,
+            ix_gate: u128::MAX, // all instructions enabled
+        })
+    }
+    #[allow(missing_docs)]
+    pub fn create_key(signer_nonce: &u8, program_id: &Pubkey) -> Result<Pubkey, ProgramError> {
+        let signer_seeds: &[&[u8]] = &[&program_id.to_bytes(), &[*signer_nonce]];
+        Pubkey::create_program_address(signer_seeds, program_id)
+            .map_err(|_| ProgramError::InvalidSeeds)
+    }
+    #[allow(missing_docs)]
+    pub fn find_key(program_id: &Pubkey) -> (Pubkey, u8) {
+        Pubkey::find_program_address(&[&program_id.to_bytes()], program_id)
+    }
+    #[allow(missing_docs)]
+    pub fn save(&self, mut dst: &mut [u8]) -> ProgramResult {
+        self.serialize(&mut dst)
+            .map_err(|_| ProgramError::InvalidAccountData)
+    }
+    #[allow(missing_docs)]
+    pub fn from_account_info(a: &AccountInfo) -> Result<CentralStateV2, ProgramError> {
+        let mut data = &a.data.borrow() as &[u8];
+        if data[0] != Tag::CentralStateV2 as u8 && data[0] != Tag::Uninitialized as u8 {
+            return Err(AccessError::DataTypeMismatch.into());
+        }
+        let result = CentralStateV2::deserialize(&mut data)?;
+        Ok(result)
+    }
+    #[allow(missing_docs)]
+    pub fn get_current_offset(&self) -> Result<u64, ProgramError> {
+        let current_time = Clock::get()?.unix_timestamp as u64;
+        Ok((current_time - self.creation_time as u64) / SECONDS_IN_DAY)
+    }
+
+    #[allow(missing_docs)]
+    pub fn assert_instruction_allowed(ix: ProgramInstruction) -> ProgramResult {
+        let ix_num = ix as usize;
+        let ix_mask = ix_mask.checked_shl(ix_num as u32).ok_or(AccessError::Overflow)?;
+        if ix_mask & self::ix_gate == 0 {
+            return Err(AccessError::FrozenInstruction.into());
+        }
+        Ok(())
     }
 }
 
