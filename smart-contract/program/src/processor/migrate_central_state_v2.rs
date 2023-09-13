@@ -69,7 +69,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 pub fn process_migrate_central_state_v2(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
-    params: Params,
+    _params: Params,
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 

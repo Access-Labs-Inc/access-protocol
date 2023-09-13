@@ -19,6 +19,7 @@ use access_protocol::{
 };
 use mpl_token_metadata::instruction::update_metadata_accounts;
 use mpl_token_metadata::{instruction::create_metadata_accounts_v3, pda::find_metadata_account};
+use solana_program::native_token::LAMPORTS_PER_SOL;
 use spl_token::{instruction::set_authority, instruction::AuthorityType};
 use access_protocol::state::FeeSplit;
 
@@ -48,7 +49,7 @@ async fn functional_10s() {
     //
     // Create mint
     //
-    let (mint, _) = mint_bootstrap(None, 6, &mut program_test, &authority.pubkey());
+    let (mint, _) = mint_bootstrap(None, 6, &mut program_test, &authority.pubkey(), LAMPORTS_PER_SOL);
 
     ////
     // Create test context
