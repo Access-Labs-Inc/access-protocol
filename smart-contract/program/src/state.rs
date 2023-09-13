@@ -427,6 +427,42 @@ pub struct CentralState {
     pub last_snapshot_offset: u64,
 }
 
+pub struct CentralStateV2 {
+    /// Tag
+    pub tag: Tag,
+
+    /// Central state nonce
+    pub signer_nonce: u8,
+
+    /// Daily inflation in token amount, inflation is paid from
+    /// the reserve owned by the central state
+    pub daily_inflation: u64,
+
+    /// Mint of the token being emitted
+    pub token_mint: Pubkey,
+
+    /// Authority
+    /// The public key that can change the inflation
+    pub authority: Pubkey,
+
+    /// Creation timestamp
+    pub creation_time: i64,
+
+    /// Total amount of staked tokens
+    pub total_staked: u64,
+
+    /// The daily total_staked snapshot to calculate correctly calculate the pool rewards
+    pub total_staked_snapshot: u64,
+
+    /// The offset of the total_staked_snapshot from the creation_time in days
+    pub last_snapshot_offset: u64,
+
+    /// Map of ixs and their state of gating
+    /// 1 is chosen as enabled, 0 is disabled
+    pub ix_gate: u128,
+}
+
+
 impl CentralState {
     #[allow(missing_docs)]
     pub fn new(
