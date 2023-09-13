@@ -4,12 +4,12 @@ use num_derive::FromPrimitive;
 use solana_program::{instruction::Instruction, pubkey::Pubkey};
 
 pub use crate::processor::{
-    activate_stake_pool, add_to_bond_v2, admin_freeze, admin_mint, admin_set_protocol_fee,
+    activate_stake_pool, add_to_bond_v2, admin_freeze, admin_mint, admin_program_freeze, admin_set_protocol_fee,
     admin_setup_fee_split, change_central_state_authority, change_inflation, change_pool_minimum,
     change_pool_multiplier, claim_bond, claim_bond_rewards, claim_bond_v2_rewards, claim_pool_rewards,
     claim_rewards, close_stake_account, close_stake_pool, crank, create_bond,
     create_bond_v2, create_central_state, create_stake_account, create_stake_pool, distribute_fees,
-    edit_metadata, sign_bond, stake, unlock_bond_tokens, unlock_bond_v2, unstake, migrate_central_state_v2,
+    edit_metadata, migrate_central_state_v2, sign_bond, stake, unlock_bond_tokens, unlock_bond_v2, unstake,
 };
 
 #[allow(missing_docs)]
@@ -260,6 +260,8 @@ pub enum ProgramInstruction {
     AdminSetProtocolFee,
     // todo docs
     MigrateCentralStateV2,
+    // todo docs
+    AdminProgramFreeze,
 }
 
 #[allow(missing_docs)]
@@ -622,6 +624,18 @@ pub fn migrate_central_state_v2(
     accounts.get_instruction(
         program_id,
         ProgramInstruction::MigrateCentralStateV2 as u8,
+        params,
+    )
+}
+
+pub fn admin_program_freeze(
+    program_id: Pubkey,
+    accounts: admin_program_freeze::Accounts<Pubkey>,
+    params: admin_program_freeze::Params,
+) -> Instruction {
+    accounts.get_instruction(
+        program_id,
+        ProgramInstruction::AdminProgramFreeze as u8,
         params,
     )
 }

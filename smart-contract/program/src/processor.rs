@@ -38,6 +38,7 @@ pub mod unlock_bond_v2;
 pub mod unstake;
 pub mod admin_set_protocol_fee;
 pub mod migrate_central_state_v2;
+pub mod admin_program_freeze;
 
 pub struct Processor {}
 
@@ -240,6 +241,12 @@ impl Processor {
                 migrate_central_state_v2::process_migrate_central_state_v2(
                     program_id, accounts, params,
                 )?;
+            }
+            ProgramInstruction::AdminProgramFreeze => {
+                msg!("Instruction: Admin program freeze");
+                let params = admin_program_freeze::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                admin_program_freeze::process_admin_program_freeze(program_id, accounts, params)?;
             }
         }
 

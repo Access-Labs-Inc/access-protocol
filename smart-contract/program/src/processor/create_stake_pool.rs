@@ -53,7 +53,10 @@ pub struct Accounts<'a, T> {
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
-    pub fn parse(accounts: &'a [AccountInfo<'b>]) -> Result<Self, ProgramError> {
+    pub fn parse(
+        accounts: &'a [AccountInfo<'b>],
+        program_id: &Pubkey,
+    ) -> Result<Self, ProgramError> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
             stake_pool_account: next_account_info(accounts_iter)?,
@@ -87,7 +90,7 @@ pub fn process_create_stake_pool(
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
-    let accounts = Accounts::parse(accounts)?;
+    let accounts = Accounts::parse(accounts, program_id)?;
     let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
     central_state.assert_instruction_allowed(CreateStakePool)?;
 

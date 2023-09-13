@@ -6,6 +6,7 @@ use solana_program::{
     program_pack::Pack, pubkey::Pubkey,
 };
 use spl_token::state::Account;
+use crate::instruction::ProgramInstruction;
 
 /// Cumulate the claimable rewards from the last claimed day to the present.
 /// Result is in FP32 format.
@@ -70,6 +71,33 @@ pub fn calc_reward_fp32(
     }
 
     Ok(reward)
+}
+
+// returns a mask of the instructions that are supposed to be frozen
+// if no instructions are provided, all instructions are frozen
+pub fn get_freeze_mask(instructions: Vec<ProgramInstruction>) -> u128 {
+    if instructions.len() == 0 {
+        return 0;
+    }
+    let mut mask = u128::MAX;
+    for instruction in instructions {
+        let ix_mask = 1 << instruction as u32;
+       mask = mask & !ix_mask;
+    }
+    mask
+}
+
+
+pub fn get_unfreeze_mask(instructions: Vec<ProgramInstruction>) -> u128 {
+    if instructions.len() == 0 {
+        return  u128::MAX;
+    }
+    let mut mask = 0;
+    for instruction in instructions {
+        let ix_mask = 1 << instruction as u32;
+        mask = mask | ix_mask;
+    }
+    mask
 }
 
 pub fn check_account_key(account: &AccountInfo, key: &Pubkey, error: AccessError) -> ProgramResult {
