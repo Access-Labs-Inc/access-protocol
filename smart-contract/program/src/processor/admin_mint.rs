@@ -10,7 +10,8 @@ use solana_program::{
 };
 
 use crate::error::AccessError;
-use crate::state::{CentralState, V1_INSTRUCTIONS_ALLOWED};
+use crate::instruction::ProgramInstruction::AdminMint;
+use crate::state::{CentralStateV2, V1_INSTRUCTIONS_ALLOWED};
 use crate::utils::{check_account_key, check_account_owner, check_signer};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -84,7 +85,8 @@ pub fn process_admin_mint(
     }
 
     let accounts = Accounts::parse(accounts, program_id)?;
-    let central_state = CentralState::from_account_info(accounts.central_state)?;
+    let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(AdminMint)?;
 
     check_account_key(
         accounts.mint,

@@ -17,8 +17,10 @@ use crate::{
 };
 use crate::{state::StakePool, utils::assert_valid_vault};
 use bonfida_utils::{BorshSize, InstructionsAccount};
+use crate::instruction::ProgramInstruction::CreateStakePool;
 
 use crate::utils::{check_account_key, check_account_owner};
+use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `create_stake_pool` instruction
@@ -45,6 +47,9 @@ pub struct Accounts<'a, T> {
 
     /// The stake pool vault account
     pub vault: &'a T,
+
+    /// The account of the central state
+    pub central_state: &'a T,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -55,6 +60,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             system_program: next_account_info(accounts_iter)?,
             fee_payer: next_account_info(accounts_iter)?,
             vault: next_account_info(accounts_iter)?,
+            central_state: next_account_info(accounts_iter)?,
         };
 
         // Check keys
@@ -65,6 +71,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         )?;
 
         // Check ownership
+        check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
         check_account_owner(
             accounts.stake_pool_account,
             &system_program::ID,
@@ -81,6 +88,8 @@ pub fn process_create_stake_pool(
     params: Params,
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts)?;
+    let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(CreateStakePool)?;
 
     let (derived_stake_key, nonce) = StakePool::find_key(&params.owner, program_id);
 

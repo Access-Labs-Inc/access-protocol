@@ -12,12 +12,14 @@ use solana_program::{
 use solana_program::program_pack::Pack;
 use spl_token::instruction::transfer;
 use spl_token::state::Account;
+use crate::state:: CentralStateV2;
 
 use crate::{
-    state::{CentralState, FeeSplit, Tag},
+    state::{FeeSplit, Tag},
     utils::{assert_valid_fee, check_account_key, check_account_owner, check_signer},
 };
 use crate::error::AccessError;
+use crate::instruction::ProgramInstruction::Stake;
 use crate::state::{BondAccount, StakeAccount, StakePool};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -147,7 +149,8 @@ pub fn process_stake(
 
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
-    let mut central_state = CentralState::from_account_info(accounts.central_state)?;
+    let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(Stake)?;
     let fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
 
     let source_token_acc = Account::unpack(&accounts.source_token.data.borrow())?;

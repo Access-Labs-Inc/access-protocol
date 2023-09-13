@@ -10,7 +10,6 @@ use solana_program::{
     rent::Rent,
     system_instruction,
     system_program,
-    msg,
 };
 
 use crate::error::AccessError;
@@ -74,7 +73,6 @@ pub fn process_migrate_central_state_v2(
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let central_state = CentralState::from_account_info(accounts.central_state)?;
-    msg!("Central state v1: {:?}", central_state);
 
     // Migrate data
     let state_v2 = CentralStateV2::from_central_state(central_state);

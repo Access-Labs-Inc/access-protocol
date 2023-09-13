@@ -12,13 +12,15 @@ use solana_program::{
     sysvar::Sysvar,
 };
 
-use crate::state::{BondAccount, CentralState, StakePool, StakePoolHeader};
+use crate::state::{BondAccount, StakePool, StakePoolHeader};
 use crate::{error::AccessError, state::Tag};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use solana_program::program_pack::Pack;
 use spl_token::state::Account;
+use crate::instruction::ProgramInstruction::UnlockBondTokens;
 
 use crate::utils::{assert_bond_derivation, check_account_key, check_account_owner, check_signer};
+use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `unlock_bond_tokens` instruction
@@ -100,7 +102,8 @@ pub fn process_unlock_bond_tokens(
     _params: Params,
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
-    let mut central_state = CentralState::from_account_info(accounts.central_state)?;
+    let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(UnlockBondTokens)?;
     let mut bond = BondAccount::from_account_info(accounts.bond_account, false)?;
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let current_time = Clock::get()?.unix_timestamp;

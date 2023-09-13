@@ -1,6 +1,6 @@
 //! Create central state
 use std::mem::size_of;
-
+use crate::state::CentralStateV2;
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::clock::Clock;
@@ -17,11 +17,12 @@ use solana_program::{
 use spl_token::state::Account;
 
 use crate::state::{
-    CentralState, FeeRecipient, FeeSplit, MAX_FEE_RECIPIENTS, MAX_FEE_SPLIT_SETUP_DELAY,
+    FeeRecipient, FeeSplit, MAX_FEE_RECIPIENTS, MAX_FEE_SPLIT_SETUP_DELAY,
 };
 use crate::utils::assert_valid_vault;
 use crate::utils::{check_account_key, check_account_owner, check_signer};
 use crate::{cpi::Cpi, error::AccessError};
+use crate::instruction::ProgramInstruction::AdminSetupFeeSplit;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `create_central_state` instruction
@@ -92,7 +93,8 @@ pub fn process_admin_setup_fee_split(
     let Params { recipients } = params;
     let accounts = Accounts::parse(accounts, program_id)?;
     let (fee_split_pda, bump_seed) = FeeSplit::find_key(program_id);
-    let central_state = CentralState::from_account_info(accounts.central_state)?;
+    let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(AdminSetupFeeSplit)?;
 
     check_account_key(
         accounts.authority,

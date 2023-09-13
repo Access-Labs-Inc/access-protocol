@@ -396,7 +396,7 @@ impl StakeAccount {
     }
 }
 
-#[derive(BorshSerialize, BorshDeserialize, BorshSize, Debug)]
+#[derive(BorshSerialize, BorshDeserialize, BorshSize)]
 #[allow(missing_docs)]
 pub struct CentralState {
     /// Tag

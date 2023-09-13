@@ -15,7 +15,9 @@ use bonfida_utils::BorshSize;
 use bonfida_utils::InstructionsAccount;
 
 use crate::error::AccessError;
+use crate::instruction::ProgramInstruction::CloseStakeAccount;
 use crate::state::{StakeAccount, V1_INSTRUCTIONS_ALLOWED};
+use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `close_stake_account` instruction
@@ -31,6 +33,9 @@ pub struct Accounts<'a, T> {
     /// The owner of the stake account
     #[cons(writable, signer)]
     pub owner: &'a T,
+
+    /// The account of the central state
+    pub central_state: &'a T,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -42,9 +47,11 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         let accounts = Accounts {
             stake_account: next_account_info(accounts_iter)?,
             owner: next_account_info(accounts_iter)?,
+            central_state: next_account_info(accounts_iter)?,
         };
 
         // Check ownership
+        check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
         check_account_owner(accounts.stake_account, program_id, AccessError::WrongOwner)?;
 
         // Check signer
@@ -61,6 +68,8 @@ pub fn process_close_stake_account(program_id: &Pubkey, accounts: &[AccountInfo]
 
     let accounts = Accounts::parse(accounts, program_id)?;
 
+    let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(CloseStakeAccount)?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
 
     check_account_key(

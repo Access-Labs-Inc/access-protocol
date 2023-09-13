@@ -13,13 +13,15 @@ use solana_program::{
 };
 use spl_token::instruction::transfer;
 use spl_token::state::Account;
+use crate::state:: CentralStateV2;
 
 use crate::error::AccessError;
-use crate::state::{BondAccountV2, CentralState, FeeSplit, StakePool, BOND_SIGNER_THRESHOLD};
+use crate::state::{BondAccountV2, FeeSplit, StakePool, BOND_SIGNER_THRESHOLD};
 use crate::utils::{
     assert_uninitialized, assert_valid_fee, check_account_key, check_account_owner, check_signer,
 };
 use crate::{cpi::Cpi, state::Tag};
+use crate::instruction::ProgramInstruction::CreateBondV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `create_bond` instruction
@@ -155,7 +157,8 @@ pub fn process_create_bond_v2(
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let mut pool = StakePool::get_checked(accounts.pool, vec![Tag::StakePool])?;
-    let mut central_state = CentralState::from_account_info(accounts.central_state)?;
+    let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(CreateBondV2)?;
     let fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
 
     let (derived_key, nonce) =

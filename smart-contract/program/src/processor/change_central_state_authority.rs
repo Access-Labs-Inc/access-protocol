@@ -7,10 +7,12 @@ use solana_program::{
     pubkey::Pubkey,
 };
 
-use crate::{error::AccessError, state::CentralState};
+use crate::{error::AccessError};
 use bonfida_utils::{BorshSize, InstructionsAccount};
+use crate::instruction::ProgramInstruction::ChangeCentralStateAuthority;
 
 use crate::utils::{check_account_key, check_account_owner, check_signer};
+use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `change_central_state_authority` instruction
@@ -62,7 +64,8 @@ pub fn process_change_central_state_auth(
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let mut central_state = CentralState::from_account_info(accounts.central_state)?;
+    let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(ChangeCentralStateAuthority)?;
 
     check_account_key(
         accounts.authority,

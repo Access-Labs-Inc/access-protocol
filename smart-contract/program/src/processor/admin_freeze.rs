@@ -11,7 +11,8 @@ use solana_program::{
 };
 
 use crate::error::AccessError;
-use crate::state::{CentralState, Tag, V1_INSTRUCTIONS_ALLOWED};
+use crate::instruction::ProgramInstruction::AdminFreeze;
+use crate::state::{CentralStateV2, Tag, V1_INSTRUCTIONS_ALLOWED};
 use crate::utils::{check_account_key, check_account_owner, check_signer};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -68,7 +69,8 @@ pub fn process_admin_freeze(program_id: &Pubkey, accounts: &[AccountInfo]) -> Pr
 
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let central_state = CentralState::from_account_info(accounts.central_state)?;
+    let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(AdminFreeze)?;
 
     check_account_key(
         accounts.authority,

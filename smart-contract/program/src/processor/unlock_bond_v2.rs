@@ -1,6 +1,6 @@
 //! Unstake
 use crate::{
-    state::{CentralState, Tag},
+    state::{Tag},
     utils::{check_account_key, check_account_owner, check_signer},
 };
 use bonfida_utils::{BorshSize, InstructionsAccount};
@@ -21,7 +21,9 @@ use spl_token::instruction::transfer;
 use spl_token::state::Account;
 
 use crate::error::AccessError;
+use crate::instruction::ProgramInstruction::UnlockBondV2;
 use crate::state::{BondAccountV2, StakePool, StakePoolHeader};
+use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `unstake` instruction
@@ -32,7 +34,7 @@ pub struct Params {}
 pub struct Accounts<'a, T> {
     /// The central state account
     #[cons(writable)]
-    pub central_state_account: &'a T,
+    pub central_state: &'a T,
 
     /// The bond account
     #[cons(writable)]
@@ -65,7 +67,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     ) -> Result<Self, ProgramError> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
-            central_state_account: next_account_info(accounts_iter)?,
+            central_state: next_account_info(accounts_iter)?,
             bond_v2_account: next_account_info(accounts_iter)?,
             stake_pool: next_account_info(accounts_iter)?,
             owner: next_account_info(accounts_iter)?,
@@ -83,7 +85,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
         // Check ownership
         check_account_owner(
-            accounts.central_state_account,
+            accounts.central_state,
             program_id,
             AccessError::WrongOwner,
         )?;
@@ -124,7 +126,8 @@ pub fn process_unlock_bond_v2(
 
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut bond_v2_account = BondAccountV2::from_account_info(accounts.bond_v2_account)?;
-    let mut central_state = CentralState::from_account_info(accounts.central_state_account)?;
+    let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(UnlockBondV2)?;
 
     let destination_token_acc = Account::unpack(&accounts.destination_token.data.borrow())?;
     if destination_token_acc.mint != central_state.token_mint {
@@ -216,7 +219,7 @@ pub fn process_unlock_bond_v2(
         .total_staked
         .checked_sub(amount)
         .ok_or(AccessError::Overflow)?;
-    central_state.save(&mut accounts.central_state_account.data.borrow_mut())?;
+    central_state.save(&mut accounts.central_state.data.borrow_mut())?;
 
     Ok(())
 }

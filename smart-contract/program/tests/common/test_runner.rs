@@ -290,6 +290,7 @@ impl TestRunner {
                 system_program: &system_program::ID,
                 fee_payer: &self.prg_test_ctx.payer.pubkey(),
                 vault: &pool_vault,
+                central_state: &self.central_state,
             },
             create_stake_pool::Params {
                 owner: *stake_pool_owner,
@@ -355,6 +356,7 @@ impl TestRunner {
                 system_program: &system_program::ID,
                 fee_payer: &self.prg_test_ctx.payer.pubkey(),
                 stake_pool: &stake_pool_key,
+                central_state: &self.central_state,
             },
             create_stake_account::Params {
                 nonce: stake_nonce,
@@ -444,7 +446,7 @@ impl TestRunner {
                 fee_payer: &self.prg_test_ctx.payer.pubkey(),
                 fee_split_pda: &fee_split_key,
                 fee_split_ata: &fee_split_ata,
-                central_state_account: &self.central_state,
+                central_state: &self.central_state,
                 spl_token_program: &spl_token::ID,
                 mint: &self.mint,
                 token_accounts: recipient_pubkeys.leak(),
@@ -587,7 +589,7 @@ impl TestRunner {
                 owner: &owner.pubkey(),
                 destination_token: &staker_token_acc,
                 spl_token_program: &spl_token::ID,
-                central_state_account: &self.central_state,
+                central_state: &self.central_state,
                 vault: &pool_vault,
             },
             unlock_bond_v2::Params {},
@@ -621,7 +623,7 @@ impl TestRunner {
                 owner: &staker.pubkey(),
                 destination_token: &staker_token_acc,
                 spl_token_program: &spl_token::ID,
-                central_state_account: &self.central_state,
+                central_state: &self.central_state,
                 vault: &pool_vault,
                 bond_account: staker_bond,
             },
@@ -814,6 +816,7 @@ impl TestRunner {
                 stake_pool: &stake_pool_key,         // OK
                 system_program: &system_program::ID, // OK
                 fee_payer: &self.prg_test_ctx.payer.pubkey(),
+                central_state: &self.central_state,
             },
             create_bond::Params {
                 buyer: *bond_owner,
@@ -908,6 +911,7 @@ impl TestRunner {
                 stake_pool: &stake_pool_key,         // OK
                 system_program: &system_program::ID, // OK
                 fee_payer: &self.prg_test_ctx.payer.pubkey(),
+                central_state: &self.central_state,
             },
             create_bond::Params {
                 buyer: *bond_owner,
@@ -1147,6 +1151,7 @@ impl TestRunner {
             change_pool_minimum::Accounts {
                 stake_pool: &stake_pool_key,
                 stake_pool_owner: &stake_pool_owner.pubkey(),
+                central_state: &self.central_state,
             },
             change_pool_minimum::Params { new_minimum },
         );
@@ -1170,6 +1175,7 @@ impl TestRunner {
             change_pool_multiplier::Accounts {
                 stake_pool: &stake_pool_key,
                 stake_pool_owner: &stake_pool_owner.pubkey(),
+                central_state: &self.central_state,
             },
             change_pool_multiplier::Params { new_multiplier },
         );

@@ -3,7 +3,9 @@ use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{account_info::{AccountInfo, next_account_info}, entrypoint::ProgramResult, program_error::ProgramError, pubkey::Pubkey, system_program};
 
-use crate::{error::AccessError, state::CentralState, state::FeeSplit};
+use crate::{error::AccessError, state::FeeSplit};
+use crate::instruction::ProgramInstruction::AdminSetProtocolFee;
+use crate::state::CentralStateV2;
 use crate::utils::{check_account_key, check_account_owner, check_signer};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -73,7 +75,8 @@ pub fn process_admin_set_protocol_fee(
     let Params { protocol_fee_basis_points } = params;
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let central_state = CentralState::from_account_info(accounts.central_state)?;
+    let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(AdminSetProtocolFee)?;
     let mut fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
 
     check_account_key(

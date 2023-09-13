@@ -1,7 +1,7 @@
 //! Claim rewards of a stake pool
 //! This instruction is used by stake pool owner for claiming their staking rewards
 use crate::error::AccessError;
-use crate::state::{CentralState, StakePool, Tag};
+use crate::state::{StakePool, Tag};
 use crate::utils::{
     assert_no_close_or_delegate, calc_reward_fp32, check_account_key, check_account_owner,
     check_signer,
@@ -19,6 +19,8 @@ use solana_program::{
     pubkey::Pubkey,
 };
 use spl_token::{instruction::mint_to, state::Account};
+use crate::instruction::ProgramInstruction::ClaimPoolRewards;
+use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `claim_pool_rewards` instruction
@@ -97,7 +99,8 @@ pub fn process_claim_pool_rewards(
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let central_state = CentralState::from_account_info(accounts.central_state)?;
+    let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(ClaimPoolRewards)?;
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
 
     let destination_token_acc = Account::unpack(&accounts.rewards_destination.data.borrow())?;
