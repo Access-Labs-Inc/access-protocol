@@ -14,7 +14,7 @@ use solana_program::{
 
 use crate::error::AccessError;
 use crate::state::{CentralState, CentralStateV2};
-use crate::utils::{check_account_key, check_account_owner};
+use crate::utils::{check_account_key, check_account_owner, assert_valid_vault};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `migrate_central_state_v2` instruction

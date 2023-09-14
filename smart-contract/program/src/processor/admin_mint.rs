@@ -116,7 +116,7 @@ pub fn process_admin_mint(
             accounts.mint.clone(),
             accounts.access_token_destination.clone(),
         ],
-        &[&[&program_id.to_bytes(), &[central_state.signer_nonce]]],
+        &[&[&program_id.to_bytes(), &[central_state.bump_seed]]],
     )?;
 
     Ok(())

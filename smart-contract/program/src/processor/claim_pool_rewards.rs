@@ -158,7 +158,7 @@ pub fn process_claim_pool_rewards(
             accounts.mint.clone(),
             accounts.rewards_destination.clone(),
         ],
-        &[&[&program_id.to_bytes(), &[central_state.signer_nonce]]],
+        &[&[&program_id.to_bytes(), &[central_state.bump_seed]]],
     )?;
 
     // Update stake pool state
