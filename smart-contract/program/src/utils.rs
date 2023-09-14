@@ -1,3 +1,4 @@
+//! Utils
 use crate::error::AccessError;
 use crate::state::{BondAccount, AUTHORIZED_BOND_SELLERS};
 use crate::state::{StakeAccount, StakePoolRef, ACCESS_MINT, STAKE_BUFFER_LEN};
@@ -75,31 +76,33 @@ pub fn calc_reward_fp32(
 
 // returns a mask of the instructions that are supposed to be frozen
 // if no instructions are provided, all instructions are frozen
+#[allow(missing_docs)]
 pub fn get_freeze_mask(instructions: Vec<ProgramInstruction>) -> u128 {
-    if instructions.len() == 0 {
+    if instructions.is_empty() {
         return 0;
     }
     let mut mask = u128::MAX;
     for instruction in instructions {
         let ix_mask = 1 << instruction as u32;
-       mask = mask & !ix_mask;
+       mask &= !ix_mask;
     }
     mask
 }
 
-
+#[allow(missing_docs)]
 pub fn get_unfreeze_mask(instructions: Vec<ProgramInstruction>) -> u128 {
-    if instructions.len() == 0 {
+    if instructions.is_empty() {
         return  u128::MAX;
     }
     let mut mask = 0;
     for instruction in instructions {
         let ix_mask = 1 << instruction as u32;
-        mask = mask | ix_mask;
+        mask |= ix_mask;
     }
     mask
 }
 
+#[allow(missing_docs)]
 pub fn check_account_key(account: &AccountInfo, key: &Pubkey, error: AccessError) -> ProgramResult {
     if account.key != key {
         return Err(error.into());
@@ -107,6 +110,7 @@ pub fn check_account_key(account: &AccountInfo, key: &Pubkey, error: AccessError
     Ok(())
 }
 
+#[allow(missing_docs)]
 pub fn check_account_owner(
     account: &AccountInfo,
     owner: &Pubkey,
@@ -118,6 +122,7 @@ pub fn check_account_owner(
     Ok(())
 }
 
+#[allow(missing_docs)]
 pub fn check_signer(account: &AccountInfo, error: AccessError) -> ProgramResult {
     if !(account.is_signer) {
         return Err(error.into());
@@ -125,6 +130,7 @@ pub fn check_signer(account: &AccountInfo, error: AccessError) -> ProgramResult 
     Ok(())
 }
 
+#[allow(missing_docs)]
 pub fn assert_empty_stake_pool(stake_pool: &StakePoolRef) -> ProgramResult {
     if stake_pool.header.total_staked != 0 {
         msg!("The stake pool must be empty");
@@ -133,6 +139,7 @@ pub fn assert_empty_stake_pool(stake_pool: &StakePoolRef) -> ProgramResult {
     Ok(())
 }
 
+#[allow(missing_docs)]
 pub fn assert_empty_stake_account(stake_account: &StakeAccount) -> ProgramResult {
     if stake_account.stake_amount != 0 {
         msg!("The stake account must be empty");
@@ -141,6 +148,7 @@ pub fn assert_empty_stake_account(stake_account: &StakeAccount) -> ProgramResult
     Ok(())
 }
 
+#[allow(missing_docs)]
 pub fn assert_valid_vault(account: &AccountInfo, vault_signer: &Pubkey) -> ProgramResult {
     let acc = Account::unpack(&account.data.borrow())?;
     if &acc.owner != vault_signer {
@@ -159,6 +167,7 @@ pub fn assert_valid_vault(account: &AccountInfo, vault_signer: &Pubkey) -> Progr
     Ok(())
 }
 
+#[allow(missing_docs)]
 pub fn assert_uninitialized(account: &AccountInfo) -> ProgramResult {
     if !account.data_is_empty() {
         return Err(ProgramError::AccountAlreadyInitialized);
@@ -166,6 +175,7 @@ pub fn assert_uninitialized(account: &AccountInfo) -> ProgramResult {
     Ok(())
 }
 
+#[allow(missing_docs)]
 pub fn assert_authorized_seller(seller: &AccountInfo, seller_index: usize) -> ProgramResult {
     let expected_seller = AUTHORIZED_BOND_SELLERS
         .get(seller_index)
@@ -176,6 +186,7 @@ pub fn assert_authorized_seller(seller: &AccountInfo, seller_index: usize) -> Pr
     Ok(())
 }
 
+#[allow(missing_docs)]
 pub fn assert_bond_derivation(
     account: &AccountInfo,
     owner: &Pubkey,
@@ -187,6 +198,7 @@ pub fn assert_bond_derivation(
     Ok(())
 }
 
+#[allow(missing_docs)]
 pub fn assert_valid_fee(account: &AccountInfo, owner: &Pubkey) -> ProgramResult {
     check_account_owner(account, &spl_token::ID, AccessError::WrongOwner)?;
     let acc = Account::unpack(&account.data.borrow())?;
@@ -198,6 +210,7 @@ pub fn assert_valid_fee(account: &AccountInfo, owner: &Pubkey) -> ProgramResult 
     Ok(())
 }
 
+#[allow(missing_docs)]
 pub fn assert_no_close_or_delegate(token_account: &Account) -> ProgramResult {
     if token_account.delegate.is_some() || token_account.close_authority.is_some() {
         msg!("This token account cannot have a delegate or close authority");

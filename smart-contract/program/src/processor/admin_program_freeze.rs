@@ -1,11 +1,11 @@
 //! Change central state inflation
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
-use solana_program::{account_info::{AccountInfo, next_account_info}, entrypoint::ProgramResult, msg, program_error::ProgramError, pubkey::Pubkey};
-use solana_program::program_pack::Pack;
+use solana_program::{account_info::{AccountInfo, next_account_info}, entrypoint::ProgramResult, program_error::ProgramError, pubkey::Pubkey};
+
 
 use crate::{error::AccessError};
-use crate::instruction::ProgramInstruction::ChangeInflation;
+
 use crate::utils::{check_account_key, check_account_owner, check_signer};
 use crate::state:: CentralStateV2;
 

@@ -20,7 +20,7 @@ use access_protocol::{
 };
 use access_protocol::instruction::{admin_setup_fee_split, change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, admin_set_protocol_fee, claim_bond, claim_bond_rewards, create_bond, unlock_bond_tokens, unlock_bond_v2, migrate_central_state_v2, admin_program_freeze};
 use access_protocol::state::{
-    BondAccount, BondAccountV2, CentralState, FeeRecipient, FeeSplit, StakeAccount,
+    BondAccount, BondAccountV2, FeeRecipient, FeeSplit, StakeAccount,
     StakePoolHeader, Tag, CentralStateV2
 };
 
@@ -769,7 +769,7 @@ impl TestRunner {
                 authority: &self.prg_test_ctx.payer.pubkey(),
                 central_state: &self.central_state,
             },
-            admin_program_freeze::Params { ix_gate: ix_gate },
+            admin_program_freeze::Params { ix_gate },
         );
         sign_send_instructions(&mut self.prg_test_ctx, vec![freeze_ix], vec![]).await
     }

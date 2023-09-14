@@ -628,6 +628,7 @@ pub fn migrate_central_state_v2(
     )
 }
 
+#[allow(missing_docs)]
 pub fn admin_program_freeze(
     program_id: Pubkey,
     accounts: admin_program_freeze::Accounts<Pubkey>,
