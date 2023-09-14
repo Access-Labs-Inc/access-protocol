@@ -69,14 +69,14 @@ pub enum Tag {
     BondAccount,
     BondAccountV2,
     CentralState,
+    CentralStateV2,
     Deleted,
     FeeSplit,
     // Accounts frozen by the central state authority
     FrozenStakePool,
     FrozenStakeAccount,
     FrozenBondAccount,
-    FrozenBondAccountV2, // todo use or delete
-    CentralStateV2,
+    FrozenBondAccountV2,
 }
 
 impl Tag {
@@ -479,6 +479,18 @@ impl CentralState {
         let current_time = Clock::get()?.unix_timestamp as u64;
         Ok((current_time - self.creation_time as u64) / SECONDS_IN_DAY)
     }
+
+    #[allow(missing_docs)]
+    pub fn calculate_fee(&self, amount: u64) -> Result<u64, ProgramError> {
+        let fee = amount
+            .checked_mul(self.fee_basis_points as u64)
+            .ok_or(AccessError::Overflow)?
+            .checked_add(9_999)// rounding
+            .ok_or(AccessError::Overflow)?
+            .checked_div(10_000)
+            .ok_or(AccessError::Overflow)?;
+        Ok(fee)
+    }
 }
 
 #[derive(BorshSerialize, BorshDeserialize, BorshSize, Debug)]
@@ -487,8 +499,8 @@ pub struct CentralStateV2 {
     /// Tag
     pub tag: Tag,
 
-    /// Central state nonce
-    pub signer_nonce: u8,
+    /// Central state bump seed
+    pub bump_seed: u8,
 
     /// Daily inflation in token amount, inflation is paid from
     /// the reserve owned by the central state
@@ -516,35 +528,27 @@ pub struct CentralStateV2 {
     /// Map of ixs and their state of gating
     /// 1 is chosen as enabled, 0 is disabled
     pub ix_gate: u128,
+
+    /// Fee percentage basis points (i.e 1% = 100)
+    pub fee_basis_points: u16,
+
+    /// Last distribution timestamp
+    pub last_distribution_time: i64,
+
+    /// List of fee recipients
+    pub recipients: Vec<FeeRecipient>,
 }
 
 impl CentralStateV2 {
+    pub const DEFAULT_FEE_BASIS_POINTS: u16 = 200;
+
     #[allow(missing_docs)]
-    pub fn new(
-        signer_nonce: u8,
-        daily_inflation: u64,
-        token_mint: Pubkey,
-        authority: Pubkey,
-        total_staked: u64,
-    ) -> Result<Self, ProgramError> {
-        Ok(Self {
-            tag: Tag::CentralStateV2,
-            signer_nonce,
-            daily_inflation,
-            token_mint,
-            authority,
-            creation_time: Clock::get()?.unix_timestamp,
-            total_staked,
-            total_staked_snapshot: 0,
-            last_snapshot_offset: 0,
-            ix_gate: u128::MAX, // all instructions enabled
-        })
-    }
-    #[allow(missing_docs)]
-    pub fn from_central_state(central_state: CentralState) -> Self {
+    pub fn from_central_state(
+        central_state: CentralState,
+    ) -> Self {
         Self {
             tag: Tag::CentralStateV2,
-            signer_nonce: central_state.signer_nonce,
+            bump_seed: central_state.signer_nonce,
             daily_inflation: central_state.daily_inflation,
             token_mint: central_state.token_mint,
             authority: central_state.authority,
@@ -553,6 +557,9 @@ impl CentralStateV2 {
             total_staked_snapshot: central_state.total_staked_snapshot,
             last_snapshot_offset: central_state.last_snapshot_offset,
             ix_gate: u128::MAX, // all instructions enabled
+            fee_basis_points: DEFAULT_FEE_BASIS_POINTS,
+            last_distribution_time: 0,
+            recipients: vec![],
         }
     }
     #[allow(missing_docs)]
@@ -862,76 +869,5 @@ impl FeeRecipient {
     #[allow(missing_docs)]
     pub fn ata(&self, mint: &Pubkey) -> Pubkey {
         get_associated_token_address(&self.owner, mint)
-    }
-}
-
-#[derive(BorshSerialize, BorshDeserialize, BorshSize)]
-#[allow(missing_docs)]
-pub struct FeeSplit {
-    /// Tag
-    pub tag: Tag,
-
-    /// Fee percentage basis points (i.e 1% = 100)
-    pub fee_basis_points: u16,
-
-    /// Bump seed
-    pub bump_seed: u8,
-
-    /// Last distribution timestamp
-    pub last_distribution_time: i64,
-
-    /// List of fee recipients
-    pub recipients: Vec<FeeRecipient>,
-}
-
-#[allow(missing_docs)]
-impl FeeSplit {
-    pub const SEED: &'static [u8; 9] = b"fee_split";
-    pub const DEFAULT_FEE_BASIS_POINTS: u16 = 200;
-
-    #[allow(missing_docs)]
-    pub fn new(bump_seed: u8, recipients: Vec<FeeRecipient>) -> Result<Self, ProgramError> {
-        Ok(Self {
-            tag: Tag::FeeSplit,
-            fee_basis_points: Self::DEFAULT_FEE_BASIS_POINTS,
-            bump_seed,
-            last_distribution_time: Clock::get()?.unix_timestamp,
-            recipients,
-        })
-    }
-    #[allow(missing_docs)]
-    pub fn create_key(signer_nonce: &u8, program_id: &Pubkey) -> Result<Pubkey, ProgramError> {
-        let signer_seeds: &[&[u8]] = &[Self::SEED, &program_id.to_bytes(), &[*signer_nonce]];
-        Pubkey::create_program_address(signer_seeds, program_id)
-            .map_err(|_| ProgramError::InvalidSeeds)
-    }
-    #[allow(missing_docs)]
-    pub fn find_key(program_id: &Pubkey) -> (Pubkey, u8) {
-        Pubkey::find_program_address(&[Self::SEED, &program_id.to_bytes()], program_id)
-    }
-    #[allow(missing_docs)]
-    pub fn save(&self, mut dst: &mut [u8]) -> ProgramResult {
-        self.serialize(&mut dst)
-            .map_err(|_| ProgramError::InvalidAccountData)
-    }
-    #[allow(missing_docs)]
-    pub fn from_account_info(a: &AccountInfo) -> Result<FeeSplit, ProgramError> {
-        let mut data = &a.data.borrow() as &[u8];
-        if data[0] != Tag::FeeSplit as u8 && data[0] != Tag::Uninitialized as u8 {
-            return Err(AccessError::DataTypeMismatch.into());
-        }
-        let result = FeeSplit::deserialize(&mut data)?;
-        Ok(result)
-    }
-    #[allow(missing_docs)]
-    pub fn calculate_fee(&self, amount: u64) -> Result<u64, ProgramError> {
-        let fee = amount
-            .checked_mul(self.fee_basis_points as u64)
-            .ok_or(AccessError::Overflow)?
-            .checked_add(9_999)// rounding
-            .ok_or(AccessError::Overflow)?
-            .checked_div(10_000)
-            .ok_or(AccessError::Overflow)?;
-        Ok(fee)
     }
 }
