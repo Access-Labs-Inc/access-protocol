@@ -59,6 +59,7 @@ BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimiti
 )]
 #[repr(u8)]
 #[allow(missing_docs)]
+// todo the old order must be kept!!!!! Add the new tags to the end
 pub enum Tag {
     Uninitialized,
     StakePool,
@@ -67,16 +68,16 @@ pub enum Tag {
     // Bond accounts are inactive until the buyer transfered the funds
     InactiveBondAccount,
     BondAccount,
-    BondAccountV2,
     CentralState,
-    CentralStateV2,
     Deleted,
-    FeeSplit,
     // Accounts frozen by the central state authority
     FrozenStakePool,
     FrozenStakeAccount,
     FrozenBondAccount,
+    // V2 tags
+    BondAccountV2,
     FrozenBondAccountV2,
+    CentralStateV2,
 }
 
 impl Tag {
