@@ -24,7 +24,7 @@ mod basic_functionality {
         // Freeze the program
         let freeze_mask = get_freeze_mask(vec![]);
         println!("freeze mask: {:0128b}", freeze_mask);
-        let staker = tr.create_ata_account().await.unwrap();
+        let staker = tr.create_user_with_ata().await.unwrap();
         tr.freeze_program(freeze_mask).await.unwrap();
         tr.sleep(1).await.unwrap();
         tr.mint(&staker.pubkey(), 729_999_999_999).await.unwrap_err();
@@ -68,7 +68,7 @@ mod basic_functionality {
         // Setup the token + basic accounts
         let mut tr = TestRunner::new(1_000_000).await.unwrap();
 
-        let staker = tr.create_ata_account().await.unwrap();
+        let staker = tr.create_user_with_ata().await.unwrap();
         tr.mint(&staker.pubkey(), 729_999_999_999).await.unwrap();
         // Set daily inflation - should fail as it is over 100% per year
         tr.change_inflation(2_000_000_000).await.unwrap_err();
@@ -110,7 +110,7 @@ mod basic_functionality {
         // Sleep for 5 days
         tr.sleep(5 * 86400).await.unwrap();
         // Create users
-        let stake_pool_owner = tr.create_ata_account().await.unwrap();
+        let stake_pool_owner = tr.create_user_with_ata().await.unwrap();
         // Create a pool
         tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000)
             .await
@@ -146,7 +146,7 @@ mod pool_creation_and_activation {
         // Setup the token + basic accounts
         let mut tr = TestRunner::new(1_000_000).await.unwrap();
         // Create users
-        let stake_pool_owner = tr.create_ata_account().await.unwrap();
+        let stake_pool_owner = tr.create_user_with_ata().await.unwrap();
         // Create stake pool on day 1 12:00
         tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000)
             .await
@@ -176,7 +176,7 @@ mod pool_creation_and_activation {
         // Setup the token + basic accounts
         let mut tr = TestRunner::new(1_000_000).await.unwrap();
         // Create users
-        let stake_pool_owner = tr.create_ata_account().await.unwrap();
+        let stake_pool_owner = tr.create_user_with_ata().await.unwrap();
         // Create stake pool
         tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000)
             .await
@@ -199,7 +199,7 @@ mod pool_creation_and_activation {
         // Setup the token + basic accounts
         let mut tr = TestRunner::new(1_000_000).await.unwrap();
         // Create users
-        let stake_pool_owner = tr.create_ata_account().await.unwrap();
+        let stake_pool_owner = tr.create_user_with_ata().await.unwrap();
         // Activate stake pool
         let result = tr.activate_stake_pool(&stake_pool_owner.pubkey()).await;
         assert!(result.is_err());
@@ -210,7 +210,7 @@ mod pool_creation_and_activation {
         // Setup the token + basic accounts
         let mut tr = TestRunner::new(1_000_000).await.unwrap();
         // Create users
-        let stake_pool_owner = tr.create_ata_account().await.unwrap();
+        let stake_pool_owner = tr.create_user_with_ata().await.unwrap();
         // Create stake pool
         tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000)
             .await
@@ -225,7 +225,7 @@ mod pool_creation_and_activation {
         // Setup the token + basic accounts
         let mut tr = TestRunner::new(1_000_000).await.unwrap();
         // Create users
-        let stake_pool_owner = tr.create_ata_account().await.unwrap();
+        let stake_pool_owner = tr.create_user_with_ata().await.unwrap();
         // Create stake pool
         tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000)
             .await
@@ -245,8 +245,8 @@ mod pool_creation_and_activation {
         // Setup the token + basic accounts
         let mut tr = TestRunner::new(1_000_000).await.unwrap();
         // Create users
-        let stake_pool_owner = tr.create_ata_account().await.unwrap();
-        let staker = tr.create_ata_account().await.unwrap();
+        let stake_pool_owner = tr.create_user_with_ata().await.unwrap();
+        let staker = tr.create_user_with_ata().await.unwrap();
         // Mint to staker
         tr.mint(&staker.pubkey(), 100_000_000_000).await.unwrap();
         // Create stake pool
@@ -272,7 +272,7 @@ mod pool_settings {
         // Setup the token + basic accounts
         let mut tr = TestRunner::new(1_000_000).await.unwrap();
         // Create users
-        let stake_pool_owner = tr.create_ata_account().await.unwrap();
+        let stake_pool_owner = tr.create_user_with_ata().await.unwrap();
         // Create stake pool
         tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000)
             .await
@@ -295,7 +295,7 @@ mod pool_settings {
         // Setup the token + basic accounts
         let mut tr = TestRunner::new(1_000_000).await.unwrap();
         // Create users
-        let stake_pool_owner = tr.create_ata_account().await.unwrap();
+        let stake_pool_owner = tr.create_user_with_ata().await.unwrap();
         // Create stake pool
         tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000)
             .await
@@ -322,8 +322,8 @@ mod bonds {
         // Setup the token + basic accounts
         let mut tr = TestRunner::new(1_000_000).await.unwrap();
         // Create users
-        let stake_pool_owner = tr.create_ata_account().await.unwrap();
-        let _staker = tr.create_ata_account().await.unwrap();
+        let stake_pool_owner = tr.create_user_with_ata().await.unwrap();
+        let _staker = tr.create_user_with_ata().await.unwrap();
         // Create stake pool
         tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000)
             .await
@@ -343,8 +343,8 @@ mod bonds {
         // Setup the token + basic accounts
         let mut tr = TestRunner::new(1_000_000).await.unwrap();
         // Create users
-        let stake_pool_owner = tr.create_ata_account().await.unwrap();
-        let staker = tr.create_ata_account().await.unwrap();
+        let stake_pool_owner = tr.create_user_with_ata().await.unwrap();
+        let staker = tr.create_user_with_ata().await.unwrap();
         // Mint to staker
         tr.mint(&staker.pubkey(), 100_000_000_000).await.unwrap();
         // Create stake pool

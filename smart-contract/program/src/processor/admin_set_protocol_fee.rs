@@ -3,7 +3,7 @@ use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{account_info::{AccountInfo, next_account_info}, entrypoint::ProgramResult, program_error::ProgramError, pubkey::Pubkey, system_program};
 
-use crate::{error::AccessError, state::FeeSplit};
+use crate::error::AccessError;
 use crate::instruction::ProgramInstruction::AdminSetProtocolFee;
 use crate::state::CentralStateV2;
 use crate::utils::{check_account_key, check_account_owner, check_signer};
@@ -25,10 +25,6 @@ pub struct Accounts<'a, T> {
     /// The account of the central state
     pub central_state: &'a T,
 
-    /// The fee split account
-    #[cons(writable)]
-    pub fee_split_pda: &'a T,
-
     /// The system program account
     pub system_program: &'a T,
 }
@@ -42,13 +38,11 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         let accounts = Accounts {
             authority: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
-            fee_split_pda: next_account_info(accounts_iter)?,
             system_program: next_account_info(accounts_iter)?,
         };
 
         // Check ownership
         check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
-        check_account_owner(accounts.fee_split_pda, program_id, AccessError::WrongOwner)?;
 
         // Check account key
         check_account_key(
@@ -75,9 +69,8 @@ pub fn process_admin_set_protocol_fee(
     let Params { protocol_fee_basis_points } = params;
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
     central_state.assert_instruction_allowed(AdminSetProtocolFee)?;
-    let mut fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
 
     check_account_key(
         accounts.authority,
@@ -89,8 +82,8 @@ pub fn process_admin_set_protocol_fee(
         return Err(AccessError::InvalidAmount.into());
     }
 
-    fee_split.fee_basis_points = protocol_fee_basis_points;
-    fee_split.save(&mut accounts.fee_split_pda.data.borrow_mut())?;
+    central_state.fee_basis_points = protocol_fee_basis_points;
+    central_state.save(&mut accounts.central_state.data.borrow_mut())?;
 
     Ok(())
 }

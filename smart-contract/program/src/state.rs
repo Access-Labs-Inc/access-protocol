@@ -480,18 +480,6 @@ impl CentralState {
         let current_time = Clock::get()?.unix_timestamp as u64;
         Ok((current_time - self.creation_time as u64) / SECONDS_IN_DAY)
     }
-
-    #[allow(missing_docs)]
-    pub fn calculate_fee(&self, amount: u64) -> Result<u64, ProgramError> {
-        let fee = amount
-            .checked_mul(self.fee_basis_points as u64)
-            .ok_or(AccessError::Overflow)?
-            .checked_add(9_999)// rounding
-            .ok_or(AccessError::Overflow)?
-            .checked_div(10_000)
-            .ok_or(AccessError::Overflow)?;
-        Ok(fee)
-    }
 }
 
 #[derive(BorshSerialize, BorshDeserialize, BorshSize, Debug)]
@@ -534,7 +522,10 @@ pub struct CentralStateV2 {
     pub fee_basis_points: u16,
 
     /// Last distribution timestamp
-    pub last_distribution_time: i64,
+    pub last_fee_distribution_time: i64,
+
+    /// Central state vault
+    pub vault: [u8; 32],
 
     /// List of fee recipients
     pub recipients: Vec<FeeRecipient>,
@@ -544,10 +535,11 @@ impl CentralStateV2 {
     pub const DEFAULT_FEE_BASIS_POINTS: u16 = 200;
 
     #[allow(missing_docs)]
-    pub fn from_central_state(
+    pub fn new(
         central_state: CentralState,
-    ) -> Self {
-        Self {
+        vault: Pubkey,
+    ) -> Result<Self, ProgramError> {
+        Ok(Self {
             tag: Tag::CentralStateV2,
             bump_seed: central_state.signer_nonce,
             daily_inflation: central_state.daily_inflation,
@@ -558,10 +550,11 @@ impl CentralStateV2 {
             total_staked_snapshot: central_state.total_staked_snapshot,
             last_snapshot_offset: central_state.last_snapshot_offset,
             ix_gate: u128::MAX, // all instructions enabled
-            fee_basis_points: DEFAULT_FEE_BASIS_POINTS,
-            last_distribution_time: 0,
-            recipients: vec![],
-        }
+            fee_basis_points: Self::DEFAULT_FEE_BASIS_POINTS,
+            last_fee_distribution_time: Clock::get()?.unix_timestamp,
+            vault: vault.to_bytes(),
+            recipients: vec![], // the default behaviour is that 100% of the fees is getting burned
+        })
     }
     #[allow(missing_docs)]
     pub fn create_key(signer_nonce: &u8, program_id: &Pubkey) -> Result<Pubkey, ProgramError> {
@@ -601,6 +594,18 @@ impl CentralStateV2 {
             return Err(AccessError::FrozenInstruction.into());
         }
         Ok(())
+    }
+
+    #[allow(missing_docs)]
+    pub fn calculate_fee(&self, amount: u64) -> Result<u64, ProgramError> {
+        let fee = amount
+            .checked_mul(self.fee_basis_points as u64)
+            .ok_or(AccessError::Overflow)?
+            .checked_add(9_999)// rounding
+            .ok_or(AccessError::Overflow)?
+            .checked_div(10_000)
+            .ok_or(AccessError::Overflow)?;
+        Ok(fee)
     }
 }
 

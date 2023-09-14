@@ -13,19 +13,19 @@ pub mod common;
 async fn change_protocol_fee() {
     // Setup the token + basic accounts
     let mut tr = TestRunner::new(1_000_000).await.unwrap();
-    let staker = tr.create_ata_account().await.unwrap();
+    let staker = tr.create_user_with_ata().await.unwrap();
     tr.setup_fee_split(vec![FeeRecipient {
         owner: staker.pubkey(),
         percentage: 100,
     }]).await.unwrap();
 
-    let pool_owner = tr.create_ata_account().await.unwrap();
+    let pool_owner = tr.create_user_with_ata().await.unwrap();
     tr.create_stake_pool(&pool_owner.pubkey(), 10_000_000)
         .await
         .unwrap();
     tr.activate_stake_pool(&pool_owner.pubkey()).await.unwrap();
 
-    let staker = tr.create_ata_account().await.unwrap();
+    let staker = tr.create_user_with_ata().await.unwrap();
     tr.mint(&staker.pubkey(), 100_000_000).await.unwrap();
     tr.create_stake_account(&pool_owner.pubkey(), &staker.pubkey())
         .await

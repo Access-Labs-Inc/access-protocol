@@ -16,7 +16,7 @@ use spl_token::state::Account;
 use crate::state:: CentralStateV2;
 
 use crate::error::AccessError;
-use crate::state::{BondAccountV2, FeeSplit, StakePool, BOND_SIGNER_THRESHOLD};
+use crate::state::{BondAccountV2, StakePool, BOND_SIGNER_THRESHOLD};
 use crate::utils::{
     assert_uninitialized, assert_valid_fee, check_account_key, check_account_owner, check_signer,
 };
@@ -62,9 +62,6 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub central_state: &'a T,
 
-    /// The fee split account
-    pub fee_split_pda: &'a T,
-
     /// The vault of the pool
     #[cons(writable)]
     pub pool_vault: &'a T,
@@ -97,7 +94,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             bond_account_v2: next_account_info(accounts_iter)?,
             pool: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
-            fee_split_pda: next_account_info(accounts_iter)?,
             pool_vault: next_account_info(accounts_iter)?,
             fee_account: next_account_info(accounts_iter)?,
             mint: next_account_info(accounts_iter)?,
@@ -119,7 +115,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
         // Check ownership
         check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
-        check_account_owner(accounts.fee_split_pda, program_id, AccessError::WrongOwner)?;
         check_account_owner(
             accounts.pool,
             program_id,
@@ -159,7 +154,6 @@ pub fn process_create_bond_v2(
     let mut pool = StakePool::get_checked(accounts.pool, vec![Tag::StakePool])?;
     let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
     central_state.assert_instruction_allowed(CreateBondV2)?;
-    let fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
 
     let (derived_key, nonce) =
         BondAccountV2::create_key(accounts.to.key, accounts.pool.key, unlock_date, program_id);
@@ -174,8 +168,7 @@ pub fn process_create_bond_v2(
         return Err(AccessError::InvalidAmount.into());
     }
 
-    let (fee_split_pda, _) = FeeSplit::find_key(program_id);
-    assert_valid_fee(accounts.fee_account, &fee_split_pda)?;
+    assert_valid_fee(accounts.fee_account, &accounts.central_state.key)?;
     check_account_key(
         accounts.bond_account_v2,
         &derived_key,
@@ -271,7 +264,7 @@ pub fn process_create_bond_v2(
         accounts.fee_account.key,
         accounts.from.key,
         &[],
-        fee_split.calculate_fee(amount)?,
+        central_state.calculate_fee(amount)?,
     )?;
     invoke(
         &transfer_fees,

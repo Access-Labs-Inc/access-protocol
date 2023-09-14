@@ -11,8 +11,8 @@ async fn later_pool_creation() {
     let mut tr = TestRunner::new(1_000_000).await.unwrap();
 
     // Create users
-    let stake_pool_owner = tr.create_ata_account().await.unwrap();
-    let staker = tr.create_ata_account().await.unwrap();
+    let stake_pool_owner = tr.create_user_with_ata().await.unwrap();
+    let staker = tr.create_user_with_ata().await.unwrap();
 
     // Mint
     tr.mint(&staker.pubkey(), 20_400).await.unwrap();
@@ -45,7 +45,7 @@ async fn later_pool_creation() {
     }
 
     // Create a second pool
-    let stake_pool_owner2 = tr.create_ata_account().await.unwrap();
+    let stake_pool_owner2 = tr.create_user_with_ata().await.unwrap();
     tr.create_stake_pool(&stake_pool_owner2.pubkey(), 1000)
         .await
         .unwrap();
@@ -72,7 +72,7 @@ async fn later_pool_creation() {
     }
 
     // Create a second staker
-    let staker2 = tr.create_ata_account().await.unwrap();
+    let staker2 = tr.create_user_with_ata().await.unwrap();
     tr.mint(&staker2.pubkey(), 20_400).await.unwrap();
 
     // Create stake account

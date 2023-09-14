@@ -17,18 +17,18 @@ async fn full_system_test() {
     let mut tr = TestRunner::new(DAILY_INFLATION).await.unwrap();
 
     // Setup 3 airdrop users
-    let airdrop_user1 = tr.create_ata_account().await.unwrap();
-    let airdrop_user2 = tr.create_ata_account().await.unwrap();
-    let airdrop_user3 = tr.create_ata_account().await.unwrap();
+    let airdrop_user1 = tr.create_user_with_ata().await.unwrap();
+    let airdrop_user2 = tr.create_user_with_ata().await.unwrap();
+    let airdrop_user3 = tr.create_user_with_ata().await.unwrap();
 
     // Setup 2 vesting users
-    let vesting_user1 = tr.create_ata_account().await.unwrap();
-    let vesting_user2 = tr.create_ata_account().await.unwrap();
+    let vesting_user1 = tr.create_user_with_ata().await.unwrap();
+    let vesting_user2 = tr.create_user_with_ata().await.unwrap();
 
     // Setup 3 pool owners
-    let pool_owner = tr.create_ata_account().await.unwrap();
-    let pool_owner2 = tr.create_ata_account().await.unwrap();
-    let pool_owner3 = tr.create_ata_account().await.unwrap();
+    let pool_owner = tr.create_user_with_ata().await.unwrap();
+    let pool_owner2 = tr.create_user_with_ata().await.unwrap();
+    let pool_owner3 = tr.create_user_with_ata().await.unwrap();
 
     // Setup all the pools
     tr.create_stake_pool(&pool_owner.pubkey(), 1_000_000_000)
@@ -47,7 +47,7 @@ async fn full_system_test() {
     tr.activate_stake_pool(&pool_owner3.pubkey()).await.unwrap();
 
     // Setup 1 staker with 10_200_000_000 tokens in his account and appropriate stake accounts for all pools
-    let staker = tr.create_ata_account().await.unwrap();
+    let staker = tr.create_user_with_ata().await.unwrap();
     tr.mint(&staker.pubkey(), 10_200_000_000).await.unwrap();
     tr.create_stake_account(&pool_owner.pubkey(), &staker.pubkey())
         .await

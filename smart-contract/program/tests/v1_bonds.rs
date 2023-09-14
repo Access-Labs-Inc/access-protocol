@@ -15,8 +15,8 @@ async fn v1_bonds() {
     // Unlockable bond
     // ---------------------------------------------------------------------------------------------
     // Create users
-    let pool_owner = tr.create_ata_account().await.unwrap();
-    let bond_recipient = tr.create_ata_account().await.unwrap();
+    let pool_owner = tr.create_user_with_ata().await.unwrap();
+    let bond_recipient = tr.create_user_with_ata().await.unwrap();
     // Create stake pool
     tr.create_stake_pool(&pool_owner.pubkey(), 10_000)
         .await

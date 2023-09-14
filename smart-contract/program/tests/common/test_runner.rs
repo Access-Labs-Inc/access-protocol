@@ -18,10 +18,10 @@ use access_protocol::{
         create_central_state, create_stake_account, create_stake_pool, stake, unstake,
     },
 };
-use access_protocol::instruction::{admin_setup_fee_split, change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, admin_set_protocol_fee, claim_bond, claim_bond_rewards, create_bond, unlock_bond_tokens, unlock_bond_v2, migrate_central_state_v2, admin_program_freeze};
+use access_protocol::instruction::{admin_program_freeze, admin_set_protocol_fee, change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards, create_bond, migrate_central_state_v2, unlock_bond_tokens, unlock_bond_v2};
 use access_protocol::state::{
-    BondAccount, BondAccountV2, FeeRecipient, FeeSplit, StakeAccount,
-    StakePoolHeader, Tag, CentralStateV2
+    BondAccount, BondAccountV2, CentralStateV2, FeeRecipient,
+    StakeAccount, StakePoolHeader, Tag,
 };
 
 use crate::common::utils::{mint_bootstrap, sign_send_instructions};
@@ -32,6 +32,7 @@ pub struct TestRunner {
     local_env: BanksClient,
     authority_ata: Pubkey,
     central_state: Pubkey,
+    central_state_vault: Option<Pubkey>,
     mint: Pubkey,
     // hashmap from user pubkey to a bond account
     bond_accounts: std::collections::HashMap<String, Pubkey>,
@@ -96,7 +97,7 @@ impl TestRunner {
             6,
             &mut program_test,
             &central_state,
-            LAMPORTS_PER_SOL
+            LAMPORTS_PER_SOL,
         );
 
         ////
@@ -159,15 +160,19 @@ impl TestRunner {
             mint,
             bond_accounts: std::collections::HashMap::new(),
             bond_seller,
+            central_state_vault: None,
         })
     }
 
     pub async fn migrate_v2(&mut self) -> Result<(), BanksClientError> {
+        let create_ata_vault_ix = self.create_ata_account(self.central_state).await?;
+
         let migrate_ix = migrate_central_state_v2(
             self.program_id,
             migrate_central_state_v2::Accounts {
                 fee_payer: &self.prg_test_ctx.payer.pubkey(),
                 central_state: &self.central_state,
+                central_state_vault: &self.central_state_vault.unwrap(),
                 system_program: &system_program::ID,
             },
             migrate_central_state_v2::Params {},
@@ -175,11 +180,16 @@ impl TestRunner {
         sign_send_instructions(&mut self.prg_test_ctx, vec![migrate_ix], vec![]).await
     }
 
-    pub async fn create_ata_account(&mut self) -> Result<Keypair, BanksClientError> {
+    pub async fn create_user_with_ata(&mut self) -> Result<Keypair, BanksClientError> {
         let owner = Keypair::new();
+        self.create_ata_account(owner.pubkey()).await?;
+        Ok(owner)
+    }
+
+    pub async fn create_ata_account(&mut self, owner: Pubkey) -> Result<(), BanksClientError> {
         let create_ata_stake_pool_owner_ix = create_associated_token_account(
             &self.prg_test_ctx.payer.pubkey(),
-            &owner.pubkey(),
+            &owner,
             &self.mint,
             &spl_token::ID,
         );
@@ -189,8 +199,9 @@ impl TestRunner {
             vec![],
         )
             .await?;
-        Ok(owner)
+        Ok(())
     }
+
 
     pub async fn mint(
         &mut self,
@@ -210,45 +221,6 @@ impl TestRunner {
             admin_mint::Params { amount },
         );
         sign_send_instructions(&mut self.prg_test_ctx, vec![admin_mint_ix], vec![]).await
-    }
-
-    pub async fn setup_fee_split(
-        &mut self,
-        recipients: Vec<FeeRecipient>,
-    ) -> Result<(), BanksClientError> {
-        let (fee_split_key, _) = FeeSplit::find_key(&self.program_id);
-        // todo do this conditionally - only once
-        let fee_split_ata = get_associated_token_address(&fee_split_key, &self.mint);
-
-        let create_ata_vault_ix = create_associated_token_account(
-            &self.prg_test_ctx.payer.pubkey(),
-            &fee_split_key,
-            &self.mint,
-            &spl_token::ID,
-        );
-        if let Err(e) =
-            sign_send_instructions(&mut self.prg_test_ctx, vec![create_ata_vault_ix], vec![]).await
-        {
-            println!("error creating vault (probably already exists): {:?}", e);
-        }
-
-        let admin_setup_fee_split_ix = admin_setup_fee_split(
-            self.program_id,
-            admin_setup_fee_split::Accounts {
-                authority: &self.prg_test_ctx.payer.pubkey(),
-                fee_split_pda: &fee_split_key,
-                fee_split_ata: &fee_split_ata,
-                central_state: &self.central_state,
-                system_program: &system_program::ID,
-            },
-            admin_setup_fee_split::Params { recipients },
-        );
-        sign_send_instructions(
-            &mut self.prg_test_ctx,
-            vec![admin_setup_fee_split_ix],
-            vec![],
-        )
-            .await
     }
 
     pub async fn create_stake_pool(
@@ -393,8 +365,6 @@ impl TestRunner {
         let staker_key = staker.pubkey();
         let stake_pool_key = self.get_pool_pda(stake_pool_owner_key);
         let (stake_acc_key, _) = self.get_stake_account_pda(&stake_pool_key, &staker_key);
-        let (fee_split_key, _) = FeeSplit::find_key(&self.program_id);
-        let fee_split_ata = get_associated_token_address(&fee_split_key, &self.mint);
         let staker_token_acc = get_associated_token_address(&staker_key, &self.mint);
         let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
         // get the staker's bond from the hash map if it exists
@@ -412,8 +382,7 @@ impl TestRunner {
                 spl_token_program: &spl_token::ID,
                 vault: &pool_vault,
                 central_state: &self.central_state,
-                fee_split_pda: &fee_split_key,
-                fee_account: &fee_split_ata,
+                central_state_vault: &self.central_state_vault.unwrap(),
                 bond_account: staker_bond,
             },
             stake::Params {
@@ -424,18 +393,8 @@ impl TestRunner {
     }
 
     pub async fn distribute_fees(&mut self) -> Result<(), BanksClientError> {
-        let (fee_split_key, _) = FeeSplit::find_key(&self.program_id);
-        let fee_split_ata = get_associated_token_address(&fee_split_key, &self.mint);
-        // get account info
-        let acc = self
-            .prg_test_ctx
-            .banks_client
-            .get_account(fee_split_key)
-            .await
-            .unwrap()
-            .unwrap();
-        let fee_split_data = FeeSplit::deserialize(&mut &acc.data[..])?;
-        let recipient_pubkeys: Vec<Pubkey> = fee_split_data
+        let central_state_stats = self.central_state_stats().await.unwrap();
+        let recipient_pubkeys: Vec<Pubkey> = central_state_stats
             .recipients
             .iter()
             .map(|r| r.ata(&self.mint))
@@ -444,9 +403,8 @@ impl TestRunner {
             self.program_id,
             access_protocol::instruction::distribute_fees::Accounts {
                 fee_payer: &self.prg_test_ctx.payer.pubkey(),
-                fee_split_pda: &fee_split_key,
-                fee_split_ata: &fee_split_ata,
                 central_state: &self.central_state,
+                central_state_vault: &self.central_state_vault.unwrap(),
                 spl_token_program: &spl_token::ID,
                 mint: &self.mint,
                 token_accounts: recipient_pubkeys.leak(),
@@ -761,7 +719,7 @@ impl TestRunner {
         let cs = CentralStateV2::deserialize(&mut &acc.data[..])?;
         Ok(cs)
     }
-    
+
     pub async fn freeze_program(&mut self, ix_gate: u128) -> Result<(), BanksClientError> {
         let freeze_ix = admin_program_freeze(
             self.program_id,
@@ -772,29 +730,6 @@ impl TestRunner {
             admin_program_freeze::Params { ix_gate },
         );
         sign_send_instructions(&mut self.prg_test_ctx, vec![freeze_ix], vec![]).await
-    }
-
-    pub async fn fee_split_stats(&mut self) -> Result<FeeSplitStats, Box<dyn Error>> {
-        let (fee_split_key, _) = FeeSplit::find_key(&self.program_id);
-        let acc = self
-            .prg_test_ctx
-            .banks_client
-            .get_account(fee_split_key)
-            .await
-            .unwrap()
-            .unwrap();
-        let fs = FeeSplit::deserialize(&mut &acc.data[..])?;
-        let fee_split_ata = self.get_ata(&fee_split_key);
-        let balance = self
-            .local_env
-            .get_packed_account_data::<spl_token::state::Account>(fee_split_ata)
-            .await?
-            .amount;
-        Ok(FeeSplitStats {
-            recipients: fs.recipients,
-            fee_basis_points: fs.fee_basis_points,
-            balance,
-        })
     }
 
     pub async fn create_bond(
@@ -963,7 +898,6 @@ impl TestRunner {
     ) -> Result<(), BanksClientError> {
         let pool_key = self.get_pool_pda(pool_owner);
         let (bond_key, _) = BondAccountV2::create_key(to, &pool_key, unlock_date, &self.program_id);
-        let (fee_split_key, _) = FeeSplit::find_key(&self.program_id);
 
         let create_bond_v2_ix = access_protocol::instruction::create_bond_v2(
             self.program_id,
@@ -975,7 +909,6 @@ impl TestRunner {
                 bond_account_v2: &bond_key,
                 pool: &pool_key,
                 central_state: &self.central_state,
-                fee_split_pda: &fee_split_key,
                 pool_vault: &get_associated_token_address(&pool_key, &self.mint),
                 fee_account: &self.authority_ata,
                 mint: &self.mint,
@@ -1001,7 +934,6 @@ impl TestRunner {
     ) -> Result<(), BanksClientError> {
         let pool_key = self.get_pool_pda(pool_owner);
         let (bond_key, _) = BondAccountV2::create_key(to, &pool_key, unlock_date, &self.program_id);
-        let (fee_split_key, _) = FeeSplit::find_key(&self.program_id);
 
         let add_to_bond_v2_ix = access_protocol::instruction::add_to_bond_v2(
             self.program_id,
@@ -1013,9 +945,8 @@ impl TestRunner {
                 bond_account_v2: &bond_key,
                 pool: &pool_key,
                 central_state: &self.central_state,
-                fee_split_pda: &fee_split_key,
                 pool_vault: &get_associated_token_address(&pool_key, &self.mint),
-                fee_split_ata: &self.authority_ata,
+                central_state_vault: &self.central_state_vault.unwrap(),
                 mint: &self.mint,
                 spl_token_program: &spl_token::ID,
                 system_program: &system_program::ID,
@@ -1220,12 +1151,10 @@ impl TestRunner {
         &mut self,
         new_fee: u16,
     ) -> Result<(), BanksClientError> {
-        let (fee_split_key, _) = FeeSplit::find_key(&self.program_id);
         let ix = admin_set_protocol_fee(
             self.program_id,
             admin_set_protocol_fee::Accounts {
                 central_state: &self.central_state,
-                fee_split_pda: &fee_split_key,
                 authority: &self.prg_test_ctx.payer.pubkey(),
                 system_program: &system_program::ID,
             },
@@ -1273,7 +1202,7 @@ impl TestRunner {
     }
 
     pub async fn get_protocol_fees(&mut self) -> f64 {
-        let res = self.fee_split_stats().await;
+        let res = self.central_state_stats().await;
         if let Ok(fs) = res {
             fs.fee_basis_points as f64 / 100.0
         } else {

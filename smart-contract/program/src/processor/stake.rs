@@ -15,7 +15,7 @@ use spl_token::state::Account;
 use crate::state:: CentralStateV2;
 
 use crate::{
-    state::{FeeSplit, Tag},
+    state::Tag,
     utils::{assert_valid_fee, check_account_key, check_account_owner, check_signer},
 };
 use crate::error::AccessError;
@@ -35,9 +35,6 @@ pub struct Accounts<'a, T> {
     /// The central state account
     #[cons(writable)]
     pub central_state: &'a T,
-
-    /// The fee split account
-    pub fee_split_pda: &'a T,
 
     /// The stake account
     #[cons(writable)]
@@ -64,7 +61,7 @@ pub struct Accounts<'a, T> {
 
     /// The stake fee account
     #[cons(writable)]
-    pub fee_account: &'a T,
+    pub central_state_vault: &'a T,
 
     /// Optional bond account to be able to stake under the minimum
     // todo extend this by bondV2s
@@ -79,14 +76,13 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
             central_state: next_account_info(accounts_iter)?,
-            fee_split_pda: next_account_info(accounts_iter)?,
             stake_account: next_account_info(accounts_iter)?,
             stake_pool: next_account_info(accounts_iter)?,
             owner: next_account_info(accounts_iter)?,
             source_token: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
             vault: next_account_info(accounts_iter)?,
-            fee_account: next_account_info(accounts_iter)?,
+            central_state_vault: next_account_info(accounts_iter)?,
             bond_account: next_account_info(accounts_iter).ok(),
         };
 
@@ -104,7 +100,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             AccessError::WrongOwner,
         )?;
         check_account_owner(
-            accounts.fee_split_pda,
+            accounts.central_state_vault,
             program_id,
             AccessError::WrongOwner,
         )?;
@@ -151,7 +147,6 @@ pub fn process_stake(
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
     let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
     central_state.assert_instruction_allowed(Stake)?;
-    let fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
 
     let source_token_acc = Account::unpack(&accounts.source_token.data.borrow())?;
     if source_token_acc.mint != central_state.token_mint {
@@ -200,8 +195,7 @@ pub fn process_stake(
         stake_account.pool_minimum_at_creation = stake_pool.header.minimum_stake_amount;
     }
 
-    let (fee_split_pda, _) = FeeSplit::find_key(program_id);
-    assert_valid_fee(accounts.fee_account, &fee_split_pda)?;
+    assert_valid_fee(accounts.central_state_vault, &accounts.central_state.key)?;
 
     if amount == 0 {
         return Err(AccessError::CannotStakeZero.into());
@@ -249,17 +243,17 @@ pub fn process_stake(
     let transfer_fees = transfer(
         &spl_token::ID,
         accounts.source_token.key,
-        accounts.fee_account.key,
+        accounts.central_state_vault.key,
         accounts.owner.key,
         &[],
-        fee_split.calculate_fee(amount)?,
+        central_state.calculate_fee(amount)?,
     )?;
     invoke(
         &transfer_fees,
         &[
             accounts.spl_token_program.clone(),
             accounts.source_token.clone(),
-            accounts.fee_account.clone(),
+            accounts.central_state_vault.clone(),
             accounts.owner.clone(),
         ],
     )?;
