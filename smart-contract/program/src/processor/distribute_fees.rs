@@ -12,15 +12,17 @@ use solana_program::{
     pubkey::Pubkey,
 };
 use spl_token::state::Account;
+use crate::state:: CentralStateV2;
 
 use crate::error::AccessError;
 use crate::state::MAX_FEE_RECIPIENTS;
 use crate::{
-    state::{CentralState, FeeSplit, MIN_DISTRIBUTE_AMOUNT},
+    state::{FeeSplit, MIN_DISTRIBUTE_AMOUNT},
     utils::{check_account_key, check_account_owner, check_signer},
 };
 use solana_program::clock::Clock;
 use solana_program::sysvar::Sysvar;
+use crate::instruction::ProgramInstruction::DistributeFees;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `close_stake_pool` instruction
@@ -39,7 +41,7 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub fee_split_ata: &'a T,
 
-    pub central_state_account: &'a T,
+    pub central_state: &'a T,
 
     pub spl_token_program: &'a T,
 
@@ -60,7 +62,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             fee_payer: next_account_info(accounts_iter)?,
             fee_split_pda: next_account_info(accounts_iter)?,
             fee_split_ata: next_account_info(accounts_iter)?,
-            central_state_account: next_account_info(accounts_iter)?,
+            central_state: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
             mint: next_account_info(accounts_iter)?,
             token_accounts: accounts_iter.as_slice(),
@@ -75,7 +77,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
         // Check ownership
         check_account_owner(
-            accounts.central_state_account,
+            accounts.central_state,
             program_id,
             AccessError::WrongOwner,
         )?;
@@ -115,7 +117,8 @@ pub fn process_distribute_fees(
         return Err(AccessError::InvalidTokenAccount.into());
     }
 
-    let central_state = CentralState::from_account_info(accounts.central_state_account)?;
+    let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(DistributeFees)?;
     let mut fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
 
     check_account_key(

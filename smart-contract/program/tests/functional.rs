@@ -19,6 +19,7 @@ use access_protocol::{
 };
 use mpl_token_metadata::instruction::update_metadata_accounts;
 use mpl_token_metadata::{instruction::create_metadata_accounts_v3, pda::find_metadata_account};
+use solana_program::native_token::LAMPORTS_PER_SOL;
 use spl_token::{instruction::set_authority, instruction::AuthorityType};
 use access_protocol::state::FeeSplit;
 
@@ -48,7 +49,7 @@ async fn functional_10s() {
     //
     // Create mint
     //
-    let (mint, _) = mint_bootstrap(None, 6, &mut program_test, &authority.pubkey());
+    let (mint, _) = mint_bootstrap(None, 6, &mut program_test, &authority.pubkey(), LAMPORTS_PER_SOL);
 
     ////
     // Create test context
@@ -271,6 +272,7 @@ async fn functional_10s() {
             system_program: &system_program::ID,
             fee_payer: &prg_test_ctx.payer.pubkey(),
             vault: &pool_vault,
+            central_state: &central_state,
         },
         create_stake_pool::Params {
             owner: stake_pool_owner.pubkey(),
@@ -307,6 +309,7 @@ async fn functional_10s() {
         change_pool_multiplier::Accounts {
             stake_pool: &stake_pool_key,
             stake_pool_owner: &stake_pool_owner.pubkey(),
+            central_state: &central_state,
         },
         change_pool_multiplier::Params { new_multiplier: 2 },
     );
@@ -330,6 +333,7 @@ async fn functional_10s() {
             bond_account: &bond_key,
             system_program: &system_program::ID,
             fee_payer: &prg_test_ctx.payer.pubkey(),
+            central_state: &central_state,
         },
         create_bond::Params {
             buyer: staker.pubkey(),
@@ -360,6 +364,7 @@ async fn functional_10s() {
             bond_account: &bond_key,
             system_program: &system_program::ID,
             fee_payer: &prg_test_ctx.payer.pubkey(),
+            central_state: &central_state,
         },
         create_bond::Params {
             buyer: staker.pubkey(),
@@ -425,6 +430,7 @@ async fn functional_10s() {
             system_program: &system_program::ID,
             fee_payer: &prg_test_ctx.payer.pubkey(),
             stake_pool: &stake_pool_key,
+            central_state: &central_state,
         },
         create_stake_account::Params {
             nonce: stake_nonce,
@@ -662,6 +668,7 @@ async fn functional_10s() {
         change_pool_minimum::Accounts {
             stake_pool: &stake_pool_key,
             stake_pool_owner: &stake_pool_owner.pubkey(),
+            central_state: &central_state,
         },
         change_pool_minimum::Params {
             new_minimum: 10_000_000 / 2,
@@ -714,7 +721,7 @@ async fn functional_10s() {
             destination_token: &staker_token_acc,
             spl_token_program: &spl_token::ID,
             vault: &pool_vault,
-            central_state_account: &central_state,
+            central_state: &central_state,
             bond_account: None,
         },
         unstake::Params {
@@ -798,6 +805,7 @@ async fn functional_10s() {
         close_stake_account::Accounts {
             stake_account: &stake_acc_key,
             owner: &staker.pubkey(),
+            central_state: &central_state,
         },
         close_stake_account::Params {},
     );
@@ -820,6 +828,7 @@ async fn functional_10s() {
             pool_vault: &pool_vault,
             stake_pool_account: &stake_pool_key,
             owner: &stake_pool_owner.pubkey(),
+            central_state: &central_state,
         },
         close_stake_pool::Params {},
     );

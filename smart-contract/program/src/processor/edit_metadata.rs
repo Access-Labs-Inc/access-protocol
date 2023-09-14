@@ -12,9 +12,11 @@ use solana_program::{
     pubkey::Pubkey,
 };
 
-use crate::{error::AccessError, state::CentralState};
+use crate::{error::AccessError};
+use crate::instruction::ProgramInstruction::EditMetadata;
 use crate::state::V1_INSTRUCTIONS_ALLOWED;
 use crate::utils::{check_account_key, check_account_owner, check_signer};
+use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `edit_metadata` instruction
@@ -94,7 +96,8 @@ pub fn process_edit_metadata(
 
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let central_state = CentralState::from_account_info(accounts.central_state)?;
+    let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(EditMetadata)?;
     let (metadata_key, _) = find_metadata_account(&central_state.token_mint);
 
     check_account_key(

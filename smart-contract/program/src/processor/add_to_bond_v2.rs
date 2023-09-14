@@ -18,7 +18,8 @@ use spl_token::instruction::transfer;
 use spl_token::state::Account;
 
 use crate::error::AccessError;
-use crate::state::{BondAccountV2, CentralState, FeeSplit, StakePool};
+use crate::instruction::ProgramInstruction::AddToBondV2;
+use crate::state::{BondAccountV2, CentralStateV2, FeeSplit, StakePool};
 use crate::state::Tag;
 use crate::utils::{assert_valid_fee, check_account_key, check_account_owner, check_signer};
 
@@ -162,8 +163,9 @@ pub fn process_add_to_bond_v2(
 
     let mut pool = StakePool::get_checked(accounts.pool, vec![Tag::StakePool])?;
     let mut bond = BondAccountV2::from_account_info(accounts.bond_account_v2)?;
-    let mut central_state = CentralState::from_account_info(accounts.central_state)?;
-    let mut fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
+    let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(AddToBondV2)?;
+    let fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
 
     check_account_key(
         accounts.mint,
@@ -187,7 +189,7 @@ pub fn process_add_to_bond_v2(
         AccessError::StakePoolVaultMismatch,
     )?;
 
-    assert_valid_fee(accounts.fee_split_ata, &accounts.fee_split_pda.key)?;
+    assert_valid_fee(accounts.fee_split_ata, accounts.fee_split_pda.key)?;
 
     if amount == 0 {
         return Err(AccessError::CannotStakeZero.into());

@@ -1,19 +1,19 @@
 //! Sign a bond
 //! This instruction is used by authorized sellers to approve the creation of a bond
+use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
-    account_info::{next_account_info, AccountInfo},
+    account_info::{AccountInfo, next_account_info},
     entrypoint::ProgramResult,
     msg,
     program_error::ProgramError,
     pubkey::Pubkey,
 };
-
-use crate::utils::{assert_authorized_seller, check_account_owner, check_signer};
-use bonfida_utils::{BorshSize, InstructionsAccount};
-
+use crate::state:: CentralStateV2;
 use crate::error::AccessError;
-use crate::state::{BondAccount, BOND_SIGNER_THRESHOLD};
+use crate::instruction::ProgramInstruction::SignBond;
+use crate::state::{BOND_SIGNER_THRESHOLD, BondAccount, V1_INSTRUCTIONS_ALLOWED};
+use crate::utils::{assert_authorized_seller, check_account_owner, check_signer};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `sign_bond` instruction
@@ -28,6 +28,7 @@ pub struct Accounts<'a, T> {
     seller: &'a T,
     #[cons(writable)]
     bond_account: &'a T,
+    central_state: &'a T,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -39,9 +40,11 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         let accounts = Accounts {
             seller: next_account_info(accounts_iter)?,
             bond_account: next_account_info(accounts_iter)?,
+            central_state: next_account_info(accounts_iter)?,
         };
 
         // Check ownership
+        check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
         check_account_owner(accounts.bond_account, program_id, AccessError::WrongOwner)?;
 
         // Check signer
@@ -62,6 +65,8 @@ pub fn process_sign_bond(
 
     let accounts = Accounts::parse(accounts, program_id)?;
 
+    let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(SignBond)?;
     let mut bond = BondAccount::from_account_info(accounts.bond_account, true)?;
     assert_authorized_seller(accounts.seller, params.seller_index as usize)?;
 

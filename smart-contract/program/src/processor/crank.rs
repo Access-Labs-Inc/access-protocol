@@ -13,8 +13,10 @@ use solana_program::{
 use spl_math::precise_number::PreciseNumber;
 
 use crate::error::AccessError;
-use crate::state::{CentralState, RewardsTuple, StakePool, Tag};
+use crate::instruction::ProgramInstruction::Crank;
+use crate::state::{RewardsTuple, StakePool, Tag};
 use crate::utils::check_account_owner;
+use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `crank` instruction
@@ -63,7 +65,8 @@ pub fn process_crank(
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
-    let mut central_state = CentralState::from_account_info(accounts.central_state)?;
+    let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(Crank)?;
 
     let current_offset = central_state.get_current_offset()?;
     // check if we need to do a system wide snapshot

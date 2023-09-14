@@ -4,8 +4,10 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{account_info::{AccountInfo, next_account_info}, entrypoint::ProgramResult, msg, program_error::ProgramError, pubkey::Pubkey};
 use solana_program::program_pack::Pack;
 
-use crate::{error::AccessError, state::CentralState};
+use crate::{error::AccessError};
+use crate::instruction::ProgramInstruction::ChangeInflation;
 use crate::utils::{check_account_key, check_account_owner, check_signer};
+use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `change_inflation` instruction
@@ -62,7 +64,8 @@ pub fn process_change_inflation(
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let mut central_state = CentralState::from_account_info(accounts.central_state)?;
+    let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(ChangeInflation)?;
 
     check_account_key(
         accounts.mint,
@@ -70,7 +73,7 @@ pub fn process_change_inflation(
         AccessError::WrongMint,
     )?;
 
-    let token_mint = spl_token::state::Mint::unpack_from_slice(&*accounts.mint.data.clone().borrow_mut())?;
+    let token_mint = spl_token::state::Mint::unpack_from_slice(&accounts.mint.data.clone().borrow_mut())?;
 
     let supply = token_mint.supply;
     let annual_inflation = params.daily_inflation * 365;

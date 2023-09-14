@@ -2,6 +2,7 @@ use std::error::Error;
 
 use borsh::BorshDeserialize;
 use solana_program::{pubkey::Pubkey, system_program};
+use solana_program::native_token::LAMPORTS_PER_SOL;
 use solana_program_test::{processor, ProgramTest};
 use solana_sdk::signer::{keypair::Keypair, Signer};
 use solana_sdk::sysvar::clock;
@@ -17,14 +18,10 @@ use access_protocol::{
         create_central_state, create_stake_account, create_stake_pool, stake, unstake,
     },
 };
-use access_protocol::instruction::{
-    admin_setup_fee_split, change_central_state_authority, change_inflation, change_pool_minimum,
-    change_pool_multiplier, admin_set_protocol_fee, claim_bond, claim_bond_rewards, create_bond,
-    unlock_bond_tokens, unlock_bond_v2,
-};
+use access_protocol::instruction::{admin_setup_fee_split, change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, admin_set_protocol_fee, claim_bond, claim_bond_rewards, create_bond, unlock_bond_tokens, unlock_bond_v2, migrate_central_state_v2, admin_program_freeze};
 use access_protocol::state::{
-    BondAccount, BondAccountV2, CentralState, FeeRecipient, FeeSplit, StakeAccount,
-    StakePoolHeader, Tag,
+    BondAccount, BondAccountV2, FeeRecipient, FeeSplit, StakeAccount,
+    StakePoolHeader, Tag, CentralStateV2
 };
 
 use crate::common::utils::{mint_bootstrap, sign_send_instructions};
@@ -99,6 +96,7 @@ impl TestRunner {
             6,
             &mut program_test,
             &central_state,
+            LAMPORTS_PER_SOL
         );
 
         ////
@@ -162,6 +160,19 @@ impl TestRunner {
             bond_accounts: std::collections::HashMap::new(),
             bond_seller,
         })
+    }
+
+    pub async fn migrate_v2(&mut self) -> Result<(), BanksClientError> {
+        let migrate_ix = migrate_central_state_v2(
+            self.program_id,
+            migrate_central_state_v2::Accounts {
+                fee_payer: &self.prg_test_ctx.payer.pubkey(),
+                central_state: &self.central_state,
+                system_program: &system_program::ID,
+            },
+            migrate_central_state_v2::Params {},
+        );
+        sign_send_instructions(&mut self.prg_test_ctx, vec![migrate_ix], vec![]).await
     }
 
     pub async fn create_ata_account(&mut self) -> Result<Keypair, BanksClientError> {
@@ -279,6 +290,7 @@ impl TestRunner {
                 system_program: &system_program::ID,
                 fee_payer: &self.prg_test_ctx.payer.pubkey(),
                 vault: &pool_vault,
+                central_state: &self.central_state,
             },
             create_stake_pool::Params {
                 owner: *stake_pool_owner,
@@ -344,6 +356,7 @@ impl TestRunner {
                 system_program: &system_program::ID,
                 fee_payer: &self.prg_test_ctx.payer.pubkey(),
                 stake_pool: &stake_pool_key,
+                central_state: &self.central_state,
             },
             create_stake_account::Params {
                 nonce: stake_nonce,
@@ -433,7 +446,7 @@ impl TestRunner {
                 fee_payer: &self.prg_test_ctx.payer.pubkey(),
                 fee_split_pda: &fee_split_key,
                 fee_split_ata: &fee_split_ata,
-                central_state_account: &self.central_state,
+                central_state: &self.central_state,
                 spl_token_program: &spl_token::ID,
                 mint: &self.mint,
                 token_accounts: recipient_pubkeys.leak(),
@@ -576,7 +589,7 @@ impl TestRunner {
                 owner: &owner.pubkey(),
                 destination_token: &staker_token_acc,
                 spl_token_program: &spl_token::ID,
-                central_state_account: &self.central_state,
+                central_state: &self.central_state,
                 vault: &pool_vault,
             },
             unlock_bond_v2::Params {},
@@ -610,7 +623,7 @@ impl TestRunner {
                 owner: &staker.pubkey(),
                 destination_token: &staker_token_acc,
                 spl_token_program: &spl_token::ID,
-                central_state_account: &self.central_state,
+                central_state: &self.central_state,
                 vault: &pool_vault,
                 bond_account: staker_bond,
             },
@@ -737,7 +750,7 @@ impl TestRunner {
         Ok(bond_account)
     }
 
-    pub async fn central_state_stats(&mut self) -> Result<CentralState, Box<dyn Error>> {
+    pub async fn central_state_stats(&mut self) -> Result<CentralStateV2, Box<dyn Error>> {
         let acc = self
             .prg_test_ctx
             .banks_client
@@ -745,8 +758,20 @@ impl TestRunner {
             .await
             .unwrap()
             .unwrap();
-        let cs = CentralState::deserialize(&mut &acc.data[..])?;
+        let cs = CentralStateV2::deserialize(&mut &acc.data[..])?;
         Ok(cs)
+    }
+    
+    pub async fn freeze_program(&mut self, ix_gate: u128) -> Result<(), BanksClientError> {
+        let freeze_ix = admin_program_freeze(
+            self.program_id,
+            admin_program_freeze::Accounts {
+                authority: &self.prg_test_ctx.payer.pubkey(),
+                central_state: &self.central_state,
+            },
+            admin_program_freeze::Params { ix_gate },
+        );
+        sign_send_instructions(&mut self.prg_test_ctx, vec![freeze_ix], vec![]).await
     }
 
     pub async fn fee_split_stats(&mut self) -> Result<FeeSplitStats, Box<dyn Error>> {
@@ -803,6 +828,7 @@ impl TestRunner {
                 stake_pool: &stake_pool_key,         // OK
                 system_program: &system_program::ID, // OK
                 fee_payer: &self.prg_test_ctx.payer.pubkey(),
+                central_state: &self.central_state,
             },
             create_bond::Params {
                 buyer: *bond_owner,
@@ -897,6 +923,7 @@ impl TestRunner {
                 stake_pool: &stake_pool_key,         // OK
                 system_program: &system_program::ID, // OK
                 fee_payer: &self.prg_test_ctx.payer.pubkey(),
+                central_state: &self.central_state,
             },
             create_bond::Params {
                 buyer: *bond_owner,
@@ -1136,6 +1163,7 @@ impl TestRunner {
             change_pool_minimum::Accounts {
                 stake_pool: &stake_pool_key,
                 stake_pool_owner: &stake_pool_owner.pubkey(),
+                central_state: &self.central_state,
             },
             change_pool_minimum::Params { new_minimum },
         );
@@ -1159,6 +1187,7 @@ impl TestRunner {
             change_pool_multiplier::Accounts {
                 stake_pool: &stake_pool_key,
                 stake_pool_owner: &stake_pool_owner.pubkey(),
+                central_state: &self.central_state,
             },
             change_pool_multiplier::Params { new_multiplier },
         );

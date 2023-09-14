@@ -63,8 +63,8 @@ async fn signed_claim() {
 
         let staker_stats = tr.staker_stats(bond_creator.pubkey()).await.unwrap();
         assert_eq!(
-            staker_stats.balance,
-            100_000 - bond_amount - bond_amount * tr.get_protocol_fees().await / 100
+            staker_stats.balance as f64,
+            (100_000 - bond_amount - bond_amount) as f64 * tr.get_protocol_fees().await / 100.0
         );
         let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
         assert_eq!(pool_stats.header.total_staked, bond_amount);
@@ -101,8 +101,8 @@ async fn signed_claim() {
 
         let staker_stats = tr.staker_stats(bond_creator.pubkey()).await.unwrap();
         assert_eq!(
-            staker_stats.balance,
-            100_000 - (bond_amount + add_amount) - (bond_amount + add_amount) * tr.get_protocol_fees().await / 100
+            staker_stats.balance as f64,
+            (100_000 - (bond_amount + add_amount) - (bond_amount + add_amount)) as f64 * tr.get_protocol_fees().await / 100.0
         );
         let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
         assert_eq!(pool_stats.header.total_staked, (bond_amount + add_amount));
@@ -167,8 +167,8 @@ async fn signed_claim() {
         // Check all the stats
         let creator_stats = tr.staker_stats(bond_creator.pubkey()).await.unwrap();
         assert_eq!(
-            creator_stats.balance,
-            100_000 - (bond_amount + add_amount) - (bond_amount + add_amount) * tr.get_protocol_fees().await / 100
+            creator_stats.balance as f64,
+            (100_000 - (bond_amount + add_amount) - (bond_amount + add_amount)) as f64 * tr.get_protocol_fees().await / 100.0
         );
         let recipient_stats = tr.staker_stats(bond_recipient.pubkey()).await.unwrap();
         assert_eq!(
@@ -234,8 +234,8 @@ async fn signed_claim() {
 
         let staker_stats = tr.staker_stats(bond_creator.pubkey()).await.unwrap();
         assert_eq!(
-            staker_stats.balance,
-            100_000 - bond_amount - bond_amount * tr.get_protocol_fees().await / 100
+            staker_stats.balance as f64,
+            (100_000 - bond_amount - bond_amount) as f64 * tr.get_protocol_fees().await / 100.0
         );
         let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
         assert_eq!(pool_stats.header.total_staked, bond_amount);
@@ -268,8 +268,8 @@ async fn signed_claim() {
 
         let staker_stats = tr.staker_stats(bond_creator.pubkey()).await.unwrap();
         assert_eq!(
-            staker_stats.balance,
-            100_000 - (bond_amount + add_amount) - (bond_amount + add_amount) * tr.get_protocol_fees().await / 100
+            staker_stats.balance as f64,
+            (100_000 - (bond_amount + add_amount) - (bond_amount + add_amount)) as f64 * tr.get_protocol_fees().await / 100.0
         );
         let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
         assert_eq!(pool_stats.header.total_staked, (bond_amount + add_amount));

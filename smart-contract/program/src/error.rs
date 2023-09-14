@@ -96,7 +96,7 @@ pub enum AccessError {
     WrongMplProgram,
     #[error("Unsupported instruction")]
     UnsupportedInstruction,
-    #[error("DeprecatedInstruction")]
+    #[error("Deprecated instruction")]
     DeprecatedInstruction,
     #[error("Too many recipients")]
     TooManyRecipients,
@@ -110,6 +110,8 @@ pub enum AccessError {
     NonzeroBallance,
     #[error("Delay too long")]
     DelayTooLong,
+    #[error("Frozen instruction")]
+    FrozenInstruction,
 }
 
 impl From<AccessError> for ProgramError {
