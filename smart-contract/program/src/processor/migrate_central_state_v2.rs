@@ -75,7 +75,7 @@ pub fn process_migrate_central_state_v2(
     let central_state = CentralState::from_account_info(accounts.central_state)?;
 
     // Migrate data
-    let state_v2 = CentralStateV2::new(central_state)?;
+    let state_v2 = CentralStateV2::from_central_state(central_state)?;
 
     // Resize account
     let new_minimum_balance = Rent::get()?.minimum_balance(state_v2.borsh_len());

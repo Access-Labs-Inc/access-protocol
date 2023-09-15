@@ -59,7 +59,7 @@ BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimiti
 )]
 #[repr(u8)]
 #[allow(missing_docs)]
-// todo the old order must be kept!!!!! Add the new tags to the end
+// The order must be kept! Add the new tags to the end
 pub enum Tag {
     Uninitialized,
     StakePool,
@@ -532,7 +532,7 @@ impl CentralStateV2 {
     pub const DEFAULT_FEE_BASIS_POINTS: u16 = 200;
 
     #[allow(missing_docs)]
-    pub fn new(
+    pub fn from_central_state(
         central_state: CentralState,
     ) -> Result<Self, ProgramError> {
         Ok(Self {
