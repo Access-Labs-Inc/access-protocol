@@ -84,10 +84,5 @@ pub fn process_activate_stake_pool(program_id: &Pubkey, accounts: &[AccountInfo]
     }
     stake_pool.header.current_day_idx = central_state.last_snapshot_offset as u16;
 
-    msg!(
-        "Last snapshot offset {}",
-        central_state.last_snapshot_offset
-    );
-
     Ok(())
 }
