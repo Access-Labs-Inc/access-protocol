@@ -36,7 +36,7 @@ async fn later_pool_creation() {
         .await
         .unwrap();
     let central_state_stats = tr.central_state_stats().await.unwrap();
-    assert_eq!(central_state_stats.total_staked, token_amount);
+    assert_eq!(central_state_stats.account.total_staked, token_amount);
 
     // Crank 10 times
     for _ in 0..10 {

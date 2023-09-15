@@ -2,7 +2,7 @@ use std::error::Error;
 
 use borsh::BorshDeserialize;
 use solana_program::{pubkey::Pubkey, system_program};
-use solana_program::native_token::LAMPORTS_PER_SOL;
+
 use solana_program_test::{processor, ProgramTest};
 use solana_sdk::signer::{keypair::Keypair, Signer};
 use solana_sdk::sysvar::clock;
@@ -198,7 +198,7 @@ impl TestRunner {
     }
 
     pub async fn migrate_v2(&mut self) -> Result<(), BanksClientError> {
-        let create_ata_vault_ix = self.create_ata_account(self.central_state).await?;
+        let _create_ata_vault_ix = self.create_ata_account(self.central_state).await?;
         let central_state_vault = get_associated_token_address(&self.central_state, &self.mint);
         let migrate_ix = migrate_central_state_v2(
             self.program_id,

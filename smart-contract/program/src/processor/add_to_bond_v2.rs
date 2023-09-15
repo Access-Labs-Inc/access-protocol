@@ -21,7 +21,7 @@ use crate::error::AccessError;
 use crate::instruction::ProgramInstruction::AddToBondV2;
 use crate::state::{BondAccountV2, CentralStateV2, StakePool};
 use crate::state::Tag;
-use crate::utils::{assert_valid_fee, assert_valid_vault, check_account_key, check_account_owner, check_signer};
+use crate::utils::{assert_valid_fee, check_account_key, check_account_owner, check_signer};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `create_bond` instruction

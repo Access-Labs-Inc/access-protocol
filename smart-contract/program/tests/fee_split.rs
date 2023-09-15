@@ -28,7 +28,7 @@ async fn fee_split() {
     tr.stake(&pool_owner.pubkey(), &staker, 4_999_999_949)
         .await
         .unwrap();
-    return;
+
     // random MAX_FEE_RECIPIENTS recipients
     let mut recipients = vec![];
     for _ in 0..MAX_FEE_RECIPIENTS {
@@ -45,7 +45,7 @@ async fn fee_split() {
         recipient_percentages
     };
 
-    let fee_recipients = recipients
+    let _fee_recipients = recipients
         .iter()
         .zip(recipient_percentages.iter())
         .map(|(r, p)| FeeRecipient {

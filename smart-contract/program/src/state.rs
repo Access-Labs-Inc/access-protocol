@@ -54,6 +54,9 @@ pub const MIN_DISTRIBUTE_AMOUNT: u64 = 100_000_000;
 /// Maximum delay between last fee split distribution and fee split account setup
 pub const MAX_FEE_SPLIT_SETUP_DELAY: u64 = 5 * 60; // 5 minutes
 
+/// Amount in basis points (i.e 1% = 100) added to each locking operation as a protocol fee
+pub const DEFAULT_FEE_BASIS_POINTS: u16 = 200;
+
 #[derive(
 BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive, Debug,
 )]
@@ -529,8 +532,6 @@ pub struct CentralStateV2 {
 }
 
 impl CentralStateV2 {
-    pub const DEFAULT_FEE_BASIS_POINTS: u16 = 200;
-
     #[allow(missing_docs)]
     pub fn from_central_state(
         central_state: CentralState,
@@ -546,7 +547,7 @@ impl CentralStateV2 {
             total_staked_snapshot: central_state.total_staked_snapshot,
             last_snapshot_offset: central_state.last_snapshot_offset,
             ix_gate: u128::MAX, // all instructions enabled
-            fee_basis_points: Self::DEFAULT_FEE_BASIS_POINTS,
+            fee_basis_points: DEFAULT_FEE_BASIS_POINTS,
             last_fee_distribution_time: Clock::get()?.unix_timestamp,
             recipients: vec![], // the default behaviour is that 100% of the fees is getting burned
         })

@@ -74,7 +74,7 @@ mod basic_functionality {
         tr.change_inflation(2_000_000_000).await.unwrap_err();
         // Check the inflation
         let stats = tr.central_state_stats().await.unwrap();
-        assert_eq!(stats.daily_inflation, 1_000_000);
+        assert_eq!(stats.account.daily_inflation, 1_000_000);
 
         // increase supply
         tr.mint(&staker.pubkey(), 1).await.unwrap();
@@ -83,7 +83,7 @@ mod basic_functionality {
         tr.change_inflation(2_000_000_000).await.unwrap();
         // Check the inflation
         let stats = tr.central_state_stats().await.unwrap();
-        assert_eq!(stats.daily_inflation, 2_000_000_000);
+        assert_eq!(stats.account.daily_inflation, 2_000_000_000);
     }
 
 
@@ -94,13 +94,13 @@ mod basic_functionality {
         // Change the authority
         let new_authority = Keypair::new();
         let stats = tr.central_state_stats().await.unwrap();
-        println!("old authority: {:?}", stats.authority);
+        println!("old authority: {:?}", stats.account.authority);
         tr.change_central_state_authority(&new_authority)
             .await
             .unwrap();
         // Check the authority
         let stats = tr.central_state_stats().await.unwrap();
-        assert_eq!(stats.authority, new_authority.pubkey());
+        assert_eq!(stats.account.authority, new_authority.pubkey());
     }
 
     #[tokio::test]
@@ -130,9 +130,9 @@ mod basic_functionality {
         tr.crank_pool(&stake_pool_owner.pubkey()).await.unwrap();
         // Check the central state
         let stats = tr.central_state_stats().await.unwrap();
-        assert_eq!(stats.last_snapshot_offset, 5);
-        assert_eq!(stats.total_staked, 0);
-        assert_eq!(stats.total_staked_snapshot, 0);
+        assert_eq!(stats.account.last_snapshot_offset, 5);
+        assert_eq!(stats.account.total_staked, 0);
+        assert_eq!(stats.account.total_staked_snapshot, 0);
     }
 }
 

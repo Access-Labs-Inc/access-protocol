@@ -95,7 +95,7 @@ async fn full_system_test() {
     let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
     assert_eq!(pool_stats.header.total_staked, 200_000_000_000);
     let central_state = tr.central_state_stats().await.unwrap();
-    assert_eq!(central_state.total_staked, 200_000_000_000);
+    assert_eq!(central_state.account.total_staked, 200_000_000_000);
 
     // ------------------------------------------
     // DAY 3
@@ -148,7 +148,7 @@ async fn full_system_test() {
     let pool3_stats = tr.pool_stats(pool_owner3.pubkey()).await.unwrap();
     assert_eq!(pool3_stats.header.total_staked, 10_000_000_000);
     let central_state = tr.central_state_stats().await.unwrap();
-    assert_eq!(central_state.total_staked, 330_000_000_000);
+    assert_eq!(central_state.account.total_staked, 330_000_000_000);
 
     // ------------------------------------------
     // DAY 4
@@ -221,7 +221,7 @@ async fn full_system_test() {
     let pool3_stats = tr.pool_stats(pool_owner3.pubkey()).await.unwrap();
     assert_eq!(pool3_stats.header.total_staked, 30_000_000_020);
     let central_state = tr.central_state_stats().await.unwrap();
-    assert_eq!(central_state.total_staked, 370_000_000_020);
+    assert_eq!(central_state.account.total_staked, 370_000_000_020);
 
     // ------------------------------------------
     // DAY 5
@@ -251,7 +251,7 @@ async fn full_system_test() {
     let pool3_stats = tr.pool_stats(pool_owner3.pubkey()).await.unwrap();
     assert_eq!(pool3_stats.header.total_staked, 30_000_000_020);
     let central_state = tr.central_state_stats().await.unwrap();
-    assert_eq!(central_state.total_staked, 365_000_000_020);
+    assert_eq!(central_state.account.total_staked, 365_000_000_020);
     let staker_stats = tr.staker_stats(staker.pubkey()).await.unwrap();
     assert_eq!(
         staker_stats.balance,

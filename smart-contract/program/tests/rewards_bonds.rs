@@ -38,7 +38,7 @@ async fn rewards_bonds() {
         .await
         .unwrap();
     let central_state_stats = tr.central_state_stats().await.unwrap();
-    assert_eq!(central_state_stats.total_staked, token_amount);
+    assert_eq!(central_state_stats.account.total_staked, token_amount);
 
     // Create bond account
     tr.create_bond(
@@ -52,14 +52,14 @@ async fn rewards_bonds() {
     .await
     .unwrap();
     let central_state_stats = tr.central_state_stats().await.unwrap();
-    assert_eq!(central_state_stats.total_staked, token_amount);
+    assert_eq!(central_state_stats.account.total_staked, token_amount);
 
     // Claim bond
     tr.claim_bond(&stake_pool_owner.pubkey(), &staker.pubkey())
         .await
         .unwrap();
     let central_state_stats = tr.central_state_stats().await.unwrap();
-    assert_eq!(central_state_stats.total_staked, 20_000);
+    assert_eq!(central_state_stats.account.total_staked, 20_000);
 
     // wait until day 2 12:00
     tr.sleep(86400).await.unwrap();
