@@ -100,7 +100,7 @@ pub fn process_admin_mint(
     )?;
 
     // Transfer tokens
-    let transfer_ix = spl_token::instruction::mint_to(
+    let mint_ix = spl_token::instruction::mint_to(
         &spl_token::ID,
         accounts.mint.key,
         accounts.access_token_destination.key,
@@ -109,14 +109,14 @@ pub fn process_admin_mint(
         params.amount,
     )?;
     invoke_signed(
-        &transfer_ix,
+        &mint_ix,
         &[
             accounts.spl_token_program.clone(),
             accounts.central_state.clone(),
             accounts.mint.clone(),
             accounts.access_token_destination.clone(),
         ],
-        &[&[&program_id.to_bytes(), &[central_state.signer_nonce]]],
+        &[&[&program_id.to_bytes(), &[central_state.bump_seed]]],
     )?;
 
     Ok(())

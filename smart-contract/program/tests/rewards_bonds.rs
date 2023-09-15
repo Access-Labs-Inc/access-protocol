@@ -11,8 +11,8 @@ async fn rewards_bonds() {
     let mut tr = TestRunner::new(1_000_000).await.unwrap();
 
     // Create users
-    let stake_pool_owner = tr.create_ata_account().await.unwrap();
-    let staker = tr.create_ata_account().await.unwrap();
+    let stake_pool_owner = tr.create_user_with_ata().await.unwrap();
+    let staker = tr.create_user_with_ata().await.unwrap();
 
     // Mint
     tr.mint(&staker.pubkey(), 10_200).await.unwrap();
@@ -38,7 +38,7 @@ async fn rewards_bonds() {
         .await
         .unwrap();
     let central_state_stats = tr.central_state_stats().await.unwrap();
-    assert_eq!(central_state_stats.total_staked, token_amount);
+    assert_eq!(central_state_stats.account.total_staked, token_amount);
 
     // Create bond account
     tr.create_bond(
@@ -52,14 +52,14 @@ async fn rewards_bonds() {
     .await
     .unwrap();
     let central_state_stats = tr.central_state_stats().await.unwrap();
-    assert_eq!(central_state_stats.total_staked, token_amount);
+    assert_eq!(central_state_stats.account.total_staked, token_amount);
 
     // Claim bond
     tr.claim_bond(&stake_pool_owner.pubkey(), &staker.pubkey())
         .await
         .unwrap();
     let central_state_stats = tr.central_state_stats().await.unwrap();
-    assert_eq!(central_state_stats.total_staked, 20_000);
+    assert_eq!(central_state_stats.account.total_staked, 20_000);
 
     // wait until day 2 12:00
     tr.sleep(86400).await.unwrap();

@@ -16,8 +16,8 @@ async fn signed_claim() {
     // V1 bond creation should be deprecated
     // ---------------------------------------------------------------------------------------------
     {
-        let pool_owner = tr.create_ata_account().await.unwrap();
-        let bond_creator = tr.create_ata_account().await.unwrap();
+        let pool_owner = tr.create_user_with_ata().await.unwrap();
+        let bond_creator = tr.create_user_with_ata().await.unwrap();
         tr.create_bond(
             &pool_owner.pubkey(),
             &bond_creator.pubkey(),
@@ -34,9 +34,9 @@ async fn signed_claim() {
     // ---------------------------------------------------------------------------------------------
     {
         // Create users
-        let pool_owner = tr.create_ata_account().await.unwrap();
-        let bond_creator = tr.create_ata_account().await.unwrap();
-        let bond_recipient = tr.create_ata_account().await.unwrap();
+        let pool_owner = tr.create_user_with_ata().await.unwrap();
+        let bond_creator = tr.create_user_with_ata().await.unwrap();
+        let bond_recipient = tr.create_user_with_ata().await.unwrap();
         // Mint to staker
         tr.mint(&bond_creator.pubkey(), 100_000).await.unwrap();
         // Create stake pool
@@ -70,7 +70,7 @@ async fn signed_claim() {
         assert_eq!(pool_stats.header.total_staked, bond_amount);
         assert_eq!(pool_stats.vault, bond_amount);
         let central_state_stats = tr.central_state_stats().await.unwrap();
-        assert_eq!(central_state_stats.total_staked, bond_amount);
+        assert_eq!(central_state_stats.account.total_staked, bond_amount);
         let bond = tr
             .bond_v2_stats(
                 bond_recipient.pubkey(),
@@ -108,7 +108,7 @@ async fn signed_claim() {
         assert_eq!(pool_stats.header.total_staked, (bond_amount + add_amount));
         assert_eq!(pool_stats.vault, (bond_amount + add_amount));
         let central_state_stats = tr.central_state_stats().await.unwrap();
-        assert_eq!(central_state_stats.total_staked, (bond_amount + add_amount));
+        assert_eq!(central_state_stats.account.total_staked, (bond_amount + add_amount));
         let bond = tr
             .bond_v2_stats(
                 bond_recipient.pubkey(),
@@ -179,7 +179,7 @@ async fn signed_claim() {
         assert_eq!(pool_stats.header.total_staked, 0);
         assert_eq!(pool_stats.vault, 0);
         let central_state_stats = tr.central_state_stats().await.unwrap();
-        assert_eq!(central_state_stats.total_staked, 0);
+        assert_eq!(central_state_stats.account.total_staked, 0);
         let bond = tr
             .bond_v2_stats(
                 bond_recipient.pubkey(),
@@ -208,9 +208,9 @@ async fn signed_claim() {
     // ---------------------------------------------------------------------------------------------
     {
         // Create users
-        let pool_owner = tr.create_ata_account().await.unwrap();
-        let bond_creator = tr.create_ata_account().await.unwrap();
-        let bond_recipient = tr.create_ata_account().await.unwrap();
+        let pool_owner = tr.create_user_with_ata().await.unwrap();
+        let bond_creator = tr.create_user_with_ata().await.unwrap();
+        let bond_recipient = tr.create_user_with_ata().await.unwrap();
         // Mint to staker
         tr.mint(&bond_creator.pubkey(), 100_000).await.unwrap();
         // Create stake pool
@@ -241,7 +241,7 @@ async fn signed_claim() {
         assert_eq!(pool_stats.header.total_staked, bond_amount);
         assert_eq!(pool_stats.vault, 0); // it got burned so it didn't get to the vault
         let central_state_stats = tr.central_state_stats().await.unwrap();
-        assert_eq!(central_state_stats.total_staked, bond_amount);
+        assert_eq!(central_state_stats.account.total_staked, bond_amount);
         let bond = tr
             .bond_v2_stats(bond_recipient.pubkey(), pool_owner.pubkey(), None)
             .await
@@ -275,7 +275,7 @@ async fn signed_claim() {
         assert_eq!(pool_stats.header.total_staked, (bond_amount + add_amount));
         assert_eq!(pool_stats.vault, 0);
         let central_state_stats = tr.central_state_stats().await.unwrap();
-        assert_eq!(central_state_stats.total_staked, bond_amount + add_amount);
+        assert_eq!(central_state_stats.account.total_staked, bond_amount + add_amount);
         let bond = tr
             .bond_v2_stats(bond_recipient.pubkey(), pool_owner.pubkey(), None)
             .await

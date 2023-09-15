@@ -15,8 +15,8 @@ async fn v1_bonds() {
     // Unlockable bond
     // ---------------------------------------------------------------------------------------------
     // Create users
-    let pool_owner = tr.create_ata_account().await.unwrap();
-    let bond_recipient = tr.create_ata_account().await.unwrap();
+    let pool_owner = tr.create_user_with_ata().await.unwrap();
+    let bond_recipient = tr.create_user_with_ata().await.unwrap();
     // Create stake pool
     tr.create_stake_pool(&pool_owner.pubkey(), 10_000)
         .await
@@ -46,7 +46,7 @@ async fn v1_bonds() {
     assert_eq!(pool_stats.header.total_staked, bond_amount);
     assert_eq!(pool_stats.vault, bond_amount);
     let central_state_stats = tr.central_state_stats().await.unwrap();
-    assert_eq!(central_state_stats.total_staked, bond_amount);
+    assert_eq!(central_state_stats.account.total_staked, bond_amount);
     let bond = tr
         .bond_stats(bond_recipient.pubkey(), pool_owner.pubkey(), bond_amount)
         .await
@@ -108,7 +108,7 @@ async fn v1_bonds() {
     assert_eq!(pool_stats.header.total_staked, 0);
     assert_eq!(pool_stats.vault, 0);
     let central_state_stats = tr.central_state_stats().await.unwrap();
-    assert_eq!(central_state_stats.total_staked, 0);
+    assert_eq!(central_state_stats.account.total_staked, 0);
     let bond = tr
         .bond_stats(bond_recipient.pubkey(), pool_owner.pubkey(), bond_amount)
         .await
@@ -135,7 +135,7 @@ async fn v1_bonds() {
     assert_eq!(pool_stats.header.total_staked, 0);
     assert_eq!(pool_stats.vault, 0);
     let central_state_stats = tr.central_state_stats().await.unwrap();
-    assert_eq!(central_state_stats.total_staked, 0);
+    assert_eq!(central_state_stats.account.total_staked, 0);
     let bond = tr
         .bond_stats(bond_recipient.pubkey(), pool_owner.pubkey(), bond_amount)
         .await

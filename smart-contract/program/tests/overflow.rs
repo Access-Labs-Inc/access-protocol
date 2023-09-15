@@ -15,8 +15,8 @@ mod basic_functionality {
         // Set daily inflation
         tr.change_inflation(5_479_452_000_000_000).await.unwrap();
         // Create pools
-        let pool_owner = tr.create_ata_account().await.unwrap();
-        let pool_owner2 = tr.create_ata_account().await.unwrap();
+        let pool_owner = tr.create_user_with_ata().await.unwrap();
+        let pool_owner2 = tr.create_user_with_ata().await.unwrap();
         tr.create_stake_pool(&pool_owner.pubkey(), 1_000_000_000)
             .await
             .unwrap();
@@ -26,7 +26,7 @@ mod basic_functionality {
         tr.activate_stake_pool(&pool_owner.pubkey()).await.unwrap();
         tr.activate_stake_pool(&pool_owner2.pubkey()).await.unwrap();
         // Create a staker
-        let staker = tr.create_ata_account().await.unwrap();
+        let staker = tr.create_user_with_ata().await.unwrap();
         tr.mint(&staker.pubkey(), 6_000_000_000_000_000_000)
             .await
             .unwrap();

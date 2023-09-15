@@ -133,7 +133,7 @@ pub fn process_edit_metadata(
     invoke_signed(
         &ix,
         &[accounts.metadata.clone(), accounts.central_state.clone()],
-        &[&[&program_id.to_bytes(), &[central_state.signer_nonce]]],
+        &[&[&program_id.to_bytes(), &[central_state.bump_seed]]],
     )?;
 
     Ok(())

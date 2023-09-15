@@ -17,18 +17,18 @@ async fn end_to_end() {
     let mut tr = TestRunner::new(DAILY_INFLATION).await.unwrap();
 
     let cs_stats = tr.central_state_stats().await.unwrap();
-    assert_eq!(cs_stats.tag, Tag::CentralState);
-    assert_eq!(cs_stats.daily_inflation, DAILY_INFLATION);
-    assert_eq!(cs_stats.token_mint.to_string(), tr.get_mint().to_string());
-    assert_eq!(cs_stats.authority, tr.get_authority());
-    assert_eq!(cs_stats.creation_time, tr.get_current_time().await);
-    assert_eq!(cs_stats.total_staked, 0);
-    assert_eq!(cs_stats.total_staked_snapshot, 0);
-    assert_eq!(cs_stats.last_snapshot_offset, 0);
+    assert_eq!(cs_stats.account.tag, Tag::CentralState);
+    assert_eq!(cs_stats.account.daily_inflation, DAILY_INFLATION);
+    assert_eq!(cs_stats.account.token_mint.to_string(), tr.get_mint().to_string());
+    assert_eq!(cs_stats.account.authority, tr.get_authority());
+    assert_eq!(cs_stats.account.creation_time, tr.get_current_time().await);
+    assert_eq!(cs_stats.account.total_staked, 0);
+    assert_eq!(cs_stats.account.total_staked_snapshot, 0);
+    assert_eq!(cs_stats.account.last_snapshot_offset, 0);
 
     // Create users
-    let stake_pool_owner = tr.create_ata_account().await.unwrap();
-    let staker = tr.create_ata_account().await.unwrap();
+    let stake_pool_owner = tr.create_user_with_ata().await.unwrap();
+    let staker = tr.create_user_with_ata().await.unwrap();
 
     // Create stake pool
     tr.create_stake_pool(&stake_pool_owner.pubkey(), 1000)
@@ -297,7 +297,7 @@ async fn end_to_end() {
     // Change inflation
     tr.change_inflation(DAILY_INFLATION * 2).await.unwrap();
     let stats = tr.central_state_stats().await.unwrap();
-    assert_eq!(stats.daily_inflation, DAILY_INFLATION * 2);
+    assert_eq!(stats.account.daily_inflation, DAILY_INFLATION * 2);
 
     // Change pool minimum
     tr.change_pool_minimum(&stake_pool_owner, 2000)

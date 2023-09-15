@@ -19,7 +19,7 @@ use spl_token::state::Account;
 
 use crate::error::AccessError;
 use crate::instruction::ProgramInstruction::AddToBondV2;
-use crate::state::{BondAccountV2, CentralStateV2, FeeSplit, StakePool};
+use crate::state::{BondAccountV2, CentralStateV2, StakePool};
 use crate::state::Tag;
 use crate::utils::{assert_valid_fee, check_account_key, check_account_owner, check_signer};
 
@@ -62,16 +62,13 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub central_state: &'a T,
 
-    /// The fee split account
-    pub fee_split_pda: &'a T,
-
     /// The vault of the pool
     #[cons(writable)]
     pub pool_vault: &'a T,
 
     /// The stake fee account
     #[cons(writable)]
-    pub fee_split_ata: &'a T,
+    pub central_state_vault: &'a T,
 
     #[cons(writable)]
     pub mint: &'a T,
@@ -97,9 +94,8 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             bond_account_v2: next_account_info(accounts_iter)?,
             pool: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
-            fee_split_pda: next_account_info(accounts_iter)?,
             pool_vault: next_account_info(accounts_iter)?,
-            fee_split_ata: next_account_info(accounts_iter)?,
+            central_state_vault: next_account_info(accounts_iter)?,
             mint: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
             system_program: next_account_info(accounts_iter)?,
@@ -119,7 +115,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
         // Check ownership
         check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
-        check_account_owner(accounts.fee_split_pda, program_id, AccessError::WrongOwner)?;
+        check_account_owner(accounts.central_state_vault, &spl_token::ID, AccessError::WrongOwner)?;
         check_account_owner(
             accounts.bond_account_v2,
             program_id,
@@ -165,7 +161,6 @@ pub fn process_add_to_bond_v2(
     let mut bond = BondAccountV2::from_account_info(accounts.bond_account_v2)?;
     let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
     central_state.assert_instruction_allowed(AddToBondV2)?;
-    let fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
 
     check_account_key(
         accounts.mint,
@@ -189,7 +184,7 @@ pub fn process_add_to_bond_v2(
         AccessError::StakePoolVaultMismatch,
     )?;
 
-    assert_valid_fee(accounts.fee_split_ata, accounts.fee_split_pda.key)?;
+    assert_valid_fee(accounts.central_state_vault, accounts.central_state.key)?;
 
     if amount == 0 {
         return Err(AccessError::CannotStakeZero.into());
@@ -261,17 +256,17 @@ pub fn process_add_to_bond_v2(
     let transfer_fees = transfer(
         &spl_token::ID,
         accounts.source_token.key,
-        accounts.fee_split_ata.key,
+        accounts.central_state_vault.key,
         accounts.from.key,
         &[],
-        fee_split.calculate_fee(amount)?,
+        central_state.calculate_fee(amount)?,
     )?;
     invoke(
         &transfer_fees,
         &[
             accounts.spl_token_program.clone(),
             accounts.source_token.clone(),
-            accounts.fee_split_ata.clone(),
+            accounts.central_state_vault.clone(),
             accounts.from.clone(),
         ],
     )?;

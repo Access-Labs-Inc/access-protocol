@@ -182,7 +182,7 @@ pub fn process_claim_bond_rewards(
             accounts.central_state.clone(),
             accounts.rewards_destination.clone(),
         ],
-        &[&[&program_id.to_bytes(), &[central_state.signer_nonce]]],
+        &[&[&program_id.to_bytes(), &[central_state.bump_seed]]],
     )?;
 
     // Update states

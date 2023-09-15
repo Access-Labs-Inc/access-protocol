@@ -10,8 +10,8 @@ async fn common_unstake_limit() {
     let mut tr = TestRunner::new(1_000_000_000).await.unwrap();
 
     // Create users
-    let stake_pool_owner = tr.create_ata_account().await.unwrap();
-    let staker = tr.create_ata_account().await.unwrap();
+    let stake_pool_owner = tr.create_user_with_ata().await.unwrap();
+    let staker = tr.create_user_with_ata().await.unwrap();
 
     // Mint
     tr.mint(&staker.pubkey(), 10_200).await.unwrap();

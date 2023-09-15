@@ -17,8 +17,8 @@ use crate::state:: CentralStateV2;
 use crate::error::AccessError;
 use crate::state::MAX_FEE_RECIPIENTS;
 use crate::{
-    state::{FeeSplit, MIN_DISTRIBUTE_AMOUNT},
-    utils::{check_account_key, check_account_owner, check_signer},
+    state::MIN_DISTRIBUTE_AMOUNT,
+    utils::{check_account_key, check_account_owner, check_signer, assert_valid_vault},
 };
 use solana_program::clock::Clock;
 use solana_program::sysvar::Sysvar;
@@ -36,12 +36,10 @@ pub struct Accounts<'a, T> {
     pub fee_payer: &'a T,
 
     #[cons(writable)]
-    pub fee_split_pda: &'a T,
+    pub central_state: &'a T,
 
     #[cons(writable)]
-    pub fee_split_ata: &'a T,
-
-    pub central_state: &'a T,
+    pub central_state_vault: &'a T,
 
     pub spl_token_program: &'a T,
 
@@ -60,9 +58,8 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
             fee_payer: next_account_info(accounts_iter)?,
-            fee_split_pda: next_account_info(accounts_iter)?,
-            fee_split_ata: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
+            central_state_vault: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
             mint: next_account_info(accounts_iter)?,
             token_accounts: accounts_iter.as_slice(),
@@ -81,9 +78,8 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             program_id,
             AccessError::WrongOwner,
         )?;
-        check_account_owner(accounts.fee_split_pda, program_id, AccessError::WrongOwner)?;
         check_account_owner(
-            accounts.fee_split_ata,
+            accounts.central_state_vault,
             &spl_token::ID,
             AccessError::WrongTokenAccountOwner,
         )?;
@@ -108,18 +104,14 @@ pub fn process_distribute_fees(
     _params: Params,
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
-    if accounts.token_accounts.is_empty() {
-        msg!("No token accounts to distribute to");
-        return Err(AccessError::InvalidTokenAccount.into());
-    }
     if accounts.token_accounts.len() > MAX_FEE_RECIPIENTS {
         msg!("Too many token accounts to distribute to");
         return Err(AccessError::InvalidTokenAccount.into());
     }
 
-    let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
     central_state.assert_instruction_allowed(DistributeFees)?;
-    let mut fee_split = FeeSplit::from_account_info(accounts.fee_split_pda)?;
+    assert_valid_vault(accounts.central_state_vault, accounts.central_state.key)?;
 
     check_account_key(
         accounts.mint,
@@ -128,18 +120,15 @@ pub fn process_distribute_fees(
     )?;
 
     // check recipient count
-    if accounts.token_accounts.len() != fee_split.recipients.len() {
+    if accounts.token_accounts.len() != central_state.recipients.len() {
         msg!("Invalid count of the token accounts");
         return Err(AccessError::InvalidTokenAccount.into());
     }
 
     // check ATA mints
-    let fee_split_ata = Account::unpack(&accounts.fee_split_ata.data.borrow())?;
-    if fee_split_ata.mint != central_state.token_mint {
+    let central_state_vault = Account::unpack(&accounts.central_state_vault.data.borrow())?;
+    if central_state_vault.mint != central_state.token_mint {
         return Err(AccessError::WrongMint.into());
-    }
-    if &fee_split_ata.owner != accounts.fee_split_pda.key {
-        return Err(AccessError::WrongOwner.into());
     }
 
     for token_account in accounts.token_accounts {
@@ -150,7 +139,7 @@ pub fn process_distribute_fees(
     }
 
     // Distribute
-    let total_balance = fee_split_ata.amount;
+    let total_balance = central_state_vault.amount;
     msg!("Balance to distribute: {}", total_balance);
     let mut remaining_balance = total_balance;
 
@@ -163,7 +152,7 @@ pub fn process_distribute_fees(
     for (token_account, recipient) in accounts
         .token_accounts
         .iter()
-        .zip(fee_split.recipients.iter())
+        .zip(central_state.recipients.iter())
     {
         let recipient_ata = recipient.ata(&central_state.token_mint);
         if *token_account.key != recipient_ata {
@@ -181,9 +170,9 @@ pub fn process_distribute_fees(
         }
         let ix = spl_token::instruction::transfer(
             &spl_token::ID,
-            accounts.fee_split_ata.key,
+            accounts.central_state_vault.key,
             &recipient_ata,
-            accounts.fee_split_pda.key,
+            accounts.central_state.key,
             &[],
             amount,
         )
@@ -192,15 +181,11 @@ pub fn process_distribute_fees(
             &ix,
             &[
                 accounts.spl_token_program.clone(),
-                accounts.fee_split_ata.clone(),
+                accounts.central_state_vault.clone(),
                 token_account.clone(),
-                accounts.fee_split_pda.clone(),
+                accounts.central_state.clone(),
             ],
-            &[&[
-                FeeSplit::SEED,
-                &program_id.to_bytes(),
-                &[fee_split.bump_seed],
-            ]],
+            &[&[&program_id.to_bytes(), &[central_state.bump_seed]]],
         )?;
         remaining_balance = remaining_balance
             .checked_sub(amount)
@@ -210,30 +195,26 @@ pub fn process_distribute_fees(
     if remaining_balance > 0 {
         let burn_instruction = spl_token::instruction::burn(
             &spl_token::ID,
-            accounts.fee_split_ata.key,
+            accounts.central_state_vault.key,
             accounts.mint.key,
-            accounts.fee_split_pda.key,
+            accounts.central_state.key,
             &[],
             remaining_balance,
         )?;
         invoke_signed(
             &burn_instruction,
             &[
-                accounts.fee_split_ata.clone(),
+                accounts.central_state_vault.clone(),
                 accounts.mint.clone(),
-                accounts.fee_split_pda.clone(),
-                accounts.fee_split_pda.clone(),
+                accounts.central_state.clone(),
+                accounts.central_state.clone(),
             ],
-            &[&[
-                FeeSplit::SEED,
-                &program_id.to_bytes(),
-                &[fee_split.bump_seed],
-            ]],
+            &[&[&program_id.to_bytes(), &[central_state.bump_seed]]],
         )?;
         msg!("Burned {} tokens", remaining_balance);
     }
 
-    fee_split.last_distribution_time = Clock::get()?.unix_timestamp;
-    fee_split.save(&mut accounts.fee_split_pda.data.borrow_mut())?;
+    central_state.last_fee_distribution_time = Clock::get()?.unix_timestamp;
+    central_state.save(&mut accounts.central_state.data.borrow_mut())?;
     Ok(())
 }

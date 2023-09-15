@@ -19,9 +19,8 @@ use access_protocol::{
 };
 use mpl_token_metadata::instruction::update_metadata_accounts;
 use mpl_token_metadata::{instruction::create_metadata_accounts_v3, pda::find_metadata_account};
-use solana_program::native_token::LAMPORTS_PER_SOL;
+
 use spl_token::{instruction::set_authority, instruction::AuthorityType};
-use access_protocol::state::FeeSplit;
 
 #[tokio::test]
 async fn functional_10s() {
@@ -44,12 +43,10 @@ async fn functional_10s() {
 
     let authority = Keypair::new();
 
-    let (fee_split_key, _) = FeeSplit::find_key(&program_id);
-
     //
     // Create mint
     //
-    let (mint, _) = mint_bootstrap(None, 6, &mut program_test, &authority.pubkey(), LAMPORTS_PER_SOL);
+    let (mint, _) = mint_bootstrap(None, 6, &mut program_test, &authority.pubkey());
 
     ////
     // Create test context
@@ -174,14 +171,14 @@ async fn functional_10s() {
     //
     let ix = create_associated_token_account(
         &prg_test_ctx.payer.pubkey(),
-        &prg_test_ctx.payer.pubkey(),
+        &central_state,
         &mint,
         &spl_token::ID,
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![])
         .await
         .unwrap();
-    let authority_ata = get_associated_token_address(&prg_test_ctx.payer.pubkey(), &mint);
+    let authority_ata = get_associated_token_address(&central_state, &mint);
 
     //
     // Create users
@@ -455,9 +452,8 @@ async fn functional_10s() {
             spl_token_program: &spl_token::ID,
             vault: &pool_vault,
             central_state: &central_state,
-            fee_account: &authority_ata,
+            central_state_vault: &authority_ata,
             bond_account: None,
-            fee_split_pda: &fee_split_key,
         },
         stake::Params {
             amount: token_amount,

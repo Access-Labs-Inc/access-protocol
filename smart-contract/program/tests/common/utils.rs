@@ -30,14 +30,13 @@ pub fn mint_bootstrap(
     decimals: u8,
     program_test: &mut ProgramTest,
     mint_authority: &Pubkey,
-    initial_supply: u64,
 ) -> (Pubkey, Mint) {
     let address = address
         .map(|s| Pubkey::from_str(s).unwrap())
         .unwrap_or_else(Pubkey::new_unique);
     let mint_info = Mint {
         mint_authority: Some(*mint_authority).into(),
-        supply: initial_supply,
+        supply: 0,
         decimals,
         is_initialized: true,
         freeze_authority: None.into(),
