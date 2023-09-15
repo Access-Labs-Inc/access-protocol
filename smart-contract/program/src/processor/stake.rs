@@ -195,7 +195,7 @@ pub fn process_stake(
         stake_account.pool_minimum_at_creation = stake_pool.header.minimum_stake_amount;
     }
 
-    assert_valid_fee(accounts.central_state_vault, &accounts.central_state.key)?;
+    assert_valid_fee(accounts.central_state_vault, accounts.central_state.key)?;
 
     if amount == 0 {
         return Err(AccessError::CannotStakeZero.into());

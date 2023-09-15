@@ -168,7 +168,7 @@ pub fn process_create_bond_v2(
         return Err(AccessError::InvalidAmount.into());
     }
 
-    assert_valid_fee(accounts.fee_account, &accounts.central_state.key)?;
+    assert_valid_fee(accounts.fee_account, accounts.central_state.key)?;
     check_account_key(
         accounts.bond_account_v2,
         &derived_key,

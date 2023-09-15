@@ -19,7 +19,6 @@ use solana_program::{
 use crate::state::{
     FeeRecipient, MAX_FEE_RECIPIENTS, MAX_FEE_SPLIT_SETUP_DELAY,
 };
-use crate::utils::assert_valid_vault;
 use crate::utils::{check_account_key, check_account_owner, check_signer};
 use crate::{error::AccessError};
 use crate::instruction::ProgramInstruction::AdminSetupFeeSplit;
@@ -38,10 +37,8 @@ pub struct Accounts<'a, T> {
     pub authority: &'a T,
 
     /// The account of the central state
+    #[cons(writable)]
     pub central_state: &'a T,
-
-    /// The account of the central state
-    pub central_state_vault: &'a T,
 
     /// The system program account
     pub system_program: &'a T,
@@ -56,7 +53,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         let accounts = Accounts {
             authority: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
-            central_state_vault: next_account_info(accounts_iter)?,
             system_program: next_account_info(accounts_iter)?,
         };
 
@@ -95,7 +91,6 @@ pub fn process_admin_setup_fee_split(
         &central_state.authority,
         AccessError::WrongCentralStateAuthority,
     )?;
-    assert_valid_vault(accounts.central_state_vault, &accounts.central_state.key)?;
 
     // Check if right number of recipients
     if recipients.len() > MAX_FEE_RECIPIENTS {

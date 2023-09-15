@@ -111,7 +111,7 @@ pub fn process_distribute_fees(
 
     let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
     central_state.assert_instruction_allowed(DistributeFees)?;
-    assert_valid_vault(accounts.central_state_vault, &accounts.central_state.key)?;
+    assert_valid_vault(accounts.central_state_vault, accounts.central_state.key)?;
 
     check_account_key(
         accounts.mint,
@@ -126,12 +126,9 @@ pub fn process_distribute_fees(
     }
 
     // check ATA mints
-    let fee_split_ata = Account::unpack(&accounts.central_state_vault.data.borrow())?;
-    if fee_split_ata.mint != central_state.token_mint {
+    let central_state_vault = Account::unpack(&accounts.central_state_vault.data.borrow())?;
+    if central_state_vault.mint != central_state.token_mint {
         return Err(AccessError::WrongMint.into());
-    }
-    if &fee_split_ata.owner != accounts.central_state_vault.key {
-        return Err(AccessError::WrongOwner.into());
     }
 
     for token_account in accounts.token_accounts {
@@ -142,7 +139,7 @@ pub fn process_distribute_fees(
     }
 
     // Distribute
-    let total_balance = fee_split_ata.amount;
+    let total_balance = central_state_vault.amount;
     msg!("Balance to distribute: {}", total_balance);
     let mut remaining_balance = total_balance;
 

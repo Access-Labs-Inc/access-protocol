@@ -12,6 +12,10 @@ async fn fee_split() {
     // Setup the token + basic accounts
     let mut tr = TestRunner::new(1_000_000).await.unwrap();
     tr.migrate_v2().await.unwrap();
+    tr.sleep(1).await;
+
+    let token_stats = tr.token_stats().await.unwrap();
+    assert_eq!(token_stats.supply, 100_000_000_000_000_000);
 
     let pool_owner = tr.create_user_with_ata().await.unwrap();
     tr.create_stake_pool(&pool_owner.pubkey(), 200_000_000)
@@ -25,9 +29,22 @@ async fn fee_split() {
         .await
         .unwrap();
 
-    tr.stake(&pool_owner.pubkey(), &staker, 4_999_999_949)
+
+    // Initial state - no recipients, all burned
+    tr.stake(&pool_owner.pubkey(), &staker, 5_000_000_000)
         .await
         .unwrap();
+
+    let central_state_stats = tr.central_state_stats().await.unwrap();
+    assert_eq!(central_state_stats.balance, 100_000_000);
+    assert_eq!(central_state_stats.account.recipients.len(), 0);
+
+    tr.distribute_fees().await.unwrap();
+    let central_state_stats = tr.central_state_stats().await.unwrap();
+    assert_eq!(central_state_stats.balance, 0);
+    assert_eq!(central_state_stats.account.recipients.len(), 0);
+    let token_stats = tr.token_stats().await.unwrap();
+    assert_eq!(token_stats.supply, 100_000_000_000_000_000 - 100_000_000);
 
     // random MAX_FEE_RECIPIENTS recipients
     let mut recipients = vec![];
@@ -45,7 +62,7 @@ async fn fee_split() {
         recipient_percentages
     };
 
-    let _fee_recipients = recipients
+    let fee_recipients = recipients
         .iter()
         .zip(recipient_percentages.iter())
         .map(|(r, p)| FeeRecipient {
@@ -53,6 +70,8 @@ async fn fee_split() {
             percentage: *p,
         })
         .collect::<Vec<_>>();
+
+    tr.setup_fee_split(fee_recipients).await.unwrap();
 
     // this adds 99_999_999 to the fee split ata
     tr.stake(&pool_owner.pubkey(), &staker, 4_999_999_949)

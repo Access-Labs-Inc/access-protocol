@@ -2,7 +2,6 @@ use std::error::Error;
 
 use borsh::BorshDeserialize;
 use solana_program::{pubkey::Pubkey, system_program};
-
 use solana_program_test::{processor, ProgramTest};
 use solana_sdk::signer::{keypair::Keypair, Signer};
 use solana_sdk::sysvar::clock;
@@ -62,6 +61,14 @@ pub struct FeeSplitStats {
     pub balance: u64,
     pub recipients: Vec<FeeRecipient>,
     pub fee_basis_points: u16,
+}
+
+#[derive(Debug)]
+pub struct TokenStats {
+    pub supply: u64,
+    pub decimals: u8,
+    pub mint_authority: Option<Pubkey>,
+    pub freeze_authority: Option<Pubkey>,
 }
 
 impl TestRunner {
@@ -198,7 +205,7 @@ impl TestRunner {
     }
 
     pub async fn migrate_v2(&mut self) -> Result<(), BanksClientError> {
-        let _create_ata_vault_ix = self.create_ata_account(self.central_state).await?;
+        self.create_ata_account(self.central_state).await?;
         let central_state_vault = get_associated_token_address(&self.central_state, &self.mint);
         let migrate_ix = migrate_central_state_v2(
             self.program_id,
@@ -1217,7 +1224,6 @@ impl TestRunner {
             admin_setup_fee_split::Accounts {
                 authority: &self.prg_test_ctx.payer.pubkey(),
                 central_state: &self.central_state,
-                central_state_vault: &self.central_state_vault.unwrap(),
                 system_program: &system_program::ID,
             },
             admin_setup_fee_split::Params { recipients },
@@ -1291,5 +1297,26 @@ impl TestRunner {
         } else {
             2.0
         }
+    }
+
+    pub async fn token_stats(&mut self) -> Result<TokenStats, BanksClientError> {
+        let token_mint = self
+            .local_env
+            .get_packed_account_data::<spl_token::state::Mint>(self.mint)
+            .await?;
+        Ok(TokenStats {
+            supply: token_mint.supply,
+            decimals: token_mint.decimals,
+            mint_authority: if token_mint.mint_authority.is_none() {
+                None
+            } else {
+                Some(token_mint.mint_authority.unwrap())
+            },
+            freeze_authority: if token_mint.freeze_authority.is_none() {
+                None
+            } else {
+                Some(token_mint.freeze_authority.unwrap())
+            },
+        })
     }
 }

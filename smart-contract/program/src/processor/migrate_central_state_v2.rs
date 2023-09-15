@@ -1,3 +1,4 @@
+use std::mem::size_of;
 use solana_program::sysvar::Sysvar;
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -13,7 +14,7 @@ use solana_program::{
 };
 
 use crate::error::AccessError;
-use crate::state::{CentralState, CentralStateV2};
+use crate::state::{CentralState, CentralStateV2, FeeRecipient, MAX_FEE_RECIPIENTS};
 use crate::utils::{check_account_key, check_account_owner};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -78,7 +79,8 @@ pub fn process_migrate_central_state_v2(
     let state_v2 = CentralStateV2::from_central_state(central_state)?;
 
     // Resize account
-    let new_minimum_balance = Rent::get()?.minimum_balance(state_v2.borsh_len());
+    let new_data_len = state_v2.borsh_len()+ size_of::<FeeRecipient>() * MAX_FEE_RECIPIENTS;
+    let new_minimum_balance = Rent::get()?.minimum_balance(new_data_len);
     let lamports_diff = new_minimum_balance
         .checked_sub(accounts.central_state.lamports())
         .ok_or(AccessError::Overflow)?;
@@ -91,7 +93,7 @@ pub fn process_migrate_central_state_v2(
             accounts.system_program.clone(),
         ],
     )?;
-    accounts.central_state.realloc(state_v2.borsh_len(), false)?;
+    accounts.central_state.realloc(new_data_len, false)?;
 
     // Save new data
     state_v2.save(&mut accounts.central_state.data.borrow_mut())?;
