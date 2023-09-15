@@ -27,9 +27,6 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub central_state: &'a T,
 
-    /// The account of the central state
-    pub central_state_vault: &'a T,
-
     /// The system program account
     pub system_program: &'a T,
 
@@ -46,7 +43,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
             central_state: next_account_info(accounts_iter)?,
-            central_state_vault: next_account_info(accounts_iter)?,
             system_program: next_account_info(accounts_iter)?,
             fee_payer: next_account_info(accounts_iter)?,
         };
@@ -77,10 +73,9 @@ pub fn process_migrate_central_state_v2(
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let central_state = CentralState::from_account_info(accounts.central_state)?;
-    assert_valid_vault(accounts.central_state_vault, &accounts.central_state.key)?;
 
     // Migrate data
-    let state_v2 = CentralStateV2::new(central_state, *accounts.central_state_vault.key)?;
+    let state_v2 = CentralStateV2::new(central_state)?;
 
     // Resize account
     let new_minimum_balance = Rent::get()?.minimum_balance(state_v2.borsh_len());

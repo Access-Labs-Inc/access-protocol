@@ -205,7 +205,6 @@ impl TestRunner {
             migrate_central_state_v2::Accounts {
                 fee_payer: &self.prg_test_ctx.payer.pubkey(),
                 central_state: &self.central_state,
-                central_state_vault: &central_state_vault,
                 system_program: &system_program::ID,
             },
             migrate_central_state_v2::Params {},

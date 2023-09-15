@@ -524,9 +524,6 @@ pub struct CentralStateV2 {
     /// Last distribution timestamp
     pub last_fee_distribution_time: i64,
 
-    /// Central state vault
-    pub vault: [u8; 32],
-
     /// List of fee recipients
     pub recipients: Vec<FeeRecipient>,
 }
@@ -537,7 +534,6 @@ impl CentralStateV2 {
     #[allow(missing_docs)]
     pub fn new(
         central_state: CentralState,
-        vault: Pubkey,
     ) -> Result<Self, ProgramError> {
         Ok(Self {
             tag: Tag::CentralStateV2,
@@ -552,7 +548,6 @@ impl CentralStateV2 {
             ix_gate: u128::MAX, // all instructions enabled
             fee_basis_points: Self::DEFAULT_FEE_BASIS_POINTS,
             last_fee_distribution_time: Clock::get()?.unix_timestamp,
-            vault: vault.to_bytes(),
             recipients: vec![], // the default behaviour is that 100% of the fees is getting burned
         })
     }
