@@ -46,7 +46,7 @@ async fn functional_10s() {
     //
     // Create mint
     //
-    let (mint, _) = mint_bootstrap(None, 6, &mut program_test, &authority.pubkey(), LAMPORTS_PER_SOL);
+    let (mint, _) = mint_bootstrap(None, 6, &mut program_test, &authority.pubkey());
 
     ////
     // Create test context

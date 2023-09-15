@@ -101,7 +101,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         )?;
         check_account_owner(
             accounts.central_state_vault,
-            program_id,
+            &spl_token::ID,
             AccessError::WrongOwner,
         )?;
         check_account_owner(
