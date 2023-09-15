@@ -59,7 +59,7 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub vault: &'a T,
 
-    /// The stake fee account
+    /// The central state ATA
     #[cons(writable)]
     pub central_state_vault: &'a T,
 

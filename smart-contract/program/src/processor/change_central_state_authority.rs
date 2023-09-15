@@ -24,11 +24,11 @@ pub struct Params {
 #[derive(InstructionsAccount)]
 /// The required accounts for the `change_central_state_authority` instruction
 pub struct Accounts<'a, T> {
-    /// The account of the central state
+    /// The central state account
     #[cons(writable)]
     pub central_state: &'a T,
 
-    /// The account of the central state authority
+    /// The central state account authority
     #[cons(signer)]
     pub authority: &'a T,
 }

@@ -35,7 +35,7 @@ pub struct Accounts<'a, T> {
     /// The central state account
     pub central_state: &'a T,
 
-    /// The account of the central state authority
+    /// The central state account authority
     #[cons(signer)]
     pub authority: &'a T,
 

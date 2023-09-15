@@ -31,21 +31,26 @@ pub struct Params {}
 #[derive(InstructionsAccount)]
 /// The required accounts for the `close_stake_pool` instruction
 pub struct Accounts<'a, T> {
-    // todo comments
+    /// The fee account
     #[cons(signer)]
     pub fee_payer: &'a T,
 
+    /// The central state account
     #[cons(writable)]
     pub central_state: &'a T,
 
+    /// The central state ATA
     #[cons(writable)]
     pub central_state_vault: &'a T,
 
+    /// The SPL token program account
     pub spl_token_program: &'a T,
 
+    /// The mint address of the ACCESS token
     #[cons(writable)]
     pub mint: &'a T,
-    /// Pool vault
+
+    /// The token accounts to distribute the fees to
     #[cons(writable)]
     pub token_accounts: &'a [T],
 }

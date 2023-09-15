@@ -29,7 +29,7 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub stake_pool: &'a T,
 
-    /// The account of the central state
+    /// The central state account
     #[cons(writable)]
     pub central_state: &'a T,
 }

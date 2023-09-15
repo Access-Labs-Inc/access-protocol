@@ -34,7 +34,7 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub access_token_destination: &'a T,
 
-    /// The account of the central state
+    /// The central state account
     pub central_state: &'a T,
 
     /// The SPL token program account
