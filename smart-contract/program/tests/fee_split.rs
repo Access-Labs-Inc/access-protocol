@@ -12,7 +12,7 @@ async fn fee_split() {
     // Setup the token + basic accounts
     let mut tr = TestRunner::new(1_000_000).await.unwrap();
     tr.migrate_v2().await.unwrap();
-    tr.sleep(1).await;
+    tr.sleep(1).await.unwrap();
 
     let token_stats = tr.token_stats().await.unwrap();
     assert_eq!(token_stats.supply, 100_000_000_000_000_000);
