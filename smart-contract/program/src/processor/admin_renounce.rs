@@ -1,19 +1,21 @@
 //! Admin renounce functionality
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
-use solana_program::{account_info::{AccountInfo, next_account_info}, entrypoint::ProgramResult, program_error::ProgramError, pubkey::Pubkey};
+use num_traits::FromPrimitive;
+use num_traits::ToPrimitive;
+use solana_program::{account_info::{AccountInfo, next_account_info}, entrypoint::ProgramResult, msg, program_error::ProgramError, pubkey::Pubkey};
 
 use crate::error::AccessError;
 use crate::instruction::ProgramInstruction;
 use crate::state::CentralStateV2;
-use crate::utils::{check_account_key, check_account_owner, check_signer};
+use crate::utils::{check_account_key, check_account_owner, check_signer, is_admin_renouncable_instruction};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `admin_renounce` instruction
 pub struct Params {
     // a bitmask of the instruction to renounce.
     // can only include one instruction at a time due to safety reasons
-    pub renounce_mask: u128
+    pub renounce_mask: u128,
 }
 
 #[derive(InstructionsAccount)]
@@ -69,6 +71,15 @@ pub fn process_admin_renounce(
 
     // check that the renounce mask has only one bit set
     if renounce_mask.count_ones() != 1 {
+        msg!("Only one instruction can be renounced at a time");
+        return Err(AccessError::InvalidRenounceParams.into());
+    }
+
+    // get the frist bit set
+    let renounce_ix_index = renounce_mask.trailing_zeros().to_i32().ok_or(AccessError::Overflow)?;
+    let renounce_ix = &ProgramInstruction::from_i32(renounce_ix_index).ok_or(AccessError::InvalidRenounceParams)?;
+    if !is_admin_renouncable_instruction(renounce_ix) {
+        msg!("Instruction ({}) is not renouncable", renounce_ix_index);
         return Err(AccessError::InvalidRenounceParams.into());
     }
 
