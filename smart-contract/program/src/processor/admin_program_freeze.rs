@@ -50,8 +50,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     }
 }
 
-const ix_mask: u128 = 1_u128.checked_shl(ProgramInstruction::AdminProgramFreeze as u32).unwrap();
-
 pub fn process_admin_program_freeze(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
