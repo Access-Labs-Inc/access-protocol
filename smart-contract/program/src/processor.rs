@@ -39,6 +39,7 @@ pub mod unstake;
 pub mod admin_set_protocol_fee;
 pub mod migrate_central_state_v2;
 pub mod admin_program_freeze;
+pub mod admin_renounce;
 
 pub struct Processor {}
 
@@ -247,6 +248,12 @@ impl Processor {
                 let params = admin_program_freeze::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 admin_program_freeze::process_admin_program_freeze(program_id, accounts, params)?;
+            }
+            ProgramInstruction::AdminRenounce => {
+                msg!("Instruction: Admin renounce");
+                let params = admin_renounce::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                admin_renounce::process_admin_renounce(program_id, accounts, params)?;
             }
         }
 

@@ -355,6 +355,8 @@ pub enum ProgramInstruction {
     /// | 0     | ✅        | ❌      | The central state account           |
     /// | 1     | ❌        | ✅      | The central state account authority |
     AdminProgramFreeze,
+    // todo docs
+    AdminRenounce,
 }
 #[allow(missing_docs)]
 pub fn create_central_state(
