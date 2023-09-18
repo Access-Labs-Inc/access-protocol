@@ -593,7 +593,7 @@ impl CentralStateV2 {
     pub fn assert_instruction_allowed(&self, ix: &ProgramInstruction) -> ProgramResult {
         let ix_num = *ix as u32;
         let ix_mask = 1_u128.checked_shl(ix_num).ok_or(AccessError::Overflow)?;
-        if ix_mask & self.ix_gate == 0 && ix != AdminProgramFreeze {
+        if ix_mask & self.ix_gate == 0 && ix_num != AdminProgramFreeze as u32 {
             return Err(AccessError::FrozenInstruction.into());
         }
         if is_admin_renouncable_instruction(ix) && ix_mask & self.admin_ix_gate == 0 {
