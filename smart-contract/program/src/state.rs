@@ -19,6 +19,7 @@ use spl_associated_token_account::get_associated_token_address;
 
 use crate::error::AccessError;
 use crate::instruction::ProgramInstruction;
+use crate::utils::is_admin_instruction;
 
 /// ACCESS token mint
 pub const ACCESS_MINT: Pubkey =
@@ -521,6 +522,10 @@ pub struct CentralStateV2 {
     /// 1 is chosen as enabled, 0 is disabled
     pub ix_gate: u128,
 
+    /// Map of ixs and their state of gating used for renonucnig the admin instructions
+    /// 1 is chosen as enabled, 0 is disabled
+    pub admin_ix_gate: u128,
+
     /// Fee percentage basis points (i.e 1% = 100)
     pub fee_basis_points: u16,
 
@@ -547,6 +552,7 @@ impl CentralStateV2 {
             total_staked_snapshot: central_state.total_staked_snapshot,
             last_snapshot_offset: central_state.last_snapshot_offset,
             ix_gate: u128::MAX, // all instructions enabled
+            admin_ix_gate: u128::MAX, // all instructions enabled
             fee_basis_points: DEFAULT_FEE_BASIS_POINTS,
             last_fee_distribution_time: Clock::get()?.unix_timestamp,
             recipients: vec![], // the default behaviour is that 100% of the fees is getting burned
@@ -586,7 +592,8 @@ impl CentralStateV2 {
     pub fn assert_instruction_allowed(&self, ix: ProgramInstruction) -> ProgramResult {
         let ix_num = ix as u32;
         let ix_mask = 1_u128.checked_shl(ix_num).ok_or(AccessError::Overflow)?;
-        if ix_mask & self.ix_gate == 0 {
+        if (ix_mask & self.ix_gate == 0) |
+            (is_admin_instruction(ix) && ix_mask & self.admin_ix_gate == 0) {
             return Err(AccessError::FrozenInstruction.into());
         }
         Ok(())

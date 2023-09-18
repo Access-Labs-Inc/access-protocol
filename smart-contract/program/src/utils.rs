@@ -1,13 +1,14 @@
 //! Utils
-use crate::error::AccessError;
-use crate::state::{BondAccount, AUTHORIZED_BOND_SELLERS};
-use crate::state::{StakeAccount, StakePoolRef, ACCESS_MINT, STAKE_BUFFER_LEN};
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
     program_pack::Pack, pubkey::Pubkey,
 };
 use spl_token::state::Account;
+
+use crate::error::AccessError;
 use crate::instruction::ProgramInstruction;
+use crate::state::{AUTHORIZED_BOND_SELLERS, BondAccount};
+use crate::state::{ACCESS_MINT, STAKE_BUFFER_LEN, StakeAccount, StakePoolRef};
 
 /// Cumulate the claimable rewards from the last claimed day to the present.
 /// Result is in FP32 format.
@@ -84,7 +85,7 @@ pub fn get_freeze_mask(instructions: Vec<ProgramInstruction>) -> u128 {
     let mut mask = u128::MAX;
     for instruction in instructions {
         let ix_mask = 1 << instruction as u32;
-       mask &= !ix_mask;
+        mask &= !ix_mask;
     }
     mask
 }
@@ -92,7 +93,7 @@ pub fn get_freeze_mask(instructions: Vec<ProgramInstruction>) -> u128 {
 #[allow(missing_docs)]
 pub fn get_unfreeze_mask(instructions: Vec<ProgramInstruction>) -> u128 {
     if instructions.is_empty() {
-        return  u128::MAX;
+        return u128::MAX;
     }
     let mut mask = 0;
     for instruction in instructions {
@@ -217,4 +218,20 @@ pub fn assert_no_close_or_delegate(token_account: &Account) -> ProgramResult {
         return Err(ProgramError::InvalidArgument);
     }
     Ok(())
+}
+
+#[allow(missing_docs)]
+pub fn is_admin_instruction(instruction: ProgramInstruction) -> bool {
+    match instruction {
+        ProgramInstruction::ChangeInflation |
+        ProgramInstruction::AdminMint |
+        ProgramInstruction::AdminFreeze |
+        ProgramInstruction::ChangeCentralStateAuthority |
+        ProgramInstruction::EditMetadata |
+        ProgramInstruction::AdminSetupFeeSplit |
+        ProgramInstruction::AdminSetProtocolFee |
+        ProgramInstruction::AdminProgramFreeze
+        => true,
+    }
+    false
 }
