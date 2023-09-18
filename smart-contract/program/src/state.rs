@@ -19,7 +19,7 @@ use spl_associated_token_account::get_associated_token_address;
 
 use crate::error::AccessError;
 use crate::instruction::ProgramInstruction;
-use crate::utils::is_admin_instruction;
+use crate::utils::is_admin_renouncable_instruction;
 
 /// ACCESS token mint
 pub const ACCESS_MINT: Pubkey =
@@ -593,7 +593,7 @@ impl CentralStateV2 {
         let ix_num = *ix as u32;
         let ix_mask = 1_u128.checked_shl(ix_num).ok_or(AccessError::Overflow)?;
         if (ix_mask & self.ix_gate == 0) |
-            (is_admin_instruction(ix) && ix_mask & self.admin_ix_gate == 0) {
+            (is_admin_renouncable_instruction(ix) && ix_mask & self.admin_ix_gate == 0) {
             return Err(AccessError::FrozenInstruction.into());
         }
         Ok(())

@@ -6,12 +6,14 @@ use solana_program::{account_info::{AccountInfo, next_account_info}, entrypoint:
 use crate::error::AccessError;
 use crate::instruction::ProgramInstruction;
 use crate::state::CentralStateV2;
-use crate::utils::{check_account_key, check_account_owner, check_signer, get_freeze_mask};
+use crate::utils::{check_account_key, check_account_owner, check_signer};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `admin_renounce` instruction
 pub struct Params {
-    pub ix: ProgramInstruction,
+    // a bitmask of the instruction to renounce.
+    // can only include one instruction at a time due to safety reasons
+    pub renounce_mask: u128
 }
 
 #[derive(InstructionsAccount)]
@@ -55,7 +57,7 @@ pub fn process_admin_renounce(
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
-    let Params { ix } = params;
+    let Params { renounce_mask } = params;
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
@@ -65,10 +67,12 @@ pub fn process_admin_renounce(
         AccessError::WrongCentralStateAuthority,
     )?;
 
-    let freeze_mask = get_freeze_mask(vec![ix]);
-    let admin_ix_gate = central_state.admin_ix_gate & freeze_mask;
+    // check that the renounce mask has only one bit set
+    if renounce_mask.count_ones() != 1 {
+        return Err(AccessError::InvalidRenounceParams.into());
+    }
 
-    central_state.admin_ix_gate = admin_ix_gate;
+    central_state.admin_ix_gate = central_state.admin_ix_gate & !renounce_mask;
     central_state.save(&mut accounts.central_state.data.borrow_mut())?;
 
     Ok(())

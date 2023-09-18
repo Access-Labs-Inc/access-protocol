@@ -14,7 +14,7 @@ pub use crate::processor::{
 };
 
 #[allow(missing_docs)]
-#[derive(BorshDeserialize, BorshSerialize, BorshSize, FromPrimitive, Clone, Copy, Debug)]
+#[derive(BorshDeserialize, BorshSerialize, FromPrimitive, Copy, Clone)]
 pub enum ProgramInstruction {
     /// Create central state
     ///
