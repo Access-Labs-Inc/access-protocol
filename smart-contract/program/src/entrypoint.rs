@@ -134,6 +134,9 @@ impl PrintProgramError for AccessError {
             AccessError::InvalidUnstakeAmount => {
                 msg!("Error: Invalid unstake amount")
             }
+            AccessError::InvalidAmount => {
+                msg!("Error: Invalid amount")
+            }
             AccessError::InactiveStakePoolNotAllowed => {
                 msg!("Error: Inactive stake pool not allowed")
             }
@@ -163,6 +166,39 @@ impl PrintProgramError for AccessError {
             }
             AccessError::WrongBondAccountOwner => {
                 msg!("Wrong bond account owner")
+            }
+            AccessError::UnsupportedInstruction => {
+                msg!("Unsupported instruction")
+            }
+            AccessError::DeprecatedInstruction => {
+                msg!("Deprecated instruction")
+            }
+            AccessError::TooManyRecipients => {
+                msg!("Too many recipients")
+            }
+            AccessError::NoRecipients => {
+                msg!("No recipients")
+            }
+            AccessError::InvalidPercentages => {
+                msg!("Invalid percentages")
+            }
+            AccessError::InvalidTokenAccount => {
+                msg!("Invalid token account")
+            }
+            AccessError::NonzeroBallance => {
+                msg!("Nonzero balance")
+            }
+            AccessError::DelayTooLong => {
+                msg!("Delay too long")
+            }
+            AccessError::FrozenInstruction => {
+                msg!("Frozen instruction")
+            }
+            AccessError::InvalidRenounceParams => {
+                msg!("Invalid renounce params")
+            }
+            AccessError::AlreadyRenounced => {
+                msg!("Already renounced")
             }
         }
     }

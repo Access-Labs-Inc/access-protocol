@@ -15,9 +15,11 @@ use solana_program::{
     pubkey::Pubkey,
 };
 use spl_token::state::Account;
+use crate::state:: CentralStateV2;
 
 use crate::error::AccessError;
-use crate::state::StakePool;
+use crate::instruction::ProgramInstruction::CloseStakePool;
+use crate::state::{StakePool, V1_INSTRUCTIONS_ALLOWED};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `close_stake_pool` instruction
@@ -36,6 +38,9 @@ pub struct Accounts<'a, T> {
     /// The owner of the stake pool
     #[cons(writable, signer)]
     pub owner: &'a T,
+
+    /// The central state account
+    pub central_state: &'a T,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -48,11 +53,13 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             stake_pool_account: next_account_info(accounts_iter)?,
             pool_vault: next_account_info(accounts_iter)?,
             owner: next_account_info(accounts_iter)?,
+            central_state: next_account_info(accounts_iter)?,
         };
 
         // Check keys
 
         // Check ownership
+        check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
         check_account_owner(
             accounts.stake_pool_account,
             program_id,
@@ -72,8 +79,14 @@ pub fn process_close_stake_pool(
     accounts: &[AccountInfo],
     _params: Params,
 ) -> ProgramResult {
+    if !V1_INSTRUCTIONS_ALLOWED {
+        return Err(AccessError::DeprecatedInstruction.into());
+    }
+
     let accounts = Accounts::parse(accounts, program_id)?;
 
+    let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(&CloseStakePool)?;
     let mut stake_pool = StakePool::get_checked(
         accounts.stake_pool_account,
         vec![Tag::InactiveStakePool, Tag::StakePool],

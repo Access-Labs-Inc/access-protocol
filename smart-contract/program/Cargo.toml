@@ -13,6 +13,7 @@ days-to-sec-10s = []
 days-to-sec-15m = []
 no-bond-signer = []
 claim-bond-rewards-off = []
+v1-instructions-allowed = []
 
 [dependencies]
 solana-program = "1.10.30"
@@ -34,6 +35,7 @@ hexdump = "0.1.0"
 solana-sdk = "1.10.30"
 rand = "0.8.4"
 arrayref = "0.3.6"
+solana-client = "1.10.0"
 solana-program-test = "1.10.12"
 tokio = {version="1.6", features = ["macros"]}
 solana-test-framework = { git = "https://github.com/halbornteam/solana-test-framework"}

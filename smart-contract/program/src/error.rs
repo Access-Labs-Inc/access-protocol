@@ -1,7 +1,6 @@
 use num_derive::FromPrimitive;
-use thiserror::Error;
-
 use solana_program::{decode_error::DecodeError, program_error::ProgramError};
+use thiserror::Error;
 
 #[derive(Clone, Debug, Error, FromPrimitive)]
 pub enum AccessError {
@@ -75,6 +74,8 @@ pub enum AccessError {
     CannotUnstake,
     #[error("Invalid unstake amount")]
     InvalidUnstakeAmount,
+    #[error("Invalid amount")]
+    InvalidAmount,
     #[error("Inactive stake pool not allowed")]
     InactiveStakePoolNotAllowed,
     #[error("Active stake pool not allowed")]
@@ -93,6 +94,28 @@ pub enum AccessError {
     ForbiddenUnlockPeriodZero,
     #[error("Wrong MPL metadata program")]
     WrongMplProgram,
+    #[error("Unsupported instruction")]
+    UnsupportedInstruction,
+    #[error("Deprecated instruction")]
+    DeprecatedInstruction,
+    #[error("Too many recipients")]
+    TooManyRecipients,
+    #[error("No recipients")]
+    NoRecipients,
+    #[error("Invalid percentages")]
+    InvalidPercentages,
+    #[error("Invalid token account")]
+    InvalidTokenAccount,
+    #[error("Nonzero balance")]
+    NonzeroBallance,
+    #[error("Delay too long")]
+    DelayTooLong,
+    #[error("Frozen instruction")]
+    FrozenInstruction,
+    #[error("Invalid renounce params")]
+    InvalidRenounceParams,
+    #[error("Already renounced")]
+    AlreadyRenounced,
 }
 
 impl From<AccessError> for ProgramError {

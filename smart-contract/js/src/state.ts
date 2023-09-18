@@ -4,7 +4,7 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import { u64 } from "./u64.js";
 
 /**
- * Lenght of the stake pool circular buffer used to store balances and inflation
+ * Length of the stake pool circular buffer used to store balances and inflation
  */
 const STAKE_BUFFER_LEN = 274; // 9 Months
 
@@ -309,7 +309,7 @@ export class CentralState {
    * @param programId The ACCESS program ID
    * @returns
    */
-  static async getKey(programId: PublicKey) {
+  static getKey(programId: PublicKey) {
     return PublicKey.findProgramAddressSync([programId.toBuffer()], programId);
   }
 }

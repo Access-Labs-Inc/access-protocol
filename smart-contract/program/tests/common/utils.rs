@@ -10,6 +10,7 @@ use solana_sdk::{signature::Keypair, transaction::Transaction};
 use spl_token::state::Mint;
 
 // Utils
+// todo maybe don't sign everything with an authority here
 pub async fn sign_send_instructions(
     ctx: &mut ProgramTestContext,
     instructions: Vec<Instruction>,
@@ -35,7 +36,7 @@ pub fn mint_bootstrap(
         .unwrap_or_else(Pubkey::new_unique);
     let mint_info = Mint {
         mint_authority: Some(*mint_authority).into(),
-        supply: u32::MAX.into(),
+        supply: 0,
         decimals,
         is_initialized: true,
         freeze_authority: None.into(),

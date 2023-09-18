@@ -10,12 +10,14 @@ use solana_program::{
     pubkey::Pubkey,
 };
 
-use crate::state::{BondAccount, CentralState, StakePool, BOND_SIGNER_THRESHOLD};
+use crate::state::{BondAccount, StakePool, BOND_SIGNER_THRESHOLD, V1_INSTRUCTIONS_ALLOWED};
 use crate::{error::AccessError, state::Tag};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use spl_token;
+use crate::instruction::ProgramInstruction::ClaimBond;
 
 use crate::utils::{assert_bond_derivation, check_account_key, check_account_owner, check_signer};
+use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `claim_bond` instruction
@@ -99,9 +101,14 @@ pub fn process_claim_bond(
     accounts: &[AccountInfo],
     _params: Params,
 ) -> ProgramResult {
+    if !V1_INSTRUCTIONS_ALLOWED {
+        return Err(AccessError::DeprecatedInstruction.into());
+    }
+
     let accounts = Accounts::parse(accounts, program_id)?;
     let mut bond = BondAccount::from_account_info(accounts.bond_account, true)?;
-    let mut central_state = CentralState::from_account_info(accounts.central_state)?;
+    let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(&ClaimBond)?;
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
 
     check_account_key(
@@ -188,7 +195,7 @@ pub fn process_claim_bond(
             accounts.pool_vault.clone(),
             accounts.central_state.clone(),
         ],
-        &[&[&program_id.to_bytes(), &[central_state.signer_nonce]]],
+        &[&[&program_id.to_bytes(), &[central_state.bump_seed]]],
     )?;
 
     stake_pool.header.deposit(bond.total_amount_sold)?;
