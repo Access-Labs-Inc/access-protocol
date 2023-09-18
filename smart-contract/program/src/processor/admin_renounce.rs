@@ -7,6 +7,7 @@ use solana_program::{account_info::{AccountInfo, next_account_info}, entrypoint:
 
 use crate::error::AccessError;
 use crate::instruction::ProgramInstruction;
+use crate::instruction::ProgramInstruction::AdminRenounce;
 use crate::state::CentralStateV2;
 use crate::utils::{check_account_key, check_account_owner, check_signer, get_freeze_mask, is_admin_renouncable_instruction};
 
@@ -63,6 +64,7 @@ pub fn process_admin_renounce(
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(&AdminRenounce)?;
     check_account_key(
         accounts.authority,
         &central_state.authority,

@@ -3,16 +3,15 @@ use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{account_info::{AccountInfo, next_account_info}, entrypoint::ProgramResult, program_error::ProgramError, pubkey::Pubkey};
 
-
-use crate::{error::AccessError};
-
+use crate::error::AccessError;
+use crate::instruction::ProgramInstruction;
+use crate::state::CentralStateV2;
 use crate::utils::{check_account_key, check_account_owner, check_signer};
-use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `admin_program_freeze` instruction
 pub struct Params {
-    pub ix_gate: u128
+    pub ix_gate: u128,
 }
 
 #[derive(InstructionsAccount)]
@@ -51,6 +50,8 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     }
 }
 
+const ix_mask: u128 = 1_u128.checked_shl(ProgramInstruction::AdminProgramFreeze as u32).unwrap();
+
 pub fn process_admin_program_freeze(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
@@ -66,7 +67,12 @@ pub fn process_admin_program_freeze(
         AccessError::WrongCentralStateAuthority,
     )?;
 
-    central_state.ix_gate =  ix_gate;
+    // we don't want to be able to freeze this instruction, but we want to be able to renounce it
+    if (ix_mask & central_state.admin_ix_gate == 0) {
+        return Err(AccessError::FrozenInstruction.into());
+    }
+
+    central_state.ix_gate = ix_gate;
     central_state.save(&mut accounts.central_state.data.borrow_mut())?;
 
     Ok(())
