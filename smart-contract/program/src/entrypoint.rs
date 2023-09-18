@@ -197,6 +197,9 @@ impl PrintProgramError for AccessError {
             AccessError::InvalidRenounceParams => {
                 msg!("Invalid renounce params")
             }
+            AccessError::AlreadyRenounced => {
+                msg!("Already renounced")
+            }
         }
     }
 }

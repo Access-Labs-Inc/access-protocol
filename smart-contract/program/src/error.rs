@@ -114,6 +114,8 @@ pub enum AccessError {
     FrozenInstruction,
     #[error("Invalid renounce params")]
     InvalidRenounceParams,
+    #[error("Already renounced")]
+    AlreadyRenounced,
 }
 
 impl From<AccessError> for ProgramError {
