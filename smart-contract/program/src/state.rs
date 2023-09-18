@@ -590,9 +590,6 @@ impl CentralStateV2 {
 
     #[allow(missing_docs)]
     pub fn assert_instruction_allowed(&self, ix: &ProgramInstruction) -> ProgramResult {
-        if ix == ProgramInstruction::AdminProgramFreeze {
-            return Err(AccessError::InvalidInstruction.into());
-        }
         let ix_num = *ix as u32;
         let ix_mask = 1_u128.checked_shl(ix_num).ok_or(AccessError::Overflow)?;
         if (ix_mask & self.ix_gate == 0) |
