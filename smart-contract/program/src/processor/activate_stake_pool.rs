@@ -28,7 +28,7 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub stake_pool: &'a T,
 
-    /// The account of the central state
+    /// The central state account
     pub central_state: &'a T,
 }
 
@@ -83,11 +83,6 @@ pub fn process_activate_stake_pool(program_id: &Pubkey, accounts: &[AccountInfo]
         return Err(AccessError::Overflow.into());
     }
     stake_pool.header.current_day_idx = central_state.last_snapshot_offset as u16;
-
-    msg!(
-        "Last snapshot offset {}",
-        central_state.last_snapshot_offset
-    );
 
     Ok(())
 }

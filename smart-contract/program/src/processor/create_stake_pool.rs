@@ -48,7 +48,7 @@ pub struct Accounts<'a, T> {
     /// The stake pool vault account
     pub vault: &'a T,
 
-    /// The account of the central state
+    /// The central state account
     pub central_state: &'a T,
 }
 

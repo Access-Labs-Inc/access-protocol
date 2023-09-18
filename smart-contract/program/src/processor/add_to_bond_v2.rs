@@ -66,10 +66,11 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub pool_vault: &'a T,
 
-    /// The stake fee account
+    /// The central state ATA
     #[cons(writable)]
     pub central_state_vault: &'a T,
 
+    /// The mint address of the ACCESS token
     #[cons(writable)]
     pub mint: &'a T,
 
