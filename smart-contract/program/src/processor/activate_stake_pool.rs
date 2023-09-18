@@ -63,7 +63,7 @@ pub fn process_activate_stake_pool(program_id: &Pubkey, accounts: &[AccountInfo]
 
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::InactiveStakePool])?;
     let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
-    central_state.assert_instruction_allowed(ActivateStakePool)?;
+    central_state.assert_instruction_allowed(&ActivateStakePool)?;
 
     // in v2 this is permissionless
     if !V1_INSTRUCTIONS_ALLOWED {

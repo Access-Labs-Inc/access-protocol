@@ -69,7 +69,7 @@ pub fn process_close_stake_account(program_id: &Pubkey, accounts: &[AccountInfo]
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
-    central_state.assert_instruction_allowed(CloseStakeAccount)?;
+    central_state.assert_instruction_allowed(&CloseStakeAccount)?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
 
     check_account_key(

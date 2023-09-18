@@ -97,7 +97,7 @@ pub fn process_edit_metadata(
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
-    central_state.assert_instruction_allowed(EditMetadata)?;
+    central_state.assert_instruction_allowed(&EditMetadata)?;
     let (metadata_key, _) = find_metadata_account(&central_state.token_mint);
 
     check_account_key(

@@ -115,7 +115,7 @@ pub fn process_distribute_fees(
     }
 
     let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
-    central_state.assert_instruction_allowed(DistributeFees)?;
+    central_state.assert_instruction_allowed(&DistributeFees)?;
     assert_valid_vault(accounts.central_state_vault, accounts.central_state.key)?;
 
     check_account_key(

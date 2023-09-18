@@ -153,7 +153,7 @@ pub fn process_create_bond_v2(
 
     let mut pool = StakePool::get_checked(accounts.pool, vec![Tag::StakePool])?;
     let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
-    central_state.assert_instruction_allowed(CreateBondV2)?;
+    central_state.assert_instruction_allowed(&CreateBondV2)?;
 
     let (derived_key, nonce) =
         BondAccountV2::create_key(accounts.to.key, accounts.pool.key, unlock_date, program_id);

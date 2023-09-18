@@ -84,7 +84,7 @@ pub fn process_admin_setup_fee_split(
     let Params { recipients } = params;
     let accounts = Accounts::parse(accounts, program_id)?;
     let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
-    central_state.assert_instruction_allowed(AdminSetupFeeSplit)?;
+    central_state.assert_instruction_allowed(&AdminSetupFeeSplit)?;
 
     check_account_key(
         accounts.authority,

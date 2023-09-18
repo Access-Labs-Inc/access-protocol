@@ -116,7 +116,7 @@ pub fn process_claim_bond_rewards(
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
-    central_state.assert_instruction_allowed(ClaimBondRewards)?;
+    central_state.assert_instruction_allowed(&ClaimBondRewards)?;
     let stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut bond = BondAccount::from_account_info(accounts.bond_account, false)?;
 

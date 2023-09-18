@@ -12,7 +12,7 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use num_derive::FromPrimitive;
 use solana_program::{instruction::Instruction, pubkey::Pubkey};
 #[allow(missing_docs)]
-#[derive(BorshDeserialize, BorshSerialize, FromPrimitive)]
+#[derive(BorshDeserialize, BorshSerialize, FromPrimitive, Clone, Copy, Debug)]
 pub enum ProgramInstruction {
     /// Create central state
     ///

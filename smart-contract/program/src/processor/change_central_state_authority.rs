@@ -65,7 +65,7 @@ pub fn process_change_central_state_auth(
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
-    central_state.assert_instruction_allowed(ChangeCentralStateAuthority)?;
+    central_state.assert_instruction_allowed(&ChangeCentralStateAuthority)?;
 
     check_account_key(
         accounts.authority,

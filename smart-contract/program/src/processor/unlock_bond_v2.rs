@@ -127,7 +127,7 @@ pub fn process_unlock_bond_v2(
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut bond_v2_account = BondAccountV2::from_account_info(accounts.bond_v2_account)?;
     let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
-    central_state.assert_instruction_allowed(UnlockBondV2)?;
+    central_state.assert_instruction_allowed(&UnlockBondV2)?;
 
     let destination_token_acc = Account::unpack(&accounts.destination_token.data.borrow())?;
     if destination_token_acc.mint != central_state.token_mint {

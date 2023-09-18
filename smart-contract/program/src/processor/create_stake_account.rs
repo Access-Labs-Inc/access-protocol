@@ -88,7 +88,7 @@ pub fn process_create_stake_account(
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
-    central_state.assert_instruction_allowed(CreateStakeAccount)?;
+    central_state.assert_instruction_allowed(&CreateStakeAccount)?;
     let stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
 
     let derived_stake_key = StakeAccount::create_key(

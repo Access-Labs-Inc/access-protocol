@@ -146,7 +146,7 @@ pub fn process_stake(
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
     let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
-    central_state.assert_instruction_allowed(Stake)?;
+    central_state.assert_instruction_allowed(&Stake)?;
 
     let source_token_acc = Account::unpack(&accounts.source_token.data.borrow())?;
     if source_token_acc.mint != central_state.token_mint {

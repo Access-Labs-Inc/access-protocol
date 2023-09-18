@@ -221,7 +221,7 @@ pub fn assert_no_close_or_delegate(token_account: &Account) -> ProgramResult {
 }
 
 #[allow(missing_docs)]
-pub fn is_admin_instruction(instruction: ProgramInstruction) -> bool {
+pub fn is_admin_instruction(instruction: &ProgramInstruction) -> bool {
     match instruction {
         ProgramInstruction::ChangeInflation |
         ProgramInstruction::AdminMint |
@@ -232,6 +232,6 @@ pub fn is_admin_instruction(instruction: ProgramInstruction) -> bool {
         ProgramInstruction::AdminSetProtocolFee |
         ProgramInstruction::AdminProgramFreeze
         => true,
+        _ => false
     }
-    false
 }

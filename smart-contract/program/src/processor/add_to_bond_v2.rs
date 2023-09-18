@@ -161,7 +161,7 @@ pub fn process_add_to_bond_v2(
     let mut pool = StakePool::get_checked(accounts.pool, vec![Tag::StakePool])?;
     let mut bond = BondAccountV2::from_account_info(accounts.bond_account_v2)?;
     let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
-    central_state.assert_instruction_allowed(AddToBondV2)?;
+    central_state.assert_instruction_allowed(&AddToBondV2)?;
 
     check_account_key(
         accounts.mint,

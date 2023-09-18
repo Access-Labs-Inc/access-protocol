@@ -70,7 +70,7 @@ pub fn process_admin_set_protocol_fee(
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
-    central_state.assert_instruction_allowed(AdminSetProtocolFee)?;
+    central_state.assert_instruction_allowed(&AdminSetProtocolFee)?;
 
     check_account_key(
         accounts.authority,

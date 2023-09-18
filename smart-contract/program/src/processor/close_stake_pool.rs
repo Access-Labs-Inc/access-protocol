@@ -86,7 +86,7 @@ pub fn process_close_stake_pool(
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
-    central_state.assert_instruction_allowed(CloseStakePool)?;
+    central_state.assert_instruction_allowed(&CloseStakePool)?;
     let mut stake_pool = StakePool::get_checked(
         accounts.stake_pool_account,
         vec![Tag::InactiveStakePool, Tag::StakePool],
