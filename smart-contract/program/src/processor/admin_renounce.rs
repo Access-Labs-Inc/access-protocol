@@ -8,7 +8,7 @@ use crate::instruction::ProgramInstruction;
 use crate::state::CentralStateV2;
 use crate::utils::{check_account_key, check_account_owner, check_signer, get_freeze_mask};
 
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `admin_renounce` instruction
 pub struct Params {
     pub ix: ProgramInstruction,
