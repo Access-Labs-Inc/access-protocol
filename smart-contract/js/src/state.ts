@@ -142,7 +142,7 @@ export class StakePool {
    * @returns
    */
   static async getKey(programId: PublicKey, owner: PublicKey) {
-    return await PublicKey.findProgramAddress(
+    return await PublicKey.findProgramAddressSync(
       [Buffer.from("stake_pool"), owner.toBuffer()],
       programId
     );
@@ -223,7 +223,7 @@ export class StakeAccount {
     owner: PublicKey,
     stakePool: PublicKey
   ) {
-    return await PublicKey.findProgramAddress(
+    return await PublicKey.findProgramAddressSync(
       [Buffer.from("stake_account"), owner.toBuffer(), stakePool.toBuffer()],
       programId
     );
@@ -428,7 +428,7 @@ export class BondAccount {
     owner: PublicKey,
     totalAmountSold: number
   ) {
-    return await PublicKey.findProgramAddress(
+    return await PublicKey.findProgramAddressSync(
       [
         Buffer.from("bond_account"),
         owner.toBuffer(),
