@@ -522,7 +522,7 @@ pub struct CentralStateV2 {
     /// 1 is chosen as enabled, 0 is disabled
     pub ix_gate: u128,
 
-    /// Map of ixs and their state of gating used for renonucnig the admin instructions
+    /// Map of ixs and their state for renouncing the admin instructions
     /// 1 is chosen as enabled, 0 is disabled
     pub admin_ix_gate: u128,
 
