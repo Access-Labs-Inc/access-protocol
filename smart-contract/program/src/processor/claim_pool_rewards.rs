@@ -100,7 +100,7 @@ pub fn process_claim_pool_rewards(
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
-    central_state.assert_instruction_allowed(ClaimPoolRewards)?;
+    central_state.assert_instruction_allowed(&ClaimPoolRewards)?;
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
 
     let destination_token_acc = Account::unpack(&accounts.rewards_destination.data.borrow())?;

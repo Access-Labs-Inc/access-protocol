@@ -194,6 +194,12 @@ impl PrintProgramError for AccessError {
             AccessError::FrozenInstruction => {
                 msg!("Frozen instruction")
             }
+            AccessError::InvalidRenounceParams => {
+                msg!("Invalid renounce params")
+            }
+            AccessError::AlreadyRenounced => {
+                msg!("Already renounced")
+            }
         }
     }
 }

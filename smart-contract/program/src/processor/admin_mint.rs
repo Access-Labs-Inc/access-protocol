@@ -86,7 +86,7 @@ pub fn process_admin_mint(
 
     let accounts = Accounts::parse(accounts, program_id)?;
     let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
-    central_state.assert_instruction_allowed(AdminMint)?;
+    central_state.assert_instruction_allowed(&AdminMint)?;
 
     check_account_key(
         accounts.mint,

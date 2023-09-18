@@ -1,18 +1,20 @@
-pub use crate::processor::{
-    activate_stake_pool, add_to_bond_v2, admin_freeze, admin_mint, admin_program_freeze,
-    admin_set_protocol_fee, admin_setup_fee_split, change_central_state_authority,
-    change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards,
-    claim_bond_v2_rewards, claim_pool_rewards, claim_rewards, close_stake_account,
-    close_stake_pool, crank, create_bond, create_bond_v2, create_central_state,
-    create_stake_account, create_stake_pool, distribute_fees, edit_metadata,
-    migrate_central_state_v2, sign_bond, stake, unlock_bond_tokens, unlock_bond_v2, unstake,
-};
-use bonfida_utils::InstructionsAccount;
+use bonfida_utils::{InstructionsAccount, BorshSize};
 use borsh::{BorshDeserialize, BorshSerialize};
 use num_derive::FromPrimitive;
 use solana_program::{instruction::Instruction, pubkey::Pubkey};
+
+pub use crate::processor::{
+    activate_stake_pool, add_to_bond_v2, admin_freeze, admin_mint, admin_program_freeze,
+    admin_renounce, admin_set_protocol_fee, admin_setup_fee_split,
+    change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond,
+    claim_bond_rewards, claim_bond_v2_rewards, claim_pool_rewards, claim_rewards,
+    close_stake_account, close_stake_pool, crank, create_bond, create_bond_v2,
+    create_central_state, create_stake_account, create_stake_pool, distribute_fees,
+    edit_metadata, migrate_central_state_v2, sign_bond, stake, unlock_bond_tokens, unlock_bond_v2, unstake,
+};
+
 #[allow(missing_docs)]
-#[derive(BorshDeserialize, BorshSerialize, FromPrimitive)]
+#[derive(BorshDeserialize, BorshSerialize, BorshSize, FromPrimitive, Copy, Clone)]
 pub enum ProgramInstruction {
     /// Create central state
     ///
@@ -348,14 +350,22 @@ pub enum ProgramInstruction {
     /// | 1     | ❌        | ❌      | The system program account |
     /// | 2     | ✅        | ✅      | The fee payer account      |
     MigrateCentralStateV2,
-    /// Change central state inflation
+    /// Admin program freeze instruction.
     ///
     /// | Index | Writable | Signer | Description                         |
     /// | --------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The central state account           |
     /// | 1     | ❌        | ✅      | The central state account authority |
     AdminProgramFreeze,
+    /// Admin renounce functionality
+    ///
+    /// | Index | Writable | Signer | Description                         |
+    /// | --------------------------------------------------------------- |
+    /// | 0     | ✅        | ❌      | The central state account           |
+    /// | 1     | ❌        | ✅      | The central state account authority |
+    AdminRenounce,
 }
+
 #[allow(missing_docs)]
 pub fn create_central_state(
     program_id: Pubkey,
@@ -368,6 +378,7 @@ pub fn create_central_state(
         params,
     )
 }
+
 #[allow(missing_docs)]
 pub fn create_stake_pool(
     program_id: Pubkey,
@@ -380,6 +391,7 @@ pub fn create_stake_pool(
         params,
     )
 }
+
 #[allow(missing_docs)]
 pub fn create_stake_account(
     program_id: Pubkey,
@@ -392,6 +404,7 @@ pub fn create_stake_account(
         params,
     )
 }
+
 #[allow(missing_docs)]
 pub fn stake(
     program_id: Pubkey,
@@ -400,6 +413,7 @@ pub fn stake(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::Stake as u8, params)
 }
+
 #[allow(missing_docs)]
 pub fn unstake(
     program_id: Pubkey,
@@ -408,6 +422,7 @@ pub fn unstake(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::Unstake as u8, params)
 }
+
 #[allow(missing_docs)]
 pub fn claim_pool_rewards(
     program_id: Pubkey,
@@ -425,6 +440,7 @@ pub fn claim_pool_rewards(
     }
     ix
 }
+
 #[allow(missing_docs)]
 pub fn claim_rewards(
     program_id: Pubkey,
@@ -439,6 +455,7 @@ pub fn claim_rewards(
     }
     ix
 }
+
 #[allow(missing_docs)]
 pub fn crank(
     program_id: Pubkey,
@@ -447,6 +464,7 @@ pub fn crank(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::Crank as u8, params)
 }
+
 #[allow(missing_docs)]
 pub fn close_stake_pool(
     program_id: Pubkey,
@@ -455,6 +473,7 @@ pub fn close_stake_pool(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::CloseStakePool as u8, params)
 }
+
 #[allow(missing_docs)]
 pub fn close_stake_account(
     program_id: Pubkey,
@@ -467,6 +486,7 @@ pub fn close_stake_account(
         params,
     )
 }
+
 #[allow(missing_docs)]
 pub fn change_inflation(
     program_id: Pubkey,
@@ -479,6 +499,7 @@ pub fn change_inflation(
         params,
     )
 }
+
 #[allow(missing_docs)]
 pub fn create_bond(
     program_id: Pubkey,
@@ -487,6 +508,7 @@ pub fn create_bond(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::CreateBond as u8, params)
 }
+
 #[allow(missing_docs)]
 pub fn create_bond_v2(
     program_id: Pubkey,
@@ -495,6 +517,7 @@ pub fn create_bond_v2(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::CreateBondV2 as u8, params)
 }
+
 #[allow(missing_docs)]
 pub fn add_to_bond_v2(
     program_id: Pubkey,
@@ -503,6 +526,7 @@ pub fn add_to_bond_v2(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::AddToBondV2 as u8, params)
 }
+
 #[allow(missing_docs)]
 pub fn claim_bond_v2_rewards(
     program_id: Pubkey,
@@ -520,6 +544,7 @@ pub fn claim_bond_v2_rewards(
     }
     ix
 }
+
 #[allow(missing_docs)]
 pub fn unlock_bond_v2(
     program_id: Pubkey,
@@ -528,6 +553,7 @@ pub fn unlock_bond_v2(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::UnlockBondV2 as u8, params)
 }
+
 #[allow(missing_docs)]
 pub fn sign_bond(
     program_id: Pubkey,
@@ -536,6 +562,7 @@ pub fn sign_bond(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::SignBond as u8, params)
 }
+
 #[allow(missing_docs)]
 pub fn unlock_bond_tokens(
     program_id: Pubkey,
@@ -548,6 +575,7 @@ pub fn unlock_bond_tokens(
         params,
     )
 }
+
 #[allow(missing_docs)]
 pub fn claim_bond(
     program_id: Pubkey,
@@ -556,6 +584,7 @@ pub fn claim_bond(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::ClaimBond as u8, params)
 }
+
 #[allow(missing_docs)]
 pub fn claim_bond_rewards(
     program_id: Pubkey,
@@ -573,6 +602,7 @@ pub fn claim_bond_rewards(
     }
     ix
 }
+
 #[allow(missing_docs)]
 pub fn change_pool_minimum(
     program_id: Pubkey,
@@ -585,6 +615,7 @@ pub fn change_pool_minimum(
         params,
     )
 }
+
 #[allow(missing_docs)]
 pub fn admin_mint(
     program_id: Pubkey,
@@ -593,6 +624,7 @@ pub fn admin_mint(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::AdminMint as u8, params)
 }
+
 #[allow(missing_docs)]
 pub fn admin_freeze(
     program_id: Pubkey,
@@ -601,6 +633,7 @@ pub fn admin_freeze(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::AdminFreeze as u8, params)
 }
+
 #[allow(missing_docs)]
 pub fn activate_stake_pool(
     program_id: Pubkey,
@@ -613,6 +646,7 @@ pub fn activate_stake_pool(
         params,
     )
 }
+
 #[allow(missing_docs)]
 pub fn change_pool_multiplier(
     program_id: Pubkey,
@@ -625,6 +659,7 @@ pub fn change_pool_multiplier(
         params,
     )
 }
+
 #[allow(missing_docs)]
 pub fn change_central_state_authority(
     program_id: Pubkey,
@@ -637,6 +672,7 @@ pub fn change_central_state_authority(
         params,
     )
 }
+
 #[allow(missing_docs)]
 pub fn edit_metadata(
     program_id: Pubkey,
@@ -645,6 +681,7 @@ pub fn edit_metadata(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::EditMetadata as u8, params)
 }
+
 #[allow(missing_docs)]
 pub fn admin_setup_fee_split(
     program_id: Pubkey,
@@ -657,6 +694,7 @@ pub fn admin_setup_fee_split(
         params,
     )
 }
+
 #[allow(missing_docs)]
 pub fn distribute_fees(
     program_id: Pubkey,
@@ -665,6 +703,7 @@ pub fn distribute_fees(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::DistributeFees as u8, params)
 }
+
 #[allow(missing_docs)]
 pub fn admin_set_protocol_fee(
     program_id: Pubkey,
@@ -677,6 +716,7 @@ pub fn admin_set_protocol_fee(
         params,
     )
 }
+
 #[allow(missing_docs)]
 pub fn migrate_central_state_v2(
     program_id: Pubkey,
@@ -689,6 +729,7 @@ pub fn migrate_central_state_v2(
         params,
     )
 }
+
 #[allow(missing_docs)]
 pub fn admin_program_freeze(
     program_id: Pubkey,
@@ -700,4 +741,13 @@ pub fn admin_program_freeze(
         ProgramInstruction::AdminProgramFreeze as u8,
         params,
     )
+}
+
+#[allow(missing_docs)]
+pub fn admin_renounce(
+    program_id: Pubkey,
+    accounts: admin_renounce::Accounts<Pubkey>,
+    params: admin_renounce::Params,
+) -> Instruction {
+    accounts.get_instruction(program_id, ProgramInstruction::AdminRenounce as u8, params)
 }

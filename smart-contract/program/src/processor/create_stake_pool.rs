@@ -92,7 +92,7 @@ pub fn process_create_stake_pool(
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
     let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
-    central_state.assert_instruction_allowed(CreateStakePool)?;
+    central_state.assert_instruction_allowed(&CreateStakePool)?;
 
     let (derived_stake_key, nonce) = StakePool::find_key(&params.owner, program_id);
 

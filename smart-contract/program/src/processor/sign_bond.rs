@@ -66,7 +66,7 @@ pub fn process_sign_bond(
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
-    central_state.assert_instruction_allowed(SignBond)?;
+    central_state.assert_instruction_allowed(&SignBond)?;
     let mut bond = BondAccount::from_account_info(accounts.bond_account, true)?;
     assert_authorized_seller(accounts.seller, params.seller_index as usize)?;
 

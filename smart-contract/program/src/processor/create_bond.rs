@@ -111,7 +111,7 @@ pub fn process_create_bond(
 
     let accounts = Accounts::parse(accounts, program_id)?;
     let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
-    central_state.assert_instruction_allowed(CreateBond)?;
+    central_state.assert_instruction_allowed(&CreateBond)?;
 
     let (derived_key, nonce) =
         BondAccount::create_key(&params.buyer, params.total_amount_sold, program_id);

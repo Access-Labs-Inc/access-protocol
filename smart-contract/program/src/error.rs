@@ -112,6 +112,10 @@ pub enum AccessError {
     DelayTooLong,
     #[error("Frozen instruction")]
     FrozenInstruction,
+    #[error("Invalid renounce params")]
+    InvalidRenounceParams,
+    #[error("Already renounced")]
+    AlreadyRenounced,
 }
 
 impl From<AccessError> for ProgramError {

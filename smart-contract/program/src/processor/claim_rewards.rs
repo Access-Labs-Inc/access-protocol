@@ -113,7 +113,7 @@ pub fn process_claim_rewards(
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
-    central_state.assert_instruction_allowed(ClaimRewards)?;
+    central_state.assert_instruction_allowed(&ClaimRewards)?;
     let stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
 
