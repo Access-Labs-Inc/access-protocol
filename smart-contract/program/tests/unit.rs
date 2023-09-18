@@ -25,21 +25,21 @@ mod basic_functionality {
         let freeze_mask = get_freeze_mask(vec![]);
         println!("freeze mask: {:0128b}", freeze_mask);
         let staker = tr.create_user_with_ata().await.unwrap();
-        tr.admin_renounce(freeze_mask).await.unwrap();
+        tr.freeze_program(freeze_mask).await.unwrap();
         tr.sleep(1).await.unwrap();
         tr.mint(&staker.pubkey(), 729_999_999_999).await.unwrap_err();
 
         // Unfreeze the program
         let unfreeze_mask = get_unfreeze_mask(vec![]);
         println!("unfreeze mask: {:0128b}", unfreeze_mask);
-        tr.admin_renounce(unfreeze_mask).await.unwrap();
+        tr.freeze_program(unfreeze_mask).await.unwrap();
         tr.sleep(1).await.unwrap();
         tr.mint(&staker.pubkey(), 729_999_999_999).await.unwrap();
 
         // Freeze a specific instruction
         let freeze_mask = get_freeze_mask(vec![access_protocol::instruction::ProgramInstruction::AdminMint]);
         println!("freeze mask: {:0128b}", freeze_mask);
-        tr.admin_renounce(freeze_mask).await.unwrap();
+        tr.freeze_program(freeze_mask).await.unwrap();
         tr.sleep(1).await.unwrap();
         tr.mint(&staker.pubkey(), 729_999_999_999).await.unwrap_err();
         tr.change_inflation(1_100_000_000).await.unwrap();
@@ -47,7 +47,7 @@ mod basic_functionality {
         // Unfreeze a specific instruction
         let unfreeze_mask = get_unfreeze_mask(vec![access_protocol::instruction::ProgramInstruction::AdminMint]);
         println!("unfreeze mask: {:0128b}", unfreeze_mask);
-        tr.admin_renounce(unfreeze_mask).await.unwrap();
+        tr.freeze_program(unfreeze_mask).await.unwrap();
         tr.sleep(1).await.unwrap();
         tr.mint(&staker.pubkey(), 729_999_999_999).await.unwrap();
         tr.change_inflation(1_100_000_000).await.unwrap_err();

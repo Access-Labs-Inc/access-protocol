@@ -222,7 +222,7 @@ pub fn assert_no_close_or_delegate(token_account: &Account) -> ProgramResult {
 
 #[allow(missing_docs)]
 pub fn is_admin_renouncable_instruction(instruction: &ProgramInstruction) -> bool {
-    match instruction {
+    matches!(instruction,
         ProgramInstruction::ChangeInflation |
         ProgramInstruction::AdminMint |
         ProgramInstruction::AdminFreeze |
@@ -230,8 +230,5 @@ pub fn is_admin_renouncable_instruction(instruction: &ProgramInstruction) -> boo
         ProgramInstruction::EditMetadata |
         ProgramInstruction::AdminSetupFeeSplit |
         ProgramInstruction::AdminSetProtocolFee |
-        ProgramInstruction::AdminProgramFreeze
-        => true,
-        _ => false
-    }
+        ProgramInstruction::AdminProgramFreeze)
 }

@@ -1,6 +1,6 @@
 use solana_sdk::signer::Signer;
 use access_protocol::instruction::ProgramInstruction::{AdminMint, ClaimRewards};
-use access_protocol::utils::{get_freeze_mask, get_unfreeze_mask};
+use access_protocol::utils::{get_freeze_mask};
 use crate::common::test_runner::TestRunner;
 
 pub mod common;
