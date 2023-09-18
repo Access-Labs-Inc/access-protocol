@@ -18,7 +18,7 @@ use access_protocol::{
         crank, create_central_state, create_stake_account, create_stake_pool, stake, unstake,
     },
 };
-use access_protocol::instruction::{admin_program_freeze, admin_renounce, admin_set_protocol_fee, change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards, create_bond, migrate_central_state_v2, unlock_bond_tokens, unlock_bond_v2};
+use access_protocol::instruction::{admin_program_freeze, admin_renounce, admin_set_protocol_fee, change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards, create_bond, migrate_central_state_v2, ProgramInstruction, unlock_bond_tokens, unlock_bond_v2};
 use access_protocol::state::{BondAccount, BondAccountV2, CentralState, CentralStateV2, FeeRecipient, StakeAccount, StakePoolHeader};
 
 use crate::common::utils::{mint_bootstrap, sign_send_instructions};
@@ -800,14 +800,14 @@ impl TestRunner {
         sign_send_instructions(&mut self.prg_test_ctx, vec![freeze_ix], vec![]).await
     }
 
-    pub async fn renounce(&mut self, renounce_mask: u128) -> Result<(), BanksClientError> {
+    pub async fn renounce(&mut self, ix: ProgramInstruction) -> Result<(), BanksClientError> {
         let renounce_ix = admin_renounce(
             self.program_id,
             admin_renounce::Accounts {
                 authority: &self.prg_test_ctx.payer.pubkey(),
                 central_state: &self.central_state,
             },
-            admin_renounce::Params { renounce_mask },
+            admin_renounce::Params { ix },
         );
         sign_send_instructions(&mut self.prg_test_ctx, vec![renounce_ix], vec![]).await
     }
