@@ -9,7 +9,6 @@ pub mod common;
 async fn program_freeze() {
     // Setup the token + basic accounts
     let mut tr = TestRunner::new(1_000_000).await.unwrap();
-    tr.migrate_v2().await.unwrap();
 
     // Renounce a specific instruction
     let freeze_mask = get_freeze_mask(vec![access_protocol::instruction::ProgramInstruction::AdminMint]);

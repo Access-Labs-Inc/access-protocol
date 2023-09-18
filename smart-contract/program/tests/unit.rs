@@ -19,7 +19,6 @@ mod basic_functionality {
     async fn program_freeze() {
         // Setup the token + basic accounts
         let mut tr = TestRunner::new(1_000_000).await.unwrap();
-        tr.migrate_v2().await.unwrap();
 
         // Freeze the program
         let freeze_mask = get_freeze_mask(vec![]);
@@ -51,16 +50,6 @@ mod basic_functionality {
         tr.sleep(1).await.unwrap();
         tr.mint(&staker.pubkey(), 729_999_999_999).await.unwrap();
         tr.change_inflation(1_100_000_000).await.unwrap_err();
-    }
-
-    #[tokio::test]
-    async fn migrate_v2() {
-        // Setup the token + basic accounts
-        let mut tr = TestRunner::new(1_000_000).await.unwrap();
-        tr.migrate_v2().await.unwrap();
-        // Migration should be possible only once
-        tr.sleep(1).await.unwrap();
-        tr.migrate_v2().await.unwrap_err();
     }
 
     #[tokio::test]

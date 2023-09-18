@@ -17,7 +17,7 @@ async fn end_to_end() {
     let mut tr = TestRunner::new(DAILY_INFLATION).await.unwrap();
 
     let cs_stats = tr.central_state_stats().await.unwrap();
-    assert_eq!(cs_stats.account.tag, Tag::CentralState);
+    assert_eq!(cs_stats.account.tag, Tag::CentralStateV2);
     assert_eq!(cs_stats.account.daily_inflation, DAILY_INFLATION);
     assert_eq!(cs_stats.account.token_mint.to_string(), tr.get_mint().to_string());
     assert_eq!(cs_stats.account.authority, tr.get_authority());

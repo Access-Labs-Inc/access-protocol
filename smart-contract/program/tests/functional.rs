@@ -21,6 +21,7 @@ use mpl_token_metadata::instruction::update_metadata_accounts;
 use mpl_token_metadata::{instruction::create_metadata_accounts_v3, pda::find_metadata_account};
 
 use spl_token::{instruction::set_authority, instruction::AuthorityType};
+use access_protocol::instruction::migrate_central_state_v2;
 
 #[tokio::test]
 async fn functional_10s() {
@@ -145,7 +146,30 @@ async fn functional_10s() {
     .unwrap();
 
     //
-    // TODO(Ladi): Not sure how to make this work
+    // Migrate CentralState to V2
+    //
+    let ix = create_associated_token_account(
+        &prg_test_ctx.payer.pubkey(),
+        &central_state,
+        &mint,
+        &spl_token::ID,
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![]).await.unwrap();
+    let central_state_vault = get_associated_token_address(&central_state, &mint);
+    let migrate_ix = migrate_central_state_v2(
+        program_id,
+        migrate_central_state_v2::Accounts {
+            fee_payer: &prg_test_ctx.payer.pubkey(),
+            central_state: &central_state,
+            system_program: &system_program::ID,
+        },
+        migrate_central_state_v2::Params {},
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![migrate_ix], vec![]).await.unwrap();
+
+
+
+    //
     // Edit metadata
     //
     let ix = edit_metadata(

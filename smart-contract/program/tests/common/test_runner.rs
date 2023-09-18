@@ -31,7 +31,7 @@ pub struct TestRunner {
     local_env: BanksClient,
     authority_ata: Pubkey,
     central_state: Pubkey,
-    central_state_vault: Option<Pubkey>,
+    central_state_vault: Pubkey,
     mint: Pubkey,
     // hashmap from user pubkey to a bond account
     bond_accounts: std::collections::HashMap<String, Pubkey>,
@@ -164,7 +164,7 @@ impl TestRunner {
         sign_send_instructions(&mut prg_test_ctx, vec![create_central_state_ix], vec![]).await?;
 
         //
-        // Create authority ACCESS token account
+        // Create token accounts
         //
         let ix = create_associated_token_account(
             &prg_test_ctx.payer.pubkey(),
@@ -172,7 +172,13 @@ impl TestRunner {
             &mint,
             &spl_token::ID,
         );
-        sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![]).await?;
+        let ix2 = create_associated_token_account(
+            &prg_test_ctx.payer.pubkey(),
+            &central_state_address,
+            &mint,
+            &spl_token::ID,
+        );
+        sign_send_instructions(&mut prg_test_ctx, vec![ix, ix2], vec![]).await?;
         let authority_ata = get_associated_token_address(&prg_test_ctx.payer.pubkey(), &mint);
 
         // Create bond seller
@@ -190,6 +196,18 @@ impl TestRunner {
         )
             .await?;
 
+        let central_state_vault = get_associated_token_address(&central_state_address, &mint);
+        let migrate_ix = migrate_central_state_v2(
+            program_id,
+            migrate_central_state_v2::Accounts {
+                fee_payer: &prg_test_ctx.payer.pubkey(),
+                central_state: &central_state_address,
+                system_program: &system_program::ID,
+            },
+            migrate_central_state_v2::Params {},
+        );
+        sign_send_instructions(&mut prg_test_ctx, vec![migrate_ix], vec![]).await?;
+
         Ok(Self {
             program_id,
             prg_test_ctx,
@@ -199,27 +217,11 @@ impl TestRunner {
             mint,
             bond_accounts: std::collections::HashMap::new(),
             bond_seller,
-            central_state_vault: None, // filled in by migrate_v2
+            central_state_vault: central_state_vault,
             supply_owner,
         })
     }
 
-    pub async fn migrate_v2(&mut self) -> Result<(), BanksClientError> {
-        self.create_ata_account(self.central_state).await?;
-        let central_state_vault = get_associated_token_address(&self.central_state, &self.mint);
-        let migrate_ix = migrate_central_state_v2(
-            self.program_id,
-            migrate_central_state_v2::Accounts {
-                fee_payer: &self.prg_test_ctx.payer.pubkey(),
-                central_state: &self.central_state,
-                system_program: &system_program::ID,
-            },
-            migrate_central_state_v2::Params {},
-        );
-        sign_send_instructions(&mut self.prg_test_ctx, vec![migrate_ix], vec![]).await?;
-        self.central_state_vault = Some(central_state_vault);
-        Ok(())
-    }
 
     pub async fn create_user_with_ata(&mut self) -> Result<Keypair, BanksClientError> {
         let owner = Keypair::new();
@@ -440,7 +442,7 @@ impl TestRunner {
                 spl_token_program: &spl_token::ID,
                 vault: &pool_vault,
                 central_state: &self.central_state,
-                central_state_vault: &self.central_state_vault.unwrap(),
+                central_state_vault: &self.central_state_vault,
                 bond_account: staker_bond,
             },
             stake::Params {
@@ -463,7 +465,7 @@ impl TestRunner {
             access_protocol::instruction::distribute_fees::Accounts {
                 fee_payer: &self.prg_test_ctx.payer.pubkey(),
                 central_state: &self.central_state,
-                central_state_vault: &self.central_state_vault.unwrap(),
+                central_state_vault: &self.central_state_vault,
                 spl_token_program: &spl_token::ID,
                 mint: &self.mint,
                 token_accounts: recipient_pubkeys.leak(),
@@ -770,7 +772,7 @@ impl TestRunner {
     pub async fn central_state_stats(&mut self) -> Result<CentralStateStats, Box<dyn Error>> {
         let balance = self
             .local_env
-            .get_packed_account_data::<spl_token::state::Account>(self.central_state_vault.unwrap())
+            .get_packed_account_data::<spl_token::state::Account>(self.central_state_vault)
             .await?
             .amount;
 
@@ -1026,7 +1028,7 @@ impl TestRunner {
                 pool: &pool_key,
                 central_state: &self.central_state,
                 pool_vault: &get_associated_token_address(&pool_key, &self.mint),
-                central_state_vault: &self.central_state_vault.unwrap(),
+                central_state_vault: &self.central_state_vault,
                 mint: &self.mint,
                 spl_token_program: &spl_token::ID,
                 system_program: &system_program::ID,
