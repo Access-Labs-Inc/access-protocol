@@ -61,16 +61,12 @@ pub fn process_admin_program_freeze(
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(&ProgramInstruction::AdminProgramFreeze)?;
     check_account_key(
         accounts.authority,
         &central_state.authority,
         AccessError::WrongCentralStateAuthority,
     )?;
-
-    // we don't want to be able to freeze this instruction, but we want to be able to renounce it
-    if (ix_mask & central_state.admin_ix_gate == 0) {
-        return Err(AccessError::FrozenInstruction.into());
-    }
 
     central_state.ix_gate = ix_gate;
     central_state.save(&mut accounts.central_state.data.borrow_mut())?;
