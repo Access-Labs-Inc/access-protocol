@@ -350,14 +350,19 @@ pub enum ProgramInstruction {
     /// | 1     | ❌        | ❌      | The system program account |
     /// | 2     | ✅        | ✅      | The fee payer account      |
     MigrateCentralStateV2,
-    /// Change central state inflation
+    /// Admin program freeze instruction.
     ///
     /// | Index | Writable | Signer | Description                         |
     /// | --------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The central state account           |
     /// | 1     | ❌        | ✅      | The central state account authority |
     AdminProgramFreeze,
-    // todo docs
+    /// Admin renounce functionality
+    ///
+    /// | Index | Writable | Signer | Description                         |
+    /// | --------------------------------------------------------------- |
+    /// | 0     | ✅        | ❌      | The central state account           |
+    /// | 1     | ❌        | ✅      | The central state account authority |
     AdminRenounce,
 }
 
