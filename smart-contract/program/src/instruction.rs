@@ -341,6 +341,7 @@ pub enum ProgramInstruction {
     /// | 1     | ✅        | ❌      | The central state account   |
     /// | 2     | ❌        | ❌      | The system program account  |
     AdminSetProtocolFee,
+    /// Migrate the central state to the v2 format
     ///
     /// | Index | Writable | Signer | Description                |
     /// | ------------------------------------------------------ |
