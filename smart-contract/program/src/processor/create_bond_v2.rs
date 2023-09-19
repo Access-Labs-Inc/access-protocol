@@ -54,21 +54,21 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub bond_account_v2: &'a T,
 
-    /// The pool account
-    #[cons(writable)]
-    pub pool: &'a T,
-
     /// Central state
     #[cons(writable)]
     pub central_state: &'a T,
 
+    /// The stake fee account
+    #[cons(writable)]
+    pub central_state_vault: &'a T,
+
+    /// The pool account
+    #[cons(writable)]
+    pub pool: &'a T,
+
     /// The vault of the pool
     #[cons(writable)]
     pub pool_vault: &'a T,
-
-    /// The stake fee account
-    #[cons(writable)]
-    pub fee_account: &'a T,
 
     #[cons(writable)]
     pub mint: &'a T,
@@ -92,10 +92,10 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             source_token: next_account_info(accounts_iter)?,
             to: next_account_info(accounts_iter)?,
             bond_account_v2: next_account_info(accounts_iter)?,
-            pool: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
+            central_state_vault: next_account_info(accounts_iter)?,
+            pool: next_account_info(accounts_iter)?,
             pool_vault: next_account_info(accounts_iter)?,
-            fee_account: next_account_info(accounts_iter)?,
             mint: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
             system_program: next_account_info(accounts_iter)?,
@@ -168,7 +168,7 @@ pub fn process_create_bond_v2(
         return Err(AccessError::InvalidAmount.into());
     }
 
-    assert_valid_fee(accounts.fee_account, accounts.central_state.key)?;
+    assert_valid_fee(accounts.central_state_vault, accounts.central_state.key)?;
     check_account_key(
         accounts.bond_account_v2,
         &derived_key,
@@ -261,7 +261,7 @@ pub fn process_create_bond_v2(
     let transfer_fees = transfer(
         &spl_token::ID,
         accounts.source_token.key,
-        accounts.fee_account.key,
+        accounts.central_state_vault.key,
         accounts.from.key,
         &[],
         central_state.calculate_fee(amount)?,
@@ -271,7 +271,7 @@ pub fn process_create_bond_v2(
         &[
             accounts.spl_token_program.clone(),
             accounts.source_token.clone(),
-            accounts.fee_account.clone(),
+            accounts.central_state_vault.clone(),
             accounts.from.clone(),
         ],
     )?;
