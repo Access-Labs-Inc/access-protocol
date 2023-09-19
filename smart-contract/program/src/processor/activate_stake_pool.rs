@@ -9,10 +9,9 @@ use solana_program::{
 };
 
 use crate::error::AccessError;
-use crate::state::{CentralStateV2, StakePool, Tag};
-use crate::state::V1_INSTRUCTIONS_ALLOWED;
-use crate::utils::{check_account_key, check_account_owner, check_signer};
 use crate::instruction::ProgramInstruction::ActivateStakePool;
+use crate::state::{CentralStateV2, StakePool, Tag};
+use crate::utils::{check_account_owner, check_signer};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 pub struct Params {}
@@ -64,16 +63,8 @@ pub fn process_activate_stake_pool(program_id: &Pubkey, accounts: &[AccountInfo]
     let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
     central_state.assert_instruction_allowed(&ActivateStakePool)?;
 
-    // in v2 this is permissionless
-    if !V1_INSTRUCTIONS_ALLOWED {
-        check_account_key(
-            accounts.authority,
-            &central_state.authority,
-            AccessError::WrongCentralStateAuthority,
-        )?;
-        if stake_pool.header.tag != Tag::InactiveStakePool as u8 {
-            return Err(AccessError::ActiveStakePoolNotAllowed.into());
-        }
+    if stake_pool.header.tag != Tag::InactiveStakePool as u8 {
+        return Err(AccessError::ActiveStakePoolNotAllowed.into());
     }
 
     stake_pool.header.tag = Tag::StakePool as u8;
