@@ -23,6 +23,7 @@ pub struct Accounts<'a, T> {
     pub authority: &'a T,
 
     /// The central state account
+    #[cons(writable)]
     pub central_state: &'a T,
 
     /// The system program account
