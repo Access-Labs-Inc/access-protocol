@@ -35,11 +35,10 @@ pub enum ProgramInstruction {
     CreateStakePool,
     /// Activate a stake pool
     ///
-    /// | Index | Writable | Signer | Description                 |
-    /// | ------------------------------------------------------- |
-    /// | 0     | ❌        | ✅      | The central state authority |
-    /// | 1     | ✅        | ❌      | The stake pool to activate  |
-    /// | 2     | ❌        | ❌      | The central state account   |
+    /// | Index | Writable | Signer | Description                |
+    /// | ------------------------------------------------------ |
+    /// | 0     | ✅        | ❌      | The stake pool to activate |
+    /// | 1     | ❌        | ❌      | The central state account  |
     ActivateStakePool,
     /// Create stake account
     ///

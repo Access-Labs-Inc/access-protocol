@@ -18,10 +18,6 @@ pub struct Params {}
 
 #[derive(InstructionsAccount)]
 pub struct Accounts<'a, T> {
-    /// The central state authority
-    #[cons(signer)]
-    pub authority: &'a T,
-
     /// The stake pool to activate
     #[cons(writable)]
     pub stake_pool: &'a T,
@@ -37,7 +33,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     ) -> Result<Self, ProgramError> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
-            authority: next_account_info(accounts_iter)?,
             stake_pool: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
         };
