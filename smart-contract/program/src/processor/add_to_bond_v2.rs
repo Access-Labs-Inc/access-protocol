@@ -254,13 +254,15 @@ pub fn process_add_to_bond_v2(
     }
 
     // Transfer fees
+    let fee_amount = central_state.calculate_fee(amount)?;
+    msg!("Transfer fees: {}", fee_amount);
     let transfer_fees = transfer(
         &spl_token::ID,
         accounts.source_token.key,
         accounts.central_state_vault.key,
         accounts.from.key,
         &[],
-        central_state.calculate_fee(amount)?,
+        fee_amount,
     )?;
     invoke(
         &transfer_fees,
