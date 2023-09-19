@@ -1,3 +1,4 @@
+//! Migrate the central state to the v2 format
 use std::mem::size_of;
 use solana_program::sysvar::Sysvar;
 use bonfida_utils::{BorshSize, InstructionsAccount};
