@@ -26,7 +26,7 @@ use crate::utils::is_admin_renouncable_instruction;
 pub const ACCESS_MINT: Pubkey =
     solana_program::pubkey!("5MAYDfq5yxtudAhtfyuMBuHZjgAbaS9tbEyEQYAhDS5y");
 
-#[allow(missing_docs)]
+/// Specify the number of seconds in a day, used only for testing purposes
 pub const SECONDS_IN_DAY: u64 = if cfg!(feature = "days-to-sec-15m") {
     15 * 60
 } else if cfg!(feature = "days-to-sec-10s") {
@@ -35,19 +35,16 @@ pub const SECONDS_IN_DAY: u64 = if cfg!(feature = "days-to-sec-15m") {
     3600 * 24
 };
 
-/// Specify it the calling of the V1 instructions is allowed
+/// Specify if the calling of the V1 instructions is allowed
 pub const V1_INSTRUCTIONS_ALLOWED: bool = cfg!(feature = "v1-instructions-allowed");
 
-/// Percentage of the staking rewards going to stakers
-pub const STAKER_MULTIPLIER: u64 = 50;
+/// Default percentage of the staking rewards going to stakers
+pub const DEFAULT_STAKER_MULTIPLIER: u64 = 50;
 
-/// Percentage of the staking rewards going to the pool owner
-pub const OWNER_MULTIPLIER: u64 = 100 - STAKER_MULTIPLIER;
+/// Length of the circular buffer (stores data for calculating rewards for 274 days)
+pub const STAKE_BUFFER_LEN: u64 = 274;
 
-/// Length of the circular buffer (stores balances for 1 year)
-pub const STAKE_BUFFER_LEN: u64 = 274; // 9 Months
-
-/// Max count of recipients of the fees
+/// Maximum count of recipients of the fees
 pub const MAX_FEE_RECIPIENTS: usize = 10;
 
 /// Minimum balance of the fee split account allowed for token distribution
@@ -280,7 +277,7 @@ impl StakePoolHeader {
             nonce,
             vault: vault.to_bytes(),
             minimum_stake_amount,
-            stakers_part: STAKER_MULTIPLIER,
+            stakers_part: DEFAULT_STAKER_MULTIPLIER,
         })
     }
 
