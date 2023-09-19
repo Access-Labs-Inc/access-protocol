@@ -252,7 +252,7 @@ async fn functional_10s() {
             spl_token_program: &spl_token::ID,
         },
         admin_mint::Params {
-            amount: 10_000 * 1_000_000,
+            amount: 10_000_000_000 * 1_000_000,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![admin_mint_ix], vec![])

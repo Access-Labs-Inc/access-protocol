@@ -55,8 +55,8 @@ mod rewards_wrap {
             8 * DAY as i64,
             1,
         )
-        .await
-        .unwrap();
+            .await
+            .unwrap();
         tr.claim_bond(&pool_owner2.pubkey(), &staker.pubkey())
             .await
             .unwrap();
@@ -138,8 +138,8 @@ mod rewards_wrap {
             8 * DAY as i64,
             1,
         )
-        .await
-        .unwrap();
+            .await
+            .unwrap();
         tr.claim_bond(&pool_owner2.pubkey(), &staker.pubkey())
             .await
             .unwrap();
@@ -162,7 +162,7 @@ mod rewards_wrap {
             let staker_stats = tr.staker_stats(staker.pubkey()).await.unwrap();
             assert_eq!(
                 staker_stats.balance,
-                2 * i * DAILY_INFLATION / 4 + DAILY_INFLATION / 4
+                (2 * i + 1) * DAILY_INFLATION / 4
             );
 
             // Claim pool 2 rewards - owner gets (DAILY_INFLATION / 4) every day
@@ -175,7 +175,7 @@ mod rewards_wrap {
                 .await
                 .unwrap();
             let staker_stats = tr.staker_stats(staker.pubkey()).await.unwrap();
-            assert_eq!(staker_stats.balance, 2 * (i + 1) * DAILY_INFLATION / 2);
+            assert_eq!(staker_stats.balance, (i + 1) * DAILY_INFLATION / 2);
         }
     }
 
@@ -221,8 +221,8 @@ mod rewards_wrap {
             8 * DAY as i64,
             1,
         )
-        .await
-        .unwrap();
+            .await
+            .unwrap();
         tr.claim_bond(&pool_owner2.pubkey(), &staker.pubkey())
             .await
             .unwrap();
