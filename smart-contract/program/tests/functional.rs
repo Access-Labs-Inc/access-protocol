@@ -311,7 +311,6 @@ async fn functional_10s() {
     let activate_stake_pool_ix = activate_stake_pool(
         program_id,
         activate_stake_pool::Accounts {
-            authority: &prg_test_ctx.payer.pubkey(),
             stake_pool: &stake_pool_key,
             central_state: &central_state,
         },

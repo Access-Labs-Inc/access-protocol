@@ -11,7 +11,7 @@ use solana_program::{
 use crate::error::AccessError;
 use crate::instruction::ProgramInstruction::ActivateStakePool;
 use crate::state::{CentralStateV2, StakePool, Tag};
-use crate::utils::{check_account_owner, check_signer};
+use crate::utils::{check_account_owner};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 pub struct Params {}
@@ -40,12 +40,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         // Check ownership
         check_account_owner(accounts.stake_pool, program_id, AccessError::WrongOwner)?;
         check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
-
-        // Check signer
-        check_signer(
-            accounts.authority,
-            AccessError::CentralStateAuthorityMustSign,
-        )?;
 
         Ok(accounts)
     }

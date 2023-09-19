@@ -340,7 +340,6 @@ impl TestRunner {
         let activate_stake_pool_ix = activate_stake_pool(
             self.program_id,
             activate_stake_pool::Accounts {
-                authority: &self.prg_test_ctx.payer.pubkey(),
                 stake_pool: &stake_pool_key,
                 central_state: &self.central_state,
             },
