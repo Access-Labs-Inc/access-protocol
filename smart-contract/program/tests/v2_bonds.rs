@@ -80,7 +80,7 @@ async fn v2_bonds() {
             .await
             .unwrap();
         assert_eq!(bond.tag, BondAccountV2);
-        assert_eq!(bond.unlock_date, Some(unlock_date));
+        assert_eq!(bond.unlock_timestamp, Some(unlock_date));
         assert_eq!(bond.pool, tr.get_pool_pda(&pool_owner.pubkey()));
         assert_eq!(bond.amount, bond_amount);
         assert_eq!(bond.owner, bond_recipient.pubkey());
@@ -118,7 +118,7 @@ async fn v2_bonds() {
             .await
             .unwrap();
         assert_eq!(bond.tag, BondAccountV2);
-        assert_eq!(bond.unlock_date, Some(unlock_date));
+        assert_eq!(bond.unlock_timestamp, Some(unlock_date));
         assert_eq!(bond.pool, tr.get_pool_pda(&pool_owner.pubkey()));
         assert_eq!(bond.amount, (bond_amount + add_amount));
         assert_eq!(bond.owner, bond_recipient.pubkey());
@@ -189,7 +189,7 @@ async fn v2_bonds() {
             .await
             .unwrap();
         assert_eq!(bond.tag, BondAccountV2);
-        assert_eq!(bond.unlock_date, Some(unlock_date));
+        assert_eq!(bond.unlock_timestamp, Some(unlock_date));
         assert_eq!(bond.pool, tr.get_pool_pda(&pool_owner.pubkey()));
         assert_eq!(bond.amount, 0);
         assert_eq!(bond.owner, bond_recipient.pubkey());
@@ -247,7 +247,7 @@ async fn v2_bonds() {
             .await
             .unwrap();
         assert_eq!(bond.tag, BondAccountV2);
-        assert_eq!(bond.unlock_date, None);
+        assert_eq!(bond.unlock_timestamp, None);
         assert_eq!(bond.pool, tr.get_pool_pda(&pool_owner.pubkey()));
         assert_eq!(bond.amount, bond_amount);
         assert_eq!(bond.owner, bond_recipient.pubkey());
@@ -281,7 +281,7 @@ async fn v2_bonds() {
             .await
             .unwrap();
         assert_eq!(bond.tag, BondAccountV2);
-        assert_eq!(bond.unlock_date, None);
+        assert_eq!(bond.unlock_timestamp, None);
         assert_eq!(bond.pool, tr.get_pool_pda(&pool_owner.pubkey()));
         assert_eq!(bond.amount, (bond_amount + add_amount));
         assert_eq!(bond.owner, bond_recipient.pubkey());

@@ -209,7 +209,7 @@ pub fn process_add_to_bond_v2(
     }
 
     let current_time = Clock::get()?.unix_timestamp;
-    if bond.unlock_date.is_some() && current_time > bond.unlock_date.unwrap() {
+    if bond.unlock_timestamp.is_some() && current_time > bond.unlock_timestamp.unwrap() {
         msg!("Cannot add to a bond that has already started unlocking");
         return Err(ProgramError::InvalidArgument);
     }

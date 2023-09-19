@@ -795,7 +795,7 @@ pub struct BondAccountV2 {
     pub pool_minimum_at_creation: u64,
 
     /// Unlock start date
-    pub unlock_date: Option<i64>,
+    pub unlock_timestamp: Option<i64>,
 }
 
 #[allow(missing_docs)]
@@ -833,7 +833,7 @@ impl BondAccountV2 {
             pool,
             last_claimed_offset: current_offset,
             pool_minimum_at_creation,
-            unlock_date,
+            unlock_timestamp: unlock_date,
         }
     }
 
