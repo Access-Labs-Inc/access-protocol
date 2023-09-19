@@ -16,7 +16,7 @@ use spl_token::state::Account;
 use crate::state:: CentralStateV2;
 
 use crate::error::AccessError;
-use crate::state::{BondAccountV2, StakePool, BOND_SIGNER_THRESHOLD};
+use crate::state::{BondAccountV2, StakePool};
 use crate::utils::{
     assert_uninitialized, assert_valid_fee, check_account_key, check_account_owner, check_signer,
 };
@@ -213,7 +213,7 @@ pub fn process_create_bond_v2(
         accounts.fee_payer,
         accounts.bond_account_v2,
         seeds,
-        bond.borsh_len() + ((BOND_SIGNER_THRESHOLD - 1) * 32) as usize,
+        bond.borsh_len(),
     )?;
 
     bond.save(&mut accounts.bond_account_v2.data.borrow_mut())?;
