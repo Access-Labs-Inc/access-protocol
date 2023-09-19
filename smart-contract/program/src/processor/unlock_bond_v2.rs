@@ -111,7 +111,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         )?;
 
         // Check signer
-        check_signer(accounts.owner, AccessError::StakeAccountOwnerMustSign)?;
+        check_signer(accounts.owner, AccessError::BondSellerMustSign)?;
 
         Ok(accounts)
     }

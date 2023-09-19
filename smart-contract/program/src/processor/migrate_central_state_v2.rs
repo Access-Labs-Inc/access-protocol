@@ -1,6 +1,6 @@
 //! Migrate the central state to the v2 format
 use std::mem::size_of;
-use solana_program::sysvar::Sysvar;
+
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
@@ -13,6 +13,7 @@ use solana_program::{
     system_instruction,
     system_program,
 };
+use solana_program::sysvar::Sysvar;
 
 use crate::error::AccessError;
 use crate::state::{CentralState, CentralStateV2, FeeRecipient, MAX_FEE_RECIPIENTS};
@@ -80,14 +81,17 @@ pub fn process_migrate_central_state_v2(
     let state_v2 = CentralStateV2::from_central_state(central_state)?;
 
     // Resize account
-    let new_data_len = state_v2.borsh_len()+ size_of::<FeeRecipient>() * MAX_FEE_RECIPIENTS;
+    let new_data_len = state_v2.borsh_len() + size_of::<FeeRecipient>() * MAX_FEE_RECIPIENTS;
     let new_minimum_balance = Rent::get()?.minimum_balance(new_data_len);
     let lamports_diff = new_minimum_balance
         .checked_sub(accounts.central_state.lamports())
         .ok_or(AccessError::Overflow)?;
 
     invoke(
-        &system_instruction::transfer(accounts.fee_payer.key, accounts.central_state.key, lamports_diff),
+        &system_instruction::transfer(
+            accounts.fee_payer.key,
+            accounts.central_state.key,
+            lamports_diff),
         &[
             accounts.fee_payer.clone(),
             accounts.central_state.clone(),
