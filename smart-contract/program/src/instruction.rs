@@ -312,7 +312,7 @@ pub enum ProgramInstruction {
     /// | 5     | ❌        | ❌      | The SPL token program account        |
     /// | 6     | ✅        | ❌      | The stake pool vault                 |
     UnlockBondV2,
-    /// Create central state
+    /// Setup fee split
     ///
     /// | Index | Writable | Signer | Description                 |
     /// | ------------------------------------------------------- |
@@ -320,8 +320,7 @@ pub enum ProgramInstruction {
     /// | 1     | ✅        | ❌      | The central state account   |
     /// | 2     | ❌        | ❌      | The system program account  |
     AdminSetupFeeSplit,
-    /// Close a stake pool
-    /// This instruction can be used to close an empty stake pool and collect the lamports
+    /// Distribute fees to the recipients
     ///
     /// | Index    | Writable | Signer | Description                                  |
     /// | --------------------------------------------------------------------------- |

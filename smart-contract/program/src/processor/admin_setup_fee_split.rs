@@ -1,4 +1,4 @@
-//! Create central state
+//! Setup fee split
 
 use crate::state::CentralStateV2;
 use bonfida_utils::{BorshSize, InstructionsAccount};
@@ -56,7 +56,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             system_program: next_account_info(accounts_iter)?,
         };
 
-        // Check keys - todo more
+        // Check keys
         check_account_key(
             accounts.system_program,
             &system_program::ID,
