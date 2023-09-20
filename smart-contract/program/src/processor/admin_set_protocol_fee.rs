@@ -1,7 +1,7 @@
 //! Admin set protocol fee
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
-use solana_program::{account_info::{AccountInfo, next_account_info}, entrypoint::ProgramResult, program_error::ProgramError, pubkey::Pubkey, system_program};
+use solana_program::{account_info::{AccountInfo, next_account_info}, entrypoint::ProgramResult, program_error::ProgramError, pubkey::Pubkey};
 
 use crate::error::AccessError;
 use crate::instruction::ProgramInstruction::AdminSetProtocolFee;

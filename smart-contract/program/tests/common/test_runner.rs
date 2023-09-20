@@ -217,7 +217,7 @@ impl TestRunner {
             mint,
             bond_accounts: std::collections::HashMap::new(),
             bond_seller,
-            central_state_vault: central_state_vault,
+            central_state_vault,
             supply_owner,
         })
     }

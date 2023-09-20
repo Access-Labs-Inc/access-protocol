@@ -155,7 +155,7 @@ async fn functional_10s() {
         &spl_token::ID,
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![]).await.unwrap();
-    let central_state_vault = get_associated_token_address(&central_state, &mint);
+    let _central_state_vault = get_associated_token_address(&central_state, &mint);
     let migrate_ix = migrate_central_state_v2(
         program_id,
         migrate_central_state_v2::Accounts {
