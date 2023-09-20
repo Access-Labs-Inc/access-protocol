@@ -1258,7 +1258,6 @@ impl TestRunner {
             admin_set_protocol_fee::Accounts {
                 central_state: &self.central_state,
                 authority: &self.prg_test_ctx.payer.pubkey(),
-                system_program: &system_program::ID,
             },
             admin_set_protocol_fee::Params {
                 protocol_fee_basis_points: new_fee,
