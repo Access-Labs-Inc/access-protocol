@@ -476,7 +476,6 @@ async fn functional_10s() {
             vault: &pool_vault,
             central_state: &central_state,
             central_state_vault: &authority_ata,
-            bond_account: None,
         },
         stake::Params {
             amount: token_amount,
@@ -741,7 +740,6 @@ async fn functional_10s() {
             spl_token_program: &spl_token::ID,
             vault: &pool_vault,
             central_state: &central_state,
-            bond_account: None,
         },
         unstake::Params {
             amount: token_amount,

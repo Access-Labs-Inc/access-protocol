@@ -442,7 +442,6 @@ impl TestRunner {
                 vault: &pool_vault,
                 central_state: &self.central_state,
                 central_state_vault: &self.central_state_vault,
-                bond_account: staker_bond,
             },
             stake::Params {
                 amount: token_amount,
@@ -643,7 +642,6 @@ impl TestRunner {
                 spl_token_program: &spl_token::ID,
                 central_state: &self.central_state,
                 vault: &pool_vault,
-                bond_account: staker_bond,
             },
             unstake::Params {
                 amount: token_amount,
