@@ -1,4 +1,4 @@
-//! Create a bond V2
+//! Create a Bond V2
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::program_pack::Pack;
@@ -72,7 +72,7 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub pool_vault: &'a T,
 
-    /// The ACS token mint
+    /// The mint address of the ACS token
     #[cons(writable)]
     pub mint: &'a T,
 
@@ -118,6 +118,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
         // Check ownership
         check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
+        check_account_owner(accounts.central_state_vault, &spl_token::ID, AccessError::WrongOwner)?;
         check_account_owner(
             accounts.pool,
             program_id,
@@ -164,6 +165,15 @@ pub fn process_create_bond_v2(
         AccessError::StakePoolVaultMismatch,
     )?;
 
+    if (pool.header.current_day_idx as u64) < central_state.get_current_offset()? {
+        msg!(
+            "Pool must be cranked before adding to a bond, {}, {}",
+            pool.header.current_day_idx,
+            central_state.get_current_offset()?
+        );
+        return Err(AccessError::PoolMustBeCranked.into());
+    }
+
     // We want to limit the bond amount by the pool minumum even in the case when the user has other subscriptions
     if pool.header.minimum_stake_amount > amount {
         return Err(AccessError::InvalidAmount.into());
@@ -191,6 +201,9 @@ pub fn process_create_bond_v2(
     }
 
     let from_ata = Account::unpack(&accounts.from_ata.data.borrow())?;
+    if from_ata.mint != central_state.token_mint {
+        return Err(AccessError::WrongMint.into());
+    }
     if &from_ata.owner != accounts.from.key {
         return Err(AccessError::WrongOwner.into());
     }
@@ -264,13 +277,15 @@ pub fn process_create_bond_v2(
     }
 
     // Transfer fees
+    let fee_amount = central_state.calculate_fee(amount)?;
+    msg!("Transfer fees: {}", fee_amount);
     let transfer_fees = transfer(
         &spl_token::ID,
         accounts.from_ata.key,
         accounts.central_state_vault.key,
         accounts.from.key,
         &[],
-        central_state.calculate_fee(amount)?,
+        fee_amount,
     )?;
     invoke(
         &transfer_fees,
