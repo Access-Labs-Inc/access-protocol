@@ -104,6 +104,8 @@ async fn fee_split() {
         let recipient_stats = tr.staker_stats(recipient.pubkey()).await.unwrap();
         assert_eq!(recipient_stats.balance, 100_000_000 * percentage / 100);
     }
+    let token_stats = tr.token_stats().await.unwrap();
+    assert_eq!(token_stats.supply, 100_000_000_000_000_000 - 100_000_000 - 1_000_000);
 
     // change the fee recipients
     let new_recipient1 = tr.create_user_with_ata().await.unwrap();
@@ -136,9 +138,6 @@ async fn fee_split() {
     .await
     .unwrap_err();
 
-    // try changing with no recipients
-    tr.setup_fee_split(vec![]).await.unwrap_err();
-
     // this will add 224691358 to the fee split ata
     tr.stake(&pool_owner.pubkey(), &staker, 11_234_567_891)
         .await
@@ -164,6 +163,8 @@ async fn fee_split() {
     assert_eq!(recipient2_stats.balance, 224691358 * 70 / 100);
     let central_state_stats = tr.central_state_stats().await.unwrap();
     assert_eq!(central_state_stats.balance, 0);
+    let token_stats = tr.token_stats().await.unwrap();
+    assert_eq!(token_stats.supply, 100_000_000_000_000_000 - 100_000_000 - 1_000_000 - 1);
 
     // now the change should be possible
     tr.sleep(1).await.unwrap();
@@ -173,4 +174,23 @@ async fn fee_split() {
     }])
     .await
     .unwrap();
+
+    // change to no recipients
+    tr.sleep(1).await.unwrap();
+    tr.setup_fee_split(vec![]).await.unwrap();
+
+    tr.stake(&pool_owner.pubkey(), &staker, 5_000_000_000)
+        .await
+        .unwrap();
+
+    let central_state_stats = tr.central_state_stats().await.unwrap();
+    assert_eq!(central_state_stats.balance, 100_000_000);
+    assert_eq!(central_state_stats.account.recipients.len(), 0);
+
+    tr.distribute_fees().await.unwrap();
+    let central_state_stats = tr.central_state_stats().await.unwrap();
+    assert_eq!(central_state_stats.balance, 0);
+    assert_eq!(central_state_stats.account.recipients.len(), 0);
+    let token_stats = tr.token_stats().await.unwrap();
+    assert_eq!(token_stats.supply, 100_000_000_000_000_000 - 100_000_000 - 1_000_000 - 1 - 100_000_000);
 }

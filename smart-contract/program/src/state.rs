@@ -88,7 +88,6 @@ impl Tag {
             Tag::StakePool => Tag::FrozenStakePool,
             Tag::StakeAccount => Tag::FrozenStakeAccount,
             Tag::BondAccount => Tag::FrozenBondAccount,
-            Tag::BondAccountV2 => Tag::FrozenBondAccountV2,
             Tag::FrozenStakePool => Tag::StakePool,
             Tag::FrozenStakeAccount => Tag::StakeAccount,
             Tag::FrozenBondAccount => Tag::BondAccount,
