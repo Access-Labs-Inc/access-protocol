@@ -567,7 +567,7 @@ impl TestRunner {
         let claim_ix = access_protocol::instruction::claim_bond_v2_rewards(
             self.program_id,
             access_protocol::instruction::claim_bond_v2_rewards::Accounts {
-                stake_pool: &stake_pool_key,
+                pool: &stake_pool_key,
                 bond_account_v2: &bond_v2_acc_key,
                 owner: &owner.pubkey(),
                 rewards_destination: &owner_token_acc,

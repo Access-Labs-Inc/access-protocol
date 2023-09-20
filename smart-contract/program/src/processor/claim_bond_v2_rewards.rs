@@ -1,5 +1,4 @@
-//! Claim rewards of a stake account
-//! This instruction can be used by stakers to claim their staking rewards
+//! Claim rewards of a bond V2
 use crate::error::AccessError;
 use crate::state::BondAccountV2;
 use crate::state::{StakePool, Tag};
@@ -24,21 +23,21 @@ use crate::instruction::ProgramInstruction::ClaimBondV2Rewards;
 use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
-/// The required parameters for the `claim_rewards` instruction
+/// The required parameters for the `claim_bond_v2_rewards` instruction
 pub struct Params {}
 
 #[derive(InstructionsAccount)]
-/// The required accounts for the `claim_rewards` instruction
+/// The required accounts for the `claim_bond_v2_rewards` instruction
 pub struct Accounts<'a, T> {
     /// The stake pool account
     #[cons(writable)]
-    pub stake_pool: &'a T,
+    pub pool: &'a T,
 
-    /// The stake account
+    /// The Bond V2 account
     #[cons(writable)]
     pub bond_account_v2: &'a T,
 
-    /// The owner of the stake account
+    /// The owner of the Bond V2 account
     #[cons(signer)]
     pub owner: &'a T,
 
@@ -49,7 +48,7 @@ pub struct Accounts<'a, T> {
     /// The central state account
     pub central_state: &'a T,
 
-    /// The mint address of the ACCESS token
+    /// The mint address of the ACS token
     #[cons(writable)]
     pub mint: &'a T,
 
@@ -64,7 +63,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     ) -> Result<Self, ProgramError> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
-            stake_pool: next_account_info(accounts_iter)?,
+            pool: next_account_info(accounts_iter)?,
             bond_account_v2: next_account_info(accounts_iter)?,
             owner: next_account_info(accounts_iter)?,
             rewards_destination: next_account_info(accounts_iter)?,
@@ -82,7 +81,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
         // Check ownership
         check_account_owner(
-            accounts.stake_pool,
+            accounts.pool,
             program_id,
             AccessError::WrongStakePoolAccountOwner,
         )?;
@@ -112,7 +111,7 @@ pub fn process_claim_bond_v2_rewards(
 
     let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
     central_state.assert_instruction_allowed(&ClaimBondV2Rewards)?;
-    let stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
+    let stake_pool = StakePool::get_checked(accounts.pool, vec![Tag::StakePool])?;
     let mut bond_v2_account = BondAccountV2::from_account_info(accounts.bond_account_v2)?;
 
     let destination_token_acc = Account::unpack(&accounts.rewards_destination.data.borrow())?;
@@ -130,7 +129,7 @@ pub fn process_claim_bond_v2_rewards(
     }
 
     check_account_key(
-        accounts.stake_pool,
+        accounts.pool,
         &bond_v2_account.pool,
         AccessError::WrongStakePool,
     )?;
