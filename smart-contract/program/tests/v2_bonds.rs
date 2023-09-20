@@ -50,6 +50,9 @@ async fn v2_bonds() {
         let unlock_date = current_time + 5 * SECONDS_PER_DAY as i64;
         let bond_amount = 20_000;
 
+        let token_stats = tr.token_stats().await.unwrap();
+        let prev_supply = token_stats.supply;
+
         // Create bond
         tr.create_bond_v2(
             &bond_creator,
@@ -69,6 +72,8 @@ async fn v2_bonds() {
         let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
         assert_eq!(pool_stats.header.total_staked, bond_amount);
         assert_eq!(pool_stats.vault, bond_amount);
+        let token_stats = tr.token_stats().await.unwrap();
+        assert_eq!(token_stats.supply, prev_supply);
         let central_state_stats = tr.central_state_stats().await.unwrap();
         assert_eq!(central_state_stats.account.total_staked, bond_amount);
         let bond = tr
@@ -220,6 +225,9 @@ async fn v2_bonds() {
         // Activate stake pool
         tr.activate_stake_pool(&pool_owner.pubkey()).await.unwrap();
 
+        let token_stats = tr.token_stats().await.unwrap();
+        let prev_supply = token_stats.supply;
+
         // Create bond
         let bond_amount = 30_000;
         tr.create_bond_v2(
@@ -242,6 +250,8 @@ async fn v2_bonds() {
         assert_eq!(pool_stats.vault, 0); // it got burned so it didn't get to the vault
         let central_state_stats = tr.central_state_stats().await.unwrap();
         assert_eq!(central_state_stats.account.total_staked, bond_amount);
+        let token_stats = tr.token_stats().await.unwrap();
+        assert_eq!(token_stats.supply, prev_supply - bond_amount);
         let bond = tr
             .bond_v2_stats(bond_recipient.pubkey(), pool_owner.pubkey(), None)
             .await

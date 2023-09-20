@@ -1,5 +1,4 @@
-//! Create a bond
-//! This instruction can be used by authorized sellers to create a bond
+//! Create a bond V2
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::program_pack::Pack;
@@ -10,6 +9,9 @@ use solana_program::{
     program_error::ProgramError,
     pubkey::Pubkey,
     system_program,
+    sysvar::Sysvar,
+    clock::Clock,
+    msg,
 };
 use spl_token::instruction::transfer;
 use spl_token::state::Account;
@@ -24,16 +26,16 @@ use crate::{cpi::Cpi, state::Tag};
 use crate::instruction::ProgramInstruction::CreateBondV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
-/// The required parameters for the `create_bond` instruction
+/// The required parameters for the `create_bond_v2` instruction
 pub struct Params {
     /// Total amount of ACCESS tokens being sold
     pub amount: u64,
-    /// The start date of the unlock
-    pub unlock_date: Option<i64>,
+    /// The timestamp of the unlock, if any
+    pub unlock_timestamp: Option<i64>,
 }
 
 #[derive(InstructionsAccount)]
-/// The required accounts for the `create_bond` instruction
+/// The required accounts for the `create_bond_v2` instruction
 pub struct Accounts<'a, T> {
     /// The fee account
     #[cons(writable, signer)]
@@ -45,7 +47,7 @@ pub struct Accounts<'a, T> {
 
     /// From ATA
     #[cons(writable)]
-    pub source_token: &'a T,
+    pub from_ata: &'a T,
 
     /// The bond recipient wallet
     pub to: &'a T,
@@ -58,7 +60,7 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub central_state: &'a T,
 
-    /// The stake fee account
+    /// The vault of the central state
     #[cons(writable)]
     pub central_state_vault: &'a T,
 
@@ -70,6 +72,7 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub pool_vault: &'a T,
 
+    /// The ACS token mint
     #[cons(writable)]
     pub mint: &'a T,
 
@@ -89,7 +92,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         let accounts = Accounts {
             fee_payer: next_account_info(accounts_iter)?,
             from: next_account_info(accounts_iter)?,
-            source_token: next_account_info(accounts_iter)?,
+            from_ata: next_account_info(accounts_iter)?,
             to: next_account_info(accounts_iter)?,
             bond_account_v2: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
@@ -121,7 +124,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             AccessError::WrongStakePoolAccountOwner,
         )?;
         check_account_owner(
-            accounts.source_token,
+            accounts.from_ata,
             &spl_token::ID,
             AccessError::WrongTokenAccountOwner,
         )?;
@@ -132,7 +135,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         )?;
 
         // Check signers
-        // todo - is this really needed? Possibly checked by #[cons(signer)]
         check_signer(accounts.fee_payer, AccessError::BondSellerMustSign)?;
         check_signer(accounts.from, AccessError::BondSellerMustSign)?;
 
@@ -147,28 +149,29 @@ pub fn process_create_bond_v2(
 ) -> ProgramResult {
     let Params {
         amount,
-        unlock_date,
+        unlock_timestamp,
     } = params;
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let mut pool = StakePool::get_checked(accounts.pool, vec![Tag::StakePool])?;
     let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
     central_state.assert_instruction_allowed(&CreateBondV2)?;
+    assert_valid_fee(accounts.central_state_vault, accounts.central_state.key)?;
 
-    let (derived_key, nonce) =
-        BondAccountV2::create_key(accounts.to.key, accounts.pool.key, unlock_date, program_id);
     check_account_key(
         accounts.pool_vault,
         &Pubkey::new(&pool.header.vault),
         AccessError::StakePoolVaultMismatch,
     )?;
 
-    // todo we might want to allow this - or at least check it there are any other accounts and add up the amounts
+    // We want to limit the bond amount by the pool minumum even in the case when the user has other subscriptions
     if pool.header.minimum_stake_amount > amount {
         return Err(AccessError::InvalidAmount.into());
     }
 
-    assert_valid_fee(accounts.central_state_vault, accounts.central_state.key)?;
+    let (derived_key, bump_seed) =
+        BondAccountV2::create_key(accounts.to.key, accounts.pool.key, unlock_timestamp, program_id);
+
     check_account_key(
         accounts.bond_account_v2,
         &derived_key,
@@ -181,11 +184,14 @@ pub fn process_create_bond_v2(
     )?;
     assert_uninitialized(accounts.bond_account_v2)?;
 
-    let source_token_acc = Account::unpack(&accounts.source_token.data.borrow())?;
-    if source_token_acc.mint != central_state.token_mint {
-        return Err(AccessError::WrongMint.into());
+    let current_time = Clock::get()?.unix_timestamp;
+    if unlock_timestamp.is_some() && current_time > unlock_timestamp.unwrap() {
+        msg!("Cannot create a bond with an unlock timestamp in the past");
+        return Err(ProgramError::InvalidArgument);
     }
-    if &source_token_acc.owner != accounts.from.key {
+
+    let from_ata = Account::unpack(&accounts.from_ata.data.borrow())?;
+    if &from_ata.owner != accounts.from.key {
         return Err(AccessError::WrongOwner.into());
     }
 
@@ -194,7 +200,7 @@ pub fn process_create_bond_v2(
         *accounts.pool.key,
         pool.header.minimum_stake_amount,
         amount,
-        unlock_date,
+        unlock_timestamp,
         central_state.last_snapshot_offset,
     );
 
@@ -203,8 +209,8 @@ pub fn process_create_bond_v2(
         BondAccountV2::SEED,
         &accounts.to.key.to_bytes(),
         &accounts.pool.key.to_bytes(),
-        &unlock_date.unwrap_or(0).to_le_bytes(),
-        &[nonce],
+        &unlock_timestamp.unwrap_or(0).to_le_bytes(),
+        &[bump_seed],
     ];
 
     Cpi::create_account(
@@ -219,10 +225,10 @@ pub fn process_create_bond_v2(
     bond.save(&mut accounts.bond_account_v2.data.borrow_mut())?;
 
     // Transfer the tokens to pool vault (or burn for forever bonds)
-    if unlock_date.is_some() {
+    if unlock_timestamp.is_some() {
         let transfer_instruction = transfer(
             &spl_token::ID,
-            accounts.source_token.key,
+            accounts.from_ata.key,
             accounts.pool_vault.key,
             accounts.from.key,
             &[],
@@ -232,7 +238,7 @@ pub fn process_create_bond_v2(
             &transfer_instruction,
             &[
                 accounts.spl_token_program.clone(),
-                accounts.source_token.clone(),
+                accounts.from_ata.clone(),
                 accounts.pool_vault.clone(),
                 accounts.from.clone(),
             ],
@@ -240,7 +246,7 @@ pub fn process_create_bond_v2(
     } else {
         let burn_instruction = spl_token::instruction::burn(
             &spl_token::ID,
-            accounts.source_token.key,
+            accounts.from_ata.key,
             accounts.mint.key,
             accounts.from.key,
             &[accounts.from.key],
@@ -249,7 +255,7 @@ pub fn process_create_bond_v2(
         invoke(
             &burn_instruction,
             &[
-                accounts.source_token.clone(),
+                accounts.from_ata.clone(),
                 accounts.mint.clone(),
                 accounts.from.clone(),
                 accounts.from.clone(),
@@ -260,7 +266,7 @@ pub fn process_create_bond_v2(
     // Transfer fees
     let transfer_fees = transfer(
         &spl_token::ID,
-        accounts.source_token.key,
+        accounts.from_ata.key,
         accounts.central_state_vault.key,
         accounts.from.key,
         &[],
@@ -270,7 +276,7 @@ pub fn process_create_bond_v2(
         &transfer_fees,
         &[
             accounts.spl_token_program.clone(),
-            accounts.source_token.clone(),
+            accounts.from_ata.clone(),
             accounts.central_state_vault.clone(),
             accounts.from.clone(),
         ],

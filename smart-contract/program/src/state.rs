@@ -823,7 +823,7 @@ impl BondAccountV2 {
         pool: Pubkey,
         pool_minimum_at_creation: u64,
         amount: u64,
-        unlock_date: Option<i64>,
+        unlock_timestamp: Option<i64>,
         current_offset: u64,
     ) -> Self {
         Self {
@@ -833,7 +833,7 @@ impl BondAccountV2 {
             pool,
             last_claimed_offset: current_offset,
             pool_minimum_at_creation,
-            unlock_timestamp: unlock_date,
+            unlock_timestamp,
         }
     }
 

@@ -172,6 +172,7 @@ pub fn process_stake(
         AccessError::StakePoolVaultMismatch,
     )?;
 
+    // todo delete this - accounts should be independent
     let mut amount_in_bonds: u64 = 0;
     if let Some(bond_account) = accounts.bond_account {
         let bond_account = BondAccount::from_account_info(bond_account, false)?;
