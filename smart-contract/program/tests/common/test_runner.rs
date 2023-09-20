@@ -1021,7 +1021,7 @@ impl TestRunner {
             access_protocol::instruction::add_to_bond_v2::Accounts {
                 fee_payer: &self.prg_test_ctx.payer.pubkey(),
                 from: &from.pubkey(),
-                source_token: &get_associated_token_address(&from.pubkey(), &self.mint),
+                from_ata: &get_associated_token_address(&from.pubkey(), &self.mint),
                 to,
                 bond_account_v2: &bond_key,
                 pool: &pool_key,
@@ -1034,7 +1034,7 @@ impl TestRunner {
             },
             access_protocol::instruction::add_to_bond_v2::Params {
                 amount: bond_amount,
-                unlock_date,
+                unlock_timestamp: unlock_date,
             },
         );
         sign_send_instructions(&mut self.prg_test_ctx, vec![add_to_bond_v2_ix], vec![from]).await?;
