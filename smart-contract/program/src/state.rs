@@ -581,7 +581,8 @@ impl CentralStateV2 {
         let current_time = Clock::get()?.unix_timestamp as u64;
         Ok((current_time - self.creation_time as u64) / SECONDS_IN_DAY)
     }
-    /// Check if the instruction is not frozen or renounced
+    /// Check if the instruction is not frozen or renounced.
+    /// AdminFreezeProgram instruction is allowed to be called even if frozen so that the program can be unfrozen
     pub fn assert_instruction_allowed(&self, ix: &ProgramInstruction) -> ProgramResult {
         let ix_num = *ix as u32;
         let ix_mask = 1_u128.checked_shl(ix_num).ok_or(AccessError::Overflow)?;
