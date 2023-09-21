@@ -1,4 +1,4 @@
-//! Create central state
+//! Setup fee split
 
 use crate::state::CentralStateV2;
 use bonfida_utils::{BorshSize, InstructionsAccount};
@@ -24,13 +24,13 @@ use crate::{error::AccessError};
 use crate::instruction::ProgramInstruction::AdminSetupFeeSplit;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
-/// The required parameters for the `create_central_state` instruction
+/// The required parameters for the `admin_setup_fee_split` instruction
 pub struct Params {
     pub recipients: Vec<FeeRecipient>,
 }
 
 #[derive(InstructionsAccount)]
-/// The required accounts for the `create_central_state` instruction
+/// The required accounts for the `admin_setup_fee_split` instruction
 pub struct Accounts<'a, T> {
     /// The central state authority
     #[cons(signer)]
@@ -56,7 +56,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             system_program: next_account_info(accounts_iter)?,
         };
 
-        // Check keys - todo more
+        // Check keys
         check_account_key(
             accounts.system_program,
             &system_program::ID,
@@ -97,10 +97,6 @@ pub fn process_admin_setup_fee_split(
         msg!("Too many recipients");
         return Err(AccessError::TooManyRecipients.into());
     }
-    if recipients.is_empty() {
-        msg!("No recipients");
-        return Err(AccessError::NoRecipients.into());
-    }
 
     // Check recipients
     let mut percentage_sum: u64 = 0;
@@ -119,6 +115,7 @@ pub fn process_admin_setup_fee_split(
         Ok(())
     })?;
 
+    // The recipient setup must be done within 5 minutes after the fee distribution
     let current_time = Clock::get()?.unix_timestamp as u64;
     if current_time - central_state.last_fee_distribution_time as u64 > MAX_FEE_SPLIT_SETUP_DELAY {
         msg!("Delay between fee distribution and fee split setup too long");

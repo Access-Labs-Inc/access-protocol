@@ -8,7 +8,7 @@ use crate::common::test_runner::TestRunner;
 pub mod common;
 
 #[tokio::test]
-async fn signed_claim() {
+async fn v2_bonds() {
     // Setup the token + basic accounts
     let mut tr = TestRunner::new(1_000_000).await.unwrap();
 
@@ -26,8 +26,8 @@ async fn signed_claim() {
             1,
             1,
         )
-        .await
-        .unwrap_err();
+            .await
+            .unwrap_err();
     }
     // ---------------------------------------------------------------------------------------------
     // Unlockable bond
@@ -50,6 +50,9 @@ async fn signed_claim() {
         let unlock_date = current_time + 5 * SECONDS_PER_DAY as i64;
         let bond_amount = 20_000;
 
+        let token_stats = tr.token_stats().await.unwrap();
+        let prev_supply = token_stats.supply;
+
         // Create bond
         tr.create_bond_v2(
             &bond_creator,
@@ -58,17 +61,19 @@ async fn signed_claim() {
             bond_amount,
             Some(unlock_date),
         )
-        .await
-        .unwrap();
+            .await
+            .unwrap();
 
         let staker_stats = tr.staker_stats(bond_creator.pubkey()).await.unwrap();
         assert_eq!(
-            staker_stats.balance as f64,
-            (100_000 - bond_amount - bond_amount) as f64 * tr.get_protocol_fees().await / 100.0
+            staker_stats.balance,
+            (100_000 - bond_amount) - (bond_amount as f64 * tr.get_protocol_fees().await / 100.0).ceil() as u64
         );
         let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
         assert_eq!(pool_stats.header.total_staked, bond_amount);
         assert_eq!(pool_stats.vault, bond_amount);
+        let token_stats = tr.token_stats().await.unwrap();
+        assert_eq!(token_stats.supply, prev_supply);
         let central_state_stats = tr.central_state_stats().await.unwrap();
         assert_eq!(central_state_stats.account.total_staked, bond_amount);
         let bond = tr
@@ -80,7 +85,7 @@ async fn signed_claim() {
             .await
             .unwrap();
         assert_eq!(bond.tag, BondAccountV2);
-        assert_eq!(bond.unlock_date, Some(unlock_date));
+        assert_eq!(bond.unlock_timestamp, Some(unlock_date));
         assert_eq!(bond.pool, tr.get_pool_pda(&pool_owner.pubkey()));
         assert_eq!(bond.amount, bond_amount);
         assert_eq!(bond.owner, bond_recipient.pubkey());
@@ -96,13 +101,13 @@ async fn signed_claim() {
             add_amount,
             Some(unlock_date),
         )
-        .await
-        .unwrap();
+            .await
+            .unwrap();
 
         let staker_stats = tr.staker_stats(bond_creator.pubkey()).await.unwrap();
         assert_eq!(
-            staker_stats.balance as f64,
-            (100_000 - (bond_amount + add_amount) - (bond_amount + add_amount)) as f64 * tr.get_protocol_fees().await / 100.0
+            staker_stats.balance,
+            100_000 - (bond_amount + add_amount) - ((bond_amount + add_amount) as f64 * tr.get_protocol_fees().await / 100.0).ceil() as u64
         );
         let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
         assert_eq!(pool_stats.header.total_staked, (bond_amount + add_amount));
@@ -118,7 +123,7 @@ async fn signed_claim() {
             .await
             .unwrap();
         assert_eq!(bond.tag, BondAccountV2);
-        assert_eq!(bond.unlock_date, Some(unlock_date));
+        assert_eq!(bond.unlock_timestamp, Some(unlock_date));
         assert_eq!(bond.pool, tr.get_pool_pda(&pool_owner.pubkey()));
         assert_eq!(bond.amount, (bond_amount + add_amount));
         assert_eq!(bond.owner, bond_recipient.pubkey());
@@ -167,8 +172,8 @@ async fn signed_claim() {
         // Check all the stats
         let creator_stats = tr.staker_stats(bond_creator.pubkey()).await.unwrap();
         assert_eq!(
-            creator_stats.balance as f64,
-            (100_000 - (bond_amount + add_amount) - (bond_amount + add_amount)) as f64 * tr.get_protocol_fees().await / 100.0
+            creator_stats.balance,
+            (100_000 - (bond_amount + add_amount)) - ((bond_amount + add_amount) as f64 * tr.get_protocol_fees().await / 100.0).ceil() as u64
         );
         let recipient_stats = tr.staker_stats(bond_recipient.pubkey()).await.unwrap();
         assert_eq!(
@@ -189,7 +194,7 @@ async fn signed_claim() {
             .await
             .unwrap();
         assert_eq!(bond.tag, BondAccountV2);
-        assert_eq!(bond.unlock_date, Some(unlock_date));
+        assert_eq!(bond.unlock_timestamp, Some(unlock_date));
         assert_eq!(bond.pool, tr.get_pool_pda(&pool_owner.pubkey()));
         assert_eq!(bond.amount, 0);
         assert_eq!(bond.owner, bond_recipient.pubkey());
@@ -220,6 +225,9 @@ async fn signed_claim() {
         // Activate stake pool
         tr.activate_stake_pool(&pool_owner.pubkey()).await.unwrap();
 
+        let token_stats = tr.token_stats().await.unwrap();
+        let prev_supply = token_stats.supply;
+
         // Create bond
         let bond_amount = 30_000;
         tr.create_bond_v2(
@@ -229,25 +237,27 @@ async fn signed_claim() {
             bond_amount,
             None,
         )
-        .await
-        .unwrap();
+            .await
+            .unwrap();
 
         let staker_stats = tr.staker_stats(bond_creator.pubkey()).await.unwrap();
         assert_eq!(
-            staker_stats.balance as f64,
-            (100_000 - bond_amount - bond_amount) as f64 * tr.get_protocol_fees().await / 100.0
+            staker_stats.balance,
+            (100_000 - bond_amount)- (bond_amount as f64 * tr.get_protocol_fees().await / 100.0).ceil() as u64
         );
         let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
         assert_eq!(pool_stats.header.total_staked, bond_amount);
         assert_eq!(pool_stats.vault, 0); // it got burned so it didn't get to the vault
         let central_state_stats = tr.central_state_stats().await.unwrap();
         assert_eq!(central_state_stats.account.total_staked, bond_amount);
+        let token_stats = tr.token_stats().await.unwrap();
+        assert_eq!(token_stats.supply, prev_supply - bond_amount);
         let bond = tr
             .bond_v2_stats(bond_recipient.pubkey(), pool_owner.pubkey(), None)
             .await
             .unwrap();
         assert_eq!(bond.tag, BondAccountV2);
-        assert_eq!(bond.unlock_date, None);
+        assert_eq!(bond.unlock_timestamp, None);
         assert_eq!(bond.pool, tr.get_pool_pda(&pool_owner.pubkey()));
         assert_eq!(bond.amount, bond_amount);
         assert_eq!(bond.owner, bond_recipient.pubkey());
@@ -263,13 +273,13 @@ async fn signed_claim() {
             add_amount,
             None,
         )
-        .await
-        .unwrap();
+            .await
+            .unwrap();
 
         let staker_stats = tr.staker_stats(bond_creator.pubkey()).await.unwrap();
         assert_eq!(
-            staker_stats.balance as f64,
-            (100_000 - (bond_amount + add_amount) - (bond_amount + add_amount)) as f64 * tr.get_protocol_fees().await / 100.0
+            staker_stats.balance,
+            100_000 - (bond_amount + add_amount)- ((bond_amount + add_amount) as f64 * tr.get_protocol_fees().await / 100.0).ceil() as u64
         );
         let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
         assert_eq!(pool_stats.header.total_staked, (bond_amount + add_amount));
@@ -281,7 +291,7 @@ async fn signed_claim() {
             .await
             .unwrap();
         assert_eq!(bond.tag, BondAccountV2);
-        assert_eq!(bond.unlock_date, None);
+        assert_eq!(bond.unlock_timestamp, None);
         assert_eq!(bond.pool, tr.get_pool_pda(&pool_owner.pubkey()));
         assert_eq!(bond.amount, (bond_amount + add_amount));
         assert_eq!(bond.owner, bond_recipient.pubkey());

@@ -19,7 +19,7 @@ use spl_token::state::Account;
 
 use crate::error::AccessError;
 use crate::instruction::ProgramInstruction::Unstake;
-use crate::state::{BondAccount, StakeAccount, StakePool, StakePoolHeader};
+use crate::state::{StakeAccount, StakePool, StakePoolHeader};
 use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -58,9 +58,6 @@ pub struct Accounts<'a, T> {
     /// The stake pool vault
     #[cons(writable)]
     pub vault: &'a T,
-
-    /// Optional bond account to be able to stake under the minimum
-    pub bond_account: Option<&'a T>,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -77,7 +74,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             destination_token: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
             vault: next_account_info(accounts_iter)?,
-            bond_account: next_account_info(accounts_iter).ok(),
         };
 
         // Check keys
@@ -113,9 +109,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             &spl_token::ID,
             AccessError::WrongTokenAccountOwner,
         )?;
-        if let Some(bond_account) = accounts.bond_account {
-            check_account_owner(bond_account, program_id, AccessError::WrongBondAccountOwner)?
-        }
 
         // Check signer
         check_signer(accounts.owner, AccessError::StakeAccountOwnerMustSign)?;
@@ -165,19 +158,6 @@ pub fn process_unstake(
         AccessError::StakePoolVaultMismatch,
     )?;
 
-    let mut amount_in_bonds: u64 = 0;
-    if let Some(bond_account) = accounts.bond_account {
-        let bond_account = BondAccount::from_account_info(bond_account, false)?;
-        check_account_key(accounts.owner, &bond_account.owner, AccessError::WrongOwner)?;
-        check_account_key(
-            accounts.stake_pool,
-            &bond_account.stake_pool,
-            AccessError::StakePoolMismatch,
-        )?;
-
-        amount_in_bonds = bond_account.total_staked;
-    }
-
     if stake_pool.header.minimum_stake_amount < stake_account.pool_minimum_at_creation {
         stake_account.pool_minimum_at_creation = stake_pool.header.minimum_stake_amount
     }
@@ -185,8 +165,6 @@ pub fn process_unstake(
     // Can unstake either above the minimum or everything - includes the bond account
     let new_total_in_pool = stake_account
         .stake_amount
-        .checked_add(amount_in_bonds)
-        .ok_or(AccessError::Overflow)?
         .checked_sub(amount)
         .ok_or(AccessError::Overflow)?;
     if stake_account.stake_amount != amount

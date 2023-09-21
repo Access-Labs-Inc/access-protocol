@@ -26,7 +26,7 @@ use crate::utils::is_admin_renouncable_instruction;
 pub const ACCESS_MINT: Pubkey =
     solana_program::pubkey!("5MAYDfq5yxtudAhtfyuMBuHZjgAbaS9tbEyEQYAhDS5y");
 
-#[allow(missing_docs)]
+/// Specify the number of seconds in a day, used only for testing purposes
 pub const SECONDS_IN_DAY: u64 = if cfg!(feature = "days-to-sec-15m") {
     15 * 60
 } else if cfg!(feature = "days-to-sec-10s") {
@@ -35,19 +35,16 @@ pub const SECONDS_IN_DAY: u64 = if cfg!(feature = "days-to-sec-15m") {
     3600 * 24
 };
 
-/// Specify it the calling of the V1 instructions is allowed
+/// Specify if the calling of the V1 instructions is allowed
 pub const V1_INSTRUCTIONS_ALLOWED: bool = cfg!(feature = "v1-instructions-allowed");
 
-/// Percentage of the staking rewards going to stakers
-pub const STAKER_MULTIPLIER: u64 = 50;
+/// Default percentage of the staking rewards going to stakers
+pub const DEFAULT_STAKER_MULTIPLIER: u64 = 50;
 
-/// Percentage of the staking rewards going to the pool owner
-pub const OWNER_MULTIPLIER: u64 = 100 - STAKER_MULTIPLIER;
+/// Length of the circular buffer (stores data for calculating rewards for 274 days)
+pub const STAKE_BUFFER_LEN: u64 = 274;
 
-/// Length of the circular buffer (stores balances for 1 year)
-pub const STAKE_BUFFER_LEN: u64 = 274; // 9 Months
-
-/// Max count of recipients of the fees
+/// Maximum count of recipients of the fees
 pub const MAX_FEE_RECIPIENTS: usize = 10;
 
 /// Minimum balance of the fee split account allowed for token distribution
@@ -81,7 +78,6 @@ pub enum Tag {
     FrozenBondAccount,
     // V2 tags
     BondAccountV2,
-    FrozenBondAccountV2,
     CentralStateV2,
 }
 
@@ -92,11 +88,9 @@ impl Tag {
             Tag::StakePool => Tag::FrozenStakePool,
             Tag::StakeAccount => Tag::FrozenStakeAccount,
             Tag::BondAccount => Tag::FrozenBondAccount,
-            Tag::BondAccountV2 => Tag::FrozenBondAccountV2,
             Tag::FrozenStakePool => Tag::StakePool,
             Tag::FrozenStakeAccount => Tag::StakeAccount,
             Tag::FrozenBondAccount => Tag::BondAccount,
-            Tag::FrozenBondAccountV2 => Tag::BondAccountV2,
             _ => return Err(AccessError::InvalidTagChange.into()),
         };
 
@@ -280,7 +274,7 @@ impl StakePoolHeader {
             nonce,
             vault: vault.to_bytes(),
             minimum_stake_amount,
-            stakers_part: STAKER_MULTIPLIER,
+            stakers_part: DEFAULT_STAKER_MULTIPLIER,
         })
     }
 
@@ -411,15 +405,14 @@ pub struct CentralState {
     /// Central state nonce
     pub signer_nonce: u8,
 
-    /// Daily inflation in token amount, inflation is paid from
-    /// the reserve owned by the central state
+    /// Daily inflation in token amount
     pub daily_inflation: u64,
 
     /// Mint of the token being emitted
     pub token_mint: Pubkey,
 
     /// Authority
-    /// The public key that can change the inflation
+    /// The public key that can do the admin operations
     pub authority: Pubkey,
 
     /// Creation timestamp
@@ -428,7 +421,7 @@ pub struct CentralState {
     /// Total amount of staked tokens
     pub total_staked: u64,
 
-    /// The daily total_staked snapshot to calculate correctly calculate the pool rewards
+    /// The daily total_staked snapshot to correctly calculate the pool rewards
     pub total_staked_snapshot: u64,
 
     /// The offset of the total_staked_snapshot from the creation_time in days
@@ -496,15 +489,14 @@ pub struct CentralStateV2 {
     /// Central state bump seed
     pub bump_seed: u8,
 
-    /// Daily inflation in token amount, inflation is paid from
-    /// the reserve owned by the central state
+    /// Daily inflation in token amount
     pub daily_inflation: u64,
 
     /// Mint of the token being emitted
     pub token_mint: Pubkey,
 
     /// Authority
-    /// The public key that can change the inflation
+    /// The public key that can do the admin operations
     pub authority: Pubkey,
 
     /// Creation timestamp
@@ -513,27 +505,28 @@ pub struct CentralStateV2 {
     /// Total amount of staked tokens
     pub total_staked: u64,
 
-    /// The daily total_staked snapshot to calculate correctly calculate the pool rewards
+    /// The daily total_staked snapshot to correctly calculate the pool rewards
     pub total_staked_snapshot: u64,
 
     /// The offset of the total_staked_snapshot from the creation_time in days
     pub last_snapshot_offset: u64,
 
-    /// Map of ixs and their state of gating
+    /// Map of ixs to their state of gating, used for freezing the program functionality
     /// 1 is chosen as enabled, 0 is disabled
     pub ix_gate: u128,
 
-    /// Map of ixs and their state for renouncing the admin instructions
+    /// Map of ixs and their state for renouncing the admin permissions
     /// 1 is chosen as enabled, 0 is disabled
     pub admin_ix_gate: u128,
 
-    /// Fee percentage basis points (i.e 1% = 100)
+    /// Protocol fee percentage basis points (i.e 1% = 100)
     pub fee_basis_points: u16,
 
-    /// Last distribution timestamp
+    /// Last fee distribution timestamp
     pub last_fee_distribution_time: i64,
 
-    /// List of fee recipients
+    /// List of the fee recipients and their share of the fees. The sum of the shares must be <=100%,
+    /// the rest is getting burned
     pub recipients: Vec<FeeRecipient>,
 }
 
@@ -588,8 +581,8 @@ impl CentralStateV2 {
         let current_time = Clock::get()?.unix_timestamp as u64;
         Ok((current_time - self.creation_time as u64) / SECONDS_IN_DAY)
     }
-
-    #[allow(missing_docs)]
+    /// Check if the instruction is not frozen or renounced.
+    /// AdminFreezeProgram instruction is allowed to be called even if frozen so that the program can be unfrozen
     pub fn assert_instruction_allowed(&self, ix: &ProgramInstruction) -> ProgramResult {
         let ix_num = *ix as u32;
         let ix_mask = 1_u128.checked_shl(ix_num).ok_or(AccessError::Overflow)?;
@@ -601,8 +594,7 @@ impl CentralStateV2 {
         }
         Ok(())
     }
-
-    #[allow(missing_docs)]
+    /// Calculate the protocol fee for a given amount
     pub fn calculate_fee(&self, amount: u64) -> Result<u64, ProgramError> {
         let fee = amount
             .checked_mul(self.fee_basis_points as u64)
@@ -618,7 +610,7 @@ impl CentralStateV2 {
 /// Number of sellers who need to agree for a bond to be sold
 pub const BOND_SIGNER_THRESHOLD: u64 = 1;
 
-/// List of authorized bond sellers
+/// List of authorized bond sellers (Obsolete)
 pub const AUTHORIZED_BOND_SELLERS: [Pubkey; 1] = [solana_program::pubkey!(
     "3Nrq6mCNL5i8Qk4APhggbwXismcsF23gNVDEaKycZBL8"
 )];
@@ -787,7 +779,7 @@ pub struct BondAccountV2 {
     /// Tag
     pub tag: Tag,
 
-    /// Owner of the stake account
+    /// Owner of the bond account
     pub owner: Pubkey,
 
     /// Amount locked in the account
@@ -796,15 +788,14 @@ pub struct BondAccountV2 {
     /// Pool which the account belongs to
     pub pool: Pubkey,
 
-    /// Offset of a last day where rewards were claimed from the contract creation date
+    /// Offset of a last day when rewards were claimed as an offset from the contract creation date
     pub last_claimed_offset: u64,
 
-    /// Minimum lockable amount of the pool when the account
-    /// was created
+    /// Minimum lockable amount of the pool when the account was created
     pub pool_minimum_at_creation: u64,
 
-    // Unlock start date
-    pub unlock_date: Option<i64>,
+    /// Unlock start date
+    pub unlock_timestamp: Option<i64>,
 }
 
 #[allow(missing_docs)]
@@ -832,7 +823,7 @@ impl BondAccountV2 {
         pool: Pubkey,
         pool_minimum_at_creation: u64,
         amount: u64,
-        unlock_date: Option<i64>,
+        unlock_timestamp: Option<i64>,
         current_offset: u64,
     ) -> Self {
         Self {
@@ -842,7 +833,7 @@ impl BondAccountV2 {
             pool,
             last_claimed_offset: current_offset,
             pool_minimum_at_creation,
-            unlock_date,
+            unlock_timestamp,
         }
     }
 

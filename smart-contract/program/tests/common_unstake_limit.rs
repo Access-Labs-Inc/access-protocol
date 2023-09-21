@@ -88,13 +88,13 @@ async fn common_unstake_limit() {
     let result = tr.unstake(&stake_pool_owner.pubkey(), &staker, 5001).await;
     assert!(result.is_err());
 
-    // unstake above the common pool minimum should work
+    // unstake above the common pool minimum should fail as well
     tr.unstake(&stake_pool_owner.pubkey(), &staker, 5000)
         .await
-        .unwrap();
+        .unwrap_err();
 
     // full unstake should still be possible
-    tr.unstake(&stake_pool_owner.pubkey(), &staker, 4000)
+    tr.unstake(&stake_pool_owner.pubkey(), &staker, 9000)
         .await
         .unwrap();
 }

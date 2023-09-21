@@ -23,7 +23,7 @@ use access_protocol::state::{BondAccount, BondAccountV2, CentralState, CentralSt
 
 use crate::common::utils::{mint_bootstrap, sign_send_instructions};
 
-const INITIAL_SUPPLY: u64 = 100_000_000_000_000_000;
+pub const INITIAL_SUPPLY: u64 = 100_000_000_000_000_000;
 
 pub struct TestRunner {
     pub program_id: Pubkey,
@@ -217,7 +217,7 @@ impl TestRunner {
             mint,
             bond_accounts: std::collections::HashMap::new(),
             bond_seller,
-            central_state_vault: central_state_vault,
+            central_state_vault,
             supply_owner,
         })
     }
@@ -340,7 +340,6 @@ impl TestRunner {
         let activate_stake_pool_ix = activate_stake_pool(
             self.program_id,
             activate_stake_pool::Accounts {
-                authority: &self.prg_test_ctx.payer.pubkey(),
                 stake_pool: &stake_pool_key,
                 central_state: &self.central_state,
             },
@@ -428,7 +427,7 @@ impl TestRunner {
         let staker_token_acc = get_associated_token_address(&staker_key, &self.mint);
         let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
         // get the staker's bond from the hash map if it exists
-        let staker_bond: Option<&Pubkey> = self
+        let _staker_bond: Option<&Pubkey> = self
             .bond_accounts
             .get((stake_pool_owner_key.to_string() + &staker_key.to_string()).as_str());
 
@@ -443,7 +442,6 @@ impl TestRunner {
                 vault: &pool_vault,
                 central_state: &self.central_state,
                 central_state_vault: &self.central_state_vault,
-                bond_account: staker_bond,
             },
             stake::Params {
                 amount: token_amount,
@@ -568,7 +566,7 @@ impl TestRunner {
         let claim_ix = access_protocol::instruction::claim_bond_v2_rewards(
             self.program_id,
             access_protocol::instruction::claim_bond_v2_rewards::Accounts {
-                stake_pool: &stake_pool_key,
+                pool: &stake_pool_key,
                 bond_account_v2: &bond_v2_acc_key,
                 owner: &owner.pubkey(),
                 rewards_destination: &owner_token_acc,
@@ -604,12 +602,12 @@ impl TestRunner {
             self.program_id,
             unlock_bond_v2::Accounts {
                 bond_v2_account: &bond_v2_acc_key,
-                stake_pool: &stake_pool_key,
+                pool: &stake_pool_key,
                 owner: &owner.pubkey(),
-                destination_token: &staker_token_acc,
+                owner_token_account: &staker_token_acc,
                 spl_token_program: &spl_token::ID,
                 central_state: &self.central_state,
-                vault: &pool_vault,
+                pool_vault: &pool_vault,
             },
             unlock_bond_v2::Params {},
         );
@@ -629,7 +627,7 @@ impl TestRunner {
         let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
 
         // get the staker's bond from the hash map if it exists
-        let staker_bond: Option<&Pubkey> = self
+        let _staker_bond: Option<&Pubkey> = self
             .bond_accounts
             .get((stake_pool_owner.to_string() + &staker.pubkey().to_string()).as_str());
 
@@ -644,7 +642,6 @@ impl TestRunner {
                 spl_token_program: &spl_token::ID,
                 central_state: &self.central_state,
                 vault: &pool_vault,
-                bond_account: staker_bond,
             },
             unstake::Params {
                 amount: token_amount,
@@ -986,20 +983,20 @@ impl TestRunner {
             access_protocol::instruction::create_bond_v2::Accounts {
                 fee_payer: &self.prg_test_ctx.payer.pubkey(),
                 from: &from.pubkey(),
-                source_token: &get_associated_token_address(&from.pubkey(), &self.mint),
+                from_ata: &get_associated_token_address(&from.pubkey(), &self.mint),
                 to,
                 bond_account_v2: &bond_key,
-                pool: &pool_key,
                 central_state: &self.central_state,
+                central_state_vault: &self.central_state_vault,
+                pool: &pool_key,
                 pool_vault: &get_associated_token_address(&pool_key, &self.mint),
-                fee_account: &self.authority_ata,
                 mint: &self.mint,
                 spl_token_program: &spl_token::ID,
                 system_program: &system_program::ID,
             },
             access_protocol::instruction::create_bond_v2::Params {
                 amount: bond_amount,
-                unlock_date,
+                unlock_timestamp: unlock_date,
             },
         );
         sign_send_instructions(&mut self.prg_test_ctx, vec![create_bond_v2_ix], vec![from]).await?;
@@ -1022,7 +1019,7 @@ impl TestRunner {
             access_protocol::instruction::add_to_bond_v2::Accounts {
                 fee_payer: &self.prg_test_ctx.payer.pubkey(),
                 from: &from.pubkey(),
-                source_token: &get_associated_token_address(&from.pubkey(), &self.mint),
+                from_ata: &get_associated_token_address(&from.pubkey(), &self.mint),
                 to,
                 bond_account_v2: &bond_key,
                 pool: &pool_key,
@@ -1035,7 +1032,7 @@ impl TestRunner {
             },
             access_protocol::instruction::add_to_bond_v2::Params {
                 amount: bond_amount,
-                unlock_date,
+                unlock_timestamp: unlock_date,
             },
         );
         sign_send_instructions(&mut self.prg_test_ctx, vec![add_to_bond_v2_ix], vec![from]).await?;
@@ -1259,7 +1256,6 @@ impl TestRunner {
             admin_set_protocol_fee::Accounts {
                 central_state: &self.central_state,
                 authority: &self.prg_test_ctx.payer.pubkey(),
-                system_program: &system_program::ID,
             },
             admin_set_protocol_fee::Params {
                 protocol_fee_basis_points: new_fee,

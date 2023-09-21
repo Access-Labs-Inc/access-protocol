@@ -1,5 +1,4 @@
 use solana_sdk::signer::Signer;
-
 use solana_test_framework::*;
 
 use crate::common::test_runner::TestRunner;
@@ -34,8 +33,7 @@ async fn common_stake_limit() {
         .unwrap();
 
     // try staking to pool 1 under the stake limit
-    let result = tr.stake(&stake_pool_owner.pubkey(), &staker, 999).await;
-    assert!(result.is_err());
+    tr.stake(&stake_pool_owner.pubkey(), &staker, 999).await.unwrap_err();
 
     // try staking to pool 1 on the stake limit
     tr.stake(&stake_pool_owner.pubkey(), &staker, 1000)
@@ -57,16 +55,16 @@ async fn common_stake_limit() {
         1,
         1,
     )
-    .await
-    .unwrap();
+        .await
+        .unwrap();
 
     // Claim bond
     tr.claim_bond(&stake_pool_owner.pubkey(), &staker.pubkey())
         .await
         .unwrap();
 
-    // staking under the stake limit should work
-    tr.stake(&stake_pool_owner.pubkey(), &staker, 1)
+    // staking under the stake limit still shouldn't work
+    tr.stake(&stake_pool_owner.pubkey(), &staker, 999)
         .await
-        .unwrap();
+        .unwrap_err();
 }

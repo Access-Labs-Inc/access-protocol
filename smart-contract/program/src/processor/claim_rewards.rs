@@ -51,7 +51,7 @@ pub struct Accounts<'a, T> {
     /// The central state account
     pub central_state: &'a T,
 
-    /// The mint address of the ACCESS token
+    /// The mint address of the ACS token
     #[cons(writable)]
     pub mint: &'a T,
 

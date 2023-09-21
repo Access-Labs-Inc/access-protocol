@@ -11,6 +11,7 @@ use crate::utils::{check_account_key, check_account_owner, check_signer};
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `admin_program_freeze` instruction
 pub struct Params {
+    ///  The new ix gate
     pub ix_gate: u128,
 }
 

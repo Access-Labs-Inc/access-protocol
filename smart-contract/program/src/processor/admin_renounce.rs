@@ -14,8 +14,7 @@ use crate::utils::{check_account_key, check_account_owner, check_signer, get_fre
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `admin_renounce` instruction
 pub struct Params {
-    // a bitmask of the instruction to renounce.
-    // can only include one instruction at a time due to safety reasons
+    /// The instruction to be renounced
     pub ix: ProgramInstruction,
 }
 

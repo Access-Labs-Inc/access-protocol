@@ -155,7 +155,7 @@ async fn functional_10s() {
         &spl_token::ID,
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![]).await.unwrap();
-    let central_state_vault = get_associated_token_address(&central_state, &mint);
+    let _central_state_vault = get_associated_token_address(&central_state, &mint);
     let migrate_ix = migrate_central_state_v2(
         program_id,
         migrate_central_state_v2::Accounts {
@@ -252,7 +252,7 @@ async fn functional_10s() {
             spl_token_program: &spl_token::ID,
         },
         admin_mint::Params {
-            amount: 10_000 * 1_000_000,
+            amount: 10_000_000_000 * 1_000_000,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![admin_mint_ix], vec![])
@@ -311,7 +311,6 @@ async fn functional_10s() {
     let activate_stake_pool_ix = activate_stake_pool(
         program_id,
         activate_stake_pool::Accounts {
-            authority: &prg_test_ctx.payer.pubkey(),
             stake_pool: &stake_pool_key,
             central_state: &central_state,
         },
@@ -477,7 +476,6 @@ async fn functional_10s() {
             vault: &pool_vault,
             central_state: &central_state,
             central_state_vault: &authority_ata,
-            bond_account: None,
         },
         stake::Params {
             amount: token_amount,
@@ -742,7 +740,6 @@ async fn functional_10s() {
             spl_token_program: &spl_token::ID,
             vault: &pool_vault,
             central_state: &central_state,
-            bond_account: None,
         },
         unstake::Params {
             amount: token_amount,

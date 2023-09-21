@@ -1,9 +1,8 @@
-//! Close a stake pool
-//! This instruction can be used to close an empty stake pool and collect the lamports
+//! Distribute fees to the recipients
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
-    account_info::{next_account_info, AccountInfo},
+    account_info::{AccountInfo, next_account_info},
     entrypoint::ProgramResult,
     msg,
     program::invoke_signed,
@@ -11,25 +10,24 @@ use solana_program::{
     program_pack::Pack,
     pubkey::Pubkey,
 };
-use spl_token::state::Account;
-use crate::state:: CentralStateV2;
-
-use crate::error::AccessError;
-use crate::state::MAX_FEE_RECIPIENTS;
-use crate::{
-    state::MIN_DISTRIBUTE_AMOUNT,
-    utils::{check_account_key, check_account_owner, check_signer, assert_valid_vault},
-};
 use solana_program::clock::Clock;
 use solana_program::sysvar::Sysvar;
+use spl_token::state::Account;
+
+use crate::{
+    state::MIN_DISTRIBUTE_AMOUNT,
+    utils::{assert_valid_vault, check_account_key, check_account_owner, check_signer},
+};
+use crate::error::AccessError;
 use crate::instruction::ProgramInstruction::DistributeFees;
+use crate::state::CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
-/// The required parameters for the `close_stake_pool` instruction
+/// The required parameters for the `distribute_fees` instruction
 pub struct Params {}
 
 #[derive(InstructionsAccount)]
-/// The required accounts for the `close_stake_pool` instruction
+/// The required accounts for the `distribute_fees` instruction
 pub struct Accounts<'a, T> {
     /// The fee account
     #[cons(signer)]
@@ -46,7 +44,7 @@ pub struct Accounts<'a, T> {
     /// The SPL token program account
     pub spl_token_program: &'a T,
 
-    /// The mint address of the ACCESS token
+    /// The mint address of the ACS token
     #[cons(writable)]
     pub mint: &'a T,
 
@@ -88,6 +86,11 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             &spl_token::ID,
             AccessError::WrongTokenAccountOwner,
         )?;
+        check_account_owner(
+            accounts.mint,
+            &spl_token::ID,
+            AccessError::WrongOwner,
+        )?;
         for token_account in accounts.token_accounts {
             check_account_owner(
                 token_account,
@@ -96,7 +99,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             )?;
         }
 
-        // todo is this needed?
         // Check signer
         check_signer(accounts.fee_payer, AccessError::StakeAccountOwnerMustSign)?;
         Ok(accounts)
@@ -109,10 +111,6 @@ pub fn process_distribute_fees(
     _params: Params,
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
-    if accounts.token_accounts.len() > MAX_FEE_RECIPIENTS {
-        msg!("Too many token accounts to distribute to");
-        return Err(AccessError::InvalidTokenAccount.into());
-    }
 
     let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
     central_state.assert_instruction_allowed(&DistributeFees)?;
@@ -197,6 +195,8 @@ pub fn process_distribute_fees(
             .ok_or(AccessError::Overflow)?;
     }
 
+    // There is almost always something to burn due to rounding down.
+    // However, this will be an insignificantly small amount (<= 1 ^ -5 ACS) if the sum of the percentages is 100.
     if remaining_balance > 0 {
         let burn_instruction = spl_token::instruction::burn(
             &spl_token::ID,
