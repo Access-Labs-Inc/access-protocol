@@ -23,7 +23,7 @@ use access_protocol::state::{BondAccount, BondAccountV2, CentralState, CentralSt
 
 use crate::common::utils::{mint_bootstrap, sign_send_instructions};
 
-const INITIAL_SUPPLY: u64 = 100_000_000_000_000_000;
+pub const INITIAL_SUPPLY: u64 = 100_000_000_000_000_000;
 
 pub struct TestRunner {
     pub program_id: Pubkey,
@@ -427,7 +427,7 @@ impl TestRunner {
         let staker_token_acc = get_associated_token_address(&staker_key, &self.mint);
         let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
         // get the staker's bond from the hash map if it exists
-        let staker_bond: Option<&Pubkey> = self
+        let _staker_bond: Option<&Pubkey> = self
             .bond_accounts
             .get((stake_pool_owner_key.to_string() + &staker_key.to_string()).as_str());
 
@@ -627,7 +627,7 @@ impl TestRunner {
         let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
 
         // get the staker's bond from the hash map if it exists
-        let staker_bond: Option<&Pubkey> = self
+        let _staker_bond: Option<&Pubkey> = self
             .bond_accounts
             .get((stake_pool_owner.to_string() + &staker.pubkey().to_string()).as_str());
 

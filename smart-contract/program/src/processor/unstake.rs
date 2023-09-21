@@ -19,7 +19,7 @@ use spl_token::state::Account;
 
 use crate::error::AccessError;
 use crate::instruction::ProgramInstruction::Unstake;
-use crate::state::{BondAccount, StakeAccount, StakePool, StakePoolHeader};
+use crate::state::{StakeAccount, StakePool, StakePoolHeader};
 use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]

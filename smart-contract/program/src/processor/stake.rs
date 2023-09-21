@@ -20,7 +20,7 @@ use crate::{
 };
 use crate::error::AccessError;
 use crate::instruction::ProgramInstruction::Stake;
-use crate::state::{BondAccount, StakeAccount, StakePool};
+use crate::state::{StakeAccount, StakePool};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `stake` instruction
