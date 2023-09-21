@@ -52,30 +52,28 @@ pub enum ProgramInstruction {
     CreateStakeAccount,
     /// Stake
     ///
-    /// | Index | Writable | Signer | Description                                                 |
-    /// | --------------------------------------------------------------------------------------- |
-    /// | 0     | ✅        | ❌      | The central state account                                   |
-    /// | 1     | ✅        | ❌      | The stake account                                           |
-    /// | 2     | ✅        | ❌      | The stake pool account                                      |
-    /// | 3     | ❌        | ✅      | The owner of the stake account                              |
-    /// | 4     | ✅        | ❌      | The source account of the stake tokens                      |
-    /// | 5     | ❌        | ❌      | The SPL token program account                               |
-    /// | 6     | ✅        | ❌      | The stake pool vault account                                |
-    /// | 7     | ✅        | ❌      | The central state ATA                                       |
-    /// | 8     | ❌        | ❌      | Optional bond account to be able to stake under the minimum |
+    /// | Index | Writable | Signer | Description                            |
+    /// | ------------------------------------------------------------------ |
+    /// | 0     | ✅        | ❌      | The central state account              |
+    /// | 1     | ✅        | ❌      | The stake account                      |
+    /// | 2     | ✅        | ❌      | The stake pool account                 |
+    /// | 3     | ❌        | ✅      | The owner of the stake account         |
+    /// | 4     | ✅        | ❌      | The source account of the stake tokens |
+    /// | 5     | ❌        | ❌      | The SPL token program account          |
+    /// | 6     | ✅        | ❌      | The stake pool vault account           |
+    /// | 7     | ✅        | ❌      | The central state ATA                  |
     Stake,
     /// Unstake
     ///
-    /// | Index | Writable | Signer | Description                                                 |
-    /// | --------------------------------------------------------------------------------------- |
-    /// | 0     | ✅        | ❌      | The central state account                                   |
-    /// | 1     | ✅        | ❌      | The stake account                                           |
-    /// | 2     | ✅        | ❌      | The stake pool account                                      |
-    /// | 3     | ❌        | ✅      | The owner of the stake account                              |
-    /// | 4     | ✅        | ❌      | The destination of the staked tokens                        |
-    /// | 5     | ❌        | ❌      | The SPL token program account                               |
-    /// | 6     | ✅        | ❌      | The stake pool vault                                        |
-    /// | 7     | ❌        | ❌      | Optional bond account to be able to stake under the minimum |
+    /// | Index | Writable | Signer | Description                          |
+    /// | ---------------------------------------------------------------- |
+    /// | 0     | ✅        | ❌      | The central state account            |
+    /// | 1     | ✅        | ❌      | The stake account                    |
+    /// | 2     | ✅        | ❌      | The stake pool account               |
+    /// | 3     | ❌        | ✅      | The owner of the stake account       |
+    /// | 4     | ✅        | ❌      | The destination of the staked tokens |
+    /// | 5     | ❌        | ❌      | The SPL token program account        |
+    /// | 6     | ✅        | ❌      | The stake pool vault                 |
     Unstake,
     /// Claim rewards of a stake pool
     /// This instruction is used by stake pool owner for claiming their staking rewards
@@ -92,15 +90,15 @@ pub enum ProgramInstruction {
     /// Claim rewards of a stake account
     /// This instruction can be used by stakers to claim their staking rewards
     ///
-    /// | Index | Writable | Signer | Description                          |
-    /// | ---------------------------------------------------------------- |
-    /// | 0     | ✅        | ❌      | The stake pool account               |
-    /// | 1     | ✅        | ❌      | The stake account                    |
-    /// | 2     | ❌        | ✅      | The owner of the stake account       |
-    /// | 3     | ✅        | ❌      | The rewards destination              |
-    /// | 4     | ❌        | ❌      | The central state account            |
-    /// | 5     | ✅        | ❌      | The mint address of the ACCESS token |
-    /// | 6     | ❌        | ❌      | The SPL token program account        |
+    /// | Index | Writable | Signer | Description                       |
+    /// | ------------------------------------------------------------- |
+    /// | 0     | ✅        | ❌      | The stake pool account            |
+    /// | 1     | ✅        | ❌      | The stake account                 |
+    /// | 2     | ❌        | ✅      | The owner of the stake account    |
+    /// | 3     | ✅        | ❌      | The rewards destination           |
+    /// | 4     | ❌        | ❌      | The central state account         |
+    /// | 5     | ✅        | ❌      | The mint address of the ACS token |
+    /// | 6     | ❌        | ❌      | The SPL token program account     |
     ClaimRewards,
     /// Permissionless crank to update the stake pool rewards
     /// This instructions updates the circular buffer with the pool balances multiplied by the current inflation
@@ -251,66 +249,63 @@ pub enum ProgramInstruction {
     /// | 2     | ✅        | ❌      | The metadata account                |
     /// | 3     | ❌        | ❌      | The metadata program account        |
     EditMetadata,
-    /// Create a bond
-    /// This instruction can be used by authorized sellers to create a bond
+    /// Create a Bond V2
     ///
-    /// | Index | Writable | Signer | Description                   |
-    /// | --------------------------------------------------------- |
-    /// | 0     | ✅        | ✅      | The fee account               |
-    /// | 1     | ✅        | ✅      | The bond seller account       |
-    /// | 2     | ✅        | ❌      | From ATA                      |
-    /// | 3     | ❌        | ❌      | The bond recipient wallet     |
-    /// | 4     | ✅        | ❌      | The bond account              |
-    /// | 5     | ✅        | ❌      | Central state                 |
-    /// | 6     | ✅        | ❌      | The stake fee account         |
-    /// | 7     | ✅        | ❌      | The pool account              |
-    /// | 8     | ✅        | ❌      | The vault of the pool         |
-    /// | 9     | ✅        | ❌      |                               |
-    /// | 10    | ❌        | ❌      | The SPL token program account |
-    /// | 11    | ❌        | ❌      | The system program account    |
+    /// | Index | Writable | Signer | Description                       |
+    /// | ------------------------------------------------------------- |
+    /// | 0     | ✅        | ✅      | The fee account                   |
+    /// | 1     | ✅        | ✅      | The bond seller account           |
+    /// | 2     | ✅        | ❌      | From ATA                          |
+    /// | 3     | ❌        | ❌      | The bond recipient wallet         |
+    /// | 4     | ✅        | ❌      | The bond account                  |
+    /// | 5     | ✅        | ❌      | Central state                     |
+    /// | 6     | ✅        | ❌      | The vault of the central state    |
+    /// | 7     | ✅        | ❌      | The pool account                  |
+    /// | 8     | ✅        | ❌      | The vault of the pool             |
+    /// | 9     | ✅        | ❌      | The mint address of the ACS token |
+    /// | 10    | ❌        | ❌      | The SPL token program account     |
+    /// | 11    | ❌        | ❌      | The system program account        |
     CreateBondV2,
-    /// Create a bond
-    /// This instruction can be used by authorized sellers to create a bond
+    /// Add more tokens to an existing Bond V2
     ///
-    /// | Index | Writable | Signer | Description                          |
-    /// | ---------------------------------------------------------------- |
-    /// | 0     | ✅        | ✅      | The fee account                      |
-    /// | 1     | ✅        | ✅      | The bond seller account              |
-    /// | 2     | ✅        | ❌      | From ATA                             |
-    /// | 3     | ❌        | ❌      | The bond recipient wallet            |
-    /// | 4     | ✅        | ❌      | The bond account                     |
-    /// | 5     | ✅        | ❌      | The pool account                     |
-    /// | 6     | ✅        | ❌      | Central state                        |
-    /// | 7     | ✅        | ❌      | The vault of the pool                |
-    /// | 8     | ✅        | ❌      | The central state ATA                |
-    /// | 9     | ✅        | ❌      | The mint address of the ACCESS token |
-    /// | 10    | ❌        | ❌      | The SPL token program account        |
-    /// | 11    | ❌        | ❌      | The system program account           |
+    /// | Index | Writable | Signer | Description                       |
+    /// | ------------------------------------------------------------- |
+    /// | 0     | ✅        | ✅      | The fee account                   |
+    /// | 1     | ✅        | ✅      | The bond seller account           |
+    /// | 2     | ✅        | ❌      | From ATA                          |
+    /// | 3     | ❌        | ❌      | The bond recipient wallet         |
+    /// | 4     | ✅        | ❌      | The bond account                  |
+    /// | 5     | ✅        | ❌      | Central state                     |
+    /// | 6     | ✅        | ❌      | The vault of the central state    |
+    /// | 7     | ✅        | ❌      | The pool account                  |
+    /// | 8     | ✅        | ❌      | The vault of the pool             |
+    /// | 9     | ✅        | ❌      | The mint address of the ACS token |
+    /// | 10    | ❌        | ❌      | The SPL token program account     |
+    /// | 11    | ❌        | ❌      | The system program account        |
     AddToBondV2,
-    /// Claim rewards of a stake account
-    /// This instruction can be used by stakers to claim their staking rewards
+    /// Claim rewards of a bond V2
     ///
-    /// | Index | Writable | Signer | Description                          |
-    /// | ---------------------------------------------------------------- |
-    /// | 0     | ✅        | ❌      | The stake pool account               |
-    /// | 1     | ✅        | ❌      | The stake account                    |
-    /// | 2     | ❌        | ✅      | The owner of the stake account       |
-    /// | 3     | ✅        | ❌      | The rewards destination              |
-    /// | 4     | ❌        | ❌      | The central state account            |
-    /// | 5     | ✅        | ❌      | The mint address of the ACCESS token |
-    /// | 6     | ❌        | ❌      | The SPL token program account        |
+    /// | Index | Writable | Signer | Description                       |
+    /// | ------------------------------------------------------------- |
+    /// | 0     | ✅        | ❌      | The stake pool account            |
+    /// | 1     | ✅        | ❌      | The Bond V2 account               |
+    /// | 2     | ❌        | ✅      | The owner of the Bond V2 account  |
+    /// | 3     | ✅        | ❌      | The rewards destination           |
+    /// | 4     | ❌        | ❌      | The central state account         |
+    /// | 5     | ✅        | ❌      | The mint address of the ACS token |
+    /// | 6     | ❌        | ❌      | The SPL token program account     |
     ClaimBondV2Rewards,
-    /// Unstake
+    /// Unlock bond v2
     ///
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The central state account            |
     /// | 1     | ✅        | ❌      | The bond account                     |
-    /// | 2     | ✅        | ❌      | The stake pool account               |
-    /// | 3     | ❌        | ✅      | The owner of the stake account       |
-    /// | 4     | ✅        | ❌      | The destination of the staked tokens |
-    /// | 5     | ❌        | ❌      | The SPL token program account        |
-    /// | 6     | ✅        | ❌      | The stake pool vault                 |
+    /// | 2     | ❌        | ✅      | The owner of the bond V2 account     |
+    /// | 3     | ✅        | ❌      | The destination of the locked tokens |
+    /// | 4     | ✅        | ❌      | The pool account                     |
+    /// | 5     | ✅        | ❌      | The pool vault                       |
+    /// | 6     | ❌        | ❌      | The SPL token program account        |
     UnlockBondV2,
     /// Setup fee split
     ///
@@ -328,16 +323,15 @@ pub enum ProgramInstruction {
     /// | 1        | ✅        | ❌      | The central state account                    |
     /// | 2        | ✅        | ❌      | The central state ATA                        |
     /// | 3        | ❌        | ❌      | The SPL token program account                |
-    /// | 4        | ✅        | ❌      | The mint address of the ACCESS token         |
+    /// | 4        | ✅        | ❌      | The mint address of the ACS token            |
     /// | 5..5 + N | ✅        | ❌      | The token accounts to distribute the fees to |
     DistributeFees,
-    /// Change central state inflation
+    /// Admin set protocol fee
     ///
     /// | Index | Writable | Signer | Description                 |
     /// | ------------------------------------------------------- |
     /// | 0     | ❌        | ✅      | The central state authority |
     /// | 1     | ✅        | ❌      | The central state account   |
-    /// | 2     | ❌        | ❌      | The system program account  |
     AdminSetProtocolFee,
     /// Migrate the central state to the v2 format
     ///
