@@ -502,3 +502,59 @@ export const adminChangeCentralStateAuthority = async (
     newAuthority: newAuthority.toBytes(),
   }).getInstruction(programId, centralStateKey, centralState.authority);
 };
+
+/**
+ * This function can be used to create a V2 bond
+ */
+export const createBondV2 = async (
+  connection: Connection,
+  owner: PublicKey,
+  feePayer: PublicKey,
+  from: PublicKey,
+  pool: PublicKey,
+  amount: number,
+  unlockTimestamp: number,
+  programId = ACCESS_PROGRAM_ID,
+) => {
+
+  const [centralStateKey] = CentralStateV2.getKey(programId);
+  let tokenMint = ACCESS_MINT;
+  if (programId !== ACCESS_PROGRAM_ID) {
+    tokenMint = (await CentralStateV2.retrieve(connection, centralStateKey)).tokenMint;
+  }
+  const fromAta = getAssociatedTokenAddressSync(
+    tokenMint,
+    from,
+    true,
+  );
+  const [bondAccountV2] = BondV2Account.getKey(programId, owner, pool, unlockTimestamp);
+  const centralStateVault = getAssociatedTokenAddressSync(
+    tokenMint,
+    centralStateKey,
+    true,
+  );
+  const poolVault = getAssociatedTokenAddressSync(
+    tokenMint,
+    pool,
+    true,
+  );
+
+  return new createBondV2Instruction({
+    amount,
+    unlockTimestamp,
+  }).getInstruction(
+    programId,
+    feePayer,
+    from,
+    fromAta,
+    owner,
+    bondAccountV2,
+    centralStateKey,
+    centralStateVault,
+    pool,
+    poolVault,
+    tokenMint,
+    TOKEN_PROGRAM_ID,
+    SystemProgram.programId,
+  );
+};
