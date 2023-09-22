@@ -805,14 +805,14 @@ impl BondAccountV2 {
     pub fn create_key(
         owner: &Pubkey,
         pool: &Pubkey,
-        unlock_date: Option<i64>,
+        unlock_timestamp: Option<i64>,
         program_id: &Pubkey,
     ) -> (Pubkey, u8) {
         let seeds: &[&[u8]] = &[
             BondAccountV2::SEED,
             &owner.to_bytes(),
             &pool.to_bytes(),
-            &unlock_date.unwrap_or(0).to_le_bytes(),
+            &unlock_timestamp.unwrap_or(0).to_le_bytes(),
         ];
         Pubkey::find_program_address(seeds, program_id)
     }
