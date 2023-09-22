@@ -8,6 +8,7 @@ import {
   claimPoolRewardsInstruction,
   claimRewardsInstruction,
   crankInstruction,
+  createBondV2Instruction,
   createCentralStateInstruction,
   createStakeAccountInstruction,
   createStakePoolInstruction,
@@ -16,31 +17,37 @@ import {
   unstakeInstruction,
 } from "./raw_instructions.js";
 import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
-import { ACCESS_MINT, ACCESS_PROGRAM_ID, BondAccount, CentralState, StakeAccount, StakePool } from "./state.js";
+import {
+  ACCESS_MINT,
+  ACCESS_PROGRAM_ID,
+  BondAccount,
+  BondV2Account,
+  CentralState,
+  CentralStateV2,
+  StakeAccount,
+  StakePool
+} from "./state.js";
 import BN from "bn.js";
 import {
-  ASSOCIATED_TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction,
-  getAssociatedTokenAddress,
   getAssociatedTokenAddressSync,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 
-// todo update all comments
 /**
  * This function can be used to update the inflation of the central state
  * @param connection The Solana RPC connection
  * @param newInflation The new inflation amount (in micro ACS tokens per day)
  * @param programId The ACCESS program ID
- * @returns
+ * @returns ix The instruction to change the inflation
  */
 export const adminChangeInflation = async (
   connection: Connection,
   newInflation: BN,
   programId = ACCESS_PROGRAM_ID,
 ) => {
-  const [centralStateKey] = CentralState.getKey(programId);
-  const centralState = await CentralState.retrieve(connection, centralStateKey);
+  const [centralStateKey] = CentralStateV2.getKey(programId);
+  const centralState = await CentralStateV2.retrieve(connection, centralStateKey);
 
   return new changeInflationInstruction({
     dailyInflation: newInflation,
@@ -53,7 +60,7 @@ export const adminChangeInflation = async (
  * @param stakePoolKey The key of the stake pool
  * @param newMinimum The new minimum amount of tokens to stake to get access
  * @param programId The ACCESS program ID
- * @returns
+ * @returns ix The instruction to change the pool minimum
  */
 export const changePoolMinimum = async (
   connection: Connection,
@@ -62,7 +69,7 @@ export const changePoolMinimum = async (
   programId = ACCESS_PROGRAM_ID,
 ) => {
   const stakePool = await StakePool.retrieve(connection, stakePoolKey);
-  let [centralStateKey] = CentralState.getKey(programId);
+  let [centralStateKey] = CentralStateV2.getKey(programId);
 
   return new changePoolMinimumInstruction({
     newMinimum: new BN(newMinimum),
@@ -73,13 +80,13 @@ export const changePoolMinimum = async (
  * This function can be used activate a created stake pool
  * @param stakePoolKey The key of the stake pool
  * @param programId The ACCESS program ID
- * @returns
+ * @returns ix The instruction to activate the stake pool
  */
 export const activateStakePool = (
   stakePoolKey: PublicKey,
   programId = ACCESS_PROGRAM_ID,
 ) => {
-  const [centralStateKey] = CentralState.getKey(programId);
+  const [centralStateKey] = CentralStateV2.getKey(programId);
   return new activateStakePoolInstruction().getInstruction(
     programId,
     stakePoolKey,
@@ -94,7 +101,7 @@ export const activateStakePool = (
  * @param rewardsDestination The destination token account for the rewards being claimed
  * @param programId The ACCESS program ID
  * @param ownerMustSign todo
- * @returns
+ * @returns ix The instruction to claim the bond rewards
  */
 export const claimBondRewards = async (
   connection: Connection,
@@ -135,6 +142,7 @@ export const claimBondRewards = async (
  * @param stakePoolAccount The key of the stake pool
  * @param rewardsDestination The destination token account for the rewards being claimed
  * @param programId The ACCESS program ID
+ * @returns ix The instruction to claim the pool rewards
  */
 export const claimPoolRewards = async (
   connection: Connection,
@@ -142,8 +150,11 @@ export const claimPoolRewards = async (
   rewardsDestination: PublicKey,
   programId = ACCESS_PROGRAM_ID,
 ) => {
-  const [centralStateKey] = CentralState.getKey(programId);
-  const centralState = await CentralState.retrieve(connection, centralStateKey);
+  const [centralStateKey] = CentralStateV2.getKey(programId);
+  let tokenMint = ACCESS_MINT;
+  if (programId !== ACCESS_PROGRAM_ID) {
+    tokenMint = (await CentralStateV2.retrieve(connection, centralStateKey)).tokenMint;
+  }
   const stakePool = await StakePool.retrieve(connection, stakePoolAccount);
 
   const ix = new claimPoolRewardsInstruction().getInstruction(
@@ -152,7 +163,7 @@ export const claimPoolRewards = async (
     stakePool.owner,
     rewardsDestination,
     centralStateKey,
-    centralState.tokenMint,
+    tokenMint,
     TOKEN_PROGRAM_ID
   );
 
@@ -164,27 +175,28 @@ export const claimPoolRewards = async (
 };
 
 /**
- * This function can be used by a staker to claim his staking rewards
+ * This function can be used by a supporter to claim their staking rewards
  * @param connection The Solana RPC connection
  * @param stakeAccount The key of the stake account
  * @param rewardsDestination The destination token account for the rewards being claimed
  * @param programId The ACCESS program ID
- * @param allowZeroRewards todo
- * @returns
+ * @returns ix The instruction to claim the rewards
  */
 export const claimRewards = async (
   connection: Connection,
   stakeAccount: PublicKey,
   rewardsDestination: PublicKey,
   programId = ACCESS_PROGRAM_ID,
-  allowZeroRewards = false,
 ) => {
   const stake = await StakeAccount.retrieve(connection, stakeAccount);
-  const [centralStateKey] = CentralState.getKey(programId);
-  const centralState = await CentralState.retrieve(connection, centralStateKey);
+  const [centralStateKey] = CentralStateV2.getKey(programId);
+  let tokenMint = ACCESS_MINT;
+  if (programId !== ACCESS_PROGRAM_ID) {
+    tokenMint = (await CentralStateV2.retrieve(connection, centralStateKey)).tokenMint;
+  }
 
   const ix = new claimRewardsInstruction({
-    allowZeroRewards: allowZeroRewards,
+    allowZeroRewards: false,
   }).getInstruction(
     programId,
     stake.stakePool,
@@ -192,7 +204,7 @@ export const claimRewards = async (
     stake.owner,
     rewardsDestination,
     centralStateKey,
-    centralState.tokenMint,
+    tokenMint,
     TOKEN_PROGRAM_ID
   );
 
@@ -204,16 +216,17 @@ export const claimRewards = async (
 };
 
 /**
- * This function can be used to update the balances of the stake pool
+ * This function can be used to calculate the rewaards for a stake pool.
+ * It has to be called at least once per day for the rewards not to be discarded.
  * @param stakePoolAccount The key fo the stake pool to crank
  * @param programId The ACCESS program ID
- * @returns
+ * @returns ix The instruction to crank the stake pool
  */
 export const crank = (
   stakePoolAccount: PublicKey,
   programId = ACCESS_PROGRAM_ID,
 ) => {
-  const [centralStateKey] = CentralState.getKey(programId);
+  const [centralStateKey] = CentralStateV2.getKey(programId);
   return new crankInstruction().getInstruction(
     programId,
     stakePoolAccount,
@@ -222,12 +235,12 @@ export const crank = (
 };
 
 /**
- * This function can be used to create the central when deploying the program
- * @param dailyInflation The daily inflation (i.e raw token amounts being emitted per day)
- * @param authority The central state authority (only key that will be able to upgrade the central state)
- * @param mint The ACCESS token mint
+ * This function is used to create the central state after deploying the program
+ * @param dailyInflation The daily inflation (i.e. raw token amounts being emitted per day in micro ACS)
+ * @param authority The central state authority (only key that will be able to perform admin operations)
+ * @param mint The ACS token mint
  * @param programId The ACCESS program ID
- * @returns
+ * @returns ix The instruction to create the central state
  */
 export const createCentralState = async (
   dailyInflation: number,
@@ -268,7 +281,7 @@ export const createStakeAccount = (
     owner,
     stakePool
   );
-  const [centralStateKey] = CentralState.getKey(programId);
+  const [centralStateKey] = CentralStateV2.getKey(programId);
 
   return new createStakeAccountInstruction({
     nonce: bumpSeed,
@@ -284,13 +297,13 @@ export const createStakeAccount = (
 };
 
 /**
- * This instruction can be used by content publishers to create their staking pool on which subscription will be based on
+ * This instruction can be used by content creators to create a pool for their subscribers.
  * @param connection The Solana RPC connection
- * @param owner The owner of the stake pool (only key authorized to collect staking rewards)
- * @param minimumStakeAmount The minimum amount of tokens to stake in the pool
+ * @param owner The owner of the stake pool (only key authorized to perform pool admin operations)
+ * @param minimumStakeAmount The minimum amount of tokens to lock in the pool
  * @param feePayer The fee payer of the tx
  * @param programId The ACCESS program ID
- * @returns
+ * @returns ix The instruction to create the stake pool
  */
 export const createStakePool = async (
   connection: Connection,
@@ -300,17 +313,15 @@ export const createStakePool = async (
   programId = ACCESS_PROGRAM_ID,
 ) => {
   const [stakePool] = StakePool.getKey(programId, owner);
-  const [centralStateKey] = CentralState.getKey(programId);
+  const [centralStateKey] = CentralStateV2.getKey(programId);
   let tokenMint = ACCESS_MINT;
   if (programId !== ACCESS_PROGRAM_ID) {
-    tokenMint = (await CentralState.retrieve(connection, centralStateKey)).tokenMint;
+    tokenMint = (await CentralStateV2.retrieve(connection, centralStateKey)).tokenMint;
   }
-  const vault = await getAssociatedTokenAddress(
+  const vault = getAssociatedTokenAddressSync(
     tokenMint,
     stakePool,
     true,
-    TOKEN_PROGRAM_ID,
-    ASSOCIATED_TOKEN_PROGRAM_ID
   );
 
   const createVaultIx = createAssociatedTokenAccountInstruction(
@@ -318,8 +329,6 @@ export const createStakePool = async (
     vault,
     stakePool,
     tokenMint,
-    TOKEN_PROGRAM_ID,
-    ASSOCIATED_TOKEN_PROGRAM_ID
   );
 
   const ix = new createStakePoolInstruction({
@@ -338,12 +347,12 @@ export const createStakePool = async (
 };
 
 /**
- * This instruction can be used by stakers to deposit ACCESS tokens in their stake account.
- * The staking fee (2%) will be deducted additionaly to the `amount` from the source account.
+ * This instruction can be used by supporters to deposit ACS tokens into their stake account.
+ * The protocol fee will be deducted additionally to the `amount` from the source account.
  * @param connection The Solana RPC connection
  * @param stakeAccount The key of the stake account
- * @param sourceToken The token account from which the ACCESS tokens are sent to the stake account
- * @param amount The raw amount of tokens to stake
+ * @param sourceToken The token account from which the ACS tokens are sent to the stake account
+ * @param amount The amount of tokens to stake
  * @param programId The ACCESS program ID
  * @returns
  */
@@ -356,18 +365,16 @@ export const stake = async (
 ) => {
   const stake = await StakeAccount.retrieve(connection, stakeAccount);
   const stakePool = await StakePool.retrieve(connection, stake.stakePool);
-  const [centralStateKey] = CentralState.getKey(programId);
+  const [centralStateKey] = CentralStateV2.getKey(programId);
   let tokenMint = ACCESS_MINT;
   if (programId !== ACCESS_PROGRAM_ID) {
-    tokenMint = (await CentralState.retrieve(connection, centralStateKey)).tokenMint;
+    tokenMint = (await CentralStateV2.retrieve(connection, centralStateKey)).tokenMint;
   }
 
   const feesAta = getAssociatedTokenAddressSync(
     tokenMint,
     centralStateKey,
     true,
-    TOKEN_PROGRAM_ID,
-    ASSOCIATED_TOKEN_PROGRAM_ID
   );
 
   return new stakeInstruction({
@@ -421,11 +428,11 @@ export const unlockBondTokens = async (
 };
 
 /**
- * This instruction can be used to request an unstake of ACCESS tokens
+ * This instruction can be used to unlock ACS tokens from a pool
  * @param connection The Solana RPC connection
  * @param stakeAccount The key of the stake account
- * @param destinationToken The token account receiving the ACCESS tokens
- * @param amount The amount of tokens to unstake
+ * @param destinationToken The token account receiving the ACS tokens
+ * @param amount The amount of tokens to unlock
  * @param programId The ACCESS program ID
  * @returns
  */
@@ -438,7 +445,7 @@ export const unstake = async (
 ) => {
   const stake = await StakeAccount.retrieve(connection, stakeAccount);
   const stakePool = await StakePool.retrieve(connection, stake.stakePool);
-  const [centralStateKey] = CentralState.getKey(programId);
+  const [centralStateKey] = CentralStateV2.getKey(programId);
 
   return new unstakeInstruction({
     amount: new BN(amount),
@@ -455,12 +462,12 @@ export const unstake = async (
 };
 
 /**
- * This function allows a pool owner to adjust the percentage of the pool rewards that go to the pool stakers.
+ * This function allows a pool owner to adjust the percentage of the pool rewards that go to the supporters.
  * @param connection The Solana RPC connection
  * @param stakePoolKey The key of the stake pool
- * @param newMultiplier The new multiplier (in percent [0-100]). This is the percentage of the pools rewards that go to the stakers.
+ * @param newMultiplier The new multiplier (in percent [0-100]). This is the percentage of the pools rewards that go to the supporters.
  * @param programId The ACCESS program ID
- * @returns
+ * @returns ix The instruction to change the pool multiplier
  */
 export const changePoolMultiplier = async (
   connection: Connection,
@@ -469,7 +476,7 @@ export const changePoolMultiplier = async (
   programId = ACCESS_PROGRAM_ID,
 ) => {
   const stakePool = await StakePool.retrieve(connection, stakePoolKey);
-  const [centralStateKey] = CentralState.getKey(programId);
+  const [centralStateKey] = CentralStateV2.getKey(programId);
 
   return new changePoolMultiplierInstruction({
     newMultiplier: new BN(newMultiplier),
@@ -481,15 +488,15 @@ export const changePoolMultiplier = async (
  * @param connection The Solana RPC connection
  * @param newAuthority The new authority of the central state
  * @param programId The ACCESS program ID
- * @returns
+ * @returns ix The instruction to change the central state authority
  */
 export const adminChangeCentralStateAuthority = async (
   connection: Connection,
   newAuthority: PublicKey,
   programId = ACCESS_PROGRAM_ID,
 ) => {
-  const [centralStateKey] = CentralState.getKey(programId);
-  const centralState = await CentralState.retrieve(connection, centralStateKey);
+  const [centralStateKey] = CentralStateV2.getKey(programId);
+  const centralState = await CentralStateV2.retrieve(connection, centralStateKey);
 
   return new changeCentralStateAuthorityInstruction({
     newAuthority: newAuthority.toBytes(),
