@@ -516,7 +516,15 @@ export const adminChangeCentralStateAuthority = async (
 
 /**
  * This function can be used to create a V2 bond
- * todo more comments
+ * @param connection The Solana RPC connection
+ * @param owner The owner of the bond
+ * @param feePayer The fee payer of the transaction
+ * @param from The owner of the tokens being bonded
+ * @param pool The pool to which the tokens are being bonded
+ * @param amount The amount of tokens being bonded
+ * @param unlockTimestamp The timestamp at which the tokens can be unlocked if ever. If set to null the tokens are locked forever.
+ * @param programId The ACCESS program ID
+ * @returns ix The instruction to create the bond V2
  */
 export const createBondV2 = async (
   connection: Connection,
@@ -525,7 +533,7 @@ export const createBondV2 = async (
   from: PublicKey,
   pool: PublicKey,
   amount: number,
-  unlockTimestamp: number,
+  unlockTimestamp: BN | null,
   programId = ACCESS_PROGRAM_ID,
 ) => {
   const [centralStateKey] = CentralStateV2.getKey(programId);
@@ -570,7 +578,18 @@ export const createBondV2 = async (
   );
 };
 
-// todo comment
+/**
+ * This function can be used to add tokens to a V2 bond
+ * @param connection The Solana RPC connection
+ * @param owner The owner of the bond
+ * @param feePayer The fee payer of the transaction
+ * @param from The owner of the tokens being bonded
+ * @param pool The pool to which the tokens are being bonded
+ * @param amount The amount of tokens being bonded
+ * @param unlockTimestamp The timestamp at which the tokens can be unlocked if ever. If set to null the tokens are locked forever.
+ * @param programId The ACCESS program ID
+ * @returns ix The instruction to add to the bond V2
+ */
 export const addToBondV2 = async (
   connection: Connection,
   owner: PublicKey,
@@ -623,7 +642,13 @@ export const addToBondV2 = async (
   );
 };
 
-// todo comment
+/**
+ * This function can be used to claim the rewards of a V2 bond
+ * @param connection The Solana RPC connection
+ * @param bondAccount The key of the bond account
+ * @param programId The ACCESS program ID
+ * @returns ix The instruction to claim the bond V2 rewards
+ */
 export const claimBondV2Rewards = async (
   connection: Connection,
   bondAccount: PublicKey,
@@ -653,7 +678,13 @@ export const claimBondV2Rewards = async (
   );
 };
 
-// todo comment
+/**
+ * This function can be used to unlock a V2 bond after the unlock timestamp has passed
+ * @param connection The Solana RPC connection
+ * @param bondAccount The key of the bond account
+ * @param programId The ACCESS program ID
+ * @returns ix The instruction to unlock the bond V2
+ */
 export const unlockBondV2 = async (
   connection: Connection,
   bondAccount: PublicKey,
@@ -688,7 +719,13 @@ export const unlockBondV2 = async (
   );
 };
 
-// todo comment
+/**
+ * This function can be used to setup the recipients of the protocol fees
+ * @param connection The Solana RPC connection
+ * @param recipients The recipients of the protocol fees (address + percentage)
+ * @param programId The ACCESS program ID
+ * @returns ix The instruction to setup the fee split
+ */
 export const adminSetupFeeSplit = async (
   connection: Connection,
   recipients: FeeRecipient[],
@@ -707,7 +744,13 @@ export const adminSetupFeeSplit = async (
   )
 };
 
-// todo comment
+/**
+ * This function can be used to distribute the protocol fees
+ * @param connection The Solana RPC connection
+ * @param feePayer The fee payer of the transaction
+ * @param programId The ACCESS program ID
+ * @returns ix The instruction to distribute the fees
+ */
 export const distributeFees = async (
   connection: Connection,
   feePayer: PublicKey,
@@ -735,7 +778,13 @@ export const distributeFees = async (
   )
 };
 
-// todo comment
+/**
+ * This function can be used to set the protocol fee
+ * @param connection The Solana RPC connection
+ * @param protocolFeeBasisPoints The new protocol fee in basis points (i.e. 100 = 1%)
+ * @param programId The ACCESS program ID
+ * @returns ix The instruction to set the protocol fee
+ */
 export const adminSetProtocolFee = async (
   connection: Connection,
   protocolFeeBasisPoints: number,
@@ -753,7 +802,12 @@ export const adminSetProtocolFee = async (
   );
 };
 
-// todo comment
+/**
+ * This function can be used to migrate the central state from V1 to V2
+ * @param feePayer The fee payer of the transaction
+ * @param programId The ACCESS program ID
+ * @returns ix The instruction to migrate the central state
+ */
 export const migrateCentralStateV2 = (
   feePayer: PublicKey,
   programId = ACCESS_PROGRAM_ID,
@@ -767,7 +821,13 @@ export const migrateCentralStateV2 = (
   );
 };
 
-// todo comment
+/**
+ * This function can be used to freeze or unfreeze the program instructions
+ * @param connection The Solana RPC connection
+ * @param freezeMask The bit mask of the instructions to freeze (0 = freeze, 1 = unfreeze)
+ * @param programId The ACCESS program ID
+ * @returns ix The instruction to freeze the program instructions
+ */
 export const adminProgramFreeze = async (
   connection: Connection,
   freezeMask: BN = new BN(0),
@@ -784,7 +844,13 @@ export const adminProgramFreeze = async (
   );
 };
 
-// todo comment
+/**
+ * This function can be used to renounce the admin authority for a specific instruction
+ * @param connection The Solana RPC connection
+ * @param instruction The instruction to renounce
+ * @param programId The ACCESS program ID
+ * @returns ix The instruction to renounce the admin authority
+ */
 export const adminRenounce = async (
   connection: Connection,
   instruction: IndexedInstruction,
