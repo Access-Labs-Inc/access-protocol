@@ -15,7 +15,7 @@ import {
   createStakeAccountInstruction,
   createStakePoolInstruction,
   stakeInstruction,
-  unlockBondTokensInstruction,
+  unlockBondTokensInstruction, unlockBondV2Instruction,
   unstakeInstruction,
 } from "./raw_instructions.js";
 import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
@@ -645,8 +645,38 @@ export const claimBondV2Rewards = async (
 };
 
 // todo comment
-export const unlockBondV2 = async () => {
-  // todo
+export const unlockBondV2 = async (
+  connection: Connection,
+  bondAccount: PublicKey,
+  programId = ACCESS_PROGRAM_ID,
+) => {
+  const [centralStateKey] = CentralStateV2.getKey(programId);
+  let tokenMint = ACCESS_MINT;
+  if (programId !== ACCESS_PROGRAM_ID) {
+    tokenMint = (await CentralStateV2.retrieve(connection, centralStateKey)).tokenMint;
+  }
+  const bond = await BondAccount.retrieve(connection, bondAccount);
+  const tokenDestination = getAssociatedTokenAddressSync(
+    tokenMint,
+    bond.owner,
+    true,
+  );
+  const poolVault = getAssociatedTokenAddressSync(
+    tokenMint,
+    bond.stakePool,
+    true,
+  );
+
+  return new unlockBondV2Instruction().getInstruction(
+    programId,
+    centralStateKey,
+    bondAccount,
+    bond.owner,
+    tokenDestination,
+    bond.stakePool,
+    poolVault,
+    TOKEN_PROGRAM_ID,
+  );
 };
 
 // todo comment
