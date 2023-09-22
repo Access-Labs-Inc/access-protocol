@@ -6,6 +6,7 @@ import {
   changePoolMinimumInstruction,
   changePoolMultiplierInstruction,
   claimBondRewardsInstruction,
+  claimBondV2RewardsInstruction,
   claimPoolRewardsInstruction,
   claimRewardsInstruction,
   crankInstruction,
@@ -614,8 +615,33 @@ export const addToBondV2 = async (
 };
 
 // todo comment
-export const claimBondV2Rewards = async () => {
-  // todo
+export const claimBondV2Rewards = async (
+  connection: Connection,
+  bondAccount: PublicKey,
+  programId = ACCESS_PROGRAM_ID,
+) => {
+  const [centralStateKey] = CentralStateV2.getKey(programId);
+  let tokenMint = ACCESS_MINT;
+  if (programId !== ACCESS_PROGRAM_ID) {
+    tokenMint = (await CentralStateV2.retrieve(connection, centralStateKey)).tokenMint;
+  }
+  const bond = await BondAccount.retrieve(connection, bondAccount);
+  const rewardsDestination = getAssociatedTokenAddressSync(
+    tokenMint,
+    bond.owner,
+    true,
+  );
+
+  return new claimBondV2RewardsInstruction().getInstruction(
+    programId,
+    bond.stakePool,
+    bondAccount,
+    bond.owner,
+    rewardsDestination,
+    centralStateKey,
+    tokenMint,
+    TOKEN_PROGRAM_ID,
+  );
 };
 
 // todo comment
