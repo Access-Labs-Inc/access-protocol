@@ -1,6 +1,8 @@
 import {
   activateStakePoolInstruction,
-  addToBondV2Instruction, adminProgramFreezeInstruction,
+  addToBondV2Instruction,
+  adminProgramFreezeInstruction,
+  adminRenounceInstruction,
   adminSetProtocolFeeInstruction,
   adminSetupFeeSplitInstruction,
   changeCentralStateAuthorityInstruction,
@@ -17,6 +19,7 @@ import {
   createStakeAccountInstruction,
   createStakePoolInstruction,
   distributeFeesInstruction,
+  IndexedInstruction,
   migrateCentralStateV2Instruction,
   stakeInstruction,
   unlockBondTokensInstruction,
@@ -773,7 +776,7 @@ export const adminProgramFreeze = async (
   const [centralStateKey] = CentralStateV2.getKey(programId);
   const centralState = await CentralStateV2.retrieve(connection, centralStateKey);
   return new adminProgramFreezeInstruction({
-    ixGate: 0,
+    ixGate: freezeMask,
   }).getInstruction(
     programId,
     centralStateKey,
@@ -782,6 +785,18 @@ export const adminProgramFreeze = async (
 };
 
 // todo comment
-export const adminRenounce = async () => {
-  // todo
+export const adminRenounce = async (
+  connection: Connection,
+  instruction: IndexedInstruction,
+  programId = ACCESS_PROGRAM_ID,
+) => {
+  const [centralStateKey] = CentralStateV2.getKey(programId);
+  const centralState = await CentralStateV2.retrieve(connection, centralStateKey);
+  return new adminRenounceInstruction({
+    ix: instruction.tag,
+  }).getInstruction(
+    programId,
+    centralStateKey,
+    centralState.authority,
+  );
 };

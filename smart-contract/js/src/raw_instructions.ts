@@ -4,16 +4,21 @@ import { Schema, serialize } from "borsh";
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { FeeRecipient, MAX_FEE_RECIPIENTS } from "./state";
 
-export interface AccountKey {
+interface AccountKey {
   pubkey: PublicKey;
   isSigner: boolean;
   isWritable: boolean;
 }
 
-export class adminSetupFeeSplitInstruction {
+export interface IndexedInstruction {
+  tag: number;
+}
+
+export class adminSetupFeeSplitInstruction implements IndexedInstruction {
   tag: number;
   recipients: FeeRecipient[];
-  static schema: Schema = new Map([
+  static
+  schema: Schema = new Map([
     [
       adminSetupFeeSplitInstruction,
       {
@@ -68,7 +73,7 @@ export class adminSetupFeeSplitInstruction {
   }
 }
 
-export class migrateCentralStateV2Instruction {
+export class migrateCentralStateV2Instruction implements IndexedInstruction {
   tag: number;
   static schema: Schema = new Map([
     [
@@ -121,7 +126,7 @@ export class migrateCentralStateV2Instruction {
   }
 }
 
-export class closeStakePoolInstruction {
+export class closeStakePoolInstruction implements IndexedInstruction {
   tag: number;
   static schema: Schema = new Map([
     [
@@ -180,7 +185,7 @@ export class closeStakePoolInstruction {
   }
 }
 
-export class changeInflationInstruction {
+export class changeInflationInstruction implements IndexedInstruction {
   tag: number;
   dailyInflation: BN;
   static schema: Schema = new Map([
@@ -238,7 +243,7 @@ export class changeInflationInstruction {
   }
 }
 
-export class unlockBondTokensInstruction {
+export class unlockBondTokensInstruction implements IndexedInstruction {
   tag: number;
   static schema: Schema = new Map([
     [
@@ -321,7 +326,7 @@ export class unlockBondTokensInstruction {
   }
 }
 
-export class adminSetProtocolFeeInstruction {
+export class adminSetProtocolFeeInstruction implements IndexedInstruction {
   tag: number;
   protocolFeeBasisPoints: number;
   static schema: Schema = new Map([
@@ -373,7 +378,7 @@ export class adminSetProtocolFeeInstruction {
   }
 }
 
-export class adminFreezeInstruction {
+export class adminFreezeInstruction implements IndexedInstruction {
   tag: number;
   static schema: Schema = new Map([
     [
@@ -426,7 +431,7 @@ export class adminFreezeInstruction {
   }
 }
 
-export class adminRenounceInstruction {
+export class adminRenounceInstruction implements IndexedInstruction {
   tag: number;
   ix: number;
   static schema: Schema = new Map([
@@ -478,7 +483,7 @@ export class adminRenounceInstruction {
   }
 }
 
-export class changePoolMinimumInstruction {
+export class changePoolMinimumInstruction implements IndexedInstruction {
   tag: number;
   newMinimum: BN;
   static schema: Schema = new Map([
@@ -536,7 +541,7 @@ export class changePoolMinimumInstruction {
   }
 }
 
-export class createBondV2Instruction {
+export class createBondV2Instruction implements IndexedInstruction {
   tag: number;
   amount: BN;
   unlockTimestamp: BN | null;
@@ -652,7 +657,7 @@ export class createBondV2Instruction {
   }
 }
 
-export class claimPoolRewardsInstruction {
+export class claimPoolRewardsInstruction implements IndexedInstruction {
   tag: number;
   static schema: Schema = new Map([
     [
@@ -723,7 +728,7 @@ export class claimPoolRewardsInstruction {
   }
 }
 
-export class signBondInstruction {
+export class signBondInstruction implements IndexedInstruction {
   tag: number;
   sellerIndex: BN;
   static schema: Schema = new Map([
@@ -781,7 +786,7 @@ export class signBondInstruction {
   }
 }
 
-export class claimRewardsInstruction {
+export class claimRewardsInstruction implements IndexedInstruction {
   tag: number;
   allowZeroRewards: boolean;
   static schema: Schema = new Map([
@@ -863,7 +868,7 @@ export class claimRewardsInstruction {
   }
 }
 
-export class distributeFeesInstruction {
+export class distributeFeesInstruction implements IndexedInstruction {
   tag: number;
   static schema: Schema = new Map([
     [
@@ -936,7 +941,7 @@ export class distributeFeesInstruction {
   }
 }
 
-export class adminProgramFreezeInstruction {
+export class adminProgramFreezeInstruction implements IndexedInstruction {
   tag: number;
   ixGate: BN;
   static schema: Schema = new Map([
@@ -988,7 +993,7 @@ export class adminProgramFreezeInstruction {
   }
 }
 
-export class stakeInstruction {
+export class stakeInstruction implements IndexedInstruction {
   tag: number;
   amount: BN;
   static schema: Schema = new Map([
@@ -1076,7 +1081,7 @@ export class stakeInstruction {
   }
 }
 
-export class createCentralStateInstruction {
+export class createCentralStateInstruction implements IndexedInstruction {
   tag: number;
   dailyInflation: BN;
   authority: Uint8Array;
@@ -1144,7 +1149,7 @@ export class createCentralStateInstruction {
   }
 }
 
-export class claimBondV2RewardsInstruction {
+export class claimBondV2RewardsInstruction implements IndexedInstruction {
   tag: number;
   static schema: Schema = new Map([
     [
@@ -1221,7 +1226,7 @@ export class claimBondV2RewardsInstruction {
   }
 }
 
-export class changePoolMultiplierInstruction {
+export class changePoolMultiplierInstruction implements IndexedInstruction {
   tag: number;
   newMultiplier: BN;
   static schema: Schema = new Map([
@@ -1279,7 +1284,7 @@ export class changePoolMultiplierInstruction {
   }
 }
 
-export class closeStakeAccountInstruction {
+export class closeStakeAccountInstruction implements IndexedInstruction {
   tag: number;
   static schema: Schema = new Map([
     [
@@ -1332,7 +1337,7 @@ export class closeStakeAccountInstruction {
   }
 }
 
-export class crankInstruction {
+export class crankInstruction implements IndexedInstruction {
   tag: number;
   static schema: Schema = new Map([
     [
@@ -1379,7 +1384,7 @@ export class crankInstruction {
   }
 }
 
-export class addToBondV2Instruction {
+export class addToBondV2Instruction implements IndexedInstruction {
   tag: number;
   amount: BN;
   unlockTimestamp: BN | null;
@@ -1495,7 +1500,7 @@ export class addToBondV2Instruction {
   }
 }
 
-export class claimBondInstruction {
+export class claimBondInstruction implements IndexedInstruction {
   tag: number;
   static schema: Schema = new Map([
     [
@@ -1584,7 +1589,7 @@ export class claimBondInstruction {
   }
 }
 
-export class editMetadataInstruction {
+export class editMetadataInstruction implements IndexedInstruction {
   tag: number;
   name: string;
   symbol: string;
@@ -1656,7 +1661,7 @@ export class editMetadataInstruction {
   }
 }
 
-export class createStakeAccountInstruction {
+export class createStakeAccountInstruction implements IndexedInstruction {
   tag: number;
   nonce: number;
   owner: Uint8Array;
@@ -1730,7 +1735,7 @@ export class createStakeAccountInstruction {
   }
 }
 
-export class claimBondRewardsInstruction {
+export class claimBondRewardsInstruction implements IndexedInstruction {
   tag: number;
   static schema: Schema = new Map([
     [
@@ -1807,7 +1812,7 @@ export class claimBondRewardsInstruction {
   }
 }
 
-export class createBondInstruction {
+export class createBondInstruction implements IndexedInstruction {
   tag: number;
   buyer: Uint8Array;
   totalAmountSold: BN;
@@ -1915,7 +1920,7 @@ export class createBondInstruction {
   }
 }
 
-export class unstakeInstruction {
+export class unstakeInstruction implements IndexedInstruction {
   tag: number;
   amount: BN;
   static schema: Schema = new Map([
@@ -1997,7 +2002,7 @@ export class unstakeInstruction {
   }
 }
 
-export class createStakePoolInstruction {
+export class createStakePoolInstruction implements IndexedInstruction {
   tag: number;
   owner: Uint8Array;
   minimumStakeAmount: BN;
@@ -2071,7 +2076,7 @@ export class createStakePoolInstruction {
   }
 }
 
-export class changeCentralStateAuthorityInstruction {
+export class changeCentralStateAuthorityInstruction implements IndexedInstruction {
   tag: number;
   newAuthority: Uint8Array;
   static schema: Schema = new Map([
@@ -2123,7 +2128,7 @@ export class changeCentralStateAuthorityInstruction {
   }
 }
 
-export class unlockBondV2Instruction {
+export class unlockBondV2Instruction implements IndexedInstruction {
   tag: number;
   static schema: Schema = new Map([
     [
@@ -2200,7 +2205,7 @@ export class unlockBondV2Instruction {
   }
 }
 
-export class adminMintInstruction {
+export class adminMintInstruction implements IndexedInstruction {
   tag: number;
   amount: BN;
   static schema: Schema = new Map([
@@ -2270,7 +2275,7 @@ export class adminMintInstruction {
   }
 }
 
-export class activateStakePoolInstruction {
+export class activateStakePoolInstruction implements IndexedInstruction {
   tag: number;
   static schema: Schema = new Map([
     [
