@@ -13,7 +13,14 @@ import {
   signBondInstruction,
 } from "./raw_instructions.js";
 import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
-import { ACCESS_MINT, ACCESS_PROGRAM_ID, BondAccount, CentralState, StakeAccount, StakePool } from "./state.js";
+import {
+  ACCESS_MINT,
+  ACCESS_PROGRAM_ID,
+  BondAccount,
+  CentralStateV2,
+  StakeAccount,
+  StakePool
+} from "./state.js";
 import BN from "bn.js";
 import { TOKEN_PROGRAM_ID, } from "@solana/spl-token";
 
@@ -36,10 +43,10 @@ export const claimBond = async (
 ) => {
   const bond = await BondAccount.retrieve(connection, bondAccount);
   const stakePool = await StakePool.retrieve(connection, bond.stakePool);
-  const [centralStateKey] = CentralState.getKey(programId);
+  const [centralStateKey] = CentralStateV2.getKey(programId);
   let tokenMint = ACCESS_MINT;
   if (programId !== ACCESS_PROGRAM_ID) {
-    tokenMint = (await CentralState.retrieve(connection, centralStateKey)).tokenMint;
+    tokenMint = (await CentralStateV2.retrieve(connection, centralStateKey)).tokenMint;
   }
 
   return new claimBondInstruction().getInstruction(
@@ -70,7 +77,7 @@ export const closeStakeAccount = async (
   programId = ACCESS_PROGRAM_ID,
 ) => {
   const stake = await StakeAccount.retrieve(connection, stakeAccount);
-  const [centralStateKey] = CentralState.getKey(programId);
+  const [centralStateKey] = CentralStateV2.getKey(programId);
 
   return new closeStakeAccountInstruction().getInstruction(
     programId,
@@ -93,7 +100,7 @@ export const closeStakePool = async (
   programId = ACCESS_PROGRAM_ID,
 ) => {
   const stakePool = await StakePool.retrieve(connection, stakePoolAccount);
-  const [centralStateKey] = CentralState.getKey(programId);
+  const [centralStateKey] = CentralStateV2.getKey(programId);
 
   return new closeStakePoolInstruction().getInstruction(
     programId,
@@ -116,7 +123,6 @@ export const closeStakePool = async (
  * @param unlockStartDate The unix timestamp (in s) at which the tokens start unlock
  * @param unlockPeriod The time interval at which the tokens unlock
  * @param unlockAmount The amount that unlocks at each period
- * @param lastUnlockTime The unix timestamp at which the unlock stops
  * @param stakePool The stake pool key
  * @param sellerIndex The seller index in the array of authorized sellers
  * @param programId The ACCESS program ID
@@ -141,7 +147,7 @@ export const createBond = async (
     buyer,
     totalAmountSold
   );
-  const [centralStateKey] = CentralState.getKey(programId);
+  const [centralStateKey] = CentralStateV2.getKey(programId);
 
   return new createBondInstruction({
     buyer: buyer.toBuffer(),
@@ -178,7 +184,7 @@ export const signBond = async (
   bondAccount: PublicKey,
   programId = ACCESS_PROGRAM_ID,
 ) => {
-  const [centralStateKey] = CentralState.getKey(programId);
+  const [centralStateKey] = CentralStateV2.getKey(programId);
   return new signBondInstruction({
     sellerIndex: new BN(sellerIndex),
   }).getInstruction(programId, seller, bondAccount, centralStateKey);
@@ -199,8 +205,8 @@ export const adminMint = async (
   destinationToken: PublicKey,
   programId = ACCESS_PROGRAM_ID,
 ) => {
-  const [centralKey] = await CentralState.getKey(programId);
-  const centralState = await CentralState.retrieve(connection, centralKey);
+  const [centralKey] = CentralStateV2.getKey(programId);
+  const centralState = await CentralStateV2.retrieve(connection, centralKey);
 
   return new adminMintInstruction({
     amount: new BN(amount),
@@ -226,8 +232,8 @@ export const adminFreeze = async (
   accountToFreeze: PublicKey,
   programId = ACCESS_PROGRAM_ID,
 ) => {
-  const [centralKey] = await CentralState.getKey(programId);
-  const centralState = await CentralState.retrieve(connection, centralKey);
+  const [centralKey] = CentralStateV2.getKey(programId);
+  const centralState = await CentralStateV2.retrieve(connection, centralKey);
 
   return new adminFreezeInstruction().getInstruction(
     programId,
