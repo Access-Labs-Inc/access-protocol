@@ -1,6 +1,6 @@
 import {
   activateStakePoolInstruction,
-  addToBondV2Instruction,
+  addToBondV2Instruction, adminProgramFreezeInstruction,
   adminSetProtocolFeeInstruction,
   adminSetupFeeSplitInstruction,
   changeCentralStateAuthorityInstruction,
@@ -17,6 +17,7 @@ import {
   createStakeAccountInstruction,
   createStakePoolInstruction,
   distributeFeesInstruction,
+  migrateCentralStateV2Instruction,
   stakeInstruction,
   unlockBondTokensInstruction,
   unlockBondV2Instruction,
@@ -750,13 +751,34 @@ export const adminSetProtocolFee = async (
 };
 
 // todo comment
-export const migrateCentralStateV2 = async () => {
-  // todo
+export const migrateCentralStateV2 = (
+  feePayer: PublicKey,
+  programId = ACCESS_PROGRAM_ID,
+) => {
+  const [centralStateKey] = CentralStateV2.getKey(programId); // doesn't matter which, V2 and V1 have the same key
+  return new migrateCentralStateV2Instruction().getInstruction(
+    programId,
+    centralStateKey,
+    SystemProgram.programId,
+    feePayer,
+  );
 };
 
 // todo comment
-export const adminProgramFreeze = async () => {
-  // todo
+export const adminProgramFreeze = async (
+  connection: Connection,
+  freezeMask: BN = new BN(0),
+  programId = ACCESS_PROGRAM_ID,
+) => {
+  const [centralStateKey] = CentralStateV2.getKey(programId);
+  const centralState = await CentralStateV2.retrieve(connection, centralStateKey);
+  return new adminProgramFreezeInstruction({
+    ixGate: 0,
+  }).getInstruction(
+    programId,
+    centralStateKey,
+    centralState.authority,
+  );
 };
 
 // todo comment
