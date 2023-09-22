@@ -15,6 +15,7 @@ import {
   createCentralStateInstruction,
   createStakeAccountInstruction,
   createStakePoolInstruction,
+  distributeFeesInstruction,
   stakeInstruction,
   unlockBondTokensInstruction,
   unlockBondV2Instruction,
@@ -702,8 +703,31 @@ export const adminSetupFeeSplit = async (
 };
 
 // todo comment
-export const distributeFees = async () => {
-  // todo
+export const distributeFees = async (
+  connection: Connection,
+  feePayer: PublicKey,
+  programId = ACCESS_PROGRAM_ID,
+) => {
+  const [centralStateKey] = CentralStateV2.getKey(programId);
+  const centralState = await CentralStateV2.retrieve(connection, centralStateKey);
+  const centralStateVault = getAssociatedTokenAddressSync(
+    ACCESS_MINT,
+    centralStateKey,
+    true,
+  );
+
+  const tokenAccounts = centralState.recipients.map((r) =>
+    getAssociatedTokenAddressSync(ACCESS_MINT, r.owner, true))
+
+  return new distributeFeesInstruction().getInstruction(
+    programId,
+    feePayer,
+    centralStateKey,
+    centralStateVault,
+    TOKEN_PROGRAM_ID,
+    centralState.tokenMint,
+    tokenAccounts,
+  )
 };
 
 // todo comment
