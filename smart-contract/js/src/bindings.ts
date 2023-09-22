@@ -1,6 +1,7 @@
 import {
   activateStakePoolInstruction,
   addToBondV2Instruction,
+  adminSetupFeeSplitInstruction,
   changeCentralStateAuthorityInstruction,
   changeInflationInstruction,
   changePoolMinimumInstruction,
@@ -15,7 +16,8 @@ import {
   createStakeAccountInstruction,
   createStakePoolInstruction,
   stakeInstruction,
-  unlockBondTokensInstruction, unlockBondV2Instruction,
+  unlockBondTokensInstruction,
+  unlockBondV2Instruction,
   unstakeInstruction,
 } from "./raw_instructions.js";
 import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
@@ -26,6 +28,7 @@ import {
   BondV2Account,
   CentralState,
   CentralStateV2,
+  FeeRecipient,
   StakeAccount,
   StakePool
 } from "./state.js";
@@ -680,8 +683,22 @@ export const unlockBondV2 = async (
 };
 
 // todo comment
-export const adminSetupFeeSplit = async () => {
-  // todo
+export const adminSetupFeeSplit = async (
+  connection: Connection,
+  recipients: FeeRecipient[],
+  programId = ACCESS_PROGRAM_ID,
+) => {
+  const [centralStateKey] = CentralStateV2.getKey(programId);
+  const centralState = await CentralStateV2.retrieve(connection, centralStateKey);
+
+  return new adminSetupFeeSplitInstruction(
+    { recipients },
+  ).getInstruction(
+    programId,
+    centralState.authority,
+    centralStateKey,
+    SystemProgram.programId,
+  )
 };
 
 // todo comment

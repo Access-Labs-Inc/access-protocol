@@ -4,22 +4,22 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import { u64 } from "./u64.js";
 
 /** Default percentage of the staking rewards going to stakers */
-const DEFAULT_STAKER_MULTIPLIER = 50;
+export const DEFAULT_STAKER_MULTIPLIER = 50;
 
 /** Length of the circular buffer (stores data for calculating rewards for 274 days) */
-const STAKE_BUFFER_LEN = 274;
+export const STAKE_BUFFER_LEN = 274;
 
 /** Maximum count of recipients of the fees */
-const MAX_FEE_RECIPIENTS = 10;
+export const MAX_FEE_RECIPIENTS = 10;
 
 /** Minimum balance of the fee split account allowed for token distribution */
-const MIN_DISTRIBUTE_AMOUNT = 100_000_000;
+export const MIN_DISTRIBUTE_AMOUNT = 100_000_000;
 
 /** Maximum delay between last fee split distribution and fee split account setup */
-const MAX_FEE_SPLIT_SETUP_DELAY = 5 * 60; // 5 minutes
+export const MAX_FEE_SPLIT_SETUP_DELAY = 5 * 60; // 5 minutes
 
 /** Amount in basis points (i.e 1% = 100) added to each locking operation as a protocol fee */
-const DEFAULT_FEE_BASIS_POINTS = 200;
+export const DEFAULT_FEE_BASIS_POINTS = 200;
 
 
 /**

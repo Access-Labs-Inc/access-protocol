@@ -2,6 +2,7 @@
 import BN from "bn.js";
 import { Schema, serialize } from "borsh";
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
+import { FeeRecipient, MAX_FEE_RECIPIENTS } from "./state";
 
 export interface AccountKey {
   pubkey: PublicKey;
@@ -11,7 +12,7 @@ export interface AccountKey {
 
 export class adminSetupFeeSplitInstruction {
   tag: number;
-  recipients: number[];
+  recipients: FeeRecipient[];
   static schema: Schema = new Map([
     [
       adminSetupFeeSplitInstruction,
@@ -19,14 +20,14 @@ export class adminSetupFeeSplitInstruction {
         kind: "struct",
         fields: [
           ["tag", "u8"],
-          ["recipients", ["u8"]],
+          ["recipients", [FeeRecipient, MAX_FEE_RECIPIENTS]],
         ],
       },
     ],
   ]);
 
   constructor(obj: {
-    recipients: number[];
+    recipients: FeeRecipient[];
   }) {
     this.tag = 27;
     this.recipients = obj.recipients;
