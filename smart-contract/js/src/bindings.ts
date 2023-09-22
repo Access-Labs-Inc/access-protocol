@@ -19,7 +19,7 @@ import {
   createStakeAccountInstruction,
   createStakePoolInstruction,
   distributeFeesInstruction,
-  IndexedInstruction,
+  TaggedInstruction,
   migrateCentralStateV2Instruction,
   stakeInstruction,
   unlockBondTokensInstruction,
@@ -853,7 +853,7 @@ export const adminProgramFreeze = async (
  */
 export const adminRenounce = async (
   connection: Connection,
-  instruction: IndexedInstruction,
+  instruction: TaggedInstruction,
   programId = ACCESS_PROGRAM_ID,
 ) => {
   const [centralStateKey] = CentralStateV2.getKey(programId);
