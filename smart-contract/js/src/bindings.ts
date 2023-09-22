@@ -1,6 +1,7 @@
 import {
   activateStakePoolInstruction,
   addToBondV2Instruction,
+  adminSetProtocolFeeInstruction,
   adminSetupFeeSplitInstruction,
   changeCentralStateAuthorityInstruction,
   changeInflationInstruction,
@@ -731,8 +732,21 @@ export const distributeFees = async (
 };
 
 // todo comment
-export const adminSetProtocolFee = async () => {
-  // todo
+export const adminSetProtocolFee = async (
+  connection: Connection,
+  protocolFeeBasisPoints: number,
+  programId = ACCESS_PROGRAM_ID,
+) => {
+  const [centralStateKey] = CentralStateV2.getKey(programId);
+  const centralState = await CentralStateV2.retrieve(connection, centralStateKey);
+
+  return new adminSetProtocolFeeInstruction({
+    protocolFeeBasisPoints,
+  }).getInstruction(
+    programId,
+    centralState.authority,
+    centralStateKey,
+  );
 };
 
 // todo comment
