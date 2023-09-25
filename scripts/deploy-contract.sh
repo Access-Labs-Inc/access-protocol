@@ -42,13 +42,13 @@ echo "authority: $(solana address)"
 echo "Checking your account balance..."
 balance=$(solana balance -u ${NETWORK} | rev | grep -Eo '[^ ]+$' | rev)
 echo $balance
-if (( $(echo "$balance > 3" | bc -l) ))
+if (( $(echo "$balance > 6" | bc -l) ))
 then
   echo "Balance is good."
 else
   if [ "$NETWORK" == "devnet" ];
   then
-    while [ ${balance%.*} -lt 3 ]
+    while [ ${balance%.*} -lt 6 ]
     do
       echo "Not enough SOL in your wallet, airdropping. If this keeps failing, fund the authority wallet manually."
       solana airdrop 1
@@ -56,7 +56,7 @@ else
       balance=$(solana balance -u ${NETWORK} | rev | grep -Eo '[^ ]+$' | rev)
     done
   else
-    echo "You need at least 3 SOL in the wallet to be able to deploy!"
+    echo "You need at least 6 SOL in the wallet to be able to deploy!"
     exit 1
   fi
 fi
