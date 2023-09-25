@@ -532,7 +532,7 @@ export const createBondV2 = async (
   feePayer: PublicKey,
   from: PublicKey,
   pool: PublicKey,
-  amount: number,
+  amount: BN,
   unlockTimestamp: BN | null,
   programId = ACCESS_PROGRAM_ID,
 ) => {
@@ -596,8 +596,8 @@ export const addToBondV2 = async (
   feePayer: PublicKey,
   from: PublicKey,
   pool: PublicKey,
-  amount: number,
-  unlockTimestamp: number,
+  amount: BN,
+  unlockTimestamp: BN | null,
   programId = ACCESS_PROGRAM_ID,
 ) => {
   const [centralStateKey] = CentralStateV2.getKey(programId);

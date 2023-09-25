@@ -629,6 +629,7 @@ export class BondV2Account {
     this.pool = new PublicKey(obj.pool);
     this.lastClaimedOffset = obj.lastClaimedOffset.fromTwos(64);
     this.poolMinimumAtCreation = obj.poolMinimumAtCreation;
+    this.unlockTimestamp = obj.unlockTimestamp;
   }
 
   static deserialize(data: Buffer) {
@@ -664,12 +665,15 @@ export class BondV2Account {
     unlockTimestamp: null | BN,
   ) {
     return PublicKey.findProgramAddressSync(
-      [Buffer.from("bond_account_v2"), owner.toBuffer(), stakePool.toBuffer(), unlockTimestamp ? unlockTimestamp.toBuffer() : 0],
+      [
+        Buffer.from("bond_account_v2"),
+        owner.toBuffer(),
+        stakePool.toBuffer(),
+        (unlockTimestamp ? unlockTimestamp : new BN(0)).toBuffer()], // todo check if new BN(0) is right for the forever bonds
       programId
     );
   }
 }
-
 
 
 /// mainnet ACCESS token mint and program id
