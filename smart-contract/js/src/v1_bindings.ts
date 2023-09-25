@@ -197,7 +197,7 @@ export const signBond = async (
  * @param amount The amount of tokens to mint
  * @param destinationToken The token account receiving the ACCESS tokens
  * @param programId The ACCESS program ID
- * @returns
+ * @returns ix The mint instruction
  */
 export const adminMint = async (
   connection: Connection,
