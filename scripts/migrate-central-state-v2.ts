@@ -1,10 +1,10 @@
 import fs from "fs";
 import { Connection, Keypair, PublicKey, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
 
-import { createCentralState, } from "../smart-contract/js";
+import { migrateCentralStateV2, } from "../smart-contract/js";
 
 const {
-  SOLANA_RPC_PROVIDER_URL, PROGRAM_PUBKEY, AUTHORITY_KEYPAIR, MINT_ADDRESS, YEARLY_INFLATION_IN_ACS
+  SOLANA_RPC_PROVIDER_URL, PROGRAM_PUBKEY, AUTHORITY_KEYPAIR
 } = process.env;
 
 if (SOLANA_RPC_PROVIDER_URL == null)
@@ -13,10 +13,6 @@ if (PROGRAM_PUBKEY == null)
   throw new Error("PROGRAM_PUBKEY must be set.");
 if (AUTHORITY_KEYPAIR == null)
   throw new Error("AUTHORITY_KEYPAIR must be set.");
-if (MINT_ADDRESS == null)
-  throw new Error("MINT_ADDRESS must be set.");
-if (YEARLY_INFLATION_IN_ACS == null)
-  throw new Error("YEARLY_INFLATION_IN_ACS must be set.");
 
 // The Solana RPC connection
 const connection = new Connection(SOLANA_RPC_PROVIDER_URL);
@@ -27,17 +23,9 @@ const authorityKeypair = Keypair.fromSecretKey(
   Uint8Array.from(JSON.parse(fs.readFileSync(AUTHORITY_KEYPAIR).toString()))
 );
 
-// 🚨 The initial inflation in tokens/day (raw amount i.e need to contain decimals)
-const dailyInflation = Math.floor((parseInt(YEARLY_INFLATION_IN_ACS) * (10 ** 6)) / 365);
-console.log("Daily inflation at: ", Number(dailyInflation));
-console.log("Program ID: ", PROGRAM_PUBKEY);
-console.log("Mint address: ", MINT_ADDRESS);
-
-const initCentralState = async () => {
-  const ix = await createCentralState(
-    Number(dailyInflation),
+const migrateCentralState = async () => {
+  const ix = migrateCentralStateV2(
     authorityKeypair.publicKey, // Central state authority
-    new PublicKey(MINT_ADDRESS), // Key to token program
     new PublicKey(PROGRAM_PUBKEY), // Program ID
   );
 
@@ -55,7 +43,7 @@ const initCentralState = async () => {
     skipPreflight: false
   });
 
-  console.log(`Created central state ${tx}`);
+  console.log(`Migrated central state to v2 ${tx}`);
 
   const [centralKey] = PublicKey.findProgramAddressSync(
     [new PublicKey(PROGRAM_PUBKEY).toBuffer()],
@@ -65,7 +53,7 @@ const initCentralState = async () => {
   fs.writeFileSync("artifacts/central_state_pubkey.txt", centralKey.toString());
 };
 
-initCentralState()
+migrateCentralState()
   .then(() => process.exit(0))
   .catch((error) => {
     console.error(error);
