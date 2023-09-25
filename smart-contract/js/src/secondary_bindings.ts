@@ -108,12 +108,11 @@ export const getBondV2Accounts = async (
   owner: PublicKey,
   programId: PublicKey
 ) => {
-  // "12" as base58
   const filters = [
     {
       memcmp: {
         offset: 0,
-        bytes: "12", // todo test and possibly fix
+        bytes: "C", // 12 in base 58 - todo test
       },
     },
     {
@@ -247,7 +246,7 @@ export const getLockedAmountForPool = async (
     console.error("Could not find lock account. Error: ", e);
   }
 
-  // SUM of airdrop tokens (aka Bond Accounts)
+  // sum of Bond Accounts and BondV2 Accounts
   let bondsAmountSum = new BN(0);
 
   const allBondAccountsForUser = await getBondAccounts(
@@ -257,6 +256,20 @@ export const getLockedAmountForPool = async (
   );
   if (allBondAccountsForUser != null && allBondAccountsForUser.length > 0) {
     allBondAccountsForUser.forEach((ba) => {
+      const b = BondAccount.deserialize(ba.account.data);
+      if (b.stakePool.toBase58() === poolPubkey.toBase58()) {
+        bondsAmountSum = bondsAmountSum.add(b.totalStaked);
+      }
+    });
+  }
+
+  const allBondV2AccountsForUser = await getBondV2Accounts(
+    connection,
+    pubkey,
+    programId
+  );
+  if (allBondV2AccountsForUser != null && allBondV2AccountsForUser.length > 0) {
+    allBondV2AccountsForUser.forEach((ba) => {
       const b = BondAccount.deserialize(ba.account.data);
       if (b.stakePool.toBase58() === poolPubkey.toBase58()) {
         bondsAmountSum = bondsAmountSum.add(b.totalStaked);
