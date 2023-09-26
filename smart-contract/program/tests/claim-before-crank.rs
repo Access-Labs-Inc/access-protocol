@@ -19,7 +19,7 @@ async fn claim_before_crank() {
     tr.mint(&staker.pubkey(), 20_400).await.unwrap();
 
     // Setup stake pool on day 1 12:00
-    tr.create_stake_pool(&stake_pool_owner.pubkey(), 1000).await.unwrap();
+    tr.create_pool(&stake_pool_owner.pubkey(), 1000).await.unwrap();
     tr.activate_stake_pool(&stake_pool_owner.pubkey()).await.unwrap();
     tr.create_stake_account(&stake_pool_owner.pubkey(), &staker.pubkey()).await.unwrap();
 
@@ -27,7 +27,7 @@ async fn claim_before_crank() {
     tr.sleep(3600).await.unwrap();
 
     // Setup stake pool 2 on day 1 13:00
-    tr.create_stake_pool(&stake_pool2_owner.pubkey(), 1000).await.unwrap();
+    tr.create_pool(&stake_pool2_owner.pubkey(), 1000).await.unwrap();
     tr.activate_stake_pool(&stake_pool2_owner.pubkey()).await.unwrap();
     tr.create_stake_account(&stake_pool2_owner.pubkey(), &staker.pubkey()).await.unwrap();
 

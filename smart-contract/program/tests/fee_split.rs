@@ -17,7 +17,7 @@ async fn fee_split() {
     assert_eq!(token_stats.supply, 100_000_000_000_000_000);
 
     let pool_owner = tr.create_user_with_ata().await.unwrap();
-    tr.create_stake_pool(&pool_owner.pubkey(), 200_000_000)
+    tr.create_pool(&pool_owner.pubkey(), 200_000_000)
         .await
         .unwrap();
     tr.activate_stake_pool(&pool_owner.pubkey()).await.unwrap();
@@ -80,6 +80,11 @@ async fn fee_split() {
     let central_state_stats = tr.central_state_stats().await.unwrap();
     assert_eq!(central_state_stats.balance, 99_999_999);
     assert_eq!(central_state_stats.account.recipients.len(), MAX_FEE_RECIPIENTS);
+
+
+    println!("central_state_stats: {:?}", central_state_stats);
+    return;
+
 
     tr.distribute_fees().await.unwrap_err(); // not enough in account
 

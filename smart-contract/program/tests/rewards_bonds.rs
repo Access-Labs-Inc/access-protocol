@@ -18,7 +18,7 @@ async fn rewards_bonds() {
     tr.mint(&staker.pubkey(), 10_200).await.unwrap();
 
     // Create stake pool on day 1 12:00
-    tr.create_stake_pool(&stake_pool_owner.pubkey(), 1000)
+    tr.create_pool(&stake_pool_owner.pubkey(), 1000)
         .await
         .unwrap();
 

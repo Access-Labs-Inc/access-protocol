@@ -14,7 +14,7 @@ pub mod common;
         // Create users
         let stake_pool_owner = tr.create_user_with_ata().await.unwrap();
         // Create stake pool on day 1 12:00
-        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000)
+        tr.create_pool(&stake_pool_owner.pubkey(), 10000)
             .await
             .unwrap();
         // Check the pool
@@ -44,7 +44,7 @@ pub mod common;
         // Create users
         let stake_pool_owner = tr.create_user_with_ata().await.unwrap();
         // Create stake pool
-        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000)
+        tr.create_pool(&stake_pool_owner.pubkey(), 10000)
             .await
             .unwrap();
         // Activate stake pool
@@ -78,11 +78,11 @@ pub mod common;
         // Create users
         let stake_pool_owner = tr.create_user_with_ata().await.unwrap();
         // Create stake pool
-        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000)
+        tr.create_pool(&stake_pool_owner.pubkey(), 10000)
             .await
             .unwrap();
         // Try to create stake pool again
-        let result = tr.create_stake_pool(&stake_pool_owner.pubkey(), 1000).await;
+        let result = tr.create_pool(&stake_pool_owner.pubkey(), 1000).await;
         assert!(result.is_err());
     }
 
@@ -93,7 +93,7 @@ pub mod common;
         // Create users
         let stake_pool_owner = tr.create_user_with_ata().await.unwrap();
         // Create stake pool
-        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000)
+        tr.create_pool(&stake_pool_owner.pubkey(), 10000)
             .await
             .unwrap();
         // Activate stake pool
@@ -116,7 +116,7 @@ pub mod common;
         // Mint to staker
         tr.mint(&staker.pubkey(), 100_000_000_000).await.unwrap();
         // Create stake pool
-        tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000)
+        tr.create_pool(&stake_pool_owner.pubkey(), 10000)
             .await
             .unwrap();
         // Try to stake

@@ -18,7 +18,7 @@ async fn later_pool_creation() {
     tr.mint(&staker.pubkey(), 20_400).await.unwrap();
 
     // Create stake pool on day 1
-    tr.create_stake_pool(&stake_pool_owner.pubkey(), 1000)
+    tr.create_pool(&stake_pool_owner.pubkey(), 1000)
         .await
         .unwrap();
     tr.activate_stake_pool(&stake_pool_owner.pubkey())
@@ -46,7 +46,7 @@ async fn later_pool_creation() {
 
     // Create a second pool
     let stake_pool_owner2 = tr.create_user_with_ata().await.unwrap();
-    tr.create_stake_pool(&stake_pool_owner2.pubkey(), 1000)
+    tr.create_pool(&stake_pool_owner2.pubkey(), 1000)
         .await
         .unwrap();
     tr.activate_stake_pool(&stake_pool_owner2.pubkey())
