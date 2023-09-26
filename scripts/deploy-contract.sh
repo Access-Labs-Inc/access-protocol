@@ -3,11 +3,17 @@
 
 pwd=$(pwd)
 NETWORK=${NETWORK:-devnet}
+ALLOW_V1=${ALLOW_V1:-false}
 
 pushd ../smart-contract/program
 echo  "Building smart contract program..."
 # IMPORTANT: If not no-mint-check present you need to update MINT_ADDRESS in (state.rs)
-cargo build-bpf --features no-bond-signer no-mint-check
+FEATURES="no-bond-signer no-mint-check"
+if [ "$ALLOW_V1" == "true" ];
+then
+  FEATURES="no-bond-signer no-mint-check v1-instructions-allowed"
+fi
+cargo build-bpf --features ${FEATURES}
 
 PROGRAM_KEYPAIR=${PROGRAM_KEYPAIR:-"$pwd/artifacts/program.json"}
 echo "Check program keypair file exists..."
