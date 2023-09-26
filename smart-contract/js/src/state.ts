@@ -343,14 +343,14 @@ export class FeeRecipient {
     owner: PublicKey;
     percentage: BN;
   }) {
-    this.owner = obj.owner;
+    this.owner = new PublicKey(obj.owner);
     this.percentage = obj.percentage;
   }
 }
 
 export class CentralStateV2 {
   tag: Tag;
-  signerNonce: number;
+  bumpSeed: number;
   dailyInflation: BN;
   tokenMint: PublicKey;
   authority: PublicKey;
@@ -364,15 +364,14 @@ export class CentralStateV2 {
   lastFeeDistributionTime: BN;
   recipients: FeeRecipient[];
 
-  static
-  schema: Schema = new Map([
+  static schema: Schema = new Map<any, any>([
     [
       CentralStateV2,
       {
         kind: "struct",
         fields: [
           ["tag", "u8"],
-          ["signerNonce", "u8"],
+          ["bumpSeed", "u8"],
           ["dailyInflation", "u64"],
           ["tokenMint", [32]],
           ["authority", [32]],
@@ -383,8 +382,18 @@ export class CentralStateV2 {
           ["ixGate", "u128"],
           ["adminIxGate", "u128"],
           ["feeBasisPoints", "u16"],
-          ["lastFeeDistributionTime", "i64"],
-          ["recipients", [FeeRecipient, MAX_FEE_RECIPIENTS]],
+          ["lastFeeDistributionTime", "u64"],
+          ["recipients", [FeeRecipient]],
+        ],
+      },
+    ],
+    [
+      FeeRecipient,
+      {
+        kind: "struct",
+        fields: [
+          ["owner", [32]],
+          ["percentage", "u64"],
         ],
       },
     ],
@@ -392,7 +401,7 @@ export class CentralStateV2 {
 
   constructor(obj: {
     tag: number;
-    signerNonce: number;
+    bumpSeed: number;
     dailyInflation: BN;
     tokenMint: Uint8Array;
     authority: Uint8Array;
@@ -407,14 +416,14 @@ export class CentralStateV2 {
     recipients: FeeRecipient[];
   }) {
     this.tag = obj.tag as Tag;
-    this.signerNonce = obj.signerNonce;
+    this.bumpSeed = obj.bumpSeed;
     this.dailyInflation = obj.dailyInflation;
     this.tokenMint = new PublicKey(obj.tokenMint);
     this.authority = new PublicKey(obj.authority);
     this.creationTime = obj.creationTime.fromTwos(64);
     this.totalStaked = obj.totalStaked;
-    this.totalStakedSnapshot = obj.totalStakedSnapshot.fromTwos(64);
-    this.lastSnapshotOffset = obj.lastSnapshotOffset.fromTwos(64);
+    this.totalStakedSnapshot = obj.totalStakedSnapshot;
+    this.lastSnapshotOffset = obj.lastSnapshotOffset;
     this.ixGate = obj.ixGate;
     this.adminIxGate = obj.adminIxGate;
     this.feeBasisPoints = obj.feeBasisPoints;
