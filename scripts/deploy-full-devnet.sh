@@ -3,8 +3,8 @@ mkdir artifacts
 echo "STEP 1: Creating an SPL Token"
 ts-node create-devnet-spl-token.ts
 
-echo "STEP 2: Deploying the Devnet contract"
-./deploy-contract.sh
+echo "STEP 2: Deploying the Devnet contract with V1 instructions allowed"
+ALLOW_V1=true ./deploy-contract.sh
 
 echo "STEP 3: Initializing the central state"
 ./init-central-state.sh
