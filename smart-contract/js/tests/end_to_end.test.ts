@@ -11,22 +11,27 @@ import {
   createStakeAccount,
   createStakePool,
   stake,
-  createBond,
-  claimBond,
   unlockBondTokens,
   claimBondRewards,
   crank,
   claimPoolRewards,
   claimRewards,
-  changeInflation,
+  adminChangeInflation,
   changePoolMinimum,
   unstake,
-  adminMint,
   activateStakePool,
-  adminFreeze,
   changePoolMultiplier,
-  closeStakePool,
 } from "../src/bindings";
+
+import {
+  createBond,
+  claimBond,
+  adminMint,
+  adminFreeze,
+  closeStakePool,
+} from "../src/v1_bindings";
+
+
 import {
   CentralState,
   Tag,
@@ -168,7 +173,6 @@ test("End to end test", async () => {
   const ix_central_state = await createCentralState(
     dailyInflation,
     centralStateAuthority.publicKey,
-    feePayer.publicKey,
     accessToken.token.publicKey,
     programId
   );
@@ -241,8 +245,7 @@ test("End to end test", async () => {
    * Activate stake pool
    */
   console.log("Activate stake pool");
-  const ix_act_stake_pool = await activateStakePool(
-    connection,
+  const ix_act_stake_pool = activateStakePool(
     stakePoolKey,
     programId
   );
@@ -664,7 +667,6 @@ test("End to end test", async () => {
     stakeKey,
     stakerAta,
     programId,
-    false
   );
   tx = await signAndSendTransactionInstructions(
     connection,
@@ -710,7 +712,7 @@ test("End to end test", async () => {
   expect(stakePoolObj.vault.toBase58()).toBe(vault.toBase58());
 
   // Change inflation
-  const ix_change_inflation = await changeInflation(
+  const ix_change_inflation = await adminChangeInflation(
     connection,
     new BN(500_000),
     programId
@@ -900,7 +902,6 @@ test("End to end test", async () => {
     stakeKey,
     stakerAta,
     programId,
-    false
   );
   tx = await signAndSendTransactionInstructions(
     connection,
