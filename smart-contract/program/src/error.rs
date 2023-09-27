@@ -28,7 +28,7 @@ pub enum AccessError {
     StakeAccountOwnerMustSign,
     #[error("Wrong SPL token program ID")]
     WrongSplTokenProgramId,
-    #[error("Source token account must be owned by SPL Token")]
+    #[error("Token account must be owned by SPL Token")]
     WrongTokenAccountOwner,
     #[error("Bond account must be owned by the program")]
     WrongBondAccountOwner,
