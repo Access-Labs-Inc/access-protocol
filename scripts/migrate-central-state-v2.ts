@@ -1,10 +1,20 @@
 import fs from "fs";
-import { Connection, Keypair, PublicKey, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
+import {
+  Connection,
+  Keypair,
+  PublicKey,
+  sendAndConfirmTransaction,
+  Transaction,
+  TransactionMessage,
+  VersionedTransaction
+} from "@solana/web3.js";
 
 import { migrateCentralStateV2, } from "../smart-contract/js";
+import { getAssociatedTokenAddress } from "@solana/spl-token/src/state/mint";
+import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
 
 const {
-  SOLANA_RPC_PROVIDER_URL, PROGRAM_PUBKEY, AUTHORITY_KEYPAIR
+  SOLANA_RPC_PROVIDER_URL, PROGRAM_PUBKEY, AUTHORITY_KEYPAIR, MINT_ADDRESS
 } = process.env;
 
 if (SOLANA_RPC_PROVIDER_URL == null)
@@ -13,6 +23,8 @@ if (PROGRAM_PUBKEY == null)
   throw new Error("PROGRAM_PUBKEY must be set.");
 if (AUTHORITY_KEYPAIR == null)
   throw new Error("AUTHORITY_KEYPAIR must be set.");
+if (MINT_ADDRESS == null)
+  throw new Error("MINT_ADDRESS must be set.");
 
 // The Solana RPC connection
 const connection = new Connection(SOLANA_RPC_PROVIDER_URL);
@@ -24,6 +36,30 @@ const authorityKeypair = Keypair.fromSecretKey(
 );
 
 const migrateCentralState = async () => {
+  const [centralKey] = PublicKey.findProgramAddressSync(
+    [new PublicKey(PROGRAM_PUBKEY).toBuffer()],
+    new PublicKey(PROGRAM_PUBKEY)
+  );
+
+  try {
+    const ata = getAssociatedTokenAddressSync(
+      new PublicKey(MINT_ADDRESS), centralKey, true
+    );
+
+    const transaction = new Transaction().add(
+      createAssociatedTokenAccountInstruction(
+        authorityKeypair.publicKey,
+        ata,
+        centralKey,
+        new PublicKey(MINT_ADDRESS),
+      )
+    );
+
+    await sendAndConfirmTransaction(connection, transaction, [authorityKeypair]);
+  } catch (e) {
+    console.log("Associated token account not created, it might already exist", e)
+  }
+
   const ix = migrateCentralStateV2(
     authorityKeypair.publicKey, // Central state authority
     new PublicKey(PROGRAM_PUBKEY), // Program ID
@@ -45,10 +81,6 @@ const migrateCentralState = async () => {
 
   console.log(`Migrated central state to v2 ${tx}`);
 
-  const [centralKey] = PublicKey.findProgramAddressSync(
-    [new PublicKey(PROGRAM_PUBKEY).toBuffer()],
-    new PublicKey(PROGRAM_PUBKEY)
-  );
   // write central state key to file
   fs.writeFileSync("artifacts/central_state_pubkey.txt", centralKey.toString());
 };
