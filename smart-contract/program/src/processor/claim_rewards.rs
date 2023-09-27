@@ -147,6 +147,7 @@ pub fn process_claim_rewards(
         AccessError::WrongMint,
     )?;
 
+    // Calculate the rewards (checks if the pool is cranked as well)
     let reward = calc_reward_fp32(
         central_state.last_snapshot_offset,
         stake_account.last_claimed_offset,

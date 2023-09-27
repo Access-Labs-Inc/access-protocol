@@ -31,7 +31,7 @@ async fn end_to_end() {
     let staker = tr.create_user_with_ata().await.unwrap();
 
     // Create stake pool
-    tr.create_stake_pool(&stake_pool_owner.pubkey(), 1000)
+    tr.create_pool(&stake_pool_owner.pubkey(), 1000)
         .await
         .unwrap();
     let pool_stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();

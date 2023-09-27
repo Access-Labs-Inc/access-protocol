@@ -93,7 +93,7 @@ pub fn process_crank(
 
     let mut stakers_reward = 0;
     if total_staked_snapshot != 0 {
-        // stakers_reward = [(pool_total_staked << 32) * inflation * stakers_part] / (100 * total_staked * pool_total_staked)
+        // Stakers rewards per ACS staked
         stakers_reward = ((central_state.daily_inflation as u128) << 32)
             .checked_mul(stake_pool.header.stakers_part as u128)
             .ok_or(AccessError::Overflow)?
@@ -117,7 +117,7 @@ pub fn process_crank(
         PreciseNumber::new(central_state.total_staked_snapshot as u128)
             .ok_or(AccessError::Overflow)?;
 
-    // pool_rewards = [(pool_total_staked << 32) * inflation * (100 - stakers_part)] / (100 * total_staked)
+    // Total pool reward
     let precise_pool_reward = (precise_total_staked_snapshot)
         .checked_mul(&precise_daily_inflation)
         .ok_or(AccessError::Overflow)?

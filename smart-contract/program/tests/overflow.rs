@@ -17,10 +17,10 @@ mod basic_functionality {
         // Create pools
         let pool_owner = tr.create_user_with_ata().await.unwrap();
         let pool_owner2 = tr.create_user_with_ata().await.unwrap();
-        tr.create_stake_pool(&pool_owner.pubkey(), 1_000_000_000)
+        tr.create_pool(&pool_owner.pubkey(), 1_000_000_000)
             .await
             .unwrap();
-        tr.create_stake_pool(&pool_owner2.pubkey(), 1_000_000_000)
+        tr.create_pool(&pool_owner2.pubkey(), 1_000_000_000)
             .await
             .unwrap();
         tr.activate_stake_pool(&pool_owner.pubkey()).await.unwrap();

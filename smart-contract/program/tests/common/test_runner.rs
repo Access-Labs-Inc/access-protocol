@@ -283,18 +283,12 @@ impl TestRunner {
         sign_send_instructions(&mut self.prg_test_ctx, vec![transfer_ix], vec![&self.supply_owner]).await
     }
 
-    pub async fn create_stake_pool(
+    pub async fn create_pool(
         &mut self,
-        stake_pool_owner: &Pubkey,
+        pool_owner: &Pubkey,
         minimum_stake_amount: u64,
     ) -> Result<(), BanksClientError> {
-        let stake_pool_key = self.get_pool_pda(stake_pool_owner);
-        let create_associated_instruction = create_associated_token_account(
-            &self.prg_test_ctx.payer.pubkey(),
-            &stake_pool_key,
-            &self.mint,
-            &spl_token::ID,
-        );
+        let stake_pool_key = self.get_pool_pda(pool_owner);
         let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
         let create_ata_pool_vault_ix = create_associated_token_account(
             &self.prg_test_ctx.payer.pubkey(),
@@ -305,12 +299,6 @@ impl TestRunner {
         sign_send_instructions(
             &mut self.prg_test_ctx,
             vec![create_ata_pool_vault_ix],
-            vec![],
-        )
-            .await?;
-        sign_send_instructions(
-            &mut self.prg_test_ctx,
-            vec![create_associated_instruction],
             vec![],
         )
             .await?;
@@ -325,7 +313,7 @@ impl TestRunner {
                 central_state: &self.central_state,
             },
             create_stake_pool::Params {
-                owner: *stake_pool_owner,
+                owner: *pool_owner,
                 minimum_stake_amount,
             },
         );

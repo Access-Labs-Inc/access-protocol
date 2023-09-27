@@ -13,7 +13,7 @@ async fn permissionless_claim() {
     let stake_pool_owner = tr.create_user_with_ata().await.unwrap();
     let _staker = tr.create_user_with_ata().await.unwrap();
     // Create stake pool
-    tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000)
+    tr.create_pool(&stake_pool_owner.pubkey(), 10000)
         .await
         .unwrap();
     // Activate stake pool
@@ -36,7 +36,7 @@ async fn signed_claim() {
     // Mint to staker
     tr.mint(&staker.pubkey(), 100_000_000_000).await.unwrap();
     // Create stake pool
-    tr.create_stake_pool(&stake_pool_owner.pubkey(), 10000)
+    tr.create_pool(&stake_pool_owner.pubkey(), 10000)
         .await
         .unwrap();
     // Activate stake pool

@@ -95,6 +95,38 @@ export const getBondAccounts = async (
   });
 };
 
+
+/**
+ * This function can be used to find all bondV2s of a user
+ * @param connection The Solana RPC connection
+ * @param owner The owner of the bonds to retrieve
+ * @param programId The program ID
+ * @returns
+ */
+export const getBondV2Accounts = async (
+  connection: Connection,
+  owner: PublicKey,
+  programId: PublicKey
+) => {
+  const filters = [
+    {
+      memcmp: {
+        offset: 0,
+        bytes: "C", // 12 in base 58 - todo test
+      },
+    },
+    {
+      memcmp: {
+        offset: 1,
+        bytes: owner.toBase58(),
+      },
+    },
+  ];
+  return await connection.getProgramAccounts(programId, {
+    filters,
+  });
+};
+
 /**
  * This function can be used to retrieve all the stake pools
  * @param connection The Solana RPC connection
@@ -192,7 +224,7 @@ export const getAllActiveBonds = async (
  * @param connection The Solana RPC connection
  * @param programId The program ID
  * @param poolPubkey Public key of pool
- * @param pubkye User's pubkey
+ * @param pubkey User's pubkey
  * @returns BN
  */
 export const getLockedAmountForPool = async (
@@ -214,7 +246,7 @@ export const getLockedAmountForPool = async (
     console.error("Could not find lock account. Error: ", e);
   }
 
-  // SUM of airdrop tokens (aka Bond Accounts)
+  // sum of Bond Accounts and BondV2 Accounts
   let bondsAmountSum = new BN(0);
 
   const allBondAccountsForUser = await getBondAccounts(
@@ -231,6 +263,20 @@ export const getLockedAmountForPool = async (
     });
   }
 
+  const allBondV2AccountsForUser = await getBondV2Accounts(
+    connection,
+    pubkey,
+    programId
+  );
+  if (allBondV2AccountsForUser != null && allBondV2AccountsForUser.length > 0) {
+    allBondV2AccountsForUser.forEach((ba) => {
+      const b = BondAccount.deserialize(ba.account.data);
+      if (b.stakePool.toBase58() === poolPubkey.toBase58()) {
+        bondsAmountSum = bondsAmountSum.add(b.totalStaked);
+      }
+    });
+  }
+
   return lockedAmount.add(bondsAmountSum);
 };
 
@@ -239,7 +285,7 @@ export const getLockedAmountForPool = async (
  * @param connection The Solana RPC connection
  * @param programId The program ID
  * @param poolPubkey Public key of pool
- * @param pubkye User's pubkey
+ * @param pubkey User's pubkey
  * @returns Boolean
  */
 export const hasValidSubscriptionForPool = async (

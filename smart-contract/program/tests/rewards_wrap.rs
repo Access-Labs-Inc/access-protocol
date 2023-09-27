@@ -23,10 +23,10 @@ mod rewards_wrap {
         let pool_owner2 = tr.create_user_with_ata().await.unwrap();
 
         // Setup all the pools
-        tr.create_stake_pool(&pool_owner.pubkey(), 1_000_000_000)
+        tr.create_pool(&pool_owner.pubkey(), 1_000_000_000)
             .await
             .unwrap();
-        tr.create_stake_pool(&pool_owner2.pubkey(), 1_000_000_000)
+        tr.create_pool(&pool_owner2.pubkey(), 1_000_000_000)
             .await
             .unwrap();
 
@@ -106,10 +106,10 @@ mod rewards_wrap {
         let pool_owner2 = tr.create_user_with_ata().await.unwrap();
 
         // Setup all the pools
-        tr.create_stake_pool(&pool_owner.pubkey(), 1_000_000_000)
+        tr.create_pool(&pool_owner.pubkey(), 1_000_000_000)
             .await
             .unwrap();
-        tr.create_stake_pool(&pool_owner2.pubkey(), 1_000_000_000)
+        tr.create_pool(&pool_owner2.pubkey(), 1_000_000_000)
             .await
             .unwrap();
 
@@ -189,10 +189,10 @@ mod rewards_wrap {
         let pool_owner2 = tr.create_user_with_ata().await.unwrap();
 
         // Setup all the pools
-        tr.create_stake_pool(&pool_owner.pubkey(), 1_000_000_000)
+        tr.create_pool(&pool_owner.pubkey(), 1_000_000_000)
             .await
             .unwrap();
-        tr.create_stake_pool(&pool_owner2.pubkey(), 1_000_000_000)
+        tr.create_pool(&pool_owner2.pubkey(), 1_000_000_000)
             .await
             .unwrap();
 
@@ -306,7 +306,7 @@ mod rewards_wrap {
 
         // create pool 3
         let pool_owner3 = tr.create_user_with_ata().await.unwrap();
-        tr.create_stake_pool(&pool_owner3.pubkey(), 1_000_000_000)
+        tr.create_pool(&pool_owner3.pubkey(), 1_000_000_000)
             .await
             .unwrap();
         tr.activate_stake_pool(&pool_owner3.pubkey()).await.unwrap();
