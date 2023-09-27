@@ -362,6 +362,7 @@ export class CentralStateV2 {
   adminIxGate: BN;
   feeBasisPoints: number;
   lastFeeDistributionTime: BN;
+  feeRecipientsCount: number; // this is needed due to Borsh encoding, see https://borsh.io/
   recipients: FeeRecipient[];
 
   static schema: Schema = new Map<any, any>([
@@ -383,7 +384,8 @@ export class CentralStateV2 {
           ["adminIxGate", "u128"],
           ["feeBasisPoints", "u16"],
           ["lastFeeDistributionTime", "u64"],
-          ["recipients", [FeeRecipient]],
+          ["feeRecipientsCount", "u32"],
+          ["recipients", [FeeRecipient, MAX_FEE_RECIPIENTS]],
         ],
       },
     ],
@@ -413,6 +415,7 @@ export class CentralStateV2 {
     adminIxGate: BN;
     feeBasisPoints: number;
     lastFeeDistributionTime: BN;
+    feeRecipientsCount: number;
     recipients: FeeRecipient[];
   }) {
     this.tag = obj.tag as Tag;
@@ -428,6 +431,7 @@ export class CentralStateV2 {
     this.adminIxGate = obj.adminIxGate;
     this.feeBasisPoints = obj.feeBasisPoints;
     this.lastFeeDistributionTime = obj.lastFeeDistributionTime.fromTwos(64);
+    this.feeRecipientsCount = obj.feeRecipientsCount;
     this.recipients = obj.recipients;
   }
 
