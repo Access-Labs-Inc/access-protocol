@@ -10,7 +10,6 @@ import {
 } from "@solana/web3.js";
 
 import { migrateCentralStateV2, } from "../smart-contract/js";
-import { getAssociatedTokenAddress } from "@solana/spl-token/src/state/mint";
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
 
 const {
