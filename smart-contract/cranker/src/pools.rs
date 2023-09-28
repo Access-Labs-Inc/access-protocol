@@ -1,5 +1,4 @@
 use borsh::BorshDeserialize;
-use solana_client::rpc_filter::MemcmpEncoding;
 
 use {
     access_protocol::state::{SECONDS_IN_DAY, Tag},

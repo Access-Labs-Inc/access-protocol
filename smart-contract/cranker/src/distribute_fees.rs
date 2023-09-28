@@ -69,10 +69,10 @@ pub async fn get_fee_recipient_atas(connection: &RpcClient, central_state: Pubke
         .collect();
 
     println!("Checking ATAs and creating the non-existent ones");
-    let create_ata_ixs = central_state_stats
+    central_state_stats
         .recipients
         .iter()
-        .for_each(|r| { create_ata(connection, r.owner, &PAYER, &MINT); });
+        .for_each(|r| { create_ata(connection, r.owner, &PAYER, &MINT)? })?;
 
     Ok(recipient_atas)
 }
@@ -85,7 +85,7 @@ fn create_ata(
 ) -> Result<Option<Signature>, ClientError> {
     let ata_key = get_associated_token_address(&owner, &MINT);
     println!("Checking ATA {}", ata_key);
-    if let Ok(acc) = connection.get_account(&ata_key) {
+    if let Ok(_) = connection.get_account(&ata_key) {
         println!("ATA {} exists", ata_key);
         return Ok(None)
     }
