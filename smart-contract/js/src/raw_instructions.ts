@@ -1417,7 +1417,6 @@ export class addToBondV2Instruction implements TaggedInstruction {
 
   getInstruction(
     programId: PublicKey,
-    feePayer: PublicKey,
     from: PublicKey,
     fromAta: PublicKey,
     to: PublicKey,
@@ -1432,11 +1431,6 @@ export class addToBondV2Instruction implements TaggedInstruction {
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
-    keys.push({
-      pubkey: feePayer,
-      isSigner: true,
-      isWritable: true,
-    });
     keys.push({
       pubkey: from,
       isSigner: true,

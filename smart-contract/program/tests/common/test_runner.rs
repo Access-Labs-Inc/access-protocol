@@ -1005,7 +1005,6 @@ impl TestRunner {
         let add_to_bond_v2_ix = access_protocol::instruction::add_to_bond_v2(
             self.program_id,
             access_protocol::instruction::add_to_bond_v2::Accounts {
-                fee_payer: &self.prg_test_ctx.payer.pubkey(),
                 from: &from.pubkey(),
                 from_ata: &get_associated_token_address(&from.pubkey(), &self.mint),
                 to,

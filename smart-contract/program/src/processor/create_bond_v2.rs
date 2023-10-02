@@ -136,7 +136,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         )?;
 
         // Check signers
-        check_signer(accounts.fee_payer, AccessError::BondSellerMustSign)?;
         check_signer(accounts.from, AccessError::BondSellerMustSign)?;
 
         Ok(accounts)

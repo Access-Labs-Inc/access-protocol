@@ -34,10 +34,6 @@ pub struct Params {
 #[derive(InstructionsAccount)]
 /// The required accounts for the `add_to_bond_v2` instruction
 pub struct Accounts<'a, T> {
-    /// The fee account
-    #[cons(writable, signer)]
-    pub fee_payer: &'a T,
-
     /// The bond seller account
     #[cons(writable, signer)]
     pub from: &'a T,
@@ -87,7 +83,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     ) -> Result<Self, ProgramError> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
-            fee_payer: next_account_info(accounts_iter)?,
             from: next_account_info(accounts_iter)?,
             from_ata: next_account_info(accounts_iter)?,
             to: next_account_info(accounts_iter)?,
@@ -138,7 +133,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         )?;
 
         // Check signers
-        check_signer(accounts.fee_payer, AccessError::BondSellerMustSign)?;
         check_signer(accounts.from, AccessError::BondSellerMustSign)?;
 
         Ok(accounts)
