@@ -1,4 +1,4 @@
-import BN from "bn.js";
+import * as BN from 'bn.js'
 
 /**
  * 64-bit value
