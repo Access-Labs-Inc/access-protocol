@@ -46,7 +46,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         let accounts = Accounts {
             stake_pool: next_account_info(accounts_iter)?,
             stake_pool_owner: next_account_info(accounts_iter)?,
-                                    central_state: next_account_info(accounts_iter)?,
+            central_state: next_account_info(accounts_iter)?,
         };
 
         // Check keys
