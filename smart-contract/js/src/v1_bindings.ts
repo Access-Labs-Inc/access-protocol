@@ -50,17 +50,6 @@ export const claimBond = async (
     tokenMint = (await CentralStateV2.retrieve(connection, centralStateKey)).tokenMint;
   }
 
-  console.log('bondAccount', bondAccount.toBase58());
-  const bondAccountOwner = await connection.getAccountInfo(bondAccount);
-  console.log('bondAccountOwner', bondAccountOwner.owner.toBase58());
-  console.log('stakePool', bond.stakePool.toBase58());
-  const stakePoolOwner = await connection.getAccountInfo(bond.stakePool);
-  console.log('stakePoolOwner', stakePoolOwner.owner.toBase58());
-  console.log('centralStateKey', centralStateKey.toBase58());
-  const centralStateOwner = await connection.getAccountInfo(centralStateKey);
-  console.log('centralStateOwner', centralStateOwner.owner.toBase58());
-
-
   return new claimBondInstruction().getInstruction(
     programId,
     bondAccount,
@@ -166,14 +155,14 @@ export const createBond = async (
 
   return new createBondInstruction({
     buyer: buyer.toBuffer(),
-    totalAmountSold: new BN(totalAmountSold),
-    totalQuoteAmount: new BN(totalQuoteAmount),
+    totalAmountSold: new BN.BN(totalAmountSold),
+    totalQuoteAmount: new BN.BN(totalQuoteAmount),
     quoteMint: quoteMint.toBuffer(),
     sellerTokenAccount: sellerTokenAccount.toBuffer(),
-    unlockStartDate: new BN(unlockStartDate),
-    unlockPeriod: new BN(unlockPeriod),
-    unlockAmount: new BN(unlockAmount),
-    sellerIndex: new BN(sellerIndex),
+    unlockStartDate: new BN.BN(unlockStartDate),
+    unlockPeriod: new BN.BN(unlockPeriod),
+    unlockAmount: new BN.BN(unlockAmount),
+    sellerIndex: new BN.BN(sellerIndex),
   }).getInstruction(
     programId,
     seller,
@@ -202,7 +191,7 @@ export const signBond = async (
 ) => {
   const [centralStateKey] = CentralStateV2.getKey(programId);
   return new signBondInstruction({
-    sellerIndex: new BN(sellerIndex),
+    sellerIndex: new BN.BN(sellerIndex),
   }).getInstruction(programId, seller, bondAccount, centralStateKey);
 };
 
@@ -226,7 +215,7 @@ export const adminMint = async (
   const centralState = await CentralStateV2.retrieve(connection, centralKey);
 
   return new adminMintInstruction({
-    amount: new BN(amount),
+    amount: new BN.BN(amount),
   }).getInstruction(
     programId,
     centralState.authority,
