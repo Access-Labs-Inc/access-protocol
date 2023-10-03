@@ -15,3 +15,5 @@ tokio = "1.14.1"
 dotenv = "0.15.0"
 lazy_static = "1.4.0"
 borsh = "0.9.1"
+spl-associated-token-account = {version = "1.0.5", features = ["no-entrypoint"]}
+spl-token = {version="3.3.0", features= ["no-entrypoint"]}
