@@ -578,7 +578,7 @@ export class createBondV2Instruction implements TaggedInstruction {
     from: PublicKey,
     fromAta: PublicKey,
     to: PublicKey,
-    bondAccountV2: PublicKey,
+    bondV2Account: PublicKey,
     centralState: PublicKey,
     centralStateVault: PublicKey,
     pool: PublicKey,
@@ -610,7 +610,7 @@ export class createBondV2Instruction implements TaggedInstruction {
       isWritable: false,
     });
     keys.push({
-      pubkey: bondAccountV2,
+      pubkey: bondV2Account,
       isSigner: false,
       isWritable: true,
     });
@@ -1174,7 +1174,7 @@ export class claimBondV2RewardsInstruction implements TaggedInstruction {
   getInstruction(
     programId: PublicKey,
     pool: PublicKey,
-    bondAccountV2: PublicKey,
+    bondV2Account: PublicKey,
     owner: PublicKey,
     rewardsDestination: PublicKey,
     centralState: PublicKey,
@@ -1189,7 +1189,7 @@ export class claimBondV2RewardsInstruction implements TaggedInstruction {
       isWritable: true,
     });
     keys.push({
-      pubkey: bondAccountV2,
+      pubkey: bondV2Account,
       isSigner: false,
       isWritable: true,
     });
@@ -1387,7 +1387,6 @@ export class crankInstruction implements TaggedInstruction {
 export class addToBondV2Instruction implements TaggedInstruction {
   tag: number;
   amount: BN;
-  unlockTimestamp: BN | null;
   static schema: Schema = new Map([
     [
       addToBondV2Instruction,
@@ -1396,7 +1395,6 @@ export class addToBondV2Instruction implements TaggedInstruction {
         fields: [
           ["tag", "u8"],
           ["amount", "u64"],
-          ["unlockTimestamp", { kind: "option", type: "u64" }],
         ],
       },
     ],
@@ -1404,11 +1402,9 @@ export class addToBondV2Instruction implements TaggedInstruction {
 
   constructor(obj: {
     amount: BN;
-    unlockTimestamp: BN | null;
   }) {
     this.tag = 24;
     this.amount = obj.amount;
-    this.unlockTimestamp = obj.unlockTimestamp;
   }
 
   serialize(): Uint8Array {
@@ -1417,11 +1413,10 @@ export class addToBondV2Instruction implements TaggedInstruction {
 
   getInstruction(
     programId: PublicKey,
-    feePayer: PublicKey,
     from: PublicKey,
     fromAta: PublicKey,
     to: PublicKey,
-    bondAccountV2: PublicKey,
+    bondV2Account: PublicKey,
     centralState: PublicKey,
     centralStateVault: PublicKey,
     pool: PublicKey,
@@ -1432,11 +1427,6 @@ export class addToBondV2Instruction implements TaggedInstruction {
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
-    keys.push({
-      pubkey: feePayer,
-      isSigner: true,
-      isWritable: true,
-    });
     keys.push({
       pubkey: from,
       isSigner: true,
@@ -1453,7 +1443,7 @@ export class addToBondV2Instruction implements TaggedInstruction {
       isWritable: false,
     });
     keys.push({
-      pubkey: bondAccountV2,
+      pubkey: bondV2Account,
       isSigner: false,
       isWritable: true,
     });

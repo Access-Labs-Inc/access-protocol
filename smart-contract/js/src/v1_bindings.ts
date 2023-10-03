@@ -11,7 +11,7 @@ import {
   closeStakePoolInstruction,
   createBondInstruction,
   signBondInstruction,
-} from "./raw_instructions.js";
+} from "./raw_instructions";
 import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
 import {
   ACCESS_MINT,
@@ -20,8 +20,8 @@ import {
   CentralStateV2,
   StakeAccount,
   StakePool
-} from "./state.js";
-import BN from "bn.js";
+} from "./state";
+import * as BN from 'bn.js';
 import { TOKEN_PROGRAM_ID, } from "@solana/spl-token";
 
 
@@ -32,7 +32,8 @@ import { TOKEN_PROGRAM_ID, } from "@solana/spl-token";
  * @param buyer The key of the bond buyer
  * @param quoteTokenSource The token account used to purchase the bond
  * @param programId The ACCESS program ID
- * @returns
+ * @returns ix The claim bond instruction
+ * @deprecated This function is deprecated in the v2 smart contract
  */
 export const claimBond = async (
   connection: Connection,
@@ -48,6 +49,17 @@ export const claimBond = async (
   if (programId !== ACCESS_PROGRAM_ID) {
     tokenMint = (await CentralStateV2.retrieve(connection, centralStateKey)).tokenMint;
   }
+
+  console.log('bondAccount', bondAccount.toBase58());
+  const bondAccountOwner = await connection.getAccountInfo(bondAccount);
+  console.log('bondAccountOwner', bondAccountOwner.owner.toBase58());
+  console.log('stakePool', bond.stakePool.toBase58());
+  const stakePoolOwner = await connection.getAccountInfo(bond.stakePool);
+  console.log('stakePoolOwner', stakePoolOwner.owner.toBase58());
+  console.log('centralStateKey', centralStateKey.toBase58());
+  const centralStateOwner = await connection.getAccountInfo(centralStateKey);
+  console.log('centralStateOwner', centralStateOwner.owner.toBase58());
+
 
   return new claimBondInstruction().getInstruction(
     programId,
@@ -69,7 +81,8 @@ export const claimBond = async (
  * @param connection The Solana RPC connection
  * @param stakeAccount The key of the stake account
  * @param programId The ACCESS program ID
- * @returns
+ * @returns ix The close stake account instruction
+ * @deprecated This function is deprecated in the v2 smart contract
  */
 export const closeStakeAccount = async (
   connection: Connection,
@@ -92,7 +105,8 @@ export const closeStakeAccount = async (
  * @param connection The Solana RPC connection
  * @param stakePoolAccount The key of the stake pool
  * @param programId The ACCESS program ID
- * @returns
+ * @returns ix The close stake pool instruction
+ * @deprecated This function is deprecated in the v2 smart contract
  */
 export const closeStakePool = async (
   connection: Connection,
@@ -126,7 +140,8 @@ export const closeStakePool = async (
  * @param stakePool The stake pool key
  * @param sellerIndex The seller index in the array of authorized sellers
  * @param programId The ACCESS program ID
- * @returns
+ * @returns ix The create bond instruction
+ * @deprecated This function is deprecated in the v2 smart contract
  */
 export const createBond = async (
   seller: PublicKey,
@@ -176,7 +191,8 @@ export const createBond = async (
  * @param seller The seller key
  * @param bondAccount The bond account key
  * @param programId The ACCESS program ID
- * @returns
+ * @returns ix The sign bond instruction
+ * @deprecated This function is deprecated in the v2 smart contract
  */
 export const signBond = async (
   sellerIndex: number,
@@ -198,6 +214,7 @@ export const signBond = async (
  * @param destinationToken The token account receiving the ACCESS tokens
  * @param programId The ACCESS program ID
  * @returns ix The mint instruction
+ * @deprecated This function is deprecated in the v2 smart contract
  */
 export const adminMint = async (
   connection: Connection,
@@ -226,6 +243,7 @@ export const adminMint = async (
  * @param accountToFreeze The account to freeze
  * @param programId The ACCESS program ID
  * @returns
+ * @deprecated This function is deprecated in the v2 smart contract
  */
 export const adminFreeze = async (
   connection: Connection,

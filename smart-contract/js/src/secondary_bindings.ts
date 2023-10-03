@@ -1,6 +1,6 @@
 import { Connection, PublicKey, MemcmpFilter } from "@solana/web3.js";
-import { StakeAccount, BondAccount, StakePool } from "./state.js";
-import BN from "bn.js";
+import { StakeAccount, BondAccount, StakePool } from "./state";
+import * as BN from "bn.js";
 
 /**
  * This function can be used to find all stake accounts of a user

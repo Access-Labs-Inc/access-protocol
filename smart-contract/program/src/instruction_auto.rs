@@ -1,8 +1,3 @@
-use bonfida_utils::{BorshSize, InstructionsAccount};
-use borsh::{BorshDeserialize, BorshSerialize};
-use num_derive::FromPrimitive;
-use solana_program::{instruction::Instruction, pubkey::Pubkey};
-
 pub use crate::processor::{
     activate_stake_pool, add_to_bond_v2, admin_freeze, admin_mint, admin_program_freeze,
     admin_renounce, admin_set_protocol_fee, admin_setup_fee_split, change_central_state_authority,
@@ -12,12 +7,15 @@ pub use crate::processor::{
     create_stake_account, create_stake_pool, distribute_fees, edit_metadata,
     migrate_central_state_v2, sign_bond, stake, unlock_bond_tokens, unlock_bond_v2, unstake,
 };
-
+use bonfida_utils::{BorshSize, InstructionsAccount};
+use borsh::{BorshDeserialize, BorshSerialize};
+use num_derive::FromPrimitive;
+use solana_program::{instruction::Instruction, pubkey::Pubkey};
 #[allow(missing_docs)]
 #[derive(BorshDeserialize, BorshSerialize, BorshSize, FromPrimitive, Copy, Clone)]
 pub enum ProgramInstruction {
     /// Create central state
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                  |
     /// | -------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The central state account    |
@@ -26,7 +24,7 @@ pub enum ProgramInstruction {
     /// | 3     | ❌        | ❌      | The mint of the ACCESS token |
     CreateCentralState,
     /// Create stake pool
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                  |
     /// | -------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake pool account       |
@@ -36,14 +34,14 @@ pub enum ProgramInstruction {
     /// | 4     | ❌        | ❌      | The central state account    |
     CreateStakePool,
     /// Activate a stake pool
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                |
     /// | ------------------------------------------------------ |
     /// | 0     | ✅        | ❌      | The stake pool to activate |
     /// | 1     | ❌        | ❌      | The central state account  |
     ActivateStakePool,
     /// Create stake account
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                |
     /// | ------------------------------------------------------ |
     /// | 0     | ✅        | ❌      | The stake account          |
@@ -53,7 +51,7 @@ pub enum ProgramInstruction {
     /// | 4     | ❌        | ❌      | The central state account  |
     CreateStakeAccount,
     /// Stake
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                            |
     /// | ------------------------------------------------------------------ |
     /// | 0     | ✅        | ❌      | The central state account              |
@@ -66,7 +64,7 @@ pub enum ProgramInstruction {
     /// | 7     | ✅        | ❌      | The central state ATA                  |
     Stake,
     /// Unstake
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The central state account            |
@@ -79,7 +77,7 @@ pub enum ProgramInstruction {
     Unstake,
     /// Claim rewards of a stake pool
     /// This instruction is used by stake pool owner for claiming their staking rewards
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake pool account               |
@@ -91,7 +89,7 @@ pub enum ProgramInstruction {
     ClaimPoolRewards,
     /// Claim rewards of a stake account
     /// This instruction can be used by stakers to claim their staking rewards
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                       |
     /// | ------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake pool account            |
@@ -104,7 +102,7 @@ pub enum ProgramInstruction {
     ClaimRewards,
     /// Permissionless crank to update the stake pool rewards
     /// This instructions updates the circular buffer with the pool balances multiplied by the current inflation
-    ///
+    /// 
     /// | Index | Writable | Signer | Description               |
     /// | ----------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake pool account    |
@@ -112,7 +110,7 @@ pub enum ProgramInstruction {
     Crank,
     /// Close a stake pool
     /// This instruction can be used to close an empty stake pool and collect the lamports
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                   |
     /// | --------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The account of the stake pool |
@@ -122,7 +120,7 @@ pub enum ProgramInstruction {
     CloseStakePool,
     /// Close a stake account
     /// This instruction can be used to close an empty stake account and collect the lamports
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                    |
     /// | ---------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake account              |
@@ -130,7 +128,7 @@ pub enum ProgramInstruction {
     /// | 2     | ❌        | ❌      | The central state account      |
     CloseStakeAccount,
     /// Change central state inflation
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The central state account            |
@@ -139,7 +137,7 @@ pub enum ProgramInstruction {
     ChangeInflation,
     /// Create a bond
     /// This instruction can be used by authorized sellers to create a bond
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                |
     /// | ------------------------------------------------------ |
     /// | 0     | ✅        | ✅      | The bond seller account    |
@@ -151,7 +149,7 @@ pub enum ProgramInstruction {
     CreateBond,
     /// Sign a bond
     /// This instruction is used by authorized sellers to approve the creation of a bond
-    ///
+    /// 
     /// | Index | Writable | Signer | Description |
     /// | --------------------------------------- |
     /// | 0     | ❌        | ✅      |             |
@@ -160,7 +158,7 @@ pub enum ProgramInstruction {
     SignBond,
     /// Unlock ACCESS tokens bought through a bond account
     /// When tokens are unlocked they are withdrawn from the pool and are not considered staked anymore
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                     |
     /// | ----------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The bond account                |
@@ -174,7 +172,7 @@ pub enum ProgramInstruction {
     UnlockBondTokens,
     /// Claim bond
     /// This instruction allows a buyer to claim a bond once it has been signed by enough DAO members.
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                                      |
     /// | ---------------------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The bond account                                 |
@@ -189,7 +187,7 @@ pub enum ProgramInstruction {
     ClaimBond,
     /// Claim bond rewards
     /// This Instruction allows bond owners to claim their staking rewards
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake pool account               |
@@ -202,7 +200,7 @@ pub enum ProgramInstruction {
     ClaimBondRewards,
     /// Change the minimum stakeable amount of a pool
     /// This instruction allows a pool owner to adjust the price of its subscription for new joiners without impacting people who already subscribed
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                  |
     /// | -------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake pool account       |
@@ -210,7 +208,7 @@ pub enum ProgramInstruction {
     /// | 2     | ❌        | ❌      | The central state account    |
     ChangePoolMinimum,
     /// Allows central state authority to mint ACCESS tokens
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                   |
     /// | --------------------------------------------------------- |
     /// | 0     | ❌        | ✅      | The central state authority   |
@@ -221,14 +219,14 @@ pub enum ProgramInstruction {
     AdminMint,
     /// Freeze and unfreeze a program account
     /// This admin instruction can be dangereous 💀
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                         |
     /// | --------------------------------------------------------------- |
     /// | 0     | ❌        | ✅      | The central state authority         |
     /// | 1     | ✅        | ❌      | The account to freeze (or unfreeze) |
     /// | 2     | ❌        | ❌      | The central state account           |
     AdminFreeze,
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                  |
     /// | -------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake pool account       |
@@ -236,14 +234,14 @@ pub enum ProgramInstruction {
     /// | 2     | ❌        | ❌      | The central state account    |
     ChangePoolMultiplier,
     /// Change central state authority
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                         |
     /// | --------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The central state account           |
     /// | 1     | ❌        | ✅      | The central state account authority |
     ChangeCentralStateAuthority,
     /// Edit metadata
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                         |
     /// | --------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The central state account           |
@@ -252,7 +250,7 @@ pub enum ProgramInstruction {
     /// | 3     | ❌        | ❌      | The metadata program account        |
     EditMetadata,
     /// Create a Bond V2
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                       |
     /// | ------------------------------------------------------------- |
     /// | 0     | ✅        | ✅      | The fee account                   |
@@ -269,9 +267,10 @@ pub enum ProgramInstruction {
     /// | 11    | ❌        | ❌      | The system program account        |
     CreateBondV2,
     /// Add more tokens to an existing Bond V2
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                       |
     /// | ------------------------------------------------------------- |
+    /// | 0     | ✅        | ✅      | The fee account                   |
     /// | 1     | ✅        | ✅      | The bond seller account           |
     /// | 2     | ✅        | ❌      | From ATA                          |
     /// | 3     | ❌        | ❌      | The bond recipient wallet         |
@@ -285,7 +284,7 @@ pub enum ProgramInstruction {
     /// | 11    | ❌        | ❌      | The system program account        |
     AddToBondV2,
     /// Claim rewards of a bond V2
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                       |
     /// | ------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake pool account            |
@@ -297,7 +296,7 @@ pub enum ProgramInstruction {
     /// | 6     | ❌        | ❌      | The SPL token program account     |
     ClaimBondV2Rewards,
     /// Unlock bond v2
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The central state account            |
@@ -309,7 +308,7 @@ pub enum ProgramInstruction {
     /// | 6     | ❌        | ❌      | The SPL token program account        |
     UnlockBondV2,
     /// Setup fee split
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                 |
     /// | ------------------------------------------------------- |
     /// | 0     | ❌        | ✅      | The central state authority |
@@ -317,7 +316,7 @@ pub enum ProgramInstruction {
     /// | 2     | ❌        | ❌      | The system program account  |
     AdminSetupFeeSplit,
     /// Distribute fees to the recipients
-    ///
+    /// 
     /// | Index    | Writable | Signer | Description                                  |
     /// | --------------------------------------------------------------------------- |
     /// | 0        | ❌        | ✅      | The fee account                              |
@@ -328,14 +327,14 @@ pub enum ProgramInstruction {
     /// | 5..5 + N | ✅        | ❌      | The token accounts to distribute the fees to |
     DistributeFees,
     /// Admin set protocol fee
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                 |
     /// | ------------------------------------------------------- |
     /// | 0     | ❌        | ✅      | The central state authority |
     /// | 1     | ✅        | ❌      | The central state account   |
     AdminSetProtocolFee,
     /// Migrate the central state to the v2 format
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                |
     /// | ------------------------------------------------------ |
     /// | 0     | ✅        | ❌      | The central state account  |
@@ -343,21 +342,20 @@ pub enum ProgramInstruction {
     /// | 2     | ✅        | ✅      | The fee payer account      |
     MigrateCentralStateV2,
     /// Admin program freeze instruction.
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                         |
     /// | --------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The central state account           |
     /// | 1     | ❌        | ✅      | The central state account authority |
     AdminProgramFreeze,
     /// Admin renounce functionality
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                         |
     /// | --------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The central state account           |
     /// | 1     | ❌        | ✅      | The central state account authority |
     AdminRenounce,
 }
-
 #[allow(missing_docs)]
 pub fn create_central_state(
     program_id: Pubkey,
@@ -370,7 +368,6 @@ pub fn create_central_state(
         params,
     )
 }
-
 #[allow(missing_docs)]
 pub fn create_stake_pool(
     program_id: Pubkey,
@@ -383,7 +380,6 @@ pub fn create_stake_pool(
         params,
     )
 }
-
 #[allow(missing_docs)]
 pub fn create_stake_account(
     program_id: Pubkey,
@@ -396,7 +392,6 @@ pub fn create_stake_account(
         params,
     )
 }
-
 #[allow(missing_docs)]
 pub fn stake(
     program_id: Pubkey,
@@ -405,7 +400,6 @@ pub fn stake(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::Stake as u8, params)
 }
-
 #[allow(missing_docs)]
 pub fn unstake(
     program_id: Pubkey,
@@ -414,7 +408,6 @@ pub fn unstake(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::Unstake as u8, params)
 }
-
 #[allow(missing_docs)]
 pub fn claim_pool_rewards(
     program_id: Pubkey,
@@ -432,7 +425,6 @@ pub fn claim_pool_rewards(
     }
     ix
 }
-
 #[allow(missing_docs)]
 pub fn claim_rewards(
     program_id: Pubkey,
@@ -447,7 +439,6 @@ pub fn claim_rewards(
     }
     ix
 }
-
 #[allow(missing_docs)]
 pub fn crank(
     program_id: Pubkey,
@@ -456,7 +447,6 @@ pub fn crank(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::Crank as u8, params)
 }
-
 #[allow(missing_docs)]
 pub fn close_stake_pool(
     program_id: Pubkey,
@@ -465,7 +455,6 @@ pub fn close_stake_pool(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::CloseStakePool as u8, params)
 }
-
 #[allow(missing_docs)]
 pub fn close_stake_account(
     program_id: Pubkey,
@@ -478,7 +467,6 @@ pub fn close_stake_account(
         params,
     )
 }
-
 #[allow(missing_docs)]
 pub fn change_inflation(
     program_id: Pubkey,
@@ -491,7 +479,6 @@ pub fn change_inflation(
         params,
     )
 }
-
 #[allow(missing_docs)]
 pub fn create_bond(
     program_id: Pubkey,
@@ -500,7 +487,6 @@ pub fn create_bond(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::CreateBond as u8, params)
 }
-
 #[allow(missing_docs)]
 pub fn create_bond_v2(
     program_id: Pubkey,
@@ -509,7 +495,6 @@ pub fn create_bond_v2(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::CreateBondV2 as u8, params)
 }
-
 #[allow(missing_docs)]
 pub fn add_to_bond_v2(
     program_id: Pubkey,
@@ -518,7 +503,6 @@ pub fn add_to_bond_v2(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::AddToBondV2 as u8, params)
 }
-
 #[allow(missing_docs)]
 pub fn claim_bond_v2_rewards(
     program_id: Pubkey,
@@ -536,7 +520,6 @@ pub fn claim_bond_v2_rewards(
     }
     ix
 }
-
 #[allow(missing_docs)]
 pub fn unlock_bond_v2(
     program_id: Pubkey,
@@ -545,7 +528,6 @@ pub fn unlock_bond_v2(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::UnlockBondV2 as u8, params)
 }
-
 #[allow(missing_docs)]
 pub fn sign_bond(
     program_id: Pubkey,
@@ -554,7 +536,6 @@ pub fn sign_bond(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::SignBond as u8, params)
 }
-
 #[allow(missing_docs)]
 pub fn unlock_bond_tokens(
     program_id: Pubkey,
@@ -567,7 +548,6 @@ pub fn unlock_bond_tokens(
         params,
     )
 }
-
 #[allow(missing_docs)]
 pub fn claim_bond(
     program_id: Pubkey,
@@ -576,7 +556,6 @@ pub fn claim_bond(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::ClaimBond as u8, params)
 }
-
 #[allow(missing_docs)]
 pub fn claim_bond_rewards(
     program_id: Pubkey,
@@ -594,7 +573,6 @@ pub fn claim_bond_rewards(
     }
     ix
 }
-
 #[allow(missing_docs)]
 pub fn change_pool_minimum(
     program_id: Pubkey,
@@ -607,7 +585,6 @@ pub fn change_pool_minimum(
         params,
     )
 }
-
 #[allow(missing_docs)]
 pub fn admin_mint(
     program_id: Pubkey,
@@ -616,7 +593,6 @@ pub fn admin_mint(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::AdminMint as u8, params)
 }
-
 #[allow(missing_docs)]
 pub fn admin_freeze(
     program_id: Pubkey,
@@ -625,7 +601,6 @@ pub fn admin_freeze(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::AdminFreeze as u8, params)
 }
-
 #[allow(missing_docs)]
 pub fn activate_stake_pool(
     program_id: Pubkey,
@@ -638,7 +613,6 @@ pub fn activate_stake_pool(
         params,
     )
 }
-
 #[allow(missing_docs)]
 pub fn change_pool_multiplier(
     program_id: Pubkey,
@@ -651,7 +625,6 @@ pub fn change_pool_multiplier(
         params,
     )
 }
-
 #[allow(missing_docs)]
 pub fn change_central_state_authority(
     program_id: Pubkey,
@@ -664,7 +637,6 @@ pub fn change_central_state_authority(
         params,
     )
 }
-
 #[allow(missing_docs)]
 pub fn edit_metadata(
     program_id: Pubkey,
@@ -673,7 +645,6 @@ pub fn edit_metadata(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::EditMetadata as u8, params)
 }
-
 #[allow(missing_docs)]
 pub fn admin_setup_fee_split(
     program_id: Pubkey,
@@ -686,7 +657,6 @@ pub fn admin_setup_fee_split(
         params,
     )
 }
-
 #[allow(missing_docs)]
 pub fn distribute_fees(
     program_id: Pubkey,
@@ -695,7 +665,6 @@ pub fn distribute_fees(
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::DistributeFees as u8, params)
 }
-
 #[allow(missing_docs)]
 pub fn admin_set_protocol_fee(
     program_id: Pubkey,
@@ -708,7 +677,6 @@ pub fn admin_set_protocol_fee(
         params,
     )
 }
-
 #[allow(missing_docs)]
 pub fn migrate_central_state_v2(
     program_id: Pubkey,
@@ -721,7 +689,6 @@ pub fn migrate_central_state_v2(
         params,
     )
 }
-
 #[allow(missing_docs)]
 pub fn admin_program_freeze(
     program_id: Pubkey,
@@ -734,7 +701,6 @@ pub fn admin_program_freeze(
         params,
     )
 }
-
 #[allow(missing_docs)]
 pub fn admin_renounce(
     program_id: Pubkey,

@@ -25,7 +25,7 @@ import {
   unlockBondTokensInstruction,
   unlockBondV2Instruction,
   unstakeInstruction,
-} from "./raw_instructions.js";
+} from "./raw_instructions";
 import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
 import {
   ACCESS_MINT,
@@ -37,8 +37,8 @@ import {
   FeeRecipient,
   StakeAccount,
   StakePool
-} from "./state.js";
-import BN from "bn.js";
+} from "./state";
+import * as BN from "bn.js";
 import {
   createAssociatedTokenAccountInstruction,
   getAssociatedTokenAddressSync,
@@ -546,7 +546,7 @@ export const createBondV2 = async (
     from,
     true,
   );
-  const [bondAccountV2] = BondV2Account.getKey(programId, owner, pool, unlockTimestamp);
+  const [bondV2Account] = BondV2Account.getKey(programId, owner, pool, unlockTimestamp);
   const centralStateVault = getAssociatedTokenAddressSync(
     tokenMint,
     centralStateKey,
@@ -567,7 +567,7 @@ export const createBondV2 = async (
     from,
     fromAta,
     owner,
-    bondAccountV2,
+    bondV2Account,
     centralStateKey,
     centralStateVault,
     pool,
@@ -582,7 +582,6 @@ export const createBondV2 = async (
  * This function can be used to add tokens to a V2 bond
  * @param connection The Solana RPC connection
  * @param owner The owner of the bond
- * @param feePayer The fee payer of the transaction
  * @param from The owner of the tokens being bonded
  * @param pool The pool to which the tokens are being bonded
  * @param amount The amount of tokens being bonded
@@ -593,7 +592,6 @@ export const createBondV2 = async (
 export const addToBondV2 = async (
   connection: Connection,
   owner: PublicKey,
-  feePayer: PublicKey,
   from: PublicKey,
   pool: PublicKey,
   amount: BN,
@@ -610,7 +608,7 @@ export const addToBondV2 = async (
     from,
     true,
   );
-  const [bondAccountV2] = BondV2Account.getKey(programId, owner, pool, unlockTimestamp);
+  const [bondV2Account] = BondV2Account.getKey(programId, owner, pool, unlockTimestamp);
   const centralStateVault = getAssociatedTokenAddressSync(
     tokenMint,
     centralStateKey,
@@ -624,14 +622,12 @@ export const addToBondV2 = async (
 
   return new addToBondV2Instruction({
     amount,
-    unlockTimestamp,
   }).getInstruction(
     programId,
-    feePayer,
     from,
     fromAta,
     owner,
-    bondAccountV2,
+    bondV2Account,
     centralStateKey,
     centralStateVault,
     pool,

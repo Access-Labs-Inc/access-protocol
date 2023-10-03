@@ -18,7 +18,7 @@ use spl_token::state::Account;
 
 use crate::error::AccessError;
 use crate::instruction::ProgramInstruction::AddToBondV2;
-use crate::state::{BondAccountV2, CentralStateV2, StakePool};
+use crate::state::{BondV2Account, CentralStateV2, StakePool};
 use crate::state::Tag;
 use crate::utils::{assert_valid_fee, check_account_key, check_account_owner, check_signer};
 
@@ -27,17 +27,11 @@ use crate::utils::{assert_valid_fee, check_account_key, check_account_owner, che
 pub struct Params {
     /// Total amount of ACCESS tokens being sold
     pub amount: u64,
-    /// The timestamp of the unlock, if any - needed to derive the bond key
-    pub unlock_timestamp: Option<i64>,
 }
 
 #[derive(InstructionsAccount)]
 /// The required accounts for the `add_to_bond_v2` instruction
 pub struct Accounts<'a, T> {
-    /// The fee account
-    #[cons(writable, signer)]
-    pub fee_payer: &'a T,
-
     /// The bond seller account
     #[cons(writable, signer)]
     pub from: &'a T,
@@ -51,7 +45,7 @@ pub struct Accounts<'a, T> {
 
     /// The bond account
     #[cons(writable)]
-    pub bond_account_v2: &'a T,
+    pub bond_v2_account: &'a T,
 
     /// Central state
     #[cons(writable)]
@@ -87,11 +81,10 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     ) -> Result<Self, ProgramError> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
-            fee_payer: next_account_info(accounts_iter)?,
             from: next_account_info(accounts_iter)?,
             from_ata: next_account_info(accounts_iter)?,
             to: next_account_info(accounts_iter)?,
-            bond_account_v2: next_account_info(accounts_iter)?,
+            bond_v2_account: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
             central_state_vault: next_account_info(accounts_iter)?,
             pool: next_account_info(accounts_iter)?,
@@ -117,7 +110,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
         check_account_owner(accounts.central_state_vault, &spl_token::ID, AccessError::WrongOwner)?;
         check_account_owner(
-            accounts.bond_account_v2,
+            accounts.bond_v2_account,
             program_id,
             AccessError::WrongStakeAccountOwner,
         )?;
@@ -138,7 +131,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         )?;
 
         // Check signers
-        check_signer(accounts.fee_payer, AccessError::BondSellerMustSign)?;
         check_signer(accounts.from, AccessError::BondSellerMustSign)?;
 
         Ok(accounts)
@@ -152,12 +144,11 @@ pub fn process_add_to_bond_v2(
 ) -> ProgramResult {
     let Params {
         amount,
-        unlock_timestamp,
     } = params;
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let mut pool = StakePool::get_checked(accounts.pool, vec![Tag::StakePool])?;
-    let mut bond = BondAccountV2::from_account_info(accounts.bond_account_v2)?;
+    let mut bond = BondV2Account::from_account_info(accounts.bond_v2_account)?;
     let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
     central_state.assert_instruction_allowed(&AddToBondV2)?;
     assert_valid_fee(accounts.central_state_vault, accounts.central_state.key)?;
@@ -182,12 +173,6 @@ pub fn process_add_to_bond_v2(
         &central_state.token_mint,
         AccessError::WrongMint,
     )?;
-
-    let current_time = Clock::get()?.unix_timestamp;
-    if unlock_timestamp.is_some() && current_time > unlock_timestamp.unwrap() {
-        msg!("Cannot create a bond with an unlock timestamp in the past");
-        return Err(ProgramError::InvalidArgument);
-    }
 
     let from_ata = Account::unpack(&accounts.from_ata.data.borrow())?;
     if from_ata.mint != central_state.token_mint {
@@ -222,7 +207,7 @@ pub fn process_add_to_bond_v2(
     }
 
     // Transfer the tokens to pool vault (or burn for forever bonds)
-    if unlock_timestamp.is_some() {
+    if bond.unlock_timestamp.is_some() {
         let transfer_instruction = transfer(
             &spl_token::ID,
             accounts.from_ata.key,
@@ -286,7 +271,7 @@ pub fn process_add_to_bond_v2(
         .amount
         .checked_add(amount)
         .ok_or(AccessError::Overflow)?;
-    bond.save(&mut accounts.bond_account_v2.data.borrow_mut())?;
+    bond.save(&mut accounts.bond_v2_account.data.borrow_mut())?;
     pool.header.deposit(amount)?;
     central_state.total_staked = central_state
         .total_staked

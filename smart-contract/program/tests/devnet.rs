@@ -6,7 +6,7 @@ use solana_client::client_error::ClientError;
 use solana_client::rpc_client::RpcClient;
 use solana_program::pubkey::Pubkey;
 use solana_program::system_program;
-use solana_program_test::read_file;
+
 use solana_sdk::signature::{Keypair, read_keypair_file, Signature, Signer};
 use solana_sdk::transaction::Transaction;
 use spl_associated_token_account::get_associated_token_address;
@@ -47,6 +47,9 @@ fn devnet() {
     println!("account data len: {}", acc.data.len());
     println!("account owner: {}", acc.owner);
     let account = CentralStateV2::deserialize(&mut &acc.data[..]).unwrap();
+    account.recipients.iter().for_each(|r| {
+        println!("{}: {}", r.owner, r.percentage);
+    });
     println!("account: {:?}", account);
 
     // not checking the result here as it will fail if the account already exists
@@ -141,7 +144,7 @@ fn devnet() {
         );
         println!("Stake result: {:?}", result);
     }
-
+    return;
     // ------------------------------------
     // DISTRIBUTE FEES
     // ------------------------------------
@@ -162,39 +165,39 @@ fn devnet() {
                 percentage: 30,
             },
             access_protocol::state::FeeRecipient {
-                owner: Pubkey::new_unique(),
+                owner: Keypair::new().pubkey(),
+                percentage: 3
+            },
+            access_protocol::state::FeeRecipient {
+                owner: Keypair::new().pubkey(),
                 percentage: 2
             },
             access_protocol::state::FeeRecipient {
-                owner: Pubkey::new_unique(),
+                owner: Keypair::new().pubkey(),
                 percentage: 2
             },
             access_protocol::state::FeeRecipient {
-                owner: Pubkey::new_unique(),
+                owner: Keypair::new().pubkey(),
                 percentage: 2
             },
             access_protocol::state::FeeRecipient {
-                owner: Pubkey::new_unique(),
+                owner: Keypair::new().pubkey(),
                 percentage: 2
             },
             access_protocol::state::FeeRecipient {
-                owner: Pubkey::new_unique(),
+                owner: Keypair::new().pubkey(),
                 percentage: 2
             },
             access_protocol::state::FeeRecipient {
-                owner: Pubkey::new_unique(),
+                owner: Keypair::new().pubkey(),
                 percentage: 2
             },
             access_protocol::state::FeeRecipient {
-                owner: Pubkey::new_unique(),
+                owner: Keypair::new().pubkey(),
                 percentage: 2
             },
             access_protocol::state::FeeRecipient {
-                owner: Pubkey::new_unique(),
-                percentage: 2
-            },
-            access_protocol::state::FeeRecipient {
-                owner: Pubkey::new_unique(),
+                owner: Keypair::new().pubkey(),
                 percentage: 2
             },
         ]);
