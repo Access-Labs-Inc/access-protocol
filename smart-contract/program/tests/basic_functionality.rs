@@ -1,4 +1,4 @@
-use solana_sdk::signer::Signer;
+
 use solana_test_framework::*;
 
 use crate::common::test_runner::{INITIAL_SUPPLY, TestRunner};

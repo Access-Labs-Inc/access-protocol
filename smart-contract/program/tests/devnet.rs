@@ -6,7 +6,7 @@ use solana_client::client_error::ClientError;
 use solana_client::rpc_client::RpcClient;
 use solana_program::pubkey::Pubkey;
 use solana_program::system_program;
-use solana_program_test::read_file;
+
 use solana_sdk::signature::{Keypair, read_keypair_file, Signature, Signer};
 use solana_sdk::transaction::Transaction;
 use spl_associated_token_account::get_associated_token_address;

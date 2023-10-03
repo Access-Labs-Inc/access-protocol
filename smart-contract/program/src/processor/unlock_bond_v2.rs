@@ -22,7 +22,7 @@ use spl_token::state::Account;
 
 use crate::error::AccessError;
 use crate::instruction::ProgramInstruction::UnlockBondV2;
-use crate::state::{BondAccountV2, StakePool, StakePoolHeader};
+use crate::state::{BondV2Account, StakePool, StakePoolHeader};
 use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -125,7 +125,7 @@ pub fn process_unlock_bond_v2(
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let mut stake_pool = StakePool::get_checked(accounts.pool, vec![Tag::StakePool])?;
-    let mut bond_v2_account = BondAccountV2::from_account_info(accounts.bond_v2_account)?;
+    let mut bond_v2_account = BondV2Account::from_account_info(accounts.bond_v2_account)?;
     let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
     central_state.assert_instruction_allowed(&UnlockBondV2)?;
 

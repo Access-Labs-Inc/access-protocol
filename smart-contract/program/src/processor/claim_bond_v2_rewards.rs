@@ -1,6 +1,6 @@
 //! Claim rewards of a bond V2
 use crate::error::AccessError;
-use crate::state::BondAccountV2;
+use crate::state::BondV2Account;
 use crate::state::{StakePool, Tag};
 use crate::utils::{
     assert_no_close_or_delegate, calc_reward_fp32, check_account_key, check_account_owner,
@@ -35,7 +35,7 @@ pub struct Accounts<'a, T> {
 
     /// The Bond V2 account
     #[cons(writable)]
-    pub bond_account_v2: &'a T,
+    pub bond_v2_account: &'a T,
 
     /// The owner of the Bond V2 account
     #[cons(signer)]
@@ -64,7 +64,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
             pool: next_account_info(accounts_iter)?,
-            bond_account_v2: next_account_info(accounts_iter)?,
+            bond_v2_account: next_account_info(accounts_iter)?,
             owner: next_account_info(accounts_iter)?,
             rewards_destination: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
@@ -86,7 +86,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             AccessError::WrongStakePoolAccountOwner,
         )?;
         check_account_owner(
-            accounts.bond_account_v2,
+            accounts.bond_v2_account,
             program_id,
             AccessError::WrongBondAccountOwner,
         )?;
@@ -112,7 +112,7 @@ pub fn process_claim_bond_v2_rewards(
     let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
     central_state.assert_instruction_allowed(&ClaimBondV2Rewards)?;
     let stake_pool = StakePool::get_checked(accounts.pool, vec![Tag::StakePool])?;
-    let mut bond_v2_account = BondAccountV2::from_account_info(accounts.bond_account_v2)?;
+    let mut bond_v2_account = BondV2Account::from_account_info(accounts.bond_v2_account)?;
 
     let destination_token_acc = Account::unpack(&accounts.rewards_destination.data.borrow())?;
     msg!("Account owner: {}", destination_token_acc.owner);
@@ -182,7 +182,7 @@ pub fn process_claim_bond_v2_rewards(
 
     // Update states
     bond_v2_account.last_claimed_offset = central_state.last_snapshot_offset;
-    bond_v2_account.save(&mut accounts.bond_account_v2.data.borrow_mut())?;
+    bond_v2_account.save(&mut accounts.bond_v2_account.data.borrow_mut())?;
 
     Ok(())
 }

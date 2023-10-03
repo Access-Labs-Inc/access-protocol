@@ -1,7 +1,7 @@
 use solana_program::clock::SECONDS_PER_DAY;
 use solana_sdk::signer::Signer;
 
-use access_protocol::state::Tag::BondAccountV2;
+use access_protocol::state::Tag::BondV2Account;
 
 use crate::common::test_runner::TestRunner;
 
@@ -84,7 +84,7 @@ async fn v2_bonds() {
             )
             .await
             .unwrap();
-        assert_eq!(bond.tag, BondAccountV2);
+        assert_eq!(bond.tag, BondV2Account);
         assert_eq!(bond.unlock_timestamp, Some(unlock_date));
         assert_eq!(bond.pool, tr.get_pool_pda(&pool_owner.pubkey()));
         assert_eq!(bond.amount, bond_amount);
@@ -122,7 +122,7 @@ async fn v2_bonds() {
             )
             .await
             .unwrap();
-        assert_eq!(bond.tag, BondAccountV2);
+        assert_eq!(bond.tag, BondV2Account);
         assert_eq!(bond.unlock_timestamp, Some(unlock_date));
         assert_eq!(bond.pool, tr.get_pool_pda(&pool_owner.pubkey()));
         assert_eq!(bond.amount, (bond_amount + add_amount));
@@ -193,7 +193,7 @@ async fn v2_bonds() {
             )
             .await
             .unwrap();
-        assert_eq!(bond.tag, BondAccountV2);
+        assert_eq!(bond.tag, BondV2Account);
         assert_eq!(bond.unlock_timestamp, Some(unlock_date));
         assert_eq!(bond.pool, tr.get_pool_pda(&pool_owner.pubkey()));
         assert_eq!(bond.amount, 0);
@@ -256,7 +256,7 @@ async fn v2_bonds() {
             .bond_v2_stats(bond_recipient.pubkey(), pool_owner.pubkey(), None)
             .await
             .unwrap();
-        assert_eq!(bond.tag, BondAccountV2);
+        assert_eq!(bond.tag, BondV2Account);
         assert_eq!(bond.unlock_timestamp, None);
         assert_eq!(bond.pool, tr.get_pool_pda(&pool_owner.pubkey()));
         assert_eq!(bond.amount, bond_amount);
@@ -290,7 +290,7 @@ async fn v2_bonds() {
             .bond_v2_stats(bond_recipient.pubkey(), pool_owner.pubkey(), None)
             .await
             .unwrap();
-        assert_eq!(bond.tag, BondAccountV2);
+        assert_eq!(bond.tag, BondV2Account);
         assert_eq!(bond.unlock_timestamp, None);
         assert_eq!(bond.pool, tr.get_pool_pda(&pool_owner.pubkey()));
         assert_eq!(bond.amount, (bond_amount + add_amount));

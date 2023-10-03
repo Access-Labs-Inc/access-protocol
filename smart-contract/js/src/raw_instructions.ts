@@ -578,7 +578,7 @@ export class createBondV2Instruction implements TaggedInstruction {
     from: PublicKey,
     fromAta: PublicKey,
     to: PublicKey,
-    bondAccountV2: PublicKey,
+    bondV2Account: PublicKey,
     centralState: PublicKey,
     centralStateVault: PublicKey,
     pool: PublicKey,
@@ -610,7 +610,7 @@ export class createBondV2Instruction implements TaggedInstruction {
       isWritable: false,
     });
     keys.push({
-      pubkey: bondAccountV2,
+      pubkey: bondV2Account,
       isSigner: false,
       isWritable: true,
     });
@@ -1174,7 +1174,7 @@ export class claimBondV2RewardsInstruction implements TaggedInstruction {
   getInstruction(
     programId: PublicKey,
     pool: PublicKey,
-    bondAccountV2: PublicKey,
+    bondV2Account: PublicKey,
     owner: PublicKey,
     rewardsDestination: PublicKey,
     centralState: PublicKey,
@@ -1189,7 +1189,7 @@ export class claimBondV2RewardsInstruction implements TaggedInstruction {
       isWritable: true,
     });
     keys.push({
-      pubkey: bondAccountV2,
+      pubkey: bondV2Account,
       isSigner: false,
       isWritable: true,
     });
@@ -1420,7 +1420,7 @@ export class addToBondV2Instruction implements TaggedInstruction {
     from: PublicKey,
     fromAta: PublicKey,
     to: PublicKey,
-    bondAccountV2: PublicKey,
+    bondV2Account: PublicKey,
     centralState: PublicKey,
     centralStateVault: PublicKey,
     pool: PublicKey,
@@ -1447,7 +1447,7 @@ export class addToBondV2Instruction implements TaggedInstruction {
       isWritable: false,
     });
     keys.push({
-      pubkey: bondAccountV2,
+      pubkey: bondV2Account,
       isSigner: false,
       isWritable: true,
     });

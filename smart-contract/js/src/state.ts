@@ -39,7 +39,7 @@ export enum Tag {
   FrozenStakeAccount = 9,
   FrozenBondAccount = 10,
   // V2 tags
-  BondAccountV2 = 11,
+  BondV2Account = 11,
   CentralStateV2 = 12,
 }
 
@@ -679,7 +679,7 @@ export class BondV2Account {
   ) {
     return PublicKey.findProgramAddressSync(
       [
-        Buffer.from("bond_account_v2"),
+        Buffer.from("bond_v2_account"),
         owner.toBuffer(),
         stakePool.toBuffer(),
         (unlockTimestamp ? unlockTimestamp : new BN(0)).toBuffer()], // todo check if new BN(0) is right for the forever bonds

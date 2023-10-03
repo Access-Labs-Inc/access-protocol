@@ -77,7 +77,7 @@ pub enum Tag {
     FrozenStakeAccount,
     FrozenBondAccount,
     // V2 tags
-    BondAccountV2,
+    BondV2Account,
     CentralStateV2,
 }
 
@@ -775,7 +775,7 @@ impl BondAccount {
 
 #[derive(BorshSerialize, BorshDeserialize, BorshSize)]
 #[allow(missing_docs)]
-pub struct BondAccountV2 {
+pub struct BondV2Account {
     /// Tag
     pub tag: Tag,
 
@@ -799,8 +799,8 @@ pub struct BondAccountV2 {
 }
 
 #[allow(missing_docs)]
-impl BondAccountV2 {
-    pub const SEED: &'static [u8; 15] = b"bond_account_v2";
+impl BondV2Account {
+    pub const SEED: &'static [u8; 15] = b"bond_v2_account";
 
     pub fn create_key(
         owner: &Pubkey,
@@ -809,7 +809,7 @@ impl BondAccountV2 {
         program_id: &Pubkey,
     ) -> (Pubkey, u8) {
         let seeds: &[&[u8]] = &[
-            BondAccountV2::SEED,
+            BondV2Account::SEED,
             &owner.to_bytes(),
             &pool.to_bytes(),
             &unlock_timestamp.unwrap_or(0).to_le_bytes(),
@@ -827,7 +827,7 @@ impl BondAccountV2 {
         current_offset: u64,
     ) -> Self {
         Self {
-            tag: Tag::BondAccountV2,
+            tag: Tag::BondV2Account,
             owner,
             amount,
             pool,
@@ -842,13 +842,13 @@ impl BondAccountV2 {
             .map_err(|_| ProgramError::InvalidAccountData)
     }
 
-    pub fn from_account_info(a: &AccountInfo) -> Result<BondAccountV2, ProgramError> {
+    pub fn from_account_info(a: &AccountInfo) -> Result<BondV2Account, ProgramError> {
         let mut data = &a.data.borrow() as &[u8];
-        let tag = Tag::BondAccountV2;
+        let tag = Tag::BondV2Account;
         if data[0] != tag as u8 && data[0] != Tag::Uninitialized as u8 {
             return Err(AccessError::DataTypeMismatch.into());
         }
-        let result = BondAccountV2::deserialize(&mut data)?;
+        let result = BondV2Account::deserialize(&mut data)?;
         Ok(result)
     }
 

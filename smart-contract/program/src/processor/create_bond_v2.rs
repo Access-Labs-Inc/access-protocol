@@ -18,7 +18,7 @@ use spl_token::state::Account;
 use crate::state:: CentralStateV2;
 
 use crate::error::AccessError;
-use crate::state::{BondAccountV2, StakePool};
+use crate::state::{BondV2Account, StakePool};
 use crate::utils::{
     assert_uninitialized, assert_valid_fee, check_account_key, check_account_owner, check_signer,
 };
@@ -136,6 +136,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         )?;
 
         // Check signers
+        check_signer(accounts.fee_payer, AccessError::MustS)?;
         check_signer(accounts.from, AccessError::BondSellerMustSign)?;
 
         Ok(accounts)
@@ -179,10 +180,10 @@ pub fn process_create_bond_v2(
     }
 
     let (derived_key, bump_seed) =
-        BondAccountV2::create_key(accounts.to.key, accounts.pool.key, unlock_timestamp, program_id);
+        BondV2Account::create_key(accounts.to.key, accounts.pool.key, unlock_timestamp, program_id);
 
     check_account_key(
-        accounts.bond_account_v2,
+        accounts.bond_v2_account,
         &derived_key,
         AccessError::AccountNotDeterministic,
     )?;
@@ -191,7 +192,7 @@ pub fn process_create_bond_v2(
         &central_state.token_mint,
         AccessError::WrongMint,
     )?;
-    assert_uninitialized(accounts.bond_account_v2)?;
+    assert_uninitialized(accounts.bond_v2_account)?;
 
     let current_time = Clock::get()?.unix_timestamp;
     if unlock_timestamp.is_some() && current_time > unlock_timestamp.unwrap() {
@@ -207,7 +208,7 @@ pub fn process_create_bond_v2(
         return Err(AccessError::WrongOwner.into());
     }
 
-    let bond = BondAccountV2::new(
+    let bond = BondV2Account::new(
         *accounts.to.key,
         *accounts.pool.key,
         pool.header.minimum_stake_amount,
@@ -218,7 +219,7 @@ pub fn process_create_bond_v2(
 
     // Create bond account
     let seeds: &[&[u8]] = &[
-        BondAccountV2::SEED,
+        BondV2Account::SEED,
         &accounts.to.key.to_bytes(),
         &accounts.pool.key.to_bytes(),
         &unlock_timestamp.unwrap_or(0).to_le_bytes(),
@@ -229,12 +230,12 @@ pub fn process_create_bond_v2(
         program_id,
         accounts.system_program,
         accounts.fee_payer,
-        accounts.bond_account_v2,
+        accounts.bond_v2_account,
         seeds,
         bond.borsh_len(),
     )?;
 
-    bond.save(&mut accounts.bond_account_v2.data.borrow_mut())?;
+    bond.save(&mut accounts.bond_v2_account.data.borrow_mut())?;
 
     // Transfer the tokens to pool vault (or burn for forever bonds)
     if unlock_timestamp.is_some() {
