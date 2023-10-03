@@ -54,7 +54,7 @@ pub struct Accounts<'a, T> {
 
     /// The bond account
     #[cons(writable)]
-    pub bond_account_v2: &'a T,
+    pub bond_v2_account: &'a T,
 
     /// Central state
     #[cons(writable)]
@@ -94,7 +94,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             from: next_account_info(accounts_iter)?,
             from_ata: next_account_info(accounts_iter)?,
             to: next_account_info(accounts_iter)?,
-            bond_account_v2: next_account_info(accounts_iter)?,
+            bond_v2_account: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
             central_state_vault: next_account_info(accounts_iter)?,
             pool: next_account_info(accounts_iter)?,

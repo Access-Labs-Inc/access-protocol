@@ -973,7 +973,7 @@ impl TestRunner {
                 from: &from.pubkey(),
                 from_ata: &get_associated_token_address(&from.pubkey(), &self.mint),
                 to,
-                bond_account_v2: &bond_key,
+                bond_v2_account: &bond_key,
                 central_state: &self.central_state,
                 central_state_vault: &self.central_state_vault,
                 pool: &pool_key,

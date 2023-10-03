@@ -546,7 +546,7 @@ export const createBondV2 = async (
     from,
     true,
   );
-  const [bondAccountV2] = BondV2Account.getKey(programId, owner, pool, unlockTimestamp);
+  const [bondV2Account] = BondV2Account.getKey(programId, owner, pool, unlockTimestamp);
   const centralStateVault = getAssociatedTokenAddressSync(
     tokenMint,
     centralStateKey,
@@ -567,7 +567,7 @@ export const createBondV2 = async (
     from,
     fromAta,
     owner,
-    bondAccountV2,
+    bondV2Account,
     centralStateKey,
     centralStateVault,
     pool,
@@ -608,7 +608,7 @@ export const addToBondV2 = async (
     from,
     true,
   );
-  const [bondAccountV2] = BondV2Account.getKey(programId, owner, pool, unlockTimestamp);
+  const [bondV2Account] = BondV2Account.getKey(programId, owner, pool, unlockTimestamp);
   const centralStateVault = getAssociatedTokenAddressSync(
     tokenMint,
     centralStateKey,
@@ -628,7 +628,7 @@ export const addToBondV2 = async (
     from,
     fromAta,
     owner,
-    bondAccountV2,
+    bondV2Account,
     centralStateKey,
     centralStateVault,
     pool,

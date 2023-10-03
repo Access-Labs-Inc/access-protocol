@@ -8,7 +8,8 @@
     "deploy-contract": "./deploy-contract.sh",
     "init-central-state": "./init-central-state.sh",
     "spl-set-authority": "./spl-set-authority.sh",
-    "deploy-full-devnet": "./deploy-full-devnet.sh"
+    "deploy-full-devnet": "./deploy-full-devnet.sh",
+    "temp": "ts-node temp.ts"
   },
   "author": "",
   "license": "ISC",
