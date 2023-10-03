@@ -449,7 +449,6 @@ impl TestRunner {
         let distribute_fees_ix = access_protocol::instruction::distribute_fees(
             self.program_id,
             access_protocol::instruction::distribute_fees::Accounts {
-                fee_payer: &self.prg_test_ctx.payer.pubkey(),
                 central_state: &self.central_state,
                 central_state_vault: &self.central_state_vault,
                 spl_token_program: &spl_token::ID,

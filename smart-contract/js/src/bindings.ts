@@ -765,7 +765,6 @@ export const distributeFees = async (
 
   return new distributeFeesInstruction().getInstruction(
     programId,
-    feePayer,
     centralStateKey,
     centralStateVault,
     TOKEN_PROGRAM_ID,

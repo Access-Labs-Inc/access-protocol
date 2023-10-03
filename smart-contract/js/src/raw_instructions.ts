@@ -1,5 +1,5 @@
 // This file is auto-generated. DO NOT EDIT
-import BN from "bn.js";
+import * as BN from "bn.js";
 import { Schema, serialize } from "borsh";
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { FeeRecipient, MAX_FEE_RECIPIENTS } from "./state";
@@ -892,7 +892,6 @@ export class distributeFeesInstruction implements TaggedInstruction {
 
   getInstruction(
     programId: PublicKey,
-    feePayer: PublicKey,
     centralState: PublicKey,
     centralStateVault: PublicKey,
     splTokenProgram: PublicKey,
@@ -901,11 +900,6 @@ export class distributeFeesInstruction implements TaggedInstruction {
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
-    keys.push({
-      pubkey: feePayer,
-      isSigner: true,
-      isWritable: false,
-    });
     keys.push({
       pubkey: centralState,
       isSigner: false,

@@ -16,7 +16,7 @@ use spl_token::state::Account;
 
 use crate::{
     state::MIN_DISTRIBUTE_AMOUNT,
-    utils::{assert_valid_vault, check_account_key, check_account_owner, check_signer},
+    utils::{assert_valid_vault, check_account_key, check_account_owner},
 };
 use crate::error::AccessError;
 use crate::instruction::ProgramInstruction::DistributeFees;
@@ -29,10 +29,6 @@ pub struct Params {}
 #[derive(InstructionsAccount)]
 /// The required accounts for the `distribute_fees` instruction
 pub struct Accounts<'a, T> {
-    /// The fee account
-    #[cons(signer)]
-    pub fee_payer: &'a T,
-
     /// The central state account
     #[cons(writable)]
     pub central_state: &'a T,
@@ -60,7 +56,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     ) -> Result<Self, ProgramError> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
-            fee_payer: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
             central_state_vault: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
@@ -100,7 +95,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         }
 
         // Check signer
-        check_signer(accounts.fee_payer, AccessError::StakeAccountOwnerMustSign)?;
         Ok(accounts)
     }
 }

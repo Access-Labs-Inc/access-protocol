@@ -272,17 +272,17 @@ pub enum ProgramInstruction {
     ///
     /// | Index | Writable | Signer | Description                       |
     /// | ------------------------------------------------------------- |
-    /// | 1     | ✅        | ✅      | The bond seller account           |
-    /// | 2     | ✅        | ❌      | From ATA                          |
-    /// | 3     | ❌        | ❌      | The bond recipient wallet         |
-    /// | 4     | ✅        | ❌      | The bond account                  |
-    /// | 5     | ✅        | ❌      | Central state                     |
-    /// | 6     | ✅        | ❌      | The vault of the central state    |
-    /// | 7     | ✅        | ❌      | The pool account                  |
-    /// | 8     | ✅        | ❌      | The vault of the pool             |
-    /// | 9     | ✅        | ❌      | The mint address of the ACS token |
-    /// | 10    | ❌        | ❌      | The SPL token program account     |
-    /// | 11    | ❌        | ❌      | The system program account        |
+    /// | 0     | ✅        | ✅      | The bond seller account           |
+    /// | 1     | ✅        | ❌      | From ATA                          |
+    /// | 2     | ❌        | ❌      | The bond recipient wallet         |
+    /// | 3     | ✅        | ❌      | The bond account                  |
+    /// | 4     | ✅        | ❌      | Central state                     |
+    /// | 5     | ✅        | ❌      | The vault of the central state    |
+    /// | 6     | ✅        | ❌      | The pool account                  |
+    /// | 7     | ✅        | ❌      | The vault of the pool             |
+    /// | 8     | ✅        | ❌      | The mint address of the ACS token |
+    /// | 9     | ❌        | ❌      | The SPL token program account     |
+    /// | 10    | ❌        | ❌      | The system program account        |
     AddToBondV2,
     /// Claim rewards of a bond V2
     ///
@@ -320,12 +320,11 @@ pub enum ProgramInstruction {
     ///
     /// | Index    | Writable | Signer | Description                                  |
     /// | --------------------------------------------------------------------------- |
-    /// | 0        | ❌        | ✅      | The fee account                              |
-    /// | 1        | ✅        | ❌      | The central state account                    |
-    /// | 2        | ✅        | ❌      | The central state ATA                        |
-    /// | 3        | ❌        | ❌      | The SPL token program account                |
-    /// | 4        | ✅        | ❌      | The mint address of the ACS token            |
-    /// | 5..5 + N | ✅        | ❌      | The token accounts to distribute the fees to |
+    /// | 0        | ✅        | ❌      | The central state account                    |
+    /// | 1        | ✅        | ❌      | The central state ATA                        |
+    /// | 2        | ❌        | ❌      | The SPL token program account                |
+    /// | 3        | ✅        | ❌      | The mint address of the ACS token            |
+    /// | 4..4 + N | ✅        | ❌      | The token accounts to distribute the fees to |
     DistributeFees,
     /// Admin set protocol fee
     ///
