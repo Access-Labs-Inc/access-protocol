@@ -32,7 +32,6 @@ pub async fn distribute_fees(central_state: Pubkey) -> Result<(), Box<dyn std::e
     let ix = distribute_fees_ix(
         *PROGRAM_ID,
         distribute_fees_ix::Accounts {
-            fee_payer: &PAYER.pubkey(),
             central_state: &central_state,
             central_state_vault: &central_state_vault,
             spl_token_program: &spl_token::ID,
