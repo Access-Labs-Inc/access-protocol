@@ -1387,7 +1387,6 @@ export class crankInstruction implements TaggedInstruction {
 export class addToBondV2Instruction implements TaggedInstruction {
   tag: number;
   amount: BN;
-  unlockTimestamp: BN | null;
   static schema: Schema = new Map([
     [
       addToBondV2Instruction,
@@ -1396,7 +1395,6 @@ export class addToBondV2Instruction implements TaggedInstruction {
         fields: [
           ["tag", "u8"],
           ["amount", "u64"],
-          ["unlockTimestamp", { kind: "option", type: "u64" }],
         ],
       },
     ],
@@ -1404,11 +1402,9 @@ export class addToBondV2Instruction implements TaggedInstruction {
 
   constructor(obj: {
     amount: BN;
-    unlockTimestamp: BN | null;
   }) {
     this.tag = 24;
     this.amount = obj.amount;
-    this.unlockTimestamp = obj.unlockTimestamp;
   }
 
   serialize(): Uint8Array {

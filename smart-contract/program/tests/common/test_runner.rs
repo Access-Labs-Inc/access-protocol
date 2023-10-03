@@ -1019,7 +1019,6 @@ impl TestRunner {
             },
             access_protocol::instruction::add_to_bond_v2::Params {
                 amount: bond_amount,
-                unlock_timestamp: unlock_date,
             },
         );
         sign_send_instructions(&mut self.prg_test_ctx, vec![add_to_bond_v2_ix], vec![from]).await?;

@@ -622,7 +622,6 @@ export const addToBondV2 = async (
 
   return new addToBondV2Instruction({
     amount,
-    unlockTimestamp,
   }).getInstruction(
     programId,
     from,

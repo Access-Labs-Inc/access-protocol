@@ -27,8 +27,6 @@ use crate::utils::{assert_valid_fee, check_account_key, check_account_owner, che
 pub struct Params {
     /// Total amount of ACCESS tokens being sold
     pub amount: u64,
-    /// The timestamp of the unlock, if any - needed to derive the bond key
-    pub unlock_timestamp: Option<i64>,
 }
 
 #[derive(InstructionsAccount)]
@@ -146,7 +144,6 @@ pub fn process_add_to_bond_v2(
 ) -> ProgramResult {
     let Params {
         amount,
-        unlock_timestamp,
     } = params;
     let accounts = Accounts::parse(accounts, program_id)?;
 
@@ -176,12 +173,6 @@ pub fn process_add_to_bond_v2(
         &central_state.token_mint,
         AccessError::WrongMint,
     )?;
-
-    let current_time = Clock::get()?.unix_timestamp;
-    if unlock_timestamp.is_some() && current_time > unlock_timestamp.unwrap() {
-        msg!("Cannot create a bond with an unlock timestamp in the past");
-        return Err(ProgramError::InvalidArgument);
-    }
 
     let from_ata = Account::unpack(&accounts.from_ata.data.borrow())?;
     if from_ata.mint != central_state.token_mint {
@@ -216,7 +207,7 @@ pub fn process_add_to_bond_v2(
     }
 
     // Transfer the tokens to pool vault (or burn for forever bonds)
-    if unlock_timestamp.is_some() {
+    if bond.unlock_timestamp.is_some() {
         let transfer_instruction = transfer(
             &spl_token::ID,
             accounts.from_ata.key,
