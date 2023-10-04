@@ -236,7 +236,7 @@ export const getLockedAmountForPool = async (
   const [stakeKey] = await StakeAccount.getKey(programId, pubkey, poolPubkey);
 
   // SUM of locked tokens (aka Stake Account)
-  let lockedAmount: BN = new BN(0);
+  let lockedAmount: BN = new BN.BN(0);
 
   let stakeAccount: StakeAccount | undefined = undefined;
   try {
@@ -247,7 +247,7 @@ export const getLockedAmountForPool = async (
   }
 
   // sum of Bond Accounts and BondV2 Accounts
-  let bondsAmountSum = new BN(0);
+  let bondsAmountSum = new BN.BN(0);
 
   const allBondAccountsForUser = await getBondAccounts(
     connection,

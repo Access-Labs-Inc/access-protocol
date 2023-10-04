@@ -83,7 +83,7 @@ export const changePoolMinimum = async (
   let [centralStateKey] = CentralStateV2.getKey(programId);
 
   return new changePoolMinimumInstruction({
-    newMinimum: new BN(newMinimum),
+    newMinimum: new BN.BN(newMinimum),
   }).getInstruction(programId, stakePoolKey, stakePool.owner, centralStateKey);
 };
 
@@ -262,7 +262,7 @@ export const createCentralState = async (
   const [centralStateKey] = CentralState.getKey(programId);
 
   return new createCentralStateInstruction({
-    dailyInflation: new BN(dailyInflation),
+    dailyInflation: new BN.BN(dailyInflation),
     authority: authority.toBuffer(),
   }).getInstruction(
     programId,
@@ -344,7 +344,7 @@ export const createStakePool = async (
 
   const ix = new createStakePoolInstruction({
     owner: owner.toBuffer(),
-    minimumStakeAmount: new BN(minimumStakeAmount),
+    minimumStakeAmount: new BN.BN(minimumStakeAmount),
   }).getInstruction(
     programId,
     stakePool,
@@ -389,7 +389,7 @@ export const stake = async (
   );
 
   return new stakeInstruction({
-    amount: new BN(amount),
+    amount: new BN.BN(amount),
   }).getInstruction(
     programId,
     centralStateKey,
@@ -459,7 +459,7 @@ export const unstake = async (
   const [centralStateKey] = CentralStateV2.getKey(programId);
 
   return new unstakeInstruction({
-    amount: new BN(amount),
+    amount: new BN.BN(amount),
   }).getInstruction(
     programId,
     centralStateKey,
@@ -490,7 +490,7 @@ export const changePoolMultiplier = async (
   const [centralStateKey] = CentralStateV2.getKey(programId);
 
   return new changePoolMultiplierInstruction({
-    newMultiplier: new BN(newMultiplier),
+    newMultiplier: new BN.BN(newMultiplier),
   }).getInstruction(programId, stakePoolKey, stakePool.owner, centralStateKey);
 };
 
@@ -825,7 +825,7 @@ export const migrateCentralStateV2 = (
  */
 export const adminProgramFreeze = async (
   connection: Connection,
-  freezeMask: BN = new BN(0),
+  freezeMask: BN = new BN.BN(0),
   programId = ACCESS_PROGRAM_ID,
 ) => {
   const [centralStateKey] = CentralStateV2.getKey(programId);

@@ -15,7 +15,6 @@ use solana_program::msg;
 use solana_program::program_error::ProgramError;
 use solana_program::pubkey::Pubkey;
 use solana_program::sysvar::Sysvar;
-use spl_associated_token_account::get_associated_token_address;
 
 use crate::error::AccessError;
 use crate::instruction::ProgramInstruction;
@@ -866,11 +865,4 @@ impl BondV2Account {
 pub struct FeeRecipient {
     pub owner: Pubkey,
     pub percentage: u64,
-}
-
-impl FeeRecipient {
-    #[allow(missing_docs)]
-    pub fn ata(&self, mint: &Pubkey) -> Pubkey {
-        get_associated_token_address(&self.owner, mint)
-    }
 }

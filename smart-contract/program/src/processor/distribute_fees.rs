@@ -122,20 +122,8 @@ pub fn process_distribute_fees(
         return Err(AccessError::InvalidTokenAccount.into());
     }
 
-    // check ATA mints
-    let central_state_vault = Account::unpack(&accounts.central_state_vault.data.borrow())?;
-    if central_state_vault.mint != central_state.token_mint {
-        return Err(AccessError::WrongMint.into());
-    }
-
-    for token_account in accounts.token_accounts {
-        let token_account = Account::unpack(&token_account.data.borrow())?;
-        if token_account.mint != central_state.token_mint {
-            return Err(AccessError::WrongMint.into());
-        }
-    }
-
     // Distribute
+    let central_state_vault = Account::unpack(&accounts.central_state_vault.data.borrow())?;
     let total_balance = central_state_vault.amount;
     msg!("Balance to distribute: {}", total_balance);
     let mut remaining_balance = total_balance;
@@ -146,14 +134,14 @@ pub fn process_distribute_fees(
         return Err(AccessError::InvalidAmount.into());
     }
 
-    for (token_account, recipient) in accounts
+    for (i, (token_account, recipient)) in accounts
         .token_accounts
         .iter()
         .zip(central_state.recipients.iter())
+        .enumerate()
     {
-        let recipient_ata = recipient.ata(&central_state.token_mint);
-        if *token_account.key != recipient_ata {
-            msg!("Invalid ordering of the token accounts");
+        if Account::unpack(&token_account.data.borrow())?.owner != recipient.owner {
+            msg!("Invalid ordering of the token accounts at index {}", i);
             return Err(AccessError::InvalidTokenAccount.into());
         }
         let amount = total_balance
@@ -162,18 +150,18 @@ pub fn process_distribute_fees(
             .checked_div(100)
             .ok_or(AccessError::Overflow)?;
         if amount == 0 {
-            msg!("Skipping zero amount for {}", recipient_ata);
+            msg!("Skipping zero amount for recipient with index {}", i);
             continue;
         }
         let ix = spl_token::instruction::transfer(
             &spl_token::ID,
             accounts.central_state_vault.key,
-            &recipient_ata,
+            token_account.key,
             accounts.central_state.key,
             &[],
             amount,
         )
-        .unwrap();
+            .unwrap();
         invoke_signed(
             &ix,
             &[

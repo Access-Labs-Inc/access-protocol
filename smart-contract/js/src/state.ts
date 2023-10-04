@@ -682,7 +682,7 @@ export class BondV2Account {
         Buffer.from("bond_v2_account"),
         owner.toBuffer(),
         stakePool.toBuffer(),
-        (unlockTimestamp ? unlockTimestamp : new BN(0)).toBuffer()], // todo check if new BN(0) is right for the forever bonds
+        (unlockTimestamp ? unlockTimestamp : new BN.BN(0)).toBuffer()], // todo check if new BN.BN(0) is right for the forever bonds
       programId
     );
   }

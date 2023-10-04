@@ -25,10 +25,10 @@ export const signAndSendTransactionInstructions = async (
 
 export const getUnfreezeMask = (ixs: TaggedInstruction[]) => {
   if (ixs.length === 0) {
-    return new BN(0).notn(128);
+    return new BN.BN(0).notn(128);
   }
   return ixs.reduce((acc, ix) =>
-    acc.or(new BN(1).shln(ix.tag)), new BN(0));
+    acc.or(new BN.BN(1).shln(ix.tag)), new BN.BN(0));
 }
 
 export const getFreezeMask = (ixs: TaggedInstruction[]) => {
