@@ -414,10 +414,6 @@ impl TestRunner {
         let (stake_acc_key, _) = self.get_stake_account_pda(&stake_pool_key, &staker_key);
         let staker_token_acc = get_associated_token_address(&staker_key, &self.mint);
         let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
-        // get the staker's bond from the hash map if it exists
-        let _staker_bond: Option<&Pubkey> = self
-            .bond_accounts
-            .get((stake_pool_owner_key.to_string() + &staker_key.to_string()).as_str());
 
         let stake_ix = stake(
             self.program_id,
@@ -613,11 +609,6 @@ impl TestRunner {
         let staker_token_acc = get_associated_token_address(&staker.pubkey(), &self.mint);
         let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
 
-        // get the staker's bond from the hash map if it exists
-        let _staker_bond: Option<&Pubkey> = self
-            .bond_accounts
-            .get((stake_pool_owner.to_string() + &staker.pubkey().to_string()).as_str());
-
         // Request Unstake
         let unstake_ix = unstake(
             self.program_id,
@@ -713,10 +704,9 @@ impl TestRunner {
     pub async fn bond_stats(
         &mut self,
         bond_owner: Pubkey,
-        stake_pool_owner: Pubkey,
+        _stake_pool_owner: Pubkey,
         original_bond_amount: u64,
     ) -> Result<BondAccount, BanksClientError> {
-        let _stake_pool_key = self.get_pool_pda(&stake_pool_owner);
         let (bond_key, _) =
             BondAccount::create_key(&bond_owner, original_bond_amount, &self.program_id);
 

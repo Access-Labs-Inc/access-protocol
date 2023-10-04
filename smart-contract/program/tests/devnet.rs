@@ -37,7 +37,7 @@ fn devnet() {
     println!("token mint: {:?}", token_mint);
 
     let rpc_url = "https://api.devnet.solana.com".to_owned();
-    let rpc_client = RpcClient::new(rpc_url.to_owned());
+    let rpc_client = RpcClient::new(rpc_url);
 
     let (central_state_key, _) = CentralStateV2::find_key(&program_id);
     println!("central state key: {:?}", central_state_key);
@@ -238,7 +238,7 @@ fn activate_pool(
     let mut transaction = Transaction::new_with_payer(&[activate_stake_pool_ix], Some(&fee_payer.pubkey()));
     let recent_blockhash = connection.get_latest_blockhash().unwrap();
     transaction.sign(&vec![fee_payer], recent_blockhash);
-    return connection.send_and_confirm_transaction(&transaction);
+    connection.send_and_confirm_transaction(&transaction)
 }
 
 fn create_stake_acc(
@@ -268,7 +268,7 @@ fn create_stake_acc(
     let mut transaction = Transaction::new_with_payer(&[create_stake_account_ix], Some(&fee_payer.pubkey()));
     let recent_blockhash = connection.get_latest_blockhash().unwrap();
     transaction.sign(&vec![fee_payer], recent_blockhash);
-    return connection.send_and_confirm_transaction(&transaction);
+    connection.send_and_confirm_transaction(&transaction)
 }
 
 fn lock(
@@ -306,7 +306,7 @@ fn lock(
     let mut transaction = Transaction::new_with_payer(&[stake_ix], Some(&staker.pubkey()));
     let recent_blockhash = connection.get_latest_blockhash().unwrap();
     transaction.sign(&vec![staker], recent_blockhash);
-    return connection.send_and_confirm_transaction(&transaction);
+    connection.send_and_confirm_transaction(&transaction)
 }
 
 fn distribute_fees(
@@ -327,7 +327,6 @@ fn distribute_fees(
     let distribute_fees_ix = access_protocol::instruction::distribute_fees(
         program_id,
         access_protocol::instruction::distribute_fees::Accounts {
-            fee_payer: &fee_payer.pubkey(),
             central_state: &central_state_key,
             central_state_vault: &central_state_vault,
             spl_token_program: &spl_token::ID,

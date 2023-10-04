@@ -83,8 +83,6 @@ async fn fee_split() {
 
 
     println!("central_state_stats: {:?}", central_state_stats);
-    return;
-
 
     tr.distribute_fees().await.unwrap_err(); // not enough in account
 

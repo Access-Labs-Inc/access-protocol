@@ -156,7 +156,7 @@ pub fn process_distribute_fees(
         let ix = spl_token::instruction::transfer(
             &spl_token::ID,
             accounts.central_state_vault.key,
-            &token_account.key,
+            token_account.key,
             accounts.central_state.key,
             &[],
             amount,
