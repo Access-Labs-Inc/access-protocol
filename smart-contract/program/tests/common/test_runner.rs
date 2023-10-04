@@ -444,7 +444,7 @@ impl TestRunner {
             .account
             .recipients
             .iter()
-            .map(|r| r.ata(&self.mint))
+            .map(|r| self.get_ata(&r.owner))
             .collect();
         let distribute_fees_ix = access_protocol::instruction::distribute_fees(
             self.program_id,
