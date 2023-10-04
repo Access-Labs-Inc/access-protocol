@@ -140,8 +140,8 @@ pub fn process_distribute_fees(
         .zip(central_state.recipients.iter())
         .enumerate()
     {
-        if *token_account.owner != recipient.owner {
-            msg!("Invalid ordering of the token accounts");
+        if Account::unpack(&token_account.data.borrow())?.owner != recipient.owner {
+            msg!("Invalid ordering of the token accounts at index {}", i);
             return Err(AccessError::InvalidTokenAccount.into());
         }
         let amount = total_balance
@@ -161,7 +161,7 @@ pub fn process_distribute_fees(
             &[],
             amount,
         )
-        .unwrap();
+            .unwrap();
         invoke_signed(
             &ix,
             &[
