@@ -336,14 +336,11 @@ export class CentralState {
  */
 
 export class FeeRecipient {
-  owner: PublicKey;
+  owner: Buffer;
   percentage: BN;
 
-  constructor(obj: {
-    owner: PublicKey;
-    percentage: BN;
-  }) {
-    this.owner = new PublicKey(obj.owner);
+  constructor(obj: { owner: PublicKey; percentage: BN }) {
+    this.owner = new PublicKey(obj.owner).toBuffer();
     this.percentage = obj.percentage;
   }
 }
@@ -362,8 +359,8 @@ export class CentralStateV2 {
   adminIxGate: BN;
   feeBasisPoints: number;
   lastFeeDistributionTime: BN;
-  feeRecipientsCount: number; // this is needed due to Borsh encoding, see https://borsh.io/
-  recipients: FeeRecipient[];
+  private feeRecipientsCount: number; // this is needed due to Borsh encoding, see https://borsh.io/
+  private recipients: FeeRecipient[];
 
   static schema: Schema = new Map<any, any>([
     [
@@ -467,6 +464,10 @@ export class CentralStateV2 {
       .muln(this.feeBasisPoints)
       .addn(9_999)
       .divn(10_000);
+  }
+
+  feeRecipients(): FeeRecipient[] {
+    return this.recipients.slice(0, this.feeRecipientsCount);
   }
 }
 
@@ -607,7 +608,7 @@ export class BondV2Account {
   pool: PublicKey;
   lastClaimedOffset: BN;
   poolMinimumAtCreation: BN;
-  unlockTimestamp: null | BN; // todo check if this is a possible representation of Option<i64>
+  unlockTimestamp: null | BN;
 
   static schema: Schema = new Map<any, any>([
     [
@@ -621,7 +622,7 @@ export class BondV2Account {
           ["pool", [32]],
           ["lastClaimedOffset", "u64"],
           ["poolMinimumAtCreation", "u64"],
-          ["unlockTimestamp", "Option<i64>"],
+          ["unlockTimestamp", { kind: "option", type: "u64" }],
         ],
       },
     ],
@@ -682,7 +683,9 @@ export class BondV2Account {
         Buffer.from("bond_v2_account"),
         owner.toBuffer(),
         stakePool.toBuffer(),
-        (unlockTimestamp ? unlockTimestamp : new BN.BN(0)).toBuffer()], // todo check if new BN.BN(0) is right for the forever bonds
+        new Uint8Array((unlockTimestamp ?
+          new BN.BN(unlockTimestamp)
+          : new BN.BN(0)).toArray("le", 8))],
       programId
     );
   }

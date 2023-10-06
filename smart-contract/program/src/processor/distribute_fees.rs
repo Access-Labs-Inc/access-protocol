@@ -86,12 +86,17 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             &spl_token::ID,
             AccessError::WrongOwner,
         )?;
-        for token_account in accounts.token_accounts {
-            check_account_owner(
+        msg!("Recipient count: {}", accounts.token_accounts.len());
+        for (i, token_account) in accounts.token_accounts.iter().enumerate() {
+            let res = check_account_owner(
                 token_account,
                 &spl_token::ID,
                 AccessError::WrongTokenAccountOwner,
-            )?;
+            );
+            if res.is_err() {
+                msg!("Token account {} owner invalid", i);
+                res?;
+            }
         }
 
         // Check signer
