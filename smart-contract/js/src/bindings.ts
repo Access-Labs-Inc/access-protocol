@@ -117,15 +117,14 @@ export const activateStakePool = (
 export const claimBondRewards = async (
   connection: Connection,
   bondAccount: PublicKey,
-  programId = ACCESS_PROGRAM_ID,
   rewardsDestination: PublicKey,
-  ownerMustSign = true
+  programId = ACCESS_PROGRAM_ID,
 ) => {
-  const [centralStateKey] = CentralState.getKey(programId);
+  const [centralStateKey] = CentralStateV2.getKey(programId);
   const bond = await BondAccount.retrieve(connection, bondAccount);
   let tokenMint = ACCESS_MINT;
   if (programId !== ACCESS_PROGRAM_ID) {
-    tokenMint = (await CentralState.retrieve(connection, centralStateKey)).tokenMint;
+    tokenMint = (await CentralStateV2.retrieve(connection, centralStateKey)).tokenMint;
   }
 
   const ix = new claimBondRewardsInstruction().getInstruction(
@@ -139,10 +138,9 @@ export const claimBondRewards = async (
     TOKEN_PROGRAM_ID
   );
 
-  if (!ownerMustSign) {
-    const idx = ix.keys.findIndex((e) => e.pubkey.equals(bond.owner));
-    ix.keys[idx].isSigner = false;
-  }
+  // we don't require the owner to sign this transaction as our use-case is only the bond owner claiming their rewards.
+  const idx = ix.keys.findIndex((e) => e.pubkey.equals(bond.owner));
+  ix.keys[idx].isSigner = false;
 
   return ix;
 };
