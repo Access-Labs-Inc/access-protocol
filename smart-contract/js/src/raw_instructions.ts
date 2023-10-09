@@ -2,7 +2,7 @@
 import * as BN from "bn.js";
 import { Schema, serialize } from "borsh";
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
-import { FeeRecipient, MAX_FEE_RECIPIENTS } from "./state";
+import { FeeRecipient } from "./state";
 
 interface AccountKey {
   pubkey: PublicKey;
@@ -17,23 +17,30 @@ export interface TaggedInstruction {
 export class adminSetupFeeSplitInstruction implements TaggedInstruction {
   tag: number;
   recipients: FeeRecipient[];
-  static
-  schema: Schema = new Map([
+  static schema: Schema = new Map<any, any>([
     [
       adminSetupFeeSplitInstruction,
       {
         kind: "struct",
         fields: [
           ["tag", "u8"],
-          ["recipients", [FeeRecipient, MAX_FEE_RECIPIENTS]],
+          ["recipients", [FeeRecipient]],
+        ],
+      },
+    ],
+    [
+      FeeRecipient,
+      {
+        kind: "struct",
+        fields: [
+          ["owner", [32]],
+          ["percentage", "u64"],
         ],
       },
     ],
   ]);
 
-  constructor(obj: {
-    recipients: FeeRecipient[];
-  }) {
+  constructor(obj: { recipients: FeeRecipient[] }) {
     this.tag = 27;
     this.recipients = obj.recipients;
   }
@@ -786,9 +793,9 @@ export class signBondInstruction implements TaggedInstruction {
   }
 }
 
-export class claimRewardsInstruction implements TaggedInstruction {
+export class claimRewardsInstruction {
   tag: number;
-  allowZeroRewards: boolean;
+  allowZeroRewards: number;
   static schema: Schema = new Map([
     [
       claimRewardsInstruction,
@@ -796,23 +803,18 @@ export class claimRewardsInstruction implements TaggedInstruction {
         kind: "struct",
         fields: [
           ["tag", "u8"],
-          ["allowZeroRewards", "bool"],
+          ["allowZeroRewards", "u8"],
         ],
       },
     ],
   ]);
-
-  constructor(obj: {
-    allowZeroRewards: boolean;
-  }) {
+  constructor(obj: { allowZeroRewards: number }) {
     this.tag = 7;
     this.allowZeroRewards = obj.allowZeroRewards;
   }
-
   serialize(): Uint8Array {
     return serialize(claimRewardsInstruction.schema, this);
   }
-
   getInstruction(
     programId: PublicKey,
     stakePool: PublicKey,
@@ -821,10 +823,10 @@ export class claimRewardsInstruction implements TaggedInstruction {
     rewardsDestination: PublicKey,
     centralState: PublicKey,
     mint: PublicKey,
-    splTokenProgram: PublicKey,
+    splTokenProgram: PublicKey
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
-    let keys: AccountKey[] = [];
+    const keys: AccountKey[] = [];
     keys.push({
       pubkey: stakePool,
       isSigner: false,
@@ -1409,7 +1411,6 @@ export class addToBondV2Instruction implements TaggedInstruction {
     programId: PublicKey,
     from: PublicKey,
     fromAta: PublicKey,
-    to: PublicKey,
     bondV2Account: PublicKey,
     centralState: PublicKey,
     centralStateVault: PublicKey,
@@ -1430,11 +1431,6 @@ export class addToBondV2Instruction implements TaggedInstruction {
       pubkey: fromAta,
       isSigner: false,
       isWritable: true,
-    });
-    keys.push({
-      pubkey: to,
-      isSigner: false,
-      isWritable: false,
     });
     keys.push({
       pubkey: bondV2Account,

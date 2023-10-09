@@ -73,6 +73,13 @@ pub fn process_change_inflation(
         AccessError::WrongMint,
     )?;
 
+    let current_offset = central_state.get_current_offset()?;
+    // check if we need to do a system wide snapshot
+    if central_state.last_snapshot_offset < current_offset {
+        msg!("System snapshot out of date, crank needed");
+        return   Err(AccessError::PoolMustBeCranked.into());
+    }
+
     let token_mint = spl_token::state::Mint::unpack_from_slice(&accounts.mint.data.clone().borrow_mut())?;
 
     let supply = token_mint.supply;

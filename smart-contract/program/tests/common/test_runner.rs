@@ -996,7 +996,6 @@ impl TestRunner {
             access_protocol::instruction::add_to_bond_v2::Accounts {
                 from: &from.pubkey(),
                 from_ata: &get_associated_token_address(&from.pubkey(), &self.mint),
-                to,
                 bond_v2_account: &bond_key,
                 pool: &pool_key,
                 central_state: &self.central_state,
