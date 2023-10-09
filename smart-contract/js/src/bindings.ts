@@ -167,8 +167,7 @@ export const claimPoolRewards = async (
   const stakePool = await StakePool.retrieve(connection, stakePoolAccount);
   const rewardsDestination = getAssociatedTokenAddressSync(
     tokenMint,
-    stakePoolAccount,
-    false,
+    stakePool.owner,
   );
 
   const ix = new claimPoolRewardsInstruction().getInstruction(
@@ -436,10 +435,10 @@ export const unlockBondTokens = async (
   destinationToken: PublicKey,
   programId = ACCESS_PROGRAM_ID,
 ) => {
-  const [centralStateKey] = CentralState.getKey(programId);
+  const [centralStateKey] = CentralStateV2.getKey(programId);
   let tokenMint = ACCESS_MINT;
   if (programId !== ACCESS_PROGRAM_ID) {
-    tokenMint = (await CentralState.retrieve(connection, centralStateKey)).tokenMint;
+    tokenMint = (await CentralStateV2.retrieve(connection, centralStateKey)).tokenMint;
   }
   const bond = await BondAccount.retrieve(connection, bondAccount);
   const stakePool = await StakePool.retrieve(connection, bond.stakePool);

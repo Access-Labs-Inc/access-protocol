@@ -132,7 +132,7 @@ export const closeStakePool = async (
  * @returns ix The create bond instruction
  * @deprecated This function is deprecated in the v2 smart contract
  */
-export const createBond = async (
+export const createBond = (
   seller: PublicKey,
   buyer: PublicKey,
   totalAmountSold: number,
@@ -183,7 +183,7 @@ export const createBond = async (
  * @returns ix The sign bond instruction
  * @deprecated This function is deprecated in the v2 smart contract
  */
-export const signBond = async (
+export const signBond = (
   sellerIndex: number,
   seller: PublicKey,
   bondAccount: PublicKey,
