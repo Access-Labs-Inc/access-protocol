@@ -40,9 +40,6 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub from_ata: &'a T,
 
-    /// The bond recipient wallet
-    pub to: &'a T,
-
     /// The bond account
     #[cons(writable)]
     pub bond_v2_account: &'a T,
@@ -83,7 +80,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         let accounts = Accounts {
             from: next_account_info(accounts_iter)?,
             from_ata: next_account_info(accounts_iter)?,
-            to: next_account_info(accounts_iter)?,
             bond_v2_account: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
             central_state_vault: next_account_info(accounts_iter)?,
@@ -182,7 +178,6 @@ pub fn process_add_to_bond_v2(
         return Err(AccessError::WrongOwner.into());
     }
 
-    check_account_key(accounts.to, &bond.owner, AccessError::WrongBondAccountOwner)?;
     check_account_key(accounts.pool, &bond.pool, AccessError::StakePoolMismatch)?;
 
     if amount == 0 {

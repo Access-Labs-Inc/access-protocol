@@ -274,15 +274,14 @@ pub enum ProgramInstruction {
     /// | ------------------------------------------------------------- |
     /// | 0     | ✅        | ✅      | The bond seller account           |
     /// | 1     | ✅        | ❌      | From ATA                          |
-    /// | 2     | ❌        | ❌      | The bond recipient wallet         |
-    /// | 3     | ✅        | ❌      | The bond account                  |
-    /// | 4     | ✅        | ❌      | Central state                     |
-    /// | 5     | ✅        | ❌      | The vault of the central state    |
-    /// | 6     | ✅        | ❌      | The pool account                  |
-    /// | 7     | ✅        | ❌      | The vault of the pool             |
-    /// | 8     | ✅        | ❌      | The mint address of the ACS token |
-    /// | 9     | ❌        | ❌      | The SPL token program account     |
-    /// | 10    | ❌        | ❌      | The system program account        |
+    /// | 2     | ✅        | ❌      | The bond account                  |
+    /// | 3     | ✅        | ❌      | Central state                     |
+    /// | 4     | ✅        | ❌      | The vault of the central state    |
+    /// | 5     | ✅        | ❌      | The pool account                  |
+    /// | 6     | ✅        | ❌      | The vault of the pool             |
+    /// | 7     | ✅        | ❌      | The mint address of the ACS token |
+    /// | 8     | ❌        | ❌      | The SPL token program account     |
+    /// | 9     | ❌        | ❌      | The system program account        |
     AddToBondV2,
     /// Claim rewards of a bond V2
     ///
