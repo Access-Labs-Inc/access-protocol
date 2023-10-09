@@ -1411,7 +1411,6 @@ export class addToBondV2Instruction implements TaggedInstruction {
     programId: PublicKey,
     from: PublicKey,
     fromAta: PublicKey,
-    to: PublicKey,
     bondV2Account: PublicKey,
     centralState: PublicKey,
     centralStateVault: PublicKey,
@@ -1432,11 +1431,6 @@ export class addToBondV2Instruction implements TaggedInstruction {
       pubkey: fromAta,
       isSigner: false,
       isWritable: true,
-    });
-    keys.push({
-      pubkey: to,
-      isSigner: false,
-      isWritable: false,
     });
     keys.push({
       pubkey: bondV2Account,
