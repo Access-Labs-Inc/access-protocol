@@ -151,14 +151,12 @@ export const claimBondRewards = async (
  * This function can be used by a pool owner to claim his staking rewards
  * @param connection The Solana RPC connection
  * @param stakePoolAccount The key of the stake pool
- * @param rewardsDestination The destination token account for the rewards being claimed
  * @param programId The ACCESS program ID
  * @returns ix The instruction to claim the pool rewards
  */
 export const claimPoolRewards = async (
   connection: Connection,
   stakePoolAccount: PublicKey,
-  rewardsDestination: PublicKey,
   programId = ACCESS_PROGRAM_ID,
 ) => {
   const [centralStateKey] = CentralStateV2.getKey(programId);
@@ -167,6 +165,11 @@ export const claimPoolRewards = async (
     tokenMint = (await CentralStateV2.retrieve(connection, centralStateKey)).tokenMint;
   }
   const stakePool = await StakePool.retrieve(connection, stakePoolAccount);
+  const rewardsDestination = getAssociatedTokenAddressSync(
+    tokenMint,
+    stakePoolAccount,
+    false,
+  );
 
   const ix = new claimPoolRewardsInstruction().getInstruction(
     programId,
@@ -652,7 +655,6 @@ export const addToBondV2 = async (
     programId,
     from,
     fromAta,
-    owner,
     bondV2Account,
     centralStateKey,
     centralStateVault,
