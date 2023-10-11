@@ -11,7 +11,7 @@ import {
   closeStakePoolInstruction,
   createBondInstruction,
   signBondInstruction,
-} from "./raw_instructions";
+} from "./raw_instructions.js";
 import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
 import {
   ACCESS_MINT,
@@ -20,7 +20,7 @@ import {
   CentralStateV2,
   StakeAccount,
   StakePool
-} from "./state";
+} from "./state.js";
 import * as BN from 'bn.js';
 import { TOKEN_PROGRAM_ID, } from "@solana/spl-token";
 

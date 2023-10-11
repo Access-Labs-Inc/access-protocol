@@ -25,7 +25,7 @@ import {
   unlockBondTokensInstruction,
   unlockBondV2Instruction,
   unstakeInstruction,
-} from "./raw_instructions";
+} from "./raw_instructions.js";
 import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
 import {
   ACCESS_MINT,
@@ -37,7 +37,7 @@ import {
   FeeRecipient,
   StakeAccount,
   StakePool
-} from "./state";
+} from "./state.js";
 import * as BN from "bn.js";
 import {
   createAssociatedTokenAccountInstruction,

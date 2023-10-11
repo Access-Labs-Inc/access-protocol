@@ -2,7 +2,7 @@
 import * as BN from "bn.js";
 import { Schema, serialize } from "borsh";
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
-import { FeeRecipient } from "./state";
+import { FeeRecipient } from "./state.js";
 
 interface AccountKey {
   pubkey: PublicKey;

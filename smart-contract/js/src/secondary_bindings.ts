@@ -1,5 +1,5 @@
 import { Connection, PublicKey, MemcmpFilter } from "@solana/web3.js";
-import { StakeAccount, BondAccount, StakePool } from "./state";
+import { StakeAccount, BondAccount, StakePool } from "./state.js";
 import * as BN from "bn.js";
 
 /**

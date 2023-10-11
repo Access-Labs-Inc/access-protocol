@@ -1,5 +1,5 @@
 import { Connection, Keypair, Transaction, TransactionInstruction, } from "@solana/web3.js";
-import { TaggedInstruction } from "./raw_instructions";
+import { TaggedInstruction } from "./raw_instructions.js";
 import BN from "bn.js";
 
 export async function sleep(ms: number) {

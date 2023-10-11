@@ -1,7 +1,7 @@
 import { deserialize, Schema } from "borsh";
 import * as BN from 'bn.js';
 import { Connection, PublicKey } from "@solana/web3.js";
-import { u64 } from "./u64";
+import { u64 } from "./u64.js";
 
 /** Default percentage of the staking rewards going to stakers */
 export const DEFAULT_STAKER_MULTIPLIER = 50;
