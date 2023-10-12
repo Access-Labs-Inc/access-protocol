@@ -866,24 +866,23 @@ export const migrateCentralStateV2 = (
 
 /**
  * This function can be used to freeze or unfreeze the program instructions
- * @param connection The Solana RPC connection
  * @param freezeMask The bit mask of the instructions to freeze (0 = freeze, 1 = unfreeze)
+ * @param freezeAuthority The authority to freeze the instructions - either the freeze authority (0 mask needed) or the central state authority
  * @param programId The ACCESS program ID
  * @returns ix The instruction to freeze the program instructions
  */
 export const adminProgramFreeze = async (
-  connection: Connection,
+  freezeAuthority: PublicKey,
   freezeMask: BN = new BN.BN(0),
   programId = ACCESS_PROGRAM_ID,
 ) => {
   const [centralStateKey] = CentralStateV2.getKey(programId);
-  const centralState = await CentralStateV2.retrieve(connection, centralStateKey);
   return new adminProgramFreezeInstruction({
     ixGate: freezeMask,
   }).getInstruction(
     programId,
     centralStateKey,
-    centralState.authority,
+    freezeAuthority,
   );
 };
 
