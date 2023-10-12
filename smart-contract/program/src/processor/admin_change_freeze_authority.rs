@@ -9,7 +9,7 @@ use solana_program::{
 
 use crate::{error::AccessError};
 use bonfida_utils::{BorshSize, InstructionsAccount};
-use crate::instruction::ProgramInstruction::ChangeCentralStateAuthority;
+use crate::instruction::ProgramInstruction::{AdminChangeFreezeAuthority, ChangeCentralStateAuthority};
 
 use crate::utils::{check_account_key, check_account_owner, check_signer};
 use crate::state:: CentralStateV2;
@@ -65,7 +65,7 @@ pub fn process_admin_change_freeze_authority(
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
-    central_state.assert_instruction_allowed(&ChangeCentralStateAuthority)?;
+    central_state.assert_instruction_allowed(&AdminChangeFreezeAuthority)?;
 
     check_account_key(
         accounts.authority,
