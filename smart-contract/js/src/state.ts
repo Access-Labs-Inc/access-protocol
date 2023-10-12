@@ -356,6 +356,7 @@ export class CentralStateV2 {
   totalStakedSnapshot: BN;
   lastSnapshotOffset: BN;
   ixGate: BN;
+  freezeAuthority: PublicKey;
   adminIxGate: BN;
   feeBasisPoints: number;
   lastFeeDistributionTime: BN;
@@ -378,6 +379,7 @@ export class CentralStateV2 {
           ["totalStakedSnapshot", "u64"],
           ["lastSnapshotOffset", "u64"],
           ["ixGate", "u128"],
+          ["freezeAuthority", [32]],
           ["adminIxGate", "u128"],
           ["feeBasisPoints", "u16"],
           ["lastFeeDistributionTime", "u64"],
@@ -409,6 +411,7 @@ export class CentralStateV2 {
     totalStakedSnapshot: BN;
     lastSnapshotOffset: BN;
     ixGate: BN;
+    freezeAuthority: Uint8Array;
     adminIxGate: BN;
     feeBasisPoints: number;
     lastFeeDistributionTime: BN;
@@ -425,6 +428,7 @@ export class CentralStateV2 {
     this.totalStakedSnapshot = obj.totalStakedSnapshot;
     this.lastSnapshotOffset = obj.lastSnapshotOffset;
     this.ixGate = obj.ixGate;
+    this.freezeAuthority = new PublicKey(obj.freezeAuthority);
     this.adminIxGate = obj.adminIxGate;
     this.feeBasisPoints = obj.feeBasisPoints;
     this.lastFeeDistributionTime = obj.lastFeeDistributionTime.fromTwos(64);
