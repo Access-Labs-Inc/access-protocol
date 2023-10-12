@@ -871,7 +871,7 @@ export const migrateCentralStateV2 = (
  * @param programId The ACCESS program ID
  * @returns ix The instruction to freeze the program instructions
  */
-export const adminProgramFreeze = async (
+export const adminProgramFreeze = (
   freezeAuthority: PublicKey,
   freezeMask: BN = new BN.BN(0),
   programId = ACCESS_PROGRAM_ID,
