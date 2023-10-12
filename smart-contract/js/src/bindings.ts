@@ -1,6 +1,6 @@
 import {
   activateStakePoolInstruction,
-  addToBondV2Instruction,
+  addToBondV2Instruction, adminChangeFreezeAuthorityInstruction,
   adminProgramFreezeInstruction,
   adminRenounceInstruction,
   adminSetProtocolFeeInstruction,
@@ -537,6 +537,26 @@ export const adminChangeCentralStateAuthority = async (
 
   return new changeCentralStateAuthorityInstruction({
     newAuthority: newAuthority.toBytes(),
+  }).getInstruction(programId, centralStateKey, centralState.authority);
+};
+
+/**
+ * This function can be used to setup the freeze authority
+ * @param connection The Solana RPC connection
+ * @param newFreezeAuthority The new freeze authority
+ * @param programId The ACCESS program ID
+ * @returns ix The instruction to change the freeze authority
+ */
+export const adminChangeFreezeAuthority = async (
+  connection: Connection,
+  newFreezeAuthority: PublicKey,
+  programId = ACCESS_PROGRAM_ID,
+) => {
+  const [centralStateKey] = CentralStateV2.getKey(programId);
+  const centralState = await CentralStateV2.retrieve(connection, centralStateKey);
+
+  return new adminChangeFreezeAuthorityInstruction({
+    newFreezeAuthority: newFreezeAuthority.toBytes(),
   }).getInstruction(programId, centralStateKey, centralState.authority);
 };
 
