@@ -11,6 +11,7 @@ pub use crate::processor::{
     close_stake_pool, crank, create_bond, create_bond_v2, create_central_state,
     create_stake_account, create_stake_pool, distribute_fees, edit_metadata,
     migrate_central_state_v2, sign_bond, stake, unlock_bond_tokens, unlock_bond_v2, unstake,
+    admin_change_freeze_authority
 };
 
 #[allow(missing_docs)]
@@ -354,6 +355,13 @@ pub enum ProgramInstruction {
     /// | 0     | ✅        | ❌      | The central state account           |
     /// | 1     | ❌        | ✅      | The central state account authority |
     AdminRenounce,
+    /// Change freeze authority
+    ///
+    /// | Index | Writable | Signer | Description                         |
+    /// | --------------------------------------------------------------- |
+    /// | 0     | ✅        | ❌      | The central state account           |
+    /// | 1     | ❌        | ✅      | The central state account authority |
+    AdminChangeFreezeAuthority
 }
 
 #[allow(missing_docs)]
@@ -740,4 +748,17 @@ pub fn admin_renounce(
     params: admin_renounce::Params,
 ) -> Instruction {
     accounts.get_instruction(program_id, ProgramInstruction::AdminRenounce as u8, params)
+}
+
+#[allow(missing_docs)]
+pub fn admin_change_freeze_authority(
+    program_id: Pubkey,
+    accounts: admin_change_freeze_authority::Accounts<Pubkey>,
+    params: admin_change_freeze_authority::Params,
+) -> Instruction {
+    accounts.get_instruction(
+        program_id,
+        ProgramInstruction::AdminChangeFreezeAuthority as u8,
+        params,
+    )
 }

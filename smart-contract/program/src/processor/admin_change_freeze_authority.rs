@@ -1,28 +1,34 @@
-//! Admin program freeze instruction.
-use bonfida_utils::{BorshSize, InstructionsAccount};
+//! Change freeze authority
 use borsh::{BorshDeserialize, BorshSerialize};
-use solana_program::{account_info::{AccountInfo, next_account_info}, entrypoint::ProgramResult, program_error::ProgramError, pubkey::Pubkey};
+use solana_program::{
+    account_info::{next_account_info, AccountInfo},
+    entrypoint::ProgramResult,
+    program_error::ProgramError,
+    pubkey::Pubkey,
+};
 
-use crate::error::AccessError;
-use crate::instruction::ProgramInstruction;
-use crate::state::CentralStateV2;
-use crate::utils::{check_account_owner, check_signer};
+use crate::{error::AccessError};
+use bonfida_utils::{BorshSize, InstructionsAccount};
+use crate::instruction::ProgramInstruction::ChangeCentralStateAuthority;
+
+use crate::utils::{check_account_key, check_account_owner, check_signer};
+use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
-/// The required parameters for the `admin_program_freeze` instruction
+/// The required parameters for the `change_freeze_authority` instruction
 pub struct Params {
-    ///  The new ix gate
-    pub ix_gate: u128,
+    /// The new freeze authority
+    pub new_freeze_authority: Pubkey,
 }
 
 #[derive(InstructionsAccount)]
-/// The required accounts for the `admin_program_freeze` instruction
+/// The required accounts for the `change_freeze_authority` instruction
 pub struct Accounts<'a, T> {
     /// The central state account
     #[cons(writable)]
     pub central_state: &'a T,
 
-    /// The central state account authority or freeze authority
+    /// The central state account authority
     #[cons(signer)]
     pub authority: &'a T,
 }
@@ -51,23 +57,23 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     }
 }
 
-pub fn process_admin_program_freeze(
+pub fn process_admin_change_freeze_authority(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
-    let Params { ix_gate } = params;
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
-    central_state.assert_instruction_allowed(&ProgramInstruction::AdminProgramFreeze)?;
+    central_state.assert_instruction_allowed(&ChangeCentralStateAuthority)?;
 
-    // Only central state authority can unfreeze, the freeze authority is only allowed to freeze everything
-    if accounts.authority.key != &central_state.authority && (accounts.authority.key != &central_state.freeze_authority || ix_gate > 0) {
-        return Err(AccessError::WrongCentralStateAuthority.into());
-    }
+    check_account_key(
+        accounts.authority,
+        &central_state.authority,
+        AccessError::WrongCentralStateAuthority,
+    )?;
 
-    central_state.ix_gate = ix_gate;
+    central_state.freeze_authority = params.new_freeze_authority;
     central_state.save(&mut accounts.central_state.data.borrow_mut())?;
 
     Ok(())

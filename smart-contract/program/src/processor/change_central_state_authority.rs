@@ -17,7 +17,7 @@ use crate::state:: CentralStateV2;
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `change_central_state_authority` instruction
 pub struct Params {
-    // The new central state authory
+    // The new central state authority
     pub new_authority: Pubkey,
 }
 

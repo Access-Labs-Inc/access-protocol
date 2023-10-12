@@ -40,6 +40,7 @@ pub mod admin_set_protocol_fee;
 pub mod migrate_central_state_v2;
 pub mod admin_program_freeze;
 pub mod admin_renounce;
+pub mod admin_change_freeze_authority;
 
 pub struct Processor {}
 
@@ -254,6 +255,14 @@ impl Processor {
                 let params = admin_renounce::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 admin_renounce::process_admin_renounce(program_id, accounts, params)?;
+            }
+            ProgramInstruction::AdminChangeFreezeAuthority => {
+                msg!("Instruction: Admin change freeze authority");
+                let params = admin_change_freeze_authority::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                admin_change_freeze_authority::process_admin_change_freeze_authority(
+                    program_id, accounts, params,
+                )?;
             }
         }
 
