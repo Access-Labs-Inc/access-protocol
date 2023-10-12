@@ -22,7 +22,7 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub central_state: &'a T,
 
-    /// The central state account authority
+    /// The central state account authority or freeze authority
     #[cons(signer)]
     pub authority: &'a T,
 }
@@ -61,11 +61,11 @@ pub fn process_admin_program_freeze(
 
     let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
     central_state.assert_instruction_allowed(&ProgramInstruction::AdminProgramFreeze)?;
-    check_account_key(
-        accounts.authority,
-        &central_state.authority,
-        AccessError::WrongCentralStateAuthority,
-    )?;
+
+    // Only central state authority can unfreeze, the freeze authority is only allowed to freeze everything
+    if accounts.authority.key != central_state.authority && (accounts.authority.key != central_state.freeze_authority || ix_gate > 0) {
+        return Err(AccessError::WrongCentralStateAuthority.into());
+    }
 
     central_state.ix_gate = ix_gate;
     central_state.save(&mut accounts.central_state.data.borrow_mut())?;
