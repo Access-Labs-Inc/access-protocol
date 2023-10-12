@@ -9,7 +9,7 @@ use solana_program::{
 
 use crate::{error::AccessError};
 use bonfida_utils::{BorshSize, InstructionsAccount};
-use crate::instruction::ProgramInstruction::{AdminChangeFreezeAuthority, ChangeCentralStateAuthority};
+use crate::instruction::ProgramInstruction::AdminChangeFreezeAuthority;
 
 use crate::utils::{check_account_key, check_account_owner, check_signer};
 use crate::state:: CentralStateV2;
