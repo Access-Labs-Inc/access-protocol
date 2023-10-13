@@ -230,5 +230,7 @@ pub fn is_admin_renouncable_instruction(instruction: &ProgramInstruction) -> boo
         ProgramInstruction::EditMetadata |
         ProgramInstruction::AdminSetupFeeSplit |
         ProgramInstruction::AdminSetProtocolFee |
-        ProgramInstruction::AdminProgramFreeze)
+        ProgramInstruction::AdminProgramFreeze |
+        ProgramInstruction::AdminChangeFreezeAuthority
+    )
 }

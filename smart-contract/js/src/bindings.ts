@@ -1,6 +1,6 @@
 import {
   activateStakePoolInstruction,
-  addToBondV2Instruction,
+  addToBondV2Instruction, adminChangeFreezeAuthorityInstruction,
   adminProgramFreezeInstruction,
   adminRenounceInstruction,
   adminSetProtocolFeeInstruction,
@@ -25,7 +25,7 @@ import {
   unlockBondTokensInstruction,
   unlockBondV2Instruction,
   unstakeInstruction,
-} from "./raw_instructions";
+} from "./raw_instructions.js";
 import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
 import {
   ACCESS_MINT,
@@ -37,7 +37,7 @@ import {
   FeeRecipient,
   StakeAccount,
   StakePool
-} from "./state";
+} from "./state.js";
 import * as BN from "bn.js";
 import {
   createAssociatedTokenAccountInstruction,
@@ -111,7 +111,6 @@ export const activateStakePool = (
  * @param bondAccount The key of the bond account
  * @param rewardsDestination The destination token account for the rewards being claimed
  * @param programId The ACCESS program ID
- * @param ownerMustSign todo
  * @returns ix The instruction to claim the bond rewards
  */
 export const claimBondRewards = async (
@@ -541,6 +540,26 @@ export const adminChangeCentralStateAuthority = async (
 };
 
 /**
+ * This function can be used to setup the freeze authority
+ * @param connection The Solana RPC connection
+ * @param newFreezeAuthority The new freeze authority
+ * @param programId The ACCESS program ID
+ * @returns ix The instruction to change the freeze authority
+ */
+export const adminChangeFreezeAuthority = async (
+  connection: Connection,
+  newFreezeAuthority: PublicKey,
+  programId = ACCESS_PROGRAM_ID,
+) => {
+  const [centralStateKey] = CentralStateV2.getKey(programId);
+  const centralState = await CentralStateV2.retrieve(connection, centralStateKey);
+
+  return new adminChangeFreezeAuthorityInstruction({
+    newFreezeAuthority: newFreezeAuthority.toBytes(),
+  }).getInstruction(programId, centralStateKey, centralState.authority);
+};
+
+/**
  * This function can be used to create a V2 bond
  * @param connection The Solana RPC connection
  * @param owner The owner of the bond
@@ -846,24 +865,23 @@ export const migrateCentralStateV2 = (
 
 /**
  * This function can be used to freeze or unfreeze the program instructions
- * @param connection The Solana RPC connection
  * @param freezeMask The bit mask of the instructions to freeze (0 = freeze, 1 = unfreeze)
+ * @param freezeAuthority The authority to freeze the instructions - either the freeze authority (0 mask needed) or the central state authority
  * @param programId The ACCESS program ID
  * @returns ix The instruction to freeze the program instructions
  */
-export const adminProgramFreeze = async (
-  connection: Connection,
+export const adminProgramFreeze = (
+  freezeAuthority: PublicKey,
   freezeMask: BN = new BN.BN(0),
   programId = ACCESS_PROGRAM_ID,
 ) => {
   const [centralStateKey] = CentralStateV2.getKey(programId);
-  const centralState = await CentralStateV2.retrieve(connection, centralStateKey);
   return new adminProgramFreezeInstruction({
     ixGate: freezeMask,
   }).getInstruction(
     programId,
     centralStateKey,
-    centralState.authority,
+    freezeAuthority,
   );
 };
 

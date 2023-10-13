@@ -1,6 +1,6 @@
 {
   "name": "@accessprotocol/js",
-  "version": "1.0.14",
+  "version": "2.0.0-alpha.7",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -29,6 +29,8 @@
   "files": [
     "dist/esm/*",
     "dist/cjs/*",
+    "dist/esm/types/*",
+    "dist/cjs/types/*",
     "package.json",
     "README.md"
   ],

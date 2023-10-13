@@ -1,7 +1,7 @@
 import { deserialize, Schema } from "borsh";
 import * as BN from 'bn.js';
 import { Connection, PublicKey } from "@solana/web3.js";
-import { u64 } from "./u64";
+import { u64 } from "./u64.js";
 
 /** Default percentage of the staking rewards going to stakers */
 export const DEFAULT_STAKER_MULTIPLIER = 50;
@@ -356,6 +356,7 @@ export class CentralStateV2 {
   totalStakedSnapshot: BN;
   lastSnapshotOffset: BN;
   ixGate: BN;
+  freezeAuthority: PublicKey;
   adminIxGate: BN;
   feeBasisPoints: number;
   lastFeeDistributionTime: BN;
@@ -378,6 +379,7 @@ export class CentralStateV2 {
           ["totalStakedSnapshot", "u64"],
           ["lastSnapshotOffset", "u64"],
           ["ixGate", "u128"],
+          ["freezeAuthority", [32]],
           ["adminIxGate", "u128"],
           ["feeBasisPoints", "u16"],
           ["lastFeeDistributionTime", "u64"],
@@ -409,6 +411,7 @@ export class CentralStateV2 {
     totalStakedSnapshot: BN;
     lastSnapshotOffset: BN;
     ixGate: BN;
+    freezeAuthority: Uint8Array;
     adminIxGate: BN;
     feeBasisPoints: number;
     lastFeeDistributionTime: BN;
@@ -425,6 +428,7 @@ export class CentralStateV2 {
     this.totalStakedSnapshot = obj.totalStakedSnapshot;
     this.lastSnapshotOffset = obj.lastSnapshotOffset;
     this.ixGate = obj.ixGate;
+    this.freezeAuthority = new PublicKey(obj.freezeAuthority);
     this.adminIxGate = obj.adminIxGate;
     this.feeBasisPoints = obj.feeBasisPoints;
     this.lastFeeDistributionTime = obj.lastFeeDistributionTime.fromTwos(64);

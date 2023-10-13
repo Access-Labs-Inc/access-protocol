@@ -9,6 +9,11 @@ use solana_test_framework::*;
 use spl_associated_token_account::{
     get_associated_token_address, instruction::create_associated_token_account,
 };
+
+use solana_program::{
+    system_instruction::transfer
+};
+
 use spl_token::instruction::AuthorityType::MintTokens;
 
 use access_protocol::{
@@ -18,10 +23,10 @@ use access_protocol::{
         crank, create_central_state, create_stake_account, create_stake_pool, stake, unstake,
     },
 };
-use access_protocol::instruction::{admin_program_freeze, admin_renounce, admin_set_protocol_fee, change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards, create_bond, migrate_central_state_v2, ProgramInstruction, unlock_bond_tokens, unlock_bond_v2};
+use access_protocol::instruction::{admin_change_freeze_authority, admin_program_freeze, admin_renounce, admin_set_protocol_fee, change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards, create_bond, migrate_central_state_v2, ProgramInstruction, unlock_bond_tokens, unlock_bond_v2};
 use access_protocol::state::{BondAccount, BondV2Account, CentralState, CentralStateV2, FeeRecipient, StakeAccount, StakePoolHeader};
 
-use crate::common::utils::{mint_bootstrap, sign_send_instructions};
+use crate::common::utils::{mint_bootstrap, sign_send_instructions, sign_send_instructions_without_authority};
 
 pub const INITIAL_SUPPLY: u64 = 100_000_000_000_000_000;
 
@@ -220,6 +225,16 @@ impl TestRunner {
             central_state_vault,
             supply_owner,
         })
+    }
+
+    pub async fn get_sol(&mut self, recipient: &Pubkey, amount: i64) -> Result<(), BanksClientError> {
+        let ix = transfer(
+            &self.prg_test_ctx.payer.pubkey(),
+            &recipient,
+            amount as u64,
+        );
+        sign_send_instructions(&mut self.prg_test_ctx, vec![ix], vec![]).await?;
+        Ok(())
     }
 
 
@@ -764,16 +779,23 @@ impl TestRunner {
         })
     }
 
-    pub async fn freeze_program(&mut self, ix_gate: u128) -> Result<(), BanksClientError> {
+    pub async fn freeze_program(&mut self, ix_gate: u128, authority: Option<&Keypair>) -> Result<(), BanksClientError> {
+        let auth = match authority {
+            Some(a) => a,
+            None => &self.prg_test_ctx.payer,
+        };
         let freeze_ix = admin_program_freeze(
             self.program_id,
             admin_program_freeze::Accounts {
-                authority: &self.prg_test_ctx.payer.pubkey(),
+                authority: &auth.pubkey(),
                 central_state: &self.central_state,
             },
             admin_program_freeze::Params { ix_gate },
         );
-        sign_send_instructions(&mut self.prg_test_ctx, vec![freeze_ix], vec![]).await
+        match authority {
+            Some(a) => sign_send_instructions_without_authority(&mut self.prg_test_ctx, vec![freeze_ix], vec![&a]).await,
+            None => sign_send_instructions(&mut self.prg_test_ctx, vec![freeze_ix], vec![]).await
+        }
     }
 
     pub async fn renounce(&mut self, ix: ProgramInstruction) -> Result<(), BanksClientError> {
@@ -1250,6 +1272,28 @@ impl TestRunner {
             },
             change_central_state_authority::Params {
                 new_authority: new_authority.pubkey(),
+            },
+        );
+        sign_send_instructions(&mut self.prg_test_ctx, vec![ix], vec![]).await?;
+
+        let authority_ata =
+            get_associated_token_address(&self.prg_test_ctx.payer.pubkey(), &self.mint);
+        self.authority_ata = authority_ata;
+        Ok(())
+    }
+
+    pub async fn change_freeze_authority(
+        &mut self,
+        new_authority: &Keypair,
+    ) -> Result<(), BanksClientError> {
+        let ix = admin_change_freeze_authority(
+            self.program_id,
+            admin_change_freeze_authority::Accounts {
+                central_state: &self.central_state,
+                authority: &self.prg_test_ctx.payer.pubkey(),
+            },
+            admin_change_freeze_authority::Params {
+                new_freeze_authority: new_authority.pubkey(),
             },
         );
         sign_send_instructions(&mut self.prg_test_ctx, vec![ix], vec![]).await?;

@@ -2,7 +2,7 @@
 import * as BN from "bn.js";
 import { Schema, serialize } from "borsh";
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
-import { FeeRecipient } from "./state";
+import { FeeRecipient } from "./state.js";
 
 interface AccountKey {
   pubkey: PublicKey;
@@ -808,13 +808,16 @@ export class claimRewardsInstruction {
       },
     ],
   ]);
+
   constructor(obj: { allowZeroRewards: number }) {
     this.tag = 7;
     this.allowZeroRewards = obj.allowZeroRewards;
   }
+
   serialize(): Uint8Array {
     return serialize(claimRewardsInstruction.schema, this);
   }
+
   getInstruction(
     programId: PublicKey,
     stakePool: PublicKey,
@@ -1705,6 +1708,58 @@ export class createStakeAccountInstruction implements TaggedInstruction {
     keys.push({
       pubkey: centralState,
       isSigner: false,
+      isWritable: false,
+    });
+    return new TransactionInstruction({
+      keys,
+      programId,
+      data,
+    });
+  }
+}
+
+export class adminChangeFreezeAuthorityInstruction implements TaggedInstruction {
+  tag: number;
+  newFreezeAuthority: Uint8Array;
+  static schema: Schema = new Map([
+    [
+      adminChangeFreezeAuthorityInstruction,
+      {
+        kind: "struct",
+        fields: [
+          ["tag", "u8"],
+          ["newFreezeAuthority", [32]],
+        ],
+      },
+    ],
+  ]);
+
+  constructor(obj: {
+    newFreezeAuthority: Uint8Array;
+  }) {
+    this.tag = 33;
+    this.newFreezeAuthority = obj.newFreezeAuthority;
+  }
+
+  serialize(): Uint8Array {
+    return serialize(adminChangeFreezeAuthorityInstruction.schema, this);
+  }
+
+  getInstruction(
+    programId: PublicKey,
+    centralState: PublicKey,
+    authority: PublicKey,
+  ): TransactionInstruction {
+    const data = Buffer.from(this.serialize());
+    let keys: AccountKey[] = [];
+    keys.push({
+      pubkey: centralState,
+      isSigner: false,
+      isWritable: true,
+    });
+    keys.push({
+      pubkey: authority,
+      isSigner: true,
       isWritable: false,
     });
     return new TransactionInstruction({

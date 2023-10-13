@@ -514,6 +514,9 @@ pub struct CentralStateV2 {
     /// 1 is chosen as enabled, 0 is disabled
     pub ix_gate: u128,
 
+    ///  An additional account able to freeze the program functionality. The program can be unfrozen only by the authority
+    pub freeze_authority: Pubkey,
+
     /// Map of ixs and their state for renouncing the admin permissions
     /// 1 is chosen as enabled, 0 is disabled
     pub admin_ix_gate: u128,
@@ -544,6 +547,7 @@ impl CentralStateV2 {
             total_staked: central_state.total_staked,
             total_staked_snapshot: central_state.total_staked_snapshot,
             last_snapshot_offset: central_state.last_snapshot_offset,
+            freeze_authority: central_state.authority,
             ix_gate: u128::MAX, // all instructions enabled
             admin_ix_gate: u128::MAX, // all instructions enabled
             fee_basis_points: DEFAULT_FEE_BASIS_POINTS,

@@ -4,9 +4,10 @@ use solana_program::instruction::Instruction;
 use solana_program::program_pack::Pack;
 use solana_program::pubkey::Pubkey;
 use solana_program_test::{BanksClientError, ProgramTest, ProgramTestContext};
+use solana_sdk::{signature::Keypair, transaction::Transaction};
 use solana_sdk::account::Account;
 use solana_sdk::signature::Signer;
-use solana_sdk::{signature::Keypair, transaction::Transaction};
+use solana_sdk::transaction::TransactionError;
 use spl_token::state::Mint;
 
 // Utils
@@ -22,6 +23,16 @@ pub async fn sign_send_instructions(
         payer_signers.push(s);
     }
     transaction.partial_sign(&payer_signers, ctx.last_blockhash);
+    ctx.banks_client.process_transaction(transaction).await
+}
+
+pub async fn sign_send_instructions_without_authority(
+    ctx: &mut ProgramTestContext,
+    instructions: Vec<Instruction>,
+    signers: Vec<&Keypair>,
+)  -> Result<(), BanksClientError> {
+    let mut transaction = Transaction::new_with_payer(&instructions, Some(&signers[0].pubkey()));
+    transaction.partial_sign(&signers, ctx.last_blockhash);
     ctx.banks_client.process_transaction(transaction).await
 }
 
