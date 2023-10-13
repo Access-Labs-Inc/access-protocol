@@ -111,7 +111,6 @@ export const activateStakePool = (
  * @param bondAccount The key of the bond account
  * @param rewardsDestination The destination token account for the rewards being claimed
  * @param programId The ACCESS program ID
- * @param ownerMustSign todo
  * @returns ix The instruction to claim the bond rewards
  */
 export const claimBondRewards = async (
