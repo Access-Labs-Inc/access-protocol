@@ -1,6 +1,8 @@
-import { Connection, PublicKey, MemcmpFilter } from "@solana/web3.js";
-import { StakeAccount, BondAccount, StakePool } from "./state.js";
+import { Connection, MemcmpFilter, PublicKey, TransactionInstruction } from "@solana/web3.js";
+import { ACCESS_MINT, ACCESS_PROGRAM_ID, BondAccount, CentralStateV2, StakeAccount, StakePool } from "./state.js";
 import * as BN from "bn.js";
+import { claimRewards, crank, createStakeAccount, stake } from "./bindings";
+import { createTransferInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
 
 /**
  * This function can be used to find all stake accounts of a user
@@ -313,9 +315,9 @@ export const hasValidSubscriptionForPool = async (
 
   const requiredMinAmountToLock = stakeAccount
     ? Math.min(
-        Number(stakeAccount.poolMinimumAtCreation),
-        Number(poolAccount.minimumStakeAmount)
-      )
+      Number(stakeAccount.poolMinimumAtCreation),
+      Number(poolAccount.minimumStakeAmount)
+    )
     : Number(poolAccount.minimumStakeAmount);
 
   const lockedAmount = await getLockedAmountForPool(
@@ -326,3 +328,113 @@ export const hasValidSubscriptionForPool = async (
   );
   return lockedAmount.toNumber() >= requiredMinAmountToLock;
 };
+
+/**
+ * This function can be used to get all instructions needed for a successful lock
+ * @param connection The Solana RPC connection
+ * @param user The user's pubkey
+ * @param pool The pool's pubkey
+ * @param feePayer The fee payer's pubkey
+ * @param amount The amount to lock
+ * @param feePayerCompensation The amount of ACS to reimburse to the fee payer if creating a StakeAccount
+ * @param programId The program ID
+ * @param centralState The central state, if already known (otherwise retrieved from the blockchain)
+ * @param poolData The pool data, if already known (otherwise retrieved from the blockchain)
+ */
+export const fullLock = async (
+  connection: Connection,
+  user: PublicKey,
+  pool: PublicKey,
+  feePayer: PublicKey,
+  amount: number,
+  feePayerCompensation = 0,
+  programId = ACCESS_PROGRAM_ID,
+  centralState?: CentralStateV2,
+  poolData?: StakePool,
+): Promise<TransactionInstruction[]> => {
+  const [stakeAccountPubkey] = StakeAccount.getKey(
+    programId,
+    user,
+    pool,
+  );
+
+  const [centralStateKey] = CentralStateV2.getKey(programId);
+  if (!centralState) {
+    centralState = await CentralStateV2.retrieve(connection, centralStateKey);
+  }
+  if (!poolData) {
+    poolData = await StakePool.retrieve(connection, pool);
+  }
+  let tokenMint = ACCESS_MINT;
+  if (programId !== ACCESS_PROGRAM_ID) {
+    tokenMint = centralState.tokenMint;
+  }
+
+  const ixs: TransactionInstruction[] = [];
+
+  let hasCranked = false;
+  if (
+    centralState.lastSnapshotOffset.toNumber() > poolData.currentDayIdx ||
+    centralState.creationTime.toNumber() +
+    86400 * (poolData.currentDayIdx + 1) <
+    Date.now() / 1000
+  ) {
+    ixs.push(crank(pool, programId));
+    hasCranked = true;
+  }
+
+  let stakeAccount = null;
+  try {
+    stakeAccount = await StakeAccount.retrieve(
+      connection,
+      stakeAccountPubkey,
+    );
+  } catch (err) {
+
+    // Pay SOL for the account creation and reimburse in ACS
+    if (feePayerCompensation > 0) {
+      const from = user;
+      const to = feePayer;
+      const sourceATA = getAssociatedTokenAddressSync(tokenMint, from);
+      const destinationATA = getAssociatedTokenAddressSync(tokenMint, to);
+      ixs.push(createTransferInstruction(
+        sourceATA,
+        destinationATA,
+        from,
+        feePayerCompensation,
+      ));
+    }
+
+    // Create stake account
+    ixs.push(createStakeAccount(
+      new PublicKey(pool),
+      user,
+      feePayer,
+      programId,
+    ));
+  }
+
+  if (
+    stakeAccount &&
+    stakeAccount.stakeAmount.toNumber() > 0 &&
+    (stakeAccount.lastClaimedOffset.toNumber() < poolData.currentDayIdx ||
+      hasCranked)
+  ) {
+    ixs.push(await claimRewards(
+      connection,
+      user,
+      pool,
+      programId,
+    ));
+  }
+
+  ixs.push(await stake(
+    connection,
+    user,
+    pool,
+    amount * 10 ** 6,
+    programId,
+  ))
+
+  return ixs;
+}
