@@ -1,7 +1,24 @@
 import { Connection, MemcmpFilter, PublicKey, TransactionInstruction } from "@solana/web3.js";
-import { ACCESS_MINT, ACCESS_PROGRAM_ID, BondAccount, CentralStateV2, StakeAccount, StakePool } from "./state.js";
+import {
+  ACCESS_MINT,
+  ACCESS_PROGRAM_ID,
+  BondAccount,
+  BondV2Account,
+  CentralStateV2,
+  StakeAccount,
+  StakePool
+} from "./state.js";
 import * as BN from "bn.js";
-import { claimRewards, crank, createStakeAccount, stake, unstake } from "./bindings.js";
+import {
+  addToBondV2,
+  claimBondV2Rewards,
+  claimRewards,
+  crank,
+  createBondV2,
+  createStakeAccount,
+  stake,
+  unstake
+} from "./bindings.js";
 import { createTransferInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
 
 /**
@@ -340,6 +357,9 @@ export const hasValidSubscriptionForPool = async (
  * @param programId The program ID
  * @param centralState The central state, if already known (otherwise retrieved from the blockchain)
  * @param poolData The pool data, if already known (otherwise retrieved from the blockchain)
+ * @param unlockDate The unlock date for the purpose of locking tokens in a bond. Special values are:
+ * -1: Not a bond account (default, unlocks immediately)
+ * 0: Forever bond (no unlock date)
  */
 export const fullLock = async (
   connection: Connection,
@@ -351,6 +371,7 @@ export const fullLock = async (
   programId = ACCESS_PROGRAM_ID,
   centralState?: CentralStateV2,
   poolData?: StakePool,
+  unlockDate = -1
 ): Promise<TransactionInstruction[]> => {
 
   const [centralStateKey] = CentralStateV2.getKey(programId);
@@ -378,6 +399,51 @@ export const fullLock = async (
     hasCranked = true;
   }
 
+  if (unlockDate === -1) {
+    ixs.push(...(await lockStakeAccount(
+      connection,
+      user,
+      pool,
+      feePayer,
+      amount,
+      feePayerCompensation,
+      programId,
+      tokenMint,
+      poolData,
+      hasCranked,
+    )))
+  } else {
+    ixs.push(...(await lockBondV2Account(
+      connection,
+      user,
+      pool,
+      feePayer,
+      amount,
+      feePayerCompensation,
+      programId,
+      tokenMint,
+      poolData,
+      hasCranked,
+      unlockDate,
+    )))
+  }
+
+  return ixs;
+}
+
+const lockStakeAccount = async (
+  connection: Connection,
+  user: PublicKey,
+  pool: PublicKey,
+  feePayer: PublicKey,
+  amount: number,
+  feePayerCompensation = 0,
+  programId: PublicKey,
+  tokenMint: PublicKey,
+  poolData: StakePool,
+  hasCranked: boolean,
+) => {
+  const ixs = [];
   let stakeAccount = null;
   try {
     stakeAccount = await StakeAccount.retrieve(
@@ -406,7 +472,7 @@ export const fullLock = async (
 
     // Create stake account
     ixs.push(createStakeAccount(
-      new PublicKey(pool),
+      pool,
       user,
       feePayer,
       programId,
@@ -437,6 +503,91 @@ export const fullLock = async (
 
   return ixs;
 }
+
+const lockBondV2Account = async (
+  connection: Connection,
+  user: PublicKey,
+  pool: PublicKey,
+  feePayer: PublicKey,
+  amount: number,
+  feePayerCompensation = 0,
+  programId: PublicKey,
+  tokenMint: PublicKey,
+  poolData: StakePool,
+  hasCranked: boolean,
+  unlockDate: number,
+) => {
+  const ixs = [];
+
+  let bondV2Account = null;
+  const bondV2AccountKey = BondV2Account.getKey(
+    programId,
+    user,
+    pool,
+    new BN(unlockDate),
+  )[0];
+  try {
+    bondV2Account = await BondV2Account.retrieve(
+      connection,
+      bondV2AccountKey
+    );
+  } catch (err) {
+    // Pay SOL for the account creation and reimburse in ACS
+    if (feePayerCompensation > 0) {
+      const from = user;
+      const to = feePayer;
+      const sourceATA = getAssociatedTokenAddressSync(tokenMint, from);
+      const destinationATA = getAssociatedTokenAddressSync(tokenMint, to);
+      ixs.push(createTransferInstruction(
+        sourceATA,
+        destinationATA,
+        from,
+        feePayerCompensation,
+      ));
+    }
+
+    // Create bondV2 account
+    ixs.push(await createBondV2(
+      connection,
+      user,
+      feePayer,
+      user,
+      pool,
+      new BN(amount).mul(new BN(10 ** 6)),
+      new BN(unlockDate),
+      programId,
+    ));
+
+    return ixs;
+  }
+
+  // If the bondV2 already exists, we add to it
+  if (
+    bondV2Account &&
+    bondV2Account.stakeAmount.toNumber() > 0 &&
+    (bondV2Account.lastClaimedOffset.toNumber() < poolData.currentDayIdx ||
+      hasCranked)
+  ) {
+    ixs.push(await claimBondV2Rewards(
+      connection,
+      bondV2AccountKey,
+      programId,
+    ));
+  }
+
+  ixs.push(await addToBondV2(
+    connection,
+    user,
+    user,
+    pool,
+    new BN(amount).mul(new BN(10 ** 6)),
+    new BN(unlockDate),
+    programId,
+  ));
+
+  return ixs;
+}
+
 
 /**
  * This function can be used to get all instructions needed for a successful unlock
