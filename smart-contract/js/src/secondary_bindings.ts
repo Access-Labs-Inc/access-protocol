@@ -524,7 +524,7 @@ const lockBondV2Account = async (
     programId,
     user,
     pool,
-    new BN(unlockDate),
+    new BN.BN(unlockDate),
   )[0];
   try {
     bondV2Account = await BondV2Account.retrieve(
@@ -553,8 +553,8 @@ const lockBondV2Account = async (
       feePayer,
       user,
       pool,
-      new BN(amount).mul(new BN(10 ** 6)),
-      new BN(unlockDate),
+      new BN.BN(amount).mul(new BN.BN(10 ** 6)),
+      unlockDate ? new BN.BN(unlockDate) : undefined,
       programId,
     ));
 
@@ -564,7 +564,7 @@ const lockBondV2Account = async (
   // If the bondV2 already exists, we add to it
   if (
     bondV2Account &&
-    bondV2Account.stakeAmount.toNumber() > 0 &&
+    bondV2Account.amount.toNumber() > 0 &&
     (bondV2Account.lastClaimedOffset.toNumber() < poolData.currentDayIdx ||
       hasCranked)
   ) {
@@ -580,8 +580,8 @@ const lockBondV2Account = async (
     user,
     user,
     pool,
-    new BN(amount).mul(new BN(10 ** 6)),
-    new BN(unlockDate),
+    new BN.BN(amount).mul(new BN.BN(10 ** 6)),
+    new BN.BN(unlockDate),
     programId,
   ));
 
