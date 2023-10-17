@@ -1,7 +1,7 @@
 import { Connection, MemcmpFilter, PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { ACCESS_MINT, ACCESS_PROGRAM_ID, BondAccount, CentralStateV2, StakeAccount, StakePool } from "./state.js";
 import * as BN from "bn.js";
-import { claimRewards, crank, createStakeAccount, stake } from "./bindings";
+import { claimRewards, crank, createStakeAccount, stake, unstake } from "./bindings.js";
 import { createTransferInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
 
 /**
@@ -335,7 +335,7 @@ export const hasValidSubscriptionForPool = async (
  * @param user The user's pubkey
  * @param pool The pool's pubkey
  * @param feePayer The fee payer's pubkey
- * @param amount The amount to lock
+ * @param amount The amount to lock in ACS
  * @param feePayerCompensation The amount of ACS to reimburse to the fee payer if creating a StakeAccount
  * @param programId The program ID
  * @param centralState The central state, if already known (otherwise retrieved from the blockchain)
@@ -352,11 +352,6 @@ export const fullLock = async (
   centralState?: CentralStateV2,
   poolData?: StakePool,
 ): Promise<TransactionInstruction[]> => {
-  const [stakeAccountPubkey] = StakeAccount.getKey(
-    programId,
-    user,
-    pool,
-  );
 
   const [centralStateKey] = CentralStateV2.getKey(programId);
   if (!centralState) {
@@ -387,7 +382,11 @@ export const fullLock = async (
   try {
     stakeAccount = await StakeAccount.retrieve(
       connection,
-      stakeAccountPubkey,
+      StakeAccount.getKey(
+        programId,
+        user,
+        pool,
+      )[0],
     );
   } catch (err) {
 
@@ -435,6 +434,90 @@ export const fullLock = async (
     amount * 10 ** 6,
     programId,
   ))
+
+  return ixs;
+}
+
+/**
+ * This function can be used to get all instructions needed for a successful unlock
+ * @param connection The Solana RPC connection
+ * @param user The user's pubkey
+ * @param pool The pool's pubkey
+ * @param amount The amount to unlock in ACS
+ * @param programId The program ID
+ * @param centralState The central state, if already known (otherwise retrieved from the blockchain)
+ * @param poolData The pool data, if already known (otherwise retrieved from the blockchain)
+ * @param stakeAccount The stake account, if already known (otherwise retrieved from the blockchain)
+ */
+export const fullUnlock = async (
+  connection: Connection,
+  user: PublicKey,
+  pool: PublicKey,
+  amount: number,
+  programId = ACCESS_PROGRAM_ID,
+  centralState?: CentralStateV2,
+  poolData?: StakePool,
+  stakeAccount?: StakeAccount,
+): Promise<TransactionInstruction[]> => {
+  const [centralStateKey] = CentralStateV2.getKey(programId);
+  if (!centralState) {
+    centralState = await CentralStateV2.retrieve(connection, centralStateKey);
+  }
+  if (!poolData) {
+    poolData = await StakePool.retrieve(connection, pool);
+  }
+  if (!stakeAccount) {
+    stakeAccount = await StakeAccount.retrieve(
+      connection,
+      StakeAccount.getKey(
+        programId,
+        user,
+        pool,
+      )[0],
+    );
+  }
+
+  const ixs: TransactionInstruction[] = [];
+  let hasCranked = false;
+  if (
+    centralState.lastSnapshotOffset.toNumber() > poolData.currentDayIdx ||
+    centralState.creationTime.toNumber() +
+    86400 * (poolData.currentDayIdx + 1) <
+    Date.now() / 1000
+  ) {
+    ixs.push(crank(pool, programId));
+    hasCranked = true;
+  }
+
+  if (
+    stakeAccount.stakeAmount.toNumber() > 0 &&
+    (stakeAccount.lastClaimedOffset.toNumber() < poolData.currentDayIdx ||
+      hasCranked)
+  ) {
+    ixs.push(
+      await claimRewards(
+        connection,
+        user,
+        pool,
+        programId,
+      ),
+    );
+  }
+
+  if (
+    stakeAccount.stakeAmount.toNumber() > 0 &&
+    amount > 0
+  ) {
+    ixs.push(
+      await unstake(
+        connection,
+        user,
+        pool,
+        amount * 10 ** 6,
+        programId,
+      ),
+    );
+  }
 
   return ixs;
 }

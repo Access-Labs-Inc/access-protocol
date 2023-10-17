@@ -482,7 +482,6 @@ export const unstake = async (
     true,
   );
 
-
   return new unstakeInstruction({
     amount: new BN.BN(amount),
   }).getInstruction(
