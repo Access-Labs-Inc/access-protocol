@@ -436,6 +436,15 @@ export class CentralStateV2 {
     this.recipients = obj.recipients;
   }
 
+  async getCurrentOffset(connection: Connection) {
+    const slot = await connection.getSlot();
+    const timestamp = await connection.getBlockTime(slot);
+    if (!timestamp) {
+      throw new Error("Cannot get current timestamp");
+    }
+    return new BN.BN(timestamp).sub(this.creationTime).divn(86400);
+  }
+
   static deserialize(data: Buffer) {
     return deserialize(this.schema, CentralStateV2, data);
   }

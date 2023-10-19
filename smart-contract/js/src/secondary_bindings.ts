@@ -6,7 +6,7 @@ import {
   BondV2Account,
   CentralStateV2,
   StakeAccount,
-  StakePool
+  StakePool, Tag
 } from "./state.js";
 import * as BN from "bn.js";
 import {
@@ -19,7 +19,16 @@ import {
   stake,
   unstake
 } from "./bindings.js";
-import { createTransferInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
+import {
+  createAssociatedTokenAccountInstruction,
+  createTransferInstruction,
+  getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID
+} from "@solana/spl-token";
+import {
+  claimBondRewardsInstruction,
+  claimBondV2RewardsInstruction,
+  claimRewardsInstruction
+} from "./raw_instructions.js";
 
 /**
  * This function can be used to find all stake accounts of a user
@@ -554,7 +563,7 @@ const lockBondV2Account = async (
       user,
       pool,
       new BN.BN(amount).mul(new BN.BN(10 ** 6)),
-      unlockDate ? new BN.BN(unlockDate) : undefined,
+      unlockDate ? new BN.BN(unlockDate) : null,
       programId,
     ));
 
@@ -672,3 +681,186 @@ export const fullUnlock = async (
 
   return ixs;
 }
+
+/** This function can be used to get all instructions needed for a successful claim
+ * The instructions are returned in two arrays, first one is a set of instructions that need to be called before the second one
+ * @param connection The Solana RPC connection
+ * @param user The user's pubkey
+ * @param feePayer The fee payer's pubkey
+ * @param feePayerCompensation The amount of ACS to reimburse to the fee payer
+ * @param programId The program ID
+ * @param poolOffsets The pool offsets, if already known (otherwise retrieved from the blockchain)
+ */
+export const fullUserRewardClaim = async (
+  connection: Connection,
+  user: PublicKey,
+  feePayer: PublicKey,
+  feePayerCompensation = 0,
+  programId = ACCESS_PROGRAM_ID,
+  poolOffsets: Map<string, number> | undefined = undefined,
+): Promise<[TransactionInstruction[], TransactionInstruction[]]> => {
+  const filters: MemcmpFilter[] = [
+    {
+      memcmp: {
+        offset: 1,
+        bytes: user.toBase58(),
+      },
+    },
+  ];
+  const userOwnerAccounts = await connection.getProgramAccounts(programId, {
+    filters,
+  });
+
+  const [centralStateKey] = CentralStateV2.getKey(programId);
+  const centralState = await CentralStateV2.retrieve(
+    connection,
+    centralStateKey,
+  );
+  const currentOffset = await centralState.getCurrentOffset(connection);
+
+  const userATA = getAssociatedTokenAddressSync(centralState.tokenMint, user);
+  const relevantPools = new Set<string>();
+  const rewardsDestination = getAssociatedTokenAddressSync(
+    centralState.tokenMint,
+    user,
+    true,
+  );
+
+  const claimIxs = userOwnerAccounts
+    .map(account => {
+      switch (account.account.data[0]) {
+        // stake account
+        case Tag.StakeAccount:
+          const stakeAccount = StakeAccount.deserialize(account.account.data);
+          relevantPools.add(stakeAccount.stakePool.toBase58());
+          if (stakeAccount.lastClaimedOffset < currentOffset) {
+            const claimIx = new claimRewardsInstruction({
+              allowZeroRewards: Number(false),
+            }).getInstruction(
+              programId,
+              stakeAccount.stakePool,
+              account.pubkey,
+              user,
+              rewardsDestination,
+              centralStateKey,
+              centralState.tokenMint,
+              TOKEN_PROGRAM_ID,
+            );
+
+            // we don't require the owner to sign this transaction as users are claiming for themselves
+            const claimIdx = claimIx.keys.findIndex(e => e.pubkey.equals(user));
+            // @ts-ignore
+            claimIx.keys[claimIdx].isSigner = false;
+            return claimIx;
+          }
+          return null;
+
+        // bond account
+        case Tag.BondAccount:
+          const bondAccount = BondAccount.deserialize(account.account.data);
+          relevantPools.add(bondAccount.stakePool.toBase58());
+          if (bondAccount.lastClaimedOffset < currentOffset) {
+            const bondClaimIx =
+              new claimBondRewardsInstruction().getInstruction(
+                programId,
+                bondAccount.stakePool,
+                account.pubkey,
+                bondAccount.owner,
+                rewardsDestination,
+                centralStateKey,
+                centralState.tokenMint,
+                TOKEN_PROGRAM_ID,
+              );
+            // we don't require the owner to sign this transaction as our use-case is only the bond owner claiming their rewards.
+            const bondClaimIds = bondClaimIx.keys.findIndex(e =>
+              e.pubkey.equals(bondAccount.owner),
+            );
+            // @ts-ignore
+            bondClaimIx.keys[bondClaimIds].isSigner = false;
+            return bondClaimIx;
+          }
+          return null;
+
+        // bondV2 account
+        case Tag.BondV2Account:
+          const bondV2Account = BondV2Account.deserialize(account.account.data);
+          relevantPools.add(bondV2Account.pool.toBase58());
+          if (bondV2Account.lastClaimedOffset < currentOffset) {
+            return new claimBondV2RewardsInstruction().getInstruction(
+              programId,
+              bondV2Account.pool,
+              account.pubkey,
+              bondV2Account.owner,
+              rewardsDestination,
+              centralStateKey,
+              centralState.tokenMint,
+              TOKEN_PROGRAM_ID,
+            );
+          }
+          return null;
+        default:
+          return null;
+      }
+    })
+    .filter(e => e !== null) as TransactionInstruction[];
+
+  const preClaimIxs = [];
+  const userATAInfo = await connection.getAccountInfo(userATA);
+  if (!userATAInfo) {
+    preClaimIxs.push(
+      createAssociatedTokenAccountInstruction(
+        feePayer,
+        userATA,
+        user,
+        centralState.tokenMint,
+      ),
+    );
+    if (feePayerCompensation > 0) {
+      const from = user;
+      const to = feePayer;
+      const sourceATA = getAssociatedTokenAddressSync(
+        centralState.tokenMint,
+        from,
+      );
+      const destinationATA = getAssociatedTokenAddressSync(
+        centralState.tokenMint,
+        to,
+      );
+      preClaimIxs.push(
+        createTransferInstruction(
+          sourceATA,
+          destinationATA,
+          from,
+          feePayerCompensation,
+        ),
+      );
+    }
+  }
+
+  let filledPoolOffsets = poolOffsets;
+  if (!poolOffsets) {
+    filledPoolOffsets = (await getAllStakePools(connection, programId)).reduce(
+      (acc, poolData) => {
+        const pool = StakePool.deserialize(poolData.account.data);
+        acc.set(poolData.pubkey.toBase58(), pool.currentDayIdx);
+        return acc;
+      },
+      {} as Map<string, number>,
+    );
+  }
+  if (!filledPoolOffsets) {
+    throw new Error('Pool offsets not found');
+  }
+
+  relevantPools.forEach(poolAddress => {
+    const poolOffset = filledPoolOffsets!.get(poolAddress) ?? null;
+    if (poolOffset === null) {
+      throw new Error('Pool offset not found');
+    }
+    if (poolOffset < currentOffset.toNumber()) {
+      preClaimIxs.push(crank(new PublicKey(poolAddress), programId));
+    }
+  });
+
+  return [preClaimIxs, claimIxs];
+};
