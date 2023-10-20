@@ -691,7 +691,7 @@ export const fullUnlock = async (
  * @param programId The program ID
  * @param poolOffsets The pool offsets, if already known (otherwise retrieved from the blockchain)
  */
-export const fullUserRewardClaim = async (
+const fullUserRewardClaim = async (
   connection: Connection,
   user: PublicKey,
   feePayer: PublicKey,
@@ -845,7 +845,7 @@ export const fullUserRewardClaim = async (
         acc.set(poolData.pubkey.toBase58(), pool.currentDayIdx);
         return acc;
       },
-      {} as Map<string, number>,
+      new Map<string, number>(),
     );
   }
   if (!filledPoolOffsets) {
