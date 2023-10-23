@@ -1,13 +1,7 @@
-use solana_sdk::signer::{Signer};
-
+use solana_sdk::signer::Signer;
 use solana_test_framework::*;
 
-
-
-
-
 use crate::common::test_runner::TestRunner;
-
 
 pub mod common;
 
@@ -17,36 +11,55 @@ async fn rewards_bonds() {
     let mut tr = TestRunner::new(1_000_000).await.unwrap();
 
     // Create users
-    let stake_pool_owner = tr.create_ata_account().await.unwrap();
-    let staker = tr.create_ata_account().await.unwrap();
+    let stake_pool_owner = tr.create_user_with_ata().await.unwrap();
+    let staker = tr.create_user_with_ata().await.unwrap();
 
     // Mint
     tr.mint(&staker.pubkey(), 10_200).await.unwrap();
 
     // Create stake pool on day 1 12:00
-    tr.create_stake_pool(&stake_pool_owner.pubkey(), 1000).await.unwrap();
+    tr.create_pool(&stake_pool_owner.pubkey(), 1000)
+        .await
+        .unwrap();
 
     // // Activate stake pool
-    tr.activate_stake_pool(&stake_pool_owner.pubkey()).await.unwrap();
+    tr.activate_stake_pool(&stake_pool_owner.pubkey())
+        .await
+        .unwrap();
 
     // Create stake account
-    tr.create_stake_account(&stake_pool_owner.pubkey(), &staker.pubkey()).await.unwrap();
+    tr.create_stake_account(&stake_pool_owner.pubkey(), &staker.pubkey())
+        .await
+        .unwrap();
 
     // Stake to pool 1
     let token_amount = 10_000;
-    tr.stake(&stake_pool_owner.pubkey(), &staker, token_amount).await.unwrap();
+    tr.stake(&stake_pool_owner.pubkey(), &staker, token_amount)
+        .await
+        .unwrap();
     let central_state_stats = tr.central_state_stats().await.unwrap();
-    assert_eq!(central_state_stats.total_staked, token_amount);
+    assert_eq!(central_state_stats.account.total_staked, token_amount);
 
     // Create bond account
-    tr.create_bond(&stake_pool_owner.pubkey(), &staker.pubkey(), 10_000, 1,1,1).await.unwrap();
+    tr.create_bond(
+        &stake_pool_owner.pubkey(),
+        &staker.pubkey(),
+        10_000,
+        1,
+        1,
+        1,
+    )
+    .await
+    .unwrap();
     let central_state_stats = tr.central_state_stats().await.unwrap();
-    assert_eq!(central_state_stats.total_staked, token_amount);
+    assert_eq!(central_state_stats.account.total_staked, token_amount);
 
     // Claim bond
-    tr.claim_bond(&stake_pool_owner.pubkey(), &staker.pubkey()).await.unwrap();
+    tr.claim_bond(&stake_pool_owner.pubkey(), &staker.pubkey())
+        .await
+        .unwrap();
     let central_state_stats = tr.central_state_stats().await.unwrap();
-    assert_eq!(central_state_stats.total_staked, 20_000);
+    assert_eq!(central_state_stats.account.total_staked, 20_000);
 
     // wait until day 2 12:00
     tr.sleep(86400).await.unwrap();
@@ -60,12 +73,16 @@ async fn rewards_bonds() {
     assert_eq!(pool_stats.balance, 500_000);
 
     // Claim staker rewards in pool 1
-    tr.claim_staker_rewards(&stake_pool_owner.pubkey(), &staker).await.unwrap();
+    tr.claim_staker_rewards(&stake_pool_owner.pubkey(), &staker)
+        .await
+        .unwrap();
     let stats = tr.staker_stats(staker.pubkey()).await.unwrap();
     assert_eq!(stats.balance, 250_000);
 
     // Claim bond rewards
-    tr.claim_bond_rewards(&stake_pool_owner.pubkey(), &staker).await.unwrap();
+    tr.claim_bond_rewards(&stake_pool_owner.pubkey(), &staker)
+        .await
+        .unwrap();
     let stats = tr.staker_stats(staker.pubkey()).await.unwrap();
     assert_eq!(stats.balance, 500_000);
 
@@ -77,9 +94,13 @@ async fn rewards_bonds() {
     assert!(crank_result.is_err());
 
     // Try to claim rewards again
-    let result = tr.claim_bond_rewards(&stake_pool_owner.pubkey(), &staker).await;
+    let result = tr
+        .claim_bond_rewards(&stake_pool_owner.pubkey(), &staker)
+        .await;
     assert!(result.is_err());
-    tr.claim_staker_rewards(&stake_pool_owner.pubkey(), &staker).await.unwrap();
+    tr.claim_staker_rewards(&stake_pool_owner.pubkey(), &staker)
+        .await
+        .unwrap();
     let result = tr.claim_pool_rewards(&stake_pool_owner).await;
     assert!(result.is_err());
 
@@ -96,10 +117,14 @@ async fn rewards_bonds() {
     tr.crank_pool(&stake_pool_owner.pubkey()).await.unwrap();
 
     // Claim rewards again
-    tr.claim_bond_rewards(&stake_pool_owner.pubkey(), &staker).await.unwrap();
+    tr.claim_bond_rewards(&stake_pool_owner.pubkey(), &staker)
+        .await
+        .unwrap();
     let stats = tr.staker_stats(staker.pubkey()).await.unwrap();
     assert_eq!(stats.balance, 750_000);
-    tr.claim_staker_rewards(&stake_pool_owner.pubkey(), &staker).await.unwrap();
+    tr.claim_staker_rewards(&stake_pool_owner.pubkey(), &staker)
+        .await
+        .unwrap();
     let stats = tr.staker_stats(staker.pubkey()).await.unwrap();
     assert_eq!(stats.balance, 1_000_000);
     tr.claim_pool_rewards(&stake_pool_owner).await.unwrap();

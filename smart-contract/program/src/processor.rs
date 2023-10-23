@@ -1,4 +1,3 @@
-use crate::instruction::ProgramInstruction;
 use borsh::BorshDeserialize;
 use num_traits::FromPrimitive;
 use solana_program::{
@@ -6,29 +5,42 @@ use solana_program::{
     pubkey::Pubkey,
 };
 
+use crate::instruction::ProgramInstruction;
+
 pub mod activate_stake_pool;
+pub mod add_to_bond_v2;
 pub mod admin_freeze;
 pub mod admin_mint;
+pub mod admin_setup_fee_split;
 pub mod change_central_state_authority;
 pub mod change_inflation;
 pub mod change_pool_minimum;
 pub mod change_pool_multiplier;
 pub mod claim_bond;
 pub mod claim_bond_rewards;
+pub mod claim_bond_v2_rewards;
 pub mod claim_pool_rewards;
 pub mod claim_rewards;
 pub mod close_stake_account;
 pub mod close_stake_pool;
 pub mod crank;
 pub mod create_bond;
+pub mod create_bond_v2;
 pub mod create_central_state;
 pub mod create_stake_account;
 pub mod create_stake_pool;
+pub mod distribute_fees;
 pub mod edit_metadata;
 pub mod sign_bond;
 pub mod stake;
 pub mod unlock_bond_tokens;
+pub mod unlock_bond_v2;
 pub mod unstake;
+pub mod admin_set_protocol_fee;
+pub mod migrate_central_state_v2;
+pub mod admin_program_freeze;
+pub mod admin_renounce;
+pub mod admin_change_freeze_authority;
 
 pub struct Processor {}
 
@@ -181,6 +193,76 @@ impl Processor {
                 let params = edit_metadata::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 edit_metadata::process_edit_metadata(program_id, accounts, params)?;
+            }
+            ProgramInstruction::CreateBondV2 => {
+                msg!("Instruction: Create bond V2");
+                let params = create_bond_v2::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                create_bond_v2::process_create_bond_v2(program_id, accounts, params)?;
+            }
+            ProgramInstruction::AddToBondV2 => {
+                msg!("Instruction: Add to bond V2");
+                let params = add_to_bond_v2::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                add_to_bond_v2::process_add_to_bond_v2(program_id, accounts, params)?;
+            }
+            ProgramInstruction::ClaimBondV2Rewards => {
+                msg!("Instruction: Claim bond V2 rewards");
+                let params = claim_bond_v2_rewards::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                claim_bond_v2_rewards::process_claim_bond_v2_rewards(program_id, accounts, params)?;
+            }
+            ProgramInstruction::UnlockBondV2 => {
+                msg!("Instruction: Unlock bond V2");
+                let params = unlock_bond_v2::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                unlock_bond_v2::process_unlock_bond_v2(program_id, accounts, params)?;
+            }
+            ProgramInstruction::AdminSetupFeeSplit => {
+                msg!("Instruction: Admin setup fee split");
+                let params = admin_setup_fee_split::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                admin_setup_fee_split::process_admin_setup_fee_split(program_id, accounts, params)?;
+            }
+            ProgramInstruction::DistributeFees => {
+                msg!("Instruction: Distribute fees");
+                let params = distribute_fees::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                distribute_fees::process_distribute_fees(program_id, accounts, params)?;
+            }
+            ProgramInstruction::AdminSetProtocolFee => {
+                msg!("Instruction: Admin set protocol fee");
+                let params = admin_set_protocol_fee::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                admin_set_protocol_fee::process_admin_set_protocol_fee(program_id, accounts, params)?;
+            }
+            ProgramInstruction::MigrateCentralStateV2 => {
+                msg!("Instruction: Migrate central state V2");
+                let params = migrate_central_state_v2::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                migrate_central_state_v2::process_migrate_central_state_v2(
+                    program_id, accounts, params,
+                )?;
+            }
+            ProgramInstruction::AdminProgramFreeze => {
+                msg!("Instruction: Admin program freeze");
+                let params = admin_program_freeze::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                admin_program_freeze::process_admin_program_freeze(program_id, accounts, params)?;
+            }
+            ProgramInstruction::AdminRenounce => {
+                msg!("Instruction: Admin renounce");
+                let params = admin_renounce::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                admin_renounce::process_admin_renounce(program_id, accounts, params)?;
+            }
+            ProgramInstruction::AdminChangeFreezeAuthority => {
+                msg!("Instruction: Admin change freeze authority");
+                let params = admin_change_freeze_authority::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                admin_change_freeze_authority::process_admin_change_freeze_authority(
+                    program_id, accounts, params,
+                )?;
             }
         }
 

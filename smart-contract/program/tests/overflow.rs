@@ -1,7 +1,5 @@
-use solana_sdk::signer::{Signer};
+use solana_sdk::signer::Signer;
 use solana_test_framework::*;
-
-
 
 use crate::common::test_runner::TestRunner;
 
@@ -17,20 +15,34 @@ mod basic_functionality {
         // Set daily inflation
         tr.change_inflation(5_479_452_000_000_000).await.unwrap();
         // Create pools
-        let pool_owner = tr.create_ata_account().await.unwrap();
-        let pool_owner2 = tr.create_ata_account().await.unwrap();
-        tr.create_stake_pool(&pool_owner.pubkey(), 1_000_000_000).await.unwrap();
-        tr.create_stake_pool(&pool_owner2.pubkey(), 1_000_000_000).await.unwrap();
+        let pool_owner = tr.create_user_with_ata().await.unwrap();
+        let pool_owner2 = tr.create_user_with_ata().await.unwrap();
+        tr.create_pool(&pool_owner.pubkey(), 1_000_000_000)
+            .await
+            .unwrap();
+        tr.create_pool(&pool_owner2.pubkey(), 1_000_000_000)
+            .await
+            .unwrap();
         tr.activate_stake_pool(&pool_owner.pubkey()).await.unwrap();
         tr.activate_stake_pool(&pool_owner2.pubkey()).await.unwrap();
         // Create a staker
-        let staker = tr.create_ata_account().await.unwrap();
-        tr.mint(&staker.pubkey(), 6_000_000_000_000_000_000).await.unwrap();
-        tr.create_stake_account(&pool_owner.pubkey(), &staker.pubkey()).await.unwrap();
-        tr.create_stake_account(&pool_owner2.pubkey(), &staker.pubkey()).await.unwrap();
+        let staker = tr.create_user_with_ata().await.unwrap();
+        tr.mint(&staker.pubkey(), 6_000_000_000_000_000_000)
+            .await
+            .unwrap();
+        tr.create_stake_account(&pool_owner.pubkey(), &staker.pubkey())
+            .await
+            .unwrap();
+        tr.create_stake_account(&pool_owner2.pubkey(), &staker.pubkey())
+            .await
+            .unwrap();
         // Stake
-        tr.stake(&pool_owner.pubkey(), &staker, 530_959_347_000_000).await.unwrap();
-        tr.stake(&pool_owner2.pubkey(), &staker, 704_776_720_000_000).await.unwrap();
+        tr.stake(&pool_owner.pubkey(), &staker, 530_959_347_000_000)
+            .await
+            .unwrap();
+        tr.stake(&pool_owner2.pubkey(), &staker, 704_776_720_000_000)
+            .await
+            .unwrap();
         // Wait 1 day
         tr.sleep(86400).await.unwrap();
         // Crank

@@ -11,15 +11,17 @@ use solana_program::{
     pubkey::Pubkey,
 };
 
-use crate::state::{BondAccount, CentralState, StakePool};
+use crate::state::{BondAccount, StakePool};
 use crate::{error::AccessError, state::Tag};
 use bonfida_utils::{fp_math::safe_downcast, BorshSize, InstructionsAccount};
 use spl_token::{instruction::mint_to, state::Account};
+use crate::instruction::ProgramInstruction::{ClaimBondRewards};
 
 use crate::utils::{
     assert_no_close_or_delegate, calc_reward_fp32, check_account_key, check_account_owner,
     check_signer,
 };
+use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `claim_bond_rewards` instruction
@@ -113,7 +115,8 @@ pub fn process_claim_bond_rewards(
 
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let central_state = CentralState::from_account_info(accounts.central_state)?;
+    let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(&ClaimBondRewards)?;
     let stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut bond = BondAccount::from_account_info(accounts.bond_account, false)?;
 
@@ -146,6 +149,7 @@ pub fn process_claim_bond_rewards(
         AccessError::WrongMint,
     )?;
 
+    // Calculate the rewards (checks if the pool is cranked as well)
     let reward = calc_reward_fp32(
         central_state.last_snapshot_offset,
         bond.last_claimed_offset,
@@ -179,7 +183,7 @@ pub fn process_claim_bond_rewards(
             accounts.central_state.clone(),
             accounts.rewards_destination.clone(),
         ],
-        &[&[&program_id.to_bytes(), &[central_state.signer_nonce]]],
+        &[&[&program_id.to_bytes(), &[central_state.bump_seed]]],
     )?;
 
     // Update states

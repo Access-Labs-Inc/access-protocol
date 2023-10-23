@@ -1,19 +1,26 @@
 //! Unstake
 use crate::{
-    state::{CentralState, Tag},
+    state::{Tag},
     utils::{check_account_key, check_account_owner, check_signer},
 };
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 
-use solana_program::{account_info::{next_account_info, AccountInfo}, entrypoint::ProgramResult, program_error::ProgramError, pubkey::Pubkey};
 use solana_program::program::invoke_signed;
 use solana_program::program_pack::Pack;
+use solana_program::{
+    account_info::{next_account_info, AccountInfo},
+    entrypoint::ProgramResult,
+    program_error::ProgramError,
+    pubkey::Pubkey,
+};
 use spl_token::instruction::transfer;
 use spl_token::state::Account;
 
 use crate::error::AccessError;
-use crate::state::{BondAccount, StakeAccount, StakePool, StakePoolHeader};
+use crate::instruction::ProgramInstruction::Unstake;
+use crate::state::{StakeAccount, StakePool, StakePoolHeader};
+use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `unstake` instruction
@@ -27,7 +34,7 @@ pub struct Params {
 pub struct Accounts<'a, T> {
     /// The central state account
     #[cons(writable)]
-    pub central_state_account: &'a T,
+    pub central_state: &'a T,
 
     /// The stake account
     #[cons(writable)]
@@ -51,9 +58,6 @@ pub struct Accounts<'a, T> {
     /// The stake pool vault
     #[cons(writable)]
     pub vault: &'a T,
-
-    /// Optional bond account to be able to stake under the minimum
-    pub bond_account: Option<&'a T>,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -63,14 +67,13 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     ) -> Result<Self, ProgramError> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
-            central_state_account: next_account_info(accounts_iter)?,
+            central_state: next_account_info(accounts_iter)?,
             stake_account: next_account_info(accounts_iter)?,
             stake_pool: next_account_info(accounts_iter)?,
             owner: next_account_info(accounts_iter)?,
             destination_token: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
             vault: next_account_info(accounts_iter)?,
-            bond_account: next_account_info(accounts_iter).ok(),
         };
 
         // Check keys
@@ -82,7 +85,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
         // Check ownership
         check_account_owner(
-            accounts.central_state_account,
+            accounts.central_state,
             program_id,
             AccessError::WrongOwner,
         )?;
@@ -106,13 +109,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             &spl_token::ID,
             AccessError::WrongTokenAccountOwner,
         )?;
-        if let Some(bond_account) = accounts.bond_account {
-            check_account_owner(
-                bond_account,
-                program_id,
-                AccessError::WrongBondAccountOwner,
-            )?
-        }
 
         // Check signer
         check_signer(accounts.owner, AccessError::StakeAccountOwnerMustSign)?;
@@ -126,12 +122,13 @@ pub fn process_unstake(
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
-    let Params { amount} = params;
+    let Params { amount } = params;
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
-    let mut central_state = CentralState::from_account_info(accounts.central_state_account)?;
+    let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(&Unstake)?;
 
     let destination_token_acc = Account::unpack(&accounts.destination_token.data.borrow())?;
     if destination_token_acc.mint != central_state.token_mint {
@@ -161,34 +158,18 @@ pub fn process_unstake(
         AccessError::StakePoolVaultMismatch,
     )?;
 
-    let mut amount_in_bonds: u64 = 0;
-    if let Some(bond_account) = accounts.bond_account {
-        let bond_account = BondAccount::from_account_info(bond_account, false)?;
-        check_account_key(
-            accounts.owner,
-            &bond_account.owner,
-            AccessError::WrongOwner,
-        )?;
-        check_account_key(
-            accounts.stake_pool,
-            &bond_account.stake_pool,
-            AccessError::StakePoolMismatch,
-        )?;
-
-        amount_in_bonds = bond_account.total_staked;
-    }
-
     if stake_pool.header.minimum_stake_amount < stake_account.pool_minimum_at_creation {
         stake_account.pool_minimum_at_creation = stake_pool.header.minimum_stake_amount
     }
 
     // Can unstake either above the minimum or everything - includes the bond account
-    let new_total_in_pool = stake_account.stake_amount
-        .checked_add(amount_in_bonds)
-        .ok_or(AccessError::Overflow)?
+    let new_total_in_pool = stake_account
+        .stake_amount
         .checked_sub(amount)
         .ok_or(AccessError::Overflow)?;
-    if stake_account.stake_amount != amount && new_total_in_pool < stake_account.pool_minimum_at_creation {
+    if stake_account.stake_amount != amount
+        && new_total_in_pool < stake_account.pool_minimum_at_creation
+    {
         return Err(AccessError::InvalidUnstakeAmount.into());
     }
 
@@ -232,7 +213,7 @@ pub fn process_unstake(
         .total_staked
         .checked_sub(amount)
         .ok_or(AccessError::Overflow)?;
-    central_state.save(&mut accounts.central_state_account.data.borrow_mut())?;
+    central_state.save(&mut accounts.central_state.data.borrow_mut())?;
 
     Ok(())
 }

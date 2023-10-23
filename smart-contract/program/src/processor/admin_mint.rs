@@ -1,7 +1,8 @@
 //! Allows central state authority to mint ACCESS tokens
+use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
-    account_info::{next_account_info, AccountInfo},
+    account_info::{AccountInfo, next_account_info},
     entrypoint::ProgramResult,
     program::invoke_signed,
     program_error::ProgramError,
@@ -9,9 +10,8 @@ use solana_program::{
 };
 
 use crate::error::AccessError;
-use crate::state::CentralState;
-use bonfida_utils::{BorshSize, InstructionsAccount};
-
+use crate::instruction::ProgramInstruction::AdminMint;
+use crate::state::{CentralStateV2, V1_INSTRUCTIONS_ALLOWED};
 use crate::utils::{check_account_key, check_account_owner, check_signer};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -34,7 +34,7 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub access_token_destination: &'a T,
 
-    /// The account of the central state
+    /// The central state account
     pub central_state: &'a T,
 
     /// The SPL token program account
@@ -80,8 +80,13 @@ pub fn process_admin_mint(
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
+    if !V1_INSTRUCTIONS_ALLOWED {
+        return Err(AccessError::DeprecatedInstruction.into());
+    }
+
     let accounts = Accounts::parse(accounts, program_id)?;
-    let central_state = CentralState::from_account_info(accounts.central_state)?;
+    let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(&AdminMint)?;
 
     check_account_key(
         accounts.mint,
@@ -95,7 +100,7 @@ pub fn process_admin_mint(
     )?;
 
     // Transfer tokens
-    let transfer_ix = spl_token::instruction::mint_to(
+    let mint_ix = spl_token::instruction::mint_to(
         &spl_token::ID,
         accounts.mint.key,
         accounts.access_token_destination.key,
@@ -104,14 +109,14 @@ pub fn process_admin_mint(
         params.amount,
     )?;
     invoke_signed(
-        &transfer_ix,
+        &mint_ix,
         &[
             accounts.spl_token_program.clone(),
             accounts.central_state.clone(),
             accounts.mint.clone(),
             accounts.access_token_destination.clone(),
         ],
-        &[&[&program_id.to_bytes(), &[central_state.signer_nonce]]],
+        &[&[&program_id.to_bytes(), &[central_state.bump_seed]]],
     )?;
 
     Ok(())

@@ -1,17 +1,18 @@
 //! Freeze and unfreeze a program account
 //! This admin instruction can be dangereous 💀
-use crate::error::AccessError;
-use crate::state::{CentralState, Tag};
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use num_traits::FromPrimitive;
 use solana_program::{
-    account_info::{next_account_info, AccountInfo},
+    account_info::{AccountInfo, next_account_info},
     entrypoint::ProgramResult,
     program_error::ProgramError,
     pubkey::Pubkey,
 };
 
+use crate::error::AccessError;
+use crate::instruction::ProgramInstruction::AdminFreeze;
+use crate::state::{CentralStateV2, Tag, V1_INSTRUCTIONS_ALLOWED};
 use crate::utils::{check_account_key, check_account_owner, check_signer};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -27,7 +28,7 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub account_to_freeze: &'a T,
 
-    /// The account of the central state
+    /// The central state account
     pub central_state: &'a T,
 }
 
@@ -62,9 +63,14 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 }
 
 pub fn process_admin_freeze(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
+    if !V1_INSTRUCTIONS_ALLOWED {
+        return Err(AccessError::DeprecatedInstruction.into());
+    }
+
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let central_state = CentralState::from_account_info(accounts.central_state)?;
+    let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(&AdminFreeze)?;
 
     check_account_key(
         accounts.authority,

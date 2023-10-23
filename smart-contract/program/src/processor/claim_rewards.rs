@@ -1,7 +1,7 @@
 //! Claim rewards of a stake account
 //! This instruction can be used by stakers to claim their staking rewards
 use crate::error::AccessError;
-use crate::state::{CentralState, StakeAccount, StakePool, Tag};
+use crate::state::{StakeAccount, StakePool, Tag};
 use crate::utils::{
     assert_no_close_or_delegate, calc_reward_fp32, check_account_key, check_account_owner,
     check_signer,
@@ -19,6 +19,8 @@ use solana_program::{
     pubkey::Pubkey,
 };
 use spl_token::{instruction::mint_to, state::Account};
+use crate::instruction::ProgramInstruction::ClaimRewards;
+use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `claim_rewards` instruction
@@ -49,7 +51,7 @@ pub struct Accounts<'a, T> {
     /// The central state account
     pub central_state: &'a T,
 
-    /// The mint address of the ACCESS token
+    /// The mint address of the ACS token
     #[cons(writable)]
     pub mint: &'a T,
 
@@ -110,7 +112,8 @@ pub fn process_claim_rewards(
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let central_state = CentralState::from_account_info(accounts.central_state)?;
+    let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(&ClaimRewards)?;
     let stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
 
@@ -144,6 +147,7 @@ pub fn process_claim_rewards(
         AccessError::WrongMint,
     )?;
 
+    // Calculate the rewards (checks if the pool is cranked as well)
     let reward = calc_reward_fp32(
         central_state.last_snapshot_offset,
         stake_account.last_claimed_offset,
@@ -176,7 +180,7 @@ pub fn process_claim_rewards(
             accounts.central_state.clone(),
             accounts.rewards_destination.clone(),
         ],
-        &[&[&program_id.to_bytes(), &[central_state.signer_nonce]]],
+        &[&[&program_id.to_bytes(), &[central_state.bump_seed]]],
     )?;
 
     // Update states

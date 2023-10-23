@@ -1,9 +1,9 @@
-import BN from "bn.js";
+import * as BN from 'bn.js'
 
 /**
  * 64-bit value
  */
-export class u64 extends BN {
+export class u64 extends BN.BN {
   constructor(
     input: string | number | BN | Uint8Array | Buffer | number[],
     number?: number
