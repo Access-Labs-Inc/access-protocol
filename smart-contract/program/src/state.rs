@@ -871,8 +871,11 @@ pub struct RoyaltyAccount {
     /// Tag
     pub tag: Tag,
 
-    /// The address that have recommended this account
-    pub recommender: Pubkey,
+    /// The address that have to pay royalties from all their claims
+    pub payer: Pubkey,
+
+    /// The address that collects the royalties
+    pub recipient_ata: Pubkey,
 
     /// The royalty basis points (i.e 1% = 100) going to the recommender
     pub royalty_basis_points: u16,
@@ -895,12 +898,14 @@ impl RoyaltyAccount {
 
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        recommender: Pubkey,
+        payer: Pubkey,
+        recipient_ata: Pubkey,
         royalty_basis_points: u16,
     ) -> Self {
         Self {
             tag: Tag::RoyaltyAccount,
-            recommender,
+            payer,
+            recipient_ata,
             royalty_basis_points,
         }
     }
