@@ -22,6 +22,7 @@ use mpl_token_metadata::{instruction::create_metadata_accounts_v3, pda::find_met
 
 use spl_token::{instruction::set_authority, instruction::AuthorityType};
 use access_protocol::instruction::migrate_central_state_v2;
+use access_protocol::state::RoyaltyAccount;
 
 #[tokio::test]
 async fn functional_10s() {
@@ -579,6 +580,9 @@ async fn functional_10s() {
             central_state: &central_state,
             mint: &mint,
             spl_token_program: &spl_token::ID,
+            owner_royalty_account: &RoyaltyAccount::create_key(&staker.pubkey(), &program_id).0,
+            royalty_account: None,
+            royalty_ata: None,
         },
         claim_rewards::Params {
             allow_zero_rewards: false,
@@ -715,6 +719,9 @@ async fn functional_10s() {
             central_state: &central_state,
             mint: &mint,
             spl_token_program: &spl_token::ID,
+            owner_royalty_account: &RoyaltyAccount::create_key(&staker.pubkey(), &program_id).0,
+            royalty_account: None,
+            royalty_ata: None,
         },
         claim_rewards::Params {
             allow_zero_rewards: false,

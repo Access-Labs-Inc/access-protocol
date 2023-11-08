@@ -154,6 +154,13 @@ pub fn process_claim_rewards(
         return Err(AccessError::RoyaltyAccountMismatch.into());
     }
 
+    let (derived_key, _) = RoyaltyAccount::create_key(&accounts.owner.key, program_id);
+    check_account_key(
+        accounts.owner_royalty_account,
+        &derived_key,
+        AccessError::AccountNotDeterministic,
+    )?;
+
     // Check relationships between royalty accounts
     let mut royalty_account_data: Option<RoyaltyAccount> = None;
     if owner_must_pay {

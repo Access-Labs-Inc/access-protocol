@@ -24,7 +24,7 @@ use access_protocol::{
     },
 };
 use access_protocol::instruction::{admin_change_freeze_authority, admin_program_freeze, admin_renounce, admin_set_protocol_fee, change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards, create_bond, migrate_central_state_v2, ProgramInstruction, unlock_bond_tokens, unlock_bond_v2};
-use access_protocol::state::{BondAccount, BondV2Account, CentralState, CentralStateV2, FeeRecipient, StakeAccount, StakePoolHeader};
+use access_protocol::state::{RoyaltyAccount, BondAccount, BondV2Account, CentralState, CentralStateV2, FeeRecipient, StakeAccount, StakePoolHeader};
 
 use crate::common::utils::{mint_bootstrap, sign_send_instructions, sign_send_instructions_without_authority};
 
@@ -536,6 +536,9 @@ impl TestRunner {
                 central_state: &self.central_state,
                 mint: &self.mint,
                 spl_token_program: &spl_token::ID,
+                owner_royalty_account: &RoyaltyAccount::create_key(&staker.pubkey(), &self.program_id).0,
+                royalty_account: None,
+                royalty_ata: None,
             },
             claim_rewards::Params {
                 allow_zero_rewards: true,
