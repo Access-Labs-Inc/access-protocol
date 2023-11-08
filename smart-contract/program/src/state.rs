@@ -78,6 +78,7 @@ pub enum Tag {
     // V2 tags
     BondV2Account,
     CentralStateV2,
+    RoyaltyAccount,
 }
 
 impl Tag {
@@ -861,6 +862,76 @@ impl BondV2Account {
             .checked_sub(amount)
             .ok_or(AccessError::Overflow)?;
         Ok(())
+    }
+}
+
+#[derive(BorshSerialize, BorshDeserialize, BorshSize)]
+#[allow(missing_docs)]
+pub struct RoyaltyAccount {
+    /// Tag
+    pub tag: Tag,
+
+    /// The address that have recommended this account
+    pub recommender: Pubkey,
+
+    /// The royalty basis points (i.e 1% = 100) going to the recommender
+    pub royalty_basis_points: u16,
+}
+
+
+#[allow(missing_docs)]
+impl RoyaltyAccount {
+    pub const SEED: &'static [u8; 15] = b"royalty_account";
+
+    pub fn create_key(
+        recommendee: &Pubkey,
+        program_id: &Pubkey,
+    ) -> (Pubkey, u8) {
+        let seeds: &[&[u8]] = &[
+            RoyaltyAccount::SEED,
+        ];
+        Pubkey::find_program_address(seeds, program_id)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        recommender: Pubkey,
+        royalty_basis_points: u16,
+    ) -> Self {
+        Self {
+            tag: Tag::RoyaltyAccount,
+            recommender,
+            royalty_basis_points,
+        }
+    }
+
+    pub fn save(&self, mut dst: &mut [u8]) -> ProgramResult {
+        self.serialize(&mut dst)
+            .map_err(|_| ProgramError::InvalidAccountData)
+    }
+
+    pub fn from_account_info(a: &AccountInfo) -> Result<RoyaltyAccount, ProgramError> {
+        let mut data = &a.data.borrow() as &[u8];
+        let tag = Tag::RoyaltyAccount;
+        if data[0] != tag as u8 && data[0] != Tag::Uninitialized as u8 {
+            return Err(AccessError::DataTypeMismatch.into());
+        }
+        let result = RoyaltyAccount::deserialize(&mut data)?;
+        Ok(result)
+    }
+
+    pub fn calculate_royalty_amount(&mut self, amount: u64) -> u64 {
+        let royalty = amount
+            .checked_mul(self.royalty_basis_points as u64)
+            .ok_or(AccessError::Overflow)
+            .checked_add(9_999)// rounding
+            .ok_or(AccessError::Overflow)
+            .checked_div(10_000)
+            .ok_or(AccessError::Overflow);
+        if royalty > amount {
+          return Err(AccessError::Overflow.into());
+        }
+        royalty
     }
 }
 
