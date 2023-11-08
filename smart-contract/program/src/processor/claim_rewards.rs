@@ -90,7 +90,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             royalty_ata: next_account_info(accounts_iter).ok(),
         };
 
-
         // Check keys
         check_account_key(
             accounts.spl_token_program,
@@ -146,7 +145,6 @@ pub fn process_claim_rewards(
     central_state.assert_instruction_allowed(&ClaimRewards)?;
     let stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
-
 
     // Check that the royalty accounts are set up correctly
     let owner_must_pay = !accounts.owner_royalty_account.data_is_empty();
@@ -236,15 +234,14 @@ pub fn process_claim_rewards(
         .and_then(safe_downcast)
         .ok_or(AccessError::Overflow)?;
 
-    msg!("Claiming rewards {}", reward);
-
     // split the rewards if there is a royalty account
     let mut royalty_amount = 0;
     if let Some(royalty_account) = royalty_account_data {
         royalty_amount = royalty_account.calculate_royalty_amount(reward)?;
-        // todo safe math
         reward.checked_sub(royalty_amount).ok_or(AccessError::Overflow)?;
     }
+
+    msg!("Claiming rewards {}, royalties {}", reward, royalty_amount);
 
     // Mint rewards
     let mint_rewards_ix = mint_to(
