@@ -887,11 +887,12 @@ impl RoyaltyAccount {
     pub const SEED: &'static [u8; 15] = b"royalty_account";
 
     pub fn create_key(
-        recommendee: &Pubkey,
+        payer: &Pubkey,
         program_id: &Pubkey,
     ) -> (Pubkey, u8) {
         let seeds: &[&[u8]] = &[
             RoyaltyAccount::SEED,
+            &payer.to_bytes(),
         ];
         Pubkey::find_program_address(seeds, program_id)
     }
@@ -925,18 +926,18 @@ impl RoyaltyAccount {
         Ok(result)
     }
 
-    pub fn calculate_royalty_amount(&mut self, amount: u64) -> u64 {
+    pub fn calculate_royalty_amount(&self, amount: u64) -> Result<u64, ProgramError> {
         let royalty = amount
             .checked_mul(self.royalty_basis_points as u64)
-            .ok_or(AccessError::Overflow)
+            .ok_or(AccessError::Overflow)?
             .checked_add(9_999)// rounding
-            .ok_or(AccessError::Overflow)
+            .ok_or(AccessError::Overflow)?
             .checked_div(10_000)
-            .ok_or(AccessError::Overflow);
+            .ok_or(AccessError::Overflow)?;
         if royalty > amount {
           return Err(AccessError::Overflow.into());
         }
-        royalty
+        Ok(royalty)
     }
 }
 

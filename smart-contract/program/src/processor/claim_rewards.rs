@@ -114,11 +114,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             &spl_token::ID,
             AccessError::WrongOwner,
         )?;
-        check_account_owner(
-            accounts.royalty_account,
-            program_id,
-            AccessError::WrongRoyaltyAccountOwner,
-        )?;
         if let Some(royalty_account) = accounts.royalty_account {
             check_account_owner(
                 royalty_account,
@@ -154,31 +149,33 @@ pub fn process_claim_rewards(
 
 
     // Check that the royalty accounts are set up correctly
-    let owner_royalty_account_nonempty = !accounts.owner_royalty_account.data_is_empty();
-    if owner_royalty_account_exists && accounts.royalty_account.is_some() {
+    let owner_must_pay = !accounts.owner_royalty_account.data_is_empty();
+    if owner_must_pay && accounts.royalty_account.is_some() {
         return Err(AccessError::RoyaltyAccountMismatch.into());
     }
 
     // Check relationships between royalty accounts
-    let royalty_account: Option<RoyaltyAccount> = None;
-    if owner_royalty_account_nonempty {
-        royalty_account = RoyaltyAccount::from_account_info(accounts.owner_royalty_account)?;
+    let mut royalty_account_data: Option<RoyaltyAccount> = None;
+    if owner_must_pay {
+        check_account_owner(
+            accounts.owner_royalty_account,
+            program_id,
+            AccessError::WrongRoyaltyAccountOwner,
+        )?;
+        royalty_account_data = Some(RoyaltyAccount::from_account_info(accounts.owner_royalty_account)?);
         check_account_key(
             accounts.owner,
-            &royalty_account.payer,
+            &royalty_account_data.as_ref().unwrap().payer,
             AccessError::RoyaltyAccountMismatch,
         )?;
     } else if let Some(royalty_account) = accounts.royalty_account {
         check_signer(accounts.owner, AccessError::StakeAccountOwnerMustSign)?;
-        royalty_account = RoyaltyAccount::from_account_info(royalty_account)?;
+        royalty_account_data = Some(RoyaltyAccount::from_account_info(royalty_account)?);
     }
 
-    if let Some(royalty_account) = royalty_account {
-        if accounts.royalty_ata.is_none() {
-            return Err(AccessError::RoyaltyAtaMismatch.into());
-        }
+    if let Some(royalty_account) = royalty_account_data.as_ref() {
         check_account_key(
-            accounts.royalty_ata,
+            accounts.royalty_ata.ok_or(AccessError::RoyaltyAtaMismatch)?,
             &royalty_account.recipient_ata,
             AccessError::RoyaltyAtaMismatch,
         )?;
@@ -235,11 +232,11 @@ pub fn process_claim_rewards(
     msg!("Claiming rewards {}", reward);
 
     // split the rewards if there is a royalty account
-    let royalty_amount = 0;
-    if let Some(royalty_account) = royalty_account {
-        royalty_amount = royalty_account.calculate_royalty_amount(reward);
+    let mut royalty_amount = 0;
+    if let Some(royalty_account) = royalty_account_data {
+        royalty_amount = royalty_account.calculate_royalty_amount(reward)?;
         // todo safe math
-        reward.checked_sub(royalty_amount).ok_or(AccessError::Overflow)
+        reward.checked_sub(royalty_amount).ok_or(AccessError::Overflow)?;
     }
 
     // Mint rewards
@@ -267,7 +264,7 @@ pub fn process_claim_rewards(
         let mint_royalty_ix = mint_to(
             &spl_token::ID,
             accounts.mint.key,
-            accounts.royalty_ata.key,
+            accounts.royalty_ata.unwrap().key,
             accounts.central_state.key,
             &[],
             royalty_amount,
@@ -278,7 +275,7 @@ pub fn process_claim_rewards(
                 accounts.spl_token_program.clone(),
                 accounts.mint.clone(),
                 accounts.central_state.clone(),
-                accounts.royalty_account.clone(),
+                accounts.royalty_account.unwrap().clone(),
             ],
             &[&[&program_id.to_bytes(), &[central_state.bump_seed]]],
         )?;

@@ -200,6 +200,15 @@ impl PrintProgramError for AccessError {
             AccessError::AlreadyRenounced => {
                 msg!("Already renounced")
             }
+            AccessError::RoyaltyAccountMismatch => {
+                msg!("Royalty account mismatch")
+            }
+            AccessError::RoyaltyAtaMismatch => {
+                msg!("Royalty ata mismatch")
+            }
+            AccessError::WrongRoyaltyAccountOwner => {
+                msg!("Wrong royalty account owner")
+            }
         }
     }
 }

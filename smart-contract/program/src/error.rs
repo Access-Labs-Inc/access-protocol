@@ -116,6 +116,12 @@ pub enum AccessError {
     InvalidRenounceParams,
     #[error("Already renounced")]
     AlreadyRenounced,
+    #[error("Royalty account mismatch")]
+    RoyaltyAccountMismatch,
+    #[error("Royalty ata mismatch")]
+RoyaltyAtaMismatch,
+    #[error("Wrong royalty account owner")]
+WrongRoyaltyAccountOwner
 }
 
 impl From<AccessError> for ProgramError {
