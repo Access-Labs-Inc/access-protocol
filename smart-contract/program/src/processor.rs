@@ -41,6 +41,7 @@ pub mod migrate_central_state_v2;
 pub mod admin_program_freeze;
 pub mod admin_renounce;
 pub mod admin_change_freeze_authority;
+pub mod create_royalty_account;
 
 pub struct Processor {}
 
@@ -263,6 +264,12 @@ impl Processor {
                 admin_change_freeze_authority::process_admin_change_freeze_authority(
                     program_id, accounts, params,
                 )?;
+            }
+            ProgramInstruction::CreateRoyaltyAccount => {
+                msg!("Instruction: Create royalty account");
+                let params = create_royalty_account::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                create_royalty_account::process_create_royalty_account(program_id, accounts, params)?;
             }
         }
 
