@@ -23,7 +23,7 @@ use access_protocol::{
         crank, create_central_state, create_stake_account, create_stake_pool, stake, unstake,
     },
 };
-use access_protocol::instruction::{admin_change_freeze_authority, admin_program_freeze, admin_renounce, admin_set_protocol_fee, change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards, create_bond, migrate_central_state_v2, ProgramInstruction, unlock_bond_tokens, unlock_bond_v2};
+use access_protocol::instruction::{create_royalty_account, admin_change_freeze_authority, admin_program_freeze, admin_renounce, admin_set_protocol_fee, change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards, create_bond, migrate_central_state_v2, ProgramInstruction, unlock_bond_tokens, unlock_bond_v2};
 use access_protocol::state::{RoyaltyAccount, BondAccount, BondV2Account, CentralState, CentralStateV2, FeeRecipient, StakeAccount, StakePoolHeader};
 
 use crate::common::utils::{mint_bootstrap, sign_send_instructions, sign_send_instructions_without_authority};
@@ -40,6 +40,7 @@ pub struct TestRunner {
     mint: Pubkey,
     // hashmap from user pubkey to a bond account
     bond_accounts: std::collections::HashMap<String, Pubkey>,
+    royalty_atas: std::collections::HashMap<String, Pubkey>,
     bond_seller: Keypair,
     supply_owner: Keypair,
 }
@@ -221,6 +222,7 @@ impl TestRunner {
             central_state: central_state_address,
             mint,
             bond_accounts: std::collections::HashMap::new(),
+            royalty_atas: std::collections::HashMap::new(),
             bond_seller,
             central_state_vault,
             supply_owner,
@@ -258,6 +260,39 @@ impl TestRunner {
         )
             .await?;
         Ok(())
+    }
+
+    pub async fn create_royalty(
+        &mut self,
+        royalty_payer: &Keypair,
+        royalty_recipient: &Pubkey,
+        royalty_basis_points: u16,
+        expiration_date: u64,
+    ) -> Result<(), BanksClientError> {
+        let royalty_ata = get_associated_token_address(royalty_recipient, &self.mint);
+        let royalty_account = &RoyaltyAccount::create_key(&royalty_payer.pubkey(), &self.program_id).0;
+        let create_royalty_ix = access_protocol::instruction::create_royalty_account(
+            self.program_id,
+            access_protocol::instruction::create_royalty_account::Accounts {
+                royalty_account,
+                fee_payer: &self.prg_test_ctx.payer.pubkey(),
+                royalty_payer: &royalty_payer.pubkey(),
+                system_program: &system_program::ID,
+                central_state: &self.central_state,
+            },
+            access_protocol::instruction::create_royalty_account::Params {
+                royalty_basis_points,
+                expiration_date,
+                royalty_ata,
+            },
+        );
+
+        self.royalty_atas.insert(
+            royalty_payer.pubkey().to_string(),
+            royalty_ata,
+        );
+
+        sign_send_instructions(&mut self.prg_test_ctx, vec![create_royalty_ix], vec![royalty_payer]).await
     }
 
     pub async fn mint(
@@ -495,6 +530,9 @@ impl TestRunner {
         let stake_pool_key = self.get_pool_pda(&stake_pool_owner.pubkey());
         let stake_pool_owner_token_acc =
             get_associated_token_address(&stake_pool_owner.pubkey(), &self.mint);
+        let royalty_ata = self
+            .royalty_atas
+            .get(&stake_pool_owner.pubkey().to_string());
         let claim_stake_pool_ix = claim_pool_rewards(
             self.program_id,
             claim_pool_rewards::Accounts {
@@ -506,7 +544,7 @@ impl TestRunner {
                 spl_token_program: &spl_token::ID,
                 owner_royalty_account: &RoyaltyAccount::create_key(&stake_pool_owner.pubkey(), &self.program_id).0,
                 royalty_account: None,
-                royalty_ata: None,
+                royalty_ata,
             },
             claim_pool_rewards::Params {},
             true,
@@ -528,6 +566,9 @@ impl TestRunner {
         let stake_pool_key = self.get_pool_pda(stake_pool_owner);
         let (stake_acc_key, _) = self.get_stake_account_pda(&stake_pool_key, &staker.pubkey());
         let staker_token_acc = get_associated_token_address(&staker.pubkey(), &self.mint);
+        let royalty_ata =self
+            .royalty_atas
+            .get(&staker.pubkey().to_string());
 
         let claim_ix = claim_rewards(
             self.program_id,
@@ -541,7 +582,7 @@ impl TestRunner {
                 spl_token_program: &spl_token::ID,
                 owner_royalty_account: &RoyaltyAccount::create_key(&staker.pubkey(), &self.program_id).0,
                 royalty_account: None,
-                royalty_ata: None,
+                royalty_ata,
             },
             claim_rewards::Params {
                 allow_zero_rewards: true,
@@ -566,6 +607,9 @@ impl TestRunner {
             &self.program_id,
         );
         let owner_token_acc = get_associated_token_address(&owner.pubkey(), &self.mint);
+        let royalty_ata = self
+            .royalty_atas
+            .get(&owner.pubkey().to_string());
 
         let claim_ix = access_protocol::instruction::claim_bond_v2_rewards(
             self.program_id,
@@ -579,7 +623,7 @@ impl TestRunner {
                 spl_token_program: &spl_token::ID,
                 owner_royalty_account: &RoyaltyAccount::create_key(&owner.pubkey(), &self.program_id).0,
                 royalty_account: None,
-                royalty_ata: None,
+                royalty_ata,
             },
             access_protocol::instruction::claim_bond_v2_rewards::Params {},
             true,

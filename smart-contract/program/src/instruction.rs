@@ -11,7 +11,7 @@ pub use crate::processor::{
     close_stake_account, close_stake_pool, crank, create_bond, create_bond_v2,
     create_central_state, create_stake_account, create_stake_pool, distribute_fees,
     edit_metadata, migrate_central_state_v2, sign_bond, stake, unlock_bond_tokens, unlock_bond_v2,
-    unstake,
+    unstake, create_royalty_account, close_royalty_account
 };
 
 // todo regenerate
@@ -763,6 +763,32 @@ pub fn admin_change_freeze_authority(
     accounts.get_instruction(
         program_id,
         ProgramInstruction::AdminChangeFreezeAuthority as u8,
+        params,
+    )
+}
+
+#[allow(missing_docs)]
+pub fn create_royalty_account(
+    program_id: Pubkey,
+    accounts: create_royalty_account::Accounts<Pubkey>,
+    params: create_royalty_account::Params,
+) -> Instruction {
+    accounts.get_instruction(
+        program_id,
+        ProgramInstruction::CreateRoyaltyAccount as u8,
+        params,
+    )
+}
+
+#[allow(missing_docs)]
+pub fn close_royalty_account(
+    program_id: Pubkey,
+    accounts: close_royalty_account::Accounts<Pubkey>,
+    params: close_royalty_account::Params,
+) -> Instruction {
+    accounts.get_instruction(
+        program_id,
+        ProgramInstruction::CloseRoyaltyAccount as u8,
         params,
     )
 }

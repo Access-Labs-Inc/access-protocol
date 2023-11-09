@@ -55,13 +55,13 @@ pub struct Accounts<'a, T> {
     /// The owner's royalty split account to check if royalties need to be paid
     pub owner_royalty_account: &'a T,
 
-    /// The optional royalty account to pay royalties to if there is no owner royalty split account
-    /// this is be used by the Access NFT contract to pay royalties even for the NFTs owned by the owner
-    pub royalty_account: Option<&'a T>,
-
     /// The royalty ATA account
     #[cons(writable)]
     pub royalty_ata: Option<&'a T>,
+
+    /// The optional royalty account to pay royalties to if there is no owner royalty split account
+    /// this is be used by the Access NFT contract to pay royalties even for the NFTs owned by the owner
+    pub royalty_account: Option<&'a T>,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -78,8 +78,8 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             mint: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
             owner_royalty_account: next_account_info(accounts_iter)?,
-            royalty_account: next_account_info(accounts_iter).ok(),
             royalty_ata: next_account_info(accounts_iter).ok(),
+            royalty_account: next_account_info(accounts_iter).ok(),
         };
 
         // Check keys
@@ -175,13 +175,13 @@ pub fn process_claim_pool_rewards(
         false,
     )?;
 
-    let reward = safe_downcast(((reward >> 31) + 1) >> 1).ok_or(AccessError::Overflow)?;
+    let mut reward = safe_downcast(((reward >> 31) + 1) >> 1).ok_or(AccessError::Overflow)?;
 
     // split the rewards if there is a royalty account
     let mut royalty_amount = 0;
     if let Some(royalty_account) = royalty_account_data {
         royalty_amount = royalty_account.calculate_royalty_amount(reward)?;
-        reward.checked_sub(royalty_amount).ok_or(AccessError::Overflow)?;
+        reward = reward.checked_sub(royalty_amount).ok_or(AccessError::Overflow)?;
     }
 
     msg!("Claiming pool rewards {}, royalties {}", reward, royalty_amount);
@@ -222,7 +222,7 @@ pub fn process_claim_pool_rewards(
                 accounts.spl_token_program.clone(),
                 accounts.mint.clone(),
                 accounts.central_state.clone(),
-                accounts.royalty_account.unwrap().clone(),
+                accounts.royalty_ata.unwrap().clone(),
             ],
             &[&[&program_id.to_bytes(), &[central_state.bump_seed]]],
         )?;
