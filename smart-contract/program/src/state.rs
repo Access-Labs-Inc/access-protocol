@@ -871,8 +871,11 @@ pub struct RoyaltyAccount {
     /// Tag
     pub tag: Tag,
 
-    /// The address that have to pay royalties from all their claims
-    pub payer: Pubkey,
+    /// The address that paid for the creation of this PDA
+    pub rent_payer: Pubkey,
+
+    /// The address that has to pay royalties from all their claims
+    pub royalty_payer: Pubkey,
 
     /// The address that collects the royalties
     pub recipient_ata: Pubkey,
@@ -899,13 +902,15 @@ impl RoyaltyAccount {
 
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        payer: Pubkey,
+        fee_payer: Pubkey,
+        royalty_payer: Pubkey,
         recipient_ata: Pubkey,
         royalty_basis_points: u16,
     ) -> Self {
         Self {
             tag: Tag::RoyaltyAccount,
-            payer,
+            rent_payer: fee_payer,
+            royalty_payer,
             recipient_ata,
             royalty_basis_points,
         }
@@ -926,6 +931,10 @@ impl RoyaltyAccount {
         Ok(result)
     }
 
+    pub fn close(&mut self) {
+        self.tag = Tag::Deleted as u8
+    }
+
     pub fn calculate_royalty_amount(&self, amount: u64) -> Result<u64, ProgramError> {
         let royalty = amount
             .checked_mul(self.royalty_basis_points as u64)
@@ -935,7 +944,7 @@ impl RoyaltyAccount {
             .checked_div(10_000)
             .ok_or(AccessError::Overflow)?;
         if royalty > amount {
-          return Err(AccessError::Overflow.into());
+            return Err(AccessError::Overflow.into());
         }
         Ok(royalty)
     }

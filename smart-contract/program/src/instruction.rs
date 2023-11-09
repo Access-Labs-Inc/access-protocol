@@ -365,6 +365,7 @@ pub enum ProgramInstruction {
     AdminChangeFreezeAuthority,
     // todo doc
     CreateRoyaltyAccount,
+    CloseRoyaltyAccount,
 }
 
 #[allow(missing_docs)]

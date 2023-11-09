@@ -1,22 +1,19 @@
 //! Create royalty account
+use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
-    account_info::{next_account_info, AccountInfo},
+    account_info::{AccountInfo, next_account_info},
     entrypoint::ProgramResult,
     program_error::ProgramError,
     pubkey::Pubkey,
     system_program,
 };
 
-use crate::state::{StakeAccount, StakePool, Tag};
 use crate::{cpi::Cpi, error::AccessError};
-
-use bonfida_utils::{BorshSize, InstructionsAccount};
-use crate::instruction::ProgramInstruction::{CreateRoyaltyAccount, CreateStakeAccount};
-
-use crate::utils::{check_account_key, check_account_owner, check_signer};
-use crate::state:: CentralStateV2;
+use crate::instruction::ProgramInstruction::CreateRoyaltyAccount;
+use crate::state::CentralStateV2;
 use crate::state::RoyaltyAccount;
+use crate::utils::{check_account_key, check_account_owner, check_signer};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `create_royalty_account` instruction
@@ -110,6 +107,7 @@ pub fn process_create_royalty_account(
     )?;
 
     let royalty_account = RoyaltyAccount::new(
+        *accounts.fee_payer.key,
         *accounts.royalty_payer.key,
         params.royalty_ata,
         params.royalty_basis_points,

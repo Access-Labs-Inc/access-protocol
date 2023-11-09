@@ -252,7 +252,7 @@ pub fn check_and_retrieve_royalty_account(
         royalty_account_data = Some(RoyaltyAccount::from_account_info(owner_royalty_account)?);
         check_account_key(
             owner,
-            &royalty_account_data.as_ref().unwrap().payer,
+            &royalty_account_data.as_ref().unwrap().royalty_payer,
             AccessError::RoyaltyAccountMismatch,
         )?;
     } else if let Some(royalty_account) = royalty_account {
