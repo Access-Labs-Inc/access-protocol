@@ -937,7 +937,7 @@ impl RoyaltyAccount {
     }
 
     pub fn close(&mut self) {
-        self.tag = Tag::Deleted as u8
+        self.tag = Tag::Deleted
     }
 
     pub fn calculate_royalty_amount(&self, amount: u64) -> Result<u64, ProgramError> {

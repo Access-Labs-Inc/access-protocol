@@ -1,7 +1,9 @@
 //! Utils
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
-    program_pack::Pack, pubkey::Pubkey,
+    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
+    program_error::ProgramError, program_pack::Pack,
+    pubkey::Pubkey,
+    sysvar::Sysvar,
 };
 use spl_token::state::Account;
 
@@ -269,7 +271,7 @@ pub fn check_and_retrieve_royalty_account(
             &royalty_account.recipient_ata,
             AccessError::RoyaltyAtaMismatch,
         )?;
-        if royalty_account.expiration_date > clock::get()?.unix_timestamp as u64 {
+        if royalty_account.expiration_date > Clock::get()?.unix_timestamp as u64 {
             return Ok(royalty_account_data);
         }
     }
