@@ -121,7 +121,9 @@ pub enum AccessError {
     #[error("Royalty ata mismatch")]
 RoyaltyAtaMismatch,
     #[error("Wrong royalty account owner")]
-WrongRoyaltyAccountOwner
+WrongRoyaltyAccountOwner,
+    #[error("Owner must sign")]
+    OwnerMustSign,
 }
 
 impl From<AccessError> for ProgramError {

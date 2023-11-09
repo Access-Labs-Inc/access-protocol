@@ -256,7 +256,7 @@ pub fn check_and_retrieve_royalty_account(
             AccessError::RoyaltyAccountMismatch,
         )?;
     } else if let Some(royalty_account) = royalty_account {
-        check_signer(owner, AccessError::StakePoolOwnerMustSign)?;
+        check_signer(owner, AccessError::OwnerMustSign)?;
         royalty_account_data = Some(RoyaltyAccount::from_account_info(royalty_account)?);
     }
 

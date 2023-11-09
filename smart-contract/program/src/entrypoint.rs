@@ -209,6 +209,9 @@ impl PrintProgramError for AccessError {
             AccessError::WrongRoyaltyAccountOwner => {
                 msg!("Wrong royalty account owner")
             }
+            AccessError::OwnerMustSign => {
+                msg!("Owner must sign")
+            }
         }
     }
 }

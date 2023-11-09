@@ -20,7 +20,7 @@ use crate::state::{RoyaltyAccount, StakeAccount, StakePool, Tag};
 use crate::state::CentralStateV2;
 use crate::utils::{
     assert_no_close_or_delegate, calc_reward_fp32, check_account_key, check_account_owner,
-    check_signer,
+    check_signer, check_and_retrieve_royalty_account
 };
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -146,49 +146,13 @@ pub fn process_claim_rewards(
     let stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
 
-    // Check that the royalty accounts are set up correctly
-    let owner_must_pay = !accounts.owner_royalty_account.data_is_empty();
-    if owner_must_pay && accounts.royalty_account.is_some() {
-        return Err(AccessError::RoyaltyAccountMismatch.into());
-    }
-
-    let (derived_key, _) = RoyaltyAccount::create_key(&accounts.owner.key, program_id);
-    check_account_key(
+    let royalty_account_data = check_and_retrieve_royalty_account(
+        program_id,
+        accounts.owner,
         accounts.owner_royalty_account,
-        &derived_key,
-        AccessError::AccountNotDeterministic,
+        accounts.royalty_account,
+        accounts.royalty_ata,
     )?;
-
-    // Check relationships between royalty accounts
-    let mut royalty_account_data: Option<RoyaltyAccount> = None;
-    if owner_must_pay {
-        check_account_owner(
-            accounts.owner_royalty_account,
-            program_id,
-            AccessError::WrongRoyaltyAccountOwner,
-        )?;
-        royalty_account_data = Some(RoyaltyAccount::from_account_info(accounts.owner_royalty_account)?);
-        check_account_key(
-            accounts.owner,
-            &royalty_account_data.as_ref().unwrap().payer,
-            AccessError::RoyaltyAccountMismatch,
-        )?;
-    } else if let Some(royalty_account) = accounts.royalty_account {
-        check_signer(accounts.owner, AccessError::StakeAccountOwnerMustSign)?;
-        royalty_account_data = Some(RoyaltyAccount::from_account_info(royalty_account)?);
-    }
-
-    if let Some(royalty_account) = royalty_account_data.as_ref() {
-        check_account_key(
-            accounts.royalty_ata.ok_or(AccessError::RoyaltyAtaMismatch)?,
-            &royalty_account.recipient_ata,
-            AccessError::RoyaltyAtaMismatch,
-        )?;
-    } else {
-        if accounts.royalty_ata.is_some() {
-            return Err(AccessError::RoyaltyAtaMismatch.into());
-        }
-    }
 
     let destination_token_acc = Account::unpack(&accounts.rewards_destination.data.borrow())?;
     msg!("Account owner: {}", destination_token_acc.owner);
