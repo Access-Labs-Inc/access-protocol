@@ -20,6 +20,8 @@ use crate::utils::{check_account_key, check_account_owner, check_signer};
 pub struct Params {
     // Royalty basis points
     pub royalty_basis_points: u16,
+    // Expiration date
+    pub expiration_date: u64,
     // The ATA that should be getting the ACS rewards
     pub royalty_ata: Pubkey,
 }
@@ -110,6 +112,7 @@ pub fn process_create_royalty_account(
         *accounts.fee_payer.key,
         *accounts.royalty_payer.key,
         params.royalty_ata,
+        params.expiration_date,
         params.royalty_basis_points,
     );
 

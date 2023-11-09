@@ -880,6 +880,9 @@ pub struct RoyaltyAccount {
     /// The address that collects the royalties
     pub recipient_ata: Pubkey,
 
+    /// The date after which the royalties are not paid anymore
+    pub expiration_date: u64,
+
     /// The royalty basis points (i.e 1% = 100) going to the recommender
     pub royalty_basis_points: u16,
 }
@@ -905,6 +908,7 @@ impl RoyaltyAccount {
         fee_payer: Pubkey,
         royalty_payer: Pubkey,
         recipient_ata: Pubkey,
+        expiration_date: u64,
         royalty_basis_points: u16,
     ) -> Self {
         Self {
@@ -912,6 +916,7 @@ impl RoyaltyAccount {
             rent_payer: fee_payer,
             royalty_payer,
             recipient_ata,
+            expiration_date,
             royalty_basis_points,
         }
     }

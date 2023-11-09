@@ -1,5 +1,5 @@
-//! Close a stake account
-//! This instruction can be used to close an empty stake account and collect the lamports
+//! Close a royalty account
+//! This instruction can be used to close a royalty account. The laports will be sent to the original fee payer
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -26,7 +26,7 @@ pub struct Params {}
 #[derive(InstructionsAccount)]
 /// The required accounts for the `close_royalty_account` instruction
 pub struct Accounts<'a, T> {
-    /// The stake account
+    /// The royalty account
     #[cons(writable)]
     pub royalty_account: &'a T,
 
