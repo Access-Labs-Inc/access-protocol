@@ -220,7 +220,10 @@ pub fn assert_no_close_or_delegate(token_account: &Account) -> ProgramResult {
     Ok(())
 }
 
-#[allow(missing_docs)]
+///  This function checks if there is an existing royalty account for the owner.
+///  Otherwise checks if the optional other royalty account is set up correctly.
+///  Checks the relationship between the appropriate royalty account and the royalty ATA
+///  Returns the royalty account data if it exists and is valid. Otherwise returns None.
 pub fn check_and_retrieve_royalty_account(
     program_id: &Pubkey,
     owner: &AccountInfo,
@@ -266,12 +269,11 @@ pub fn check_and_retrieve_royalty_account(
             &royalty_account.recipient_ata,
             AccessError::RoyaltyAtaMismatch,
         )?;
-    } else {
-        if royalty_ata.is_some() {
-            return Err(AccessError::RoyaltyAtaMismatch.into());
+        if royalty_account.expiration_date > clock::get()?.unix_timestamp as u64 {
+            return Ok(royalty_account_data);
         }
     }
-    Ok(royalty_account_data)
+    Ok(None)
 }
 
 #[allow(missing_docs)]
