@@ -7,7 +7,7 @@ use spl_token::state::Account;
 
 use crate::error::AccessError;
 use crate::instruction::ProgramInstruction;
-use crate::state::{AUTHORIZED_BOND_SELLERS, BondAccount};
+use crate::state::{AUTHORIZED_BOND_SELLERS, BondAccount, RoyaltyAccount};
 use crate::state::{ACCESS_MINT, STAKE_BUFFER_LEN, StakeAccount, StakePoolRef};
 
 /// Cumulate the claimable rewards from the last claimed day to the present.
@@ -218,6 +218,60 @@ pub fn assert_no_close_or_delegate(token_account: &Account) -> ProgramResult {
         return Err(ProgramError::InvalidArgument);
     }
     Ok(())
+}
+
+#[allow(missing_docs)]
+pub fn check_and_retrieve_royalty_account(
+    program_id: &Pubkey,
+    owner: &AccountInfo,
+    owner_royalty_account: &AccountInfo,
+    royalty_account: Option<&AccountInfo>,
+    royalty_ata: Option<&AccountInfo>,
+) -> Result<Option<RoyaltyAccount>, ProgramError> {
+    // Check that the royalty accounts are set up correctly
+    let owner_must_pay = !owner_royalty_account.data_is_empty();
+    if owner_must_pay && royalty_account.is_some() {
+        return Err(AccessError::RoyaltyAccountMismatch.into());
+    }
+
+    let (derived_key, _) = RoyaltyAccount::create_key(&owner.key, program_id);
+    check_account_key(
+        owner_royalty_account,
+        &derived_key,
+        AccessError::AccountNotDeterministic,
+    )?;
+
+    // Check relationships between royalty accounts
+    let mut royalty_account_data: Option<RoyaltyAccount> = None;
+    if owner_must_pay {
+        check_account_owner(
+            owner_royalty_account,
+            program_id,
+            AccessError::WrongRoyaltyAccountOwner,
+        )?;
+        royalty_account_data = Some(RoyaltyAccount::from_account_info(owner_royalty_account)?);
+        check_account_key(
+            owner,
+            &royalty_account_data.as_ref().unwrap().payer,
+            AccessError::RoyaltyAccountMismatch,
+        )?;
+    } else if let Some(royalty_account) = royalty_account {
+        check_signer(owner, AccessError::StakePoolOwnerMustSign)?;
+        royalty_account_data = Some(RoyaltyAccount::from_account_info(royalty_account)?);
+    }
+
+    if let Some(royalty_account) = royalty_account_data.as_ref() {
+        check_account_key(
+            royalty_ata.ok_or(AccessError::RoyaltyAtaMismatch)?,
+            &royalty_account.recipient_ata,
+            AccessError::RoyaltyAtaMismatch,
+        )?;
+    } else {
+        if royalty_ata.is_some() {
+            return Err(AccessError::RoyaltyAtaMismatch.into());
+        }
+    }
+    Ok(royalty_account_data)
 }
 
 #[allow(missing_docs)]
