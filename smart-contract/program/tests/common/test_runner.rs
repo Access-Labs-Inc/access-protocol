@@ -652,7 +652,17 @@ impl TestRunner {
         ).await
     }
 
-    pub async fn claim_bond_v2_rewards_advanced(
+
+    pub async fn claim_bond_v2_rewards(
+        &mut self,
+        owner: &Keypair,
+        stake_pool_owner: &Pubkey,
+        unlock_date: Option<i64>,
+    ) -> Result<(), BanksClientError> {
+        self.claim_bond_v2_rewards_advanced(owner, stake_pool_owner, unlock_date, false).await
+    }
+
+    async fn claim_bond_v2_rewards_advanced(
         &mut self,
         owner: &Keypair,
         stake_pool_owner: &Pubkey,

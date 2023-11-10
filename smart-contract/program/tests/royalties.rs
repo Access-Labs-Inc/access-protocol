@@ -146,15 +146,18 @@ async fn program_freeze() {
     assert_eq!(stats.balance, 400_000);
 
 
-    // Create a new staker account
+    // Create a new staker
     let staker2 = tr.create_user_with_ata().await.unwrap();
     tr.mint(&staker2.pubkey(), 10_200).await.unwrap();
-    tr.create_stake_account(&stake_pool_owner.pubkey(), &staker2.pubkey())
-        .await
-        .unwrap();
 
-    // Stake to pool 1
-    tr.stake(&stake_pool_owner.pubkey(), &staker2, 10_000)
+// Create a bond V2 account
+    tr.create_bond_v2(
+        &staker2,
+        &staker2.pubkey(),
+        &stake_pool_owner.pubkey(),
+        10_000,
+        None,
+    )
         .await
         .unwrap();
 
@@ -175,7 +178,7 @@ async fn program_freeze() {
     }
 
     // Claim staker 2 rewards
-    tr.claim_staker_rewards(&stake_pool_owner.pubkey(), &staker2)
+    tr.claim_bond_v2_rewards(&staker2, &stake_pool_owner.pubkey(), None)
         .await
         .unwrap();
     let stats = tr.staker_stats(staker2.pubkey()).await.unwrap();
