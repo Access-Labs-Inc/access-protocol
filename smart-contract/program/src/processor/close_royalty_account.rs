@@ -57,7 +57,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
         // Check ownership
         check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
-        check_account_owner(accounts.rent_destination, program_id, AccessError::WrongOwner)?;
+        check_account_owner(accounts.royalty_account, program_id, AccessError::WrongOwner)?;
 
         // Check signer
         check_signer(accounts.royalty_payer, AccessError::StakePoolOwnerMustSign)?;

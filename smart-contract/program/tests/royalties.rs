@@ -18,27 +18,34 @@ async fn program_freeze() {
     let start_time = tr.get_current_time().await;
 
     // Staker accepts the invitation
+    let fee_payer_balance = tr.fee_payer_sol_balance().await.unwrap();
+    println!("Fee payer balance: {}", fee_payer_balance);
     tr.create_royalty(
         &staker,
         &recommender.pubkey(),
         1000, // 10 %
-        (start_time + 3 * 86_400) as u64
+        (start_time + 3 * 86_400) as u64,
     )
         .await
         .unwrap();
+    let create_royalty_fee =  fee_payer_balance - tr.fee_payer_sol_balance().await.unwrap();
 
     // Pool owner accepts the invitation
     tr.create_royalty(
         &stake_pool_owner,
         &recommender.pubkey(),
         2000, // 20 %
-        (start_time + 3 * 86_400) as u64
+        (start_time + 3 * 86_400) as u64,
     )
         .await
         .unwrap();
 
     // Mint
+    let fee_payer_balance = tr.fee_payer_sol_balance().await.unwrap();
+    println!("Fee payer balance: {}", fee_payer_balance);
     tr.mint(&staker.pubkey(), 10_200).await.unwrap();
+    let mint_fee = fee_payer_balance - tr.fee_payer_sol_balance().await.unwrap();
+    println!("Mint fee: {}", mint_fee);
 
     // Create stake pool on day 1
     tr.create_pool(&stake_pool_owner.pubkey(), 10_000)
@@ -77,6 +84,26 @@ async fn program_freeze() {
     tr.claim_pool_rewards(&stake_pool_owner).await.unwrap();
     let stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
     assert_eq!(stats.balance, 400_000);
+    let stats = tr.staker_stats(recommender.pubkey()).await.unwrap();
+    assert_eq!(stats.balance, 150_000);
+
+    // Staker closes the royalty account
+    let fee_payer_balance = tr.fee_payer_sol_balance().await.unwrap();
+    println!("Fee payer balance: {}", fee_payer_balance);
+    tr.close_royalty(&staker).await.unwrap();
+    let close_royalty_fee = tr.fee_payer_sol_balance().await.unwrap() - fee_payer_balance;
+    assert_eq!(create_royalty_fee - 10_000, close_royalty_fee + 10_000);
+
+    // Wait for 1 day
+    tr.sleep(86400).await.unwrap();
+    tr.crank_pool(&stake_pool_owner.pubkey()).await.unwrap();
+
+    // Claim rewards
+    tr.claim_staker_rewards(&stake_pool_owner.pubkey(), &staker)
+        .await
+        .unwrap();
+    let stats = tr.staker_stats(staker.pubkey()).await.unwrap();
+    assert_eq!(stats.balance, 950_000);
     let stats = tr.staker_stats(recommender.pubkey()).await.unwrap();
     assert_eq!(stats.balance, 150_000);
 }

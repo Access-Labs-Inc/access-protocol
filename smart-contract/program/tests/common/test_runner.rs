@@ -23,7 +23,7 @@ use access_protocol::{
         crank, create_central_state, create_stake_account, create_stake_pool, stake, unstake,
     },
 };
-use access_protocol::instruction::{create_royalty_account, admin_change_freeze_authority, admin_program_freeze, admin_renounce, admin_set_protocol_fee, change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards, create_bond, migrate_central_state_v2, ProgramInstruction, unlock_bond_tokens, unlock_bond_v2};
+use access_protocol::instruction::{close_royalty_account, create_royalty_account, admin_change_freeze_authority, admin_program_freeze, admin_renounce, admin_set_protocol_fee, change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards, create_bond, migrate_central_state_v2, ProgramInstruction, unlock_bond_tokens, unlock_bond_v2};
 use access_protocol::state::{RoyaltyAccount, BondAccount, BondV2Account, CentralState, CentralStateV2, FeeRecipient, StakeAccount, StakePoolHeader};
 
 use crate::common::utils::{mint_bootstrap, sign_send_instructions, sign_send_instructions_without_authority};
@@ -295,6 +295,25 @@ impl TestRunner {
         sign_send_instructions(&mut self.prg_test_ctx, vec![create_royalty_ix], vec![royalty_payer]).await
     }
 
+    pub async fn close_royalty(
+        &mut self,
+        royalty_payer: &Keypair,
+    ) -> Result<(), BanksClientError> {
+        let royalty_account = &RoyaltyAccount::create_key(&royalty_payer.pubkey(), &self.program_id).0;
+        let close_royalty_ix = access_protocol::instruction::close_royalty_account(
+            self.program_id,
+            access_protocol::instruction::close_royalty_account::Accounts {
+                royalty_account,
+                royalty_payer: &royalty_payer.pubkey(),
+                rent_destination: &self.prg_test_ctx.payer.pubkey(),
+                central_state: &self.central_state,
+            },
+            access_protocol::instruction::close_royalty_account::Params {},
+        );
+
+        sign_send_instructions(&mut self.prg_test_ctx, vec![close_royalty_ix], vec![royalty_payer]).await
+    }
+
     pub async fn mint(
         &mut self,
         destination: &Pubkey,
@@ -547,13 +566,13 @@ impl TestRunner {
                 royalty_ata,
             },
             claim_pool_rewards::Params {},
-            true,
+            false,
         );
 
         sign_send_instructions(
             &mut self.prg_test_ctx,
             vec![claim_stake_pool_ix],
-            vec![stake_pool_owner],
+            vec![],
         )
             .await
     }
@@ -587,10 +606,10 @@ impl TestRunner {
             claim_rewards::Params {
                 allow_zero_rewards: true,
             },
-            true,
+            false,
         );
 
-        sign_send_instructions(&mut self.prg_test_ctx, vec![claim_ix], vec![staker]).await
+        sign_send_instructions(&mut self.prg_test_ctx, vec![claim_ix], vec![]).await
     }
 
     pub async fn claim_bond_v2_rewards(
@@ -809,6 +828,16 @@ impl TestRunner {
             .unwrap();
         let bond_account = BondV2Account::deserialize(&mut &acc.data[..])?;
         Ok(bond_account)
+    }
+
+    pub async fn fee_payer_sol_balance(&mut self) -> Result<u64, BanksClientError> {
+        let fee_payer_sol_balance = self
+            .local_env
+            .get_account(self.prg_test_ctx.payer.pubkey())
+            .await?
+            .unwrap()
+            .lamports;
+        Ok(fee_payer_sol_balance)
     }
 
     pub async fn central_state_stats(&mut self) -> Result<CentralStateStats, Box<dyn Error>> {
