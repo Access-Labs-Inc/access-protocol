@@ -1,6 +1,4 @@
 use solana_sdk::signer::Signer;
-use access_protocol::instruction::ProgramInstruction::{AdminMint, ClaimRewards};
-use access_protocol::utils::{get_freeze_mask};
 use crate::common::test_runner::TestRunner;
 
 pub mod common;
@@ -35,7 +33,7 @@ async fn program_freeze() {
         &stake_pool_owner,
         &recommender.pubkey(),
         2000, // 20 %
-        (start_time + 3 * 86_400) as u64,
+        (start_time + 2 * 86_400 + 100) as u64,
     )
         .await
         .unwrap();
@@ -106,4 +104,84 @@ async fn program_freeze() {
     assert_eq!(stats.balance, 950_000);
     let stats = tr.staker_stats(recommender.pubkey()).await.unwrap();
     assert_eq!(stats.balance, 150_000);
+
+    // Claim pool rewards
+    tr.claim_pool_rewards(&stake_pool_owner).await.unwrap();
+    let stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
+    assert_eq!(stats.balance, 800_000);
+    let stats = tr.staker_stats(recommender.pubkey()).await.unwrap();
+    assert_eq!(stats.balance, 250_000);
+
+    // Wait for 1 day
+    tr.sleep(86400).await.unwrap();
+    tr.crank_pool(&stake_pool_owner.pubkey()).await.unwrap();
+
+
+    // Create a random royalty account - to test the royalties in the NFT case
+    let random_royalty_account_owner = tr.create_user_with_ata().await.unwrap();
+    tr.create_royalty(
+        &random_royalty_account_owner,
+        &recommender.pubkey(),
+        3000, // 30 %
+        (start_time + 1000 * 86_400) as u64,
+    )
+        .await
+        .unwrap();
+
+    // Claim staker rewards with a different royalty account
+    let random_royalty_account = tr.get_royalty_account_key(&random_royalty_account_owner.pubkey()).await;
+    tr.claim_staker_rewards_with_royalty(&stake_pool_owner.pubkey(), &staker, &random_royalty_account)
+        .await
+        .unwrap();
+    let stats = tr.staker_stats(staker.pubkey()).await.unwrap();
+    assert_eq!(stats.balance, 950_000 + 350_000);
+    let stats = tr.staker_stats(recommender.pubkey()).await.unwrap();
+    assert_eq!(stats.balance, 250_000 + 150_000);
+
+    // Claim pool rewards - the royalty account should be expired already
+    tr.claim_pool_rewards(&stake_pool_owner).await.unwrap();
+    let stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
+    assert_eq!(stats.balance, 800_000 + 500_000);
+    let stats = tr.staker_stats(recommender.pubkey()).await.unwrap();
+    assert_eq!(stats.balance, 400_000);
+
+
+    // Create a new staker account
+    let staker2 = tr.create_user_with_ata().await.unwrap();
+    tr.mint(&staker2.pubkey(), 10_200).await.unwrap();
+    tr.create_stake_account(&stake_pool_owner.pubkey(), &staker2.pubkey())
+        .await
+        .unwrap();
+
+    // Stake to pool 1
+    tr.stake(&stake_pool_owner.pubkey(), &staker2, 10_000)
+        .await
+        .unwrap();
+
+    // Create a new royalty account
+    tr.create_royalty(
+        &staker2,
+        &recommender.pubkey(),
+        4000, // 40 %
+        (start_time + 1000 * 86_400) as u64,
+    )
+        .await
+        .unwrap();
+
+    // Wait for 10 days
+    for _ in 0..10 {
+        tr.sleep(86400).await.unwrap();
+        tr.crank_pool(&stake_pool_owner.pubkey()).await.unwrap();
+    }
+
+    // Claim staker 2 rewards
+    tr.claim_staker_rewards(&stake_pool_owner.pubkey(), &staker2)
+        .await
+        .unwrap();
+    let stats = tr.staker_stats(staker2.pubkey()).await.unwrap();
+    assert_eq!(stats.balance, 150_000 * 10);
+    let stats = tr.staker_stats(recommender.pubkey()).await.unwrap();
+    assert_eq!(stats.balance, 400_000 + 100_000 * 10);
+
+
 }
