@@ -9,14 +9,14 @@ use solana_program::{
 };
 
 use crate::utils::{
-    assert_empty_stake_account, check_account_key, check_account_owner, check_signer,
+    check_account_key, check_account_owner, check_signer,
 };
 use bonfida_utils::BorshSize;
 use bonfida_utils::InstructionsAccount;
 
 use crate::error::AccessError;
 use crate::instruction::ProgramInstruction::CloseStakeAccount;
-use crate::state::{RoyaltyAccount, StakeAccount, V1_INSTRUCTIONS_ALLOWED};
+use crate::state::{RoyaltyAccount, V1_INSTRUCTIONS_ALLOWED};
 use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]

@@ -6,7 +6,7 @@ use crate::utils::{
     assert_no_close_or_delegate, calc_reward_fp32, check_account_key, check_account_owner,
     check_signer, check_and_retrieve_royalty_account
 };
-use bonfida_utils::fp_math::safe_downcast;
+use std::convert::TryInto;
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::program::invoke_signed;
@@ -191,8 +191,9 @@ pub fn process_claim_bond_v2_rewards(
     // Multiply by the staker shares of the total pool
     .checked_mul(bond_v2_account.amount as u128)
     .map(|r| ((r >> 31) + 1) >> 1)
-    .and_then(safe_downcast)
-    .ok_or(AccessError::Overflow)?;
+        .ok_or(AccessError::Overflow)?
+        .try_into()
+        .map_err(|_|AccessError::Overflow)?;
 
     // split the rewards if there is a royalty account
     let mut royalty_amount = 0;

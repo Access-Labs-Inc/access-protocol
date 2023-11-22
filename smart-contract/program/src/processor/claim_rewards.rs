@@ -1,8 +1,8 @@
 //! Claim rewards of a stake account
 //! This instruction can be used by stakers to claim their staking rewards
 use bonfida_utils::{BorshSize, InstructionsAccount};
-use bonfida_utils::fp_math::safe_downcast;
 use borsh::{BorshDeserialize, BorshSerialize};
+use std::convert::TryInto;
 use solana_program::{
     account_info::{AccountInfo, next_account_info},
     entrypoint::ProgramResult,
@@ -16,7 +16,7 @@ use spl_token::{instruction::mint_to, state::Account};
 
 use crate::error::AccessError;
 use crate::instruction::ProgramInstruction::ClaimRewards;
-use crate::state::{RoyaltyAccount, StakeAccount, StakePool, Tag};
+use crate::state::{StakeAccount, StakePool, Tag};
 use crate::state::CentralStateV2;
 use crate::utils::{
     assert_no_close_or_delegate, calc_reward_fp32, check_account_key, check_account_owner,
@@ -195,8 +195,9 @@ pub fn process_claim_rewards(
         // Multiply by the staker shares of the total pool
         .checked_mul(stake_account.stake_amount as u128)
         .map(|r| ((r >> 31) + 1) >> 1)
-        .and_then(safe_downcast)
-        .ok_or(AccessError::Overflow)?;
+        .ok_or(AccessError::Overflow)?
+        .try_into()
+        .map_err(|_|AccessError::Overflow)?;
 
     // split the rewards if there is a royalty account
     let mut royalty_amount = 0;

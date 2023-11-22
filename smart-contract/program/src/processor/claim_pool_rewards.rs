@@ -1,8 +1,8 @@
 //! Claim rewards of a stake pool
 //! This instruction is used by stake pool owner for claiming their staking rewards
 use bonfida_utils::{BorshSize, InstructionsAccount};
-use bonfida_utils::fp_math::safe_downcast;
 use borsh::{BorshDeserialize, BorshSerialize};
+use std::convert::TryInto;
 use solana_program::{
     account_info::{AccountInfo, next_account_info},
     entrypoint::ProgramResult,
@@ -175,7 +175,9 @@ pub fn process_claim_pool_rewards(
         false,
     )?;
 
-    let mut reward = safe_downcast(((reward >> 31) + 1) >> 1).ok_or(AccessError::Overflow)?;
+    let mut reward = (((reward >> 31) + 1) >> 1)
+        .try_into()
+        .map_err(|_|AccessError::Overflow)?;
 
     // split the rewards if there is a royalty account
     let mut royalty_amount = 0;
