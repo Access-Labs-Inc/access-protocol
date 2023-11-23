@@ -471,7 +471,7 @@ async fn functional_10s() {
         stake::Accounts {
             stake_account: &stake_acc_key,
             stake_pool: &stake_pool_key,
-            owner: &staker.pubkey(),
+            token_owner: &staker.pubkey(),
             source_token: &staker_token_acc,
             spl_token_program: &spl_token::ID,
             vault: &pool_vault,
