@@ -142,6 +142,8 @@ pub fn process_stake(
 
     let source_token_acc = Account::unpack(&accounts.source_token.data.borrow())?;
     if source_token_acc.mint != central_state.token_mint {
+        msg!("Invalid ACCESS mint");
+        #[cfg(not(feature = "no-mint-check"))]
         return Err(AccessError::WrongMint.into());
     }
     if &source_token_acc.owner != accounts.owner.key {

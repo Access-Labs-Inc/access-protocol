@@ -201,6 +201,8 @@ pub fn process_create_bond_v2(
 
     let from_ata = Account::unpack(&accounts.from_ata.data.borrow())?;
     if from_ata.mint != central_state.token_mint {
+        msg!("Invalid ACCESS mint");
+        #[cfg(not(feature = "no-mint-check"))]
         return Err(AccessError::WrongMint.into());
     }
     if &from_ata.owner != accounts.from.key {

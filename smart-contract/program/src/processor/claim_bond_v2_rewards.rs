@@ -161,6 +161,8 @@ pub fn process_claim_bond_v2_rewards(
     }
 
     if destination_token_acc.mint != central_state.token_mint {
+        msg!("Invalid ACCESS mint");
+        #[cfg(not(feature = "no-mint-check"))]
         return Err(AccessError::WrongMint.into());
     }
 

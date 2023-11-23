@@ -143,6 +143,8 @@ pub fn process_claim_pool_rewards(
     let destination_token_acc = Account::unpack(&accounts.rewards_destination.data.borrow())?;
 
     if destination_token_acc.mint != central_state.token_mint {
+        msg!("Invalid ACCESS mint");
+        #[cfg(not(feature = "no-mint-check"))]
         return Err(AccessError::WrongMint.into());
     }
 
