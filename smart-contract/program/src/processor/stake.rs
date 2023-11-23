@@ -36,7 +36,7 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub central_state: &'a T,
 
-    /// The stake account
+    /// The destination stake account -  can be owned by anyone
     #[cons(writable)]
     pub stake_account: &'a T,
 
@@ -44,9 +44,9 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub stake_pool: &'a T,
 
-    /// The owner of the stake account
+    /// The owner of the token account - staker
     #[cons(signer)]
-    pub owner: &'a T,
+    pub token_owner: &'a T,
 
     /// The source account of the stake tokens
     #[cons(writable)]
@@ -74,7 +74,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             central_state: next_account_info(accounts_iter)?,
             stake_account: next_account_info(accounts_iter)?,
             stake_pool: next_account_info(accounts_iter)?,
-            owner: next_account_info(accounts_iter)?,
+            token_owner: next_account_info(accounts_iter)?,
             source_token: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
             vault: next_account_info(accounts_iter)?,
@@ -121,7 +121,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         )?;
 
         // Check signer
-        check_signer(accounts.owner, AccessError::StakeAccountOwnerMustSign)?;
+        check_signer(accounts.token_owner, AccessError::OwnerMustSign)?;
 
         Ok(accounts)
     }
@@ -146,15 +146,10 @@ pub fn process_stake(
         #[cfg(not(feature = "no-mint-check"))]
         return Err(AccessError::WrongMint.into());
     }
-    if &source_token_acc.owner != accounts.owner.key {
+    if &source_token_acc.owner != accounts.token_owner.key {
         return Err(AccessError::WrongOwner.into());
     }
 
-    check_account_key(
-        accounts.owner,
-        &stake_account.owner,
-        AccessError::StakeAccountOwnerMismatch,
-    )?;
     check_account_key(
         accounts.stake_pool,
         &stake_account.stake_pool,
@@ -202,7 +197,7 @@ pub fn process_stake(
         &spl_token::ID,
         accounts.source_token.key,
         accounts.vault.key,
-        accounts.owner.key,
+        accounts.token_owner.key,
         &[],
         amount,
     )?;
@@ -212,7 +207,7 @@ pub fn process_stake(
             accounts.spl_token_program.clone(),
             accounts.source_token.clone(),
             accounts.vault.clone(),
-            accounts.owner.clone(),
+            accounts.token_owner.clone(),
         ],
     )?;
 
@@ -221,7 +216,7 @@ pub fn process_stake(
         &spl_token::ID,
         accounts.source_token.key,
         accounts.central_state_vault.key,
-        accounts.owner.key,
+        accounts.token_owner.key,
         &[],
         central_state.calculate_fee(amount)?,
     )?;
@@ -231,7 +226,7 @@ pub fn process_stake(
             accounts.spl_token_program.clone(),
             accounts.source_token.clone(),
             accounts.central_state_vault.clone(),
-            accounts.owner.clone(),
+            accounts.token_owner.clone(),
         ],
     )?;
 
