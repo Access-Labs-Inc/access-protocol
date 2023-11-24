@@ -257,6 +257,28 @@ pub fn process_create_bond_v2(
                 accounts.from.clone(),
             ],
         )?;
+
+        // Transfer fees
+        let fee_amount = central_state.calculate_fee(amount)?;
+        msg!("Transfer fees: {}", fee_amount);
+        let transfer_fees = transfer(
+            &spl_token::ID,
+            accounts.from_ata.key,
+            accounts.central_state_vault.key,
+            accounts.from.key,
+            &[],
+            fee_amount,
+        )?;
+        invoke(
+            &transfer_fees,
+            &[
+                accounts.spl_token_program.clone(),
+                accounts.from_ata.clone(),
+                accounts.central_state_vault.clone(),
+                accounts.from.clone(),
+            ],
+        )?;
+
     } else {
         let burn_instruction = spl_token::instruction::burn(
             &spl_token::ID,
@@ -276,27 +298,6 @@ pub fn process_create_bond_v2(
             ],
         )?;
     }
-
-    // Transfer fees
-    let fee_amount = central_state.calculate_fee(amount)?;
-    msg!("Transfer fees: {}", fee_amount);
-    let transfer_fees = transfer(
-        &spl_token::ID,
-        accounts.from_ata.key,
-        accounts.central_state_vault.key,
-        accounts.from.key,
-        &[],
-        fee_amount,
-    )?;
-    invoke(
-        &transfer_fees,
-        &[
-            accounts.spl_token_program.clone(),
-            accounts.from_ata.clone(),
-            accounts.central_state_vault.clone(),
-            accounts.from.clone(),
-        ],
-    )?;
 
     // Update all the appropriate states
     pool.header.deposit(amount)?;
