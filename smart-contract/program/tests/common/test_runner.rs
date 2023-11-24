@@ -573,7 +573,6 @@ impl TestRunner {
                 mint: &self.mint,
                 spl_token_program: &spl_token::ID,
                 owner_royalty_account: &RoyaltyAccount::create_key(&stake_pool_owner.pubkey(), &self.program_id).0,
-                royalty_account: None,
                 royalty_ata,
             },
             claim_pool_rewards::Params {},
@@ -597,7 +596,7 @@ impl TestRunner {
         stake_pool_owner: &Pubkey,
         staker: &Keypair,
     ) -> Result<(), BanksClientError> {
-        self.claim_staker_rewards_advanced(stake_pool_owner, staker, false, None).await
+        self.claim_staker_rewards_advanced(stake_pool_owner, staker, false).await
     }
 
     pub async fn claim_staker_rewards_with_royalty(
@@ -606,7 +605,7 @@ impl TestRunner {
         staker: &Keypair,
         royalty_account: &Pubkey,
     ) -> Result<(), BanksClientError> {
-        self.claim_staker_rewards_advanced(stake_pool_owner, staker, true, Some(royalty_account)).await
+        self.claim_staker_rewards_advanced(stake_pool_owner, staker, true).await
     }
 
     pub async fn claim_staker_rewards_advanced(
@@ -614,7 +613,6 @@ impl TestRunner {
         stake_pool_owner: &Pubkey,
         staker: &Keypair,
         owner_must_sign: bool,
-        royalty_account: Option<&Pubkey>,
     ) -> Result<(), BanksClientError> {
         let stake_pool_key = self.get_pool_pda(stake_pool_owner);
         let (stake_acc_key, _) = self.get_stake_account_pda(&stake_pool_key, &staker.pubkey());
@@ -634,7 +632,6 @@ impl TestRunner {
                 mint: &self.mint,
                 spl_token_program: &spl_token::ID,
                 owner_royalty_account: &RoyaltyAccount::create_key(&staker.pubkey(), &self.program_id).0,
-                royalty_account,
                 royalty_ata,
             },
             claim_rewards::Params {
@@ -692,7 +689,6 @@ impl TestRunner {
                 mint: &self.mint,
                 spl_token_program: &spl_token::ID,
                 owner_royalty_account: &RoyaltyAccount::create_key(&owner.pubkey(), &self.program_id).0,
-                royalty_account: None,
                 royalty_ata,
             },
             access_protocol::instruction::claim_bond_v2_rewards::Params {},

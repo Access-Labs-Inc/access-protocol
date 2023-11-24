@@ -223,59 +223,43 @@ pub fn assert_no_close_or_delegate(token_account: &Account) -> ProgramResult {
 }
 
 ///  This function checks if there is an existing royalty account for the owner.
-///  Otherwise checks if the optional other royalty account is set up correctly.
 ///  Checks the relationship between the appropriate royalty account and the royalty ATA
-///  Returns the royalty account data if it exists and is valid. Otherwise returns None.
+///  Returns the royalty account data if it exists. Otherwise returns None.
 pub fn check_and_retrieve_royalty_account(
     program_id: &Pubkey,
-    owner: &AccountInfo,
-    owner_royalty_account: &AccountInfo,
-    royalty_account: Option<&AccountInfo>,
+    royalty_payer_key: &Pubkey,
+    royalty_account: &AccountInfo,
     royalty_ata: Option<&AccountInfo>,
 ) -> Result<Option<RoyaltyAccount>, ProgramError> {
-    // Check that the royalty accounts are set up correctly
-    let owner_must_pay = !owner_royalty_account.data_is_empty();
-    if owner_must_pay && royalty_account.is_some() {
-        return Err(AccessError::RoyaltyAccountMismatch.into());
-    }
-
-    let (derived_key, _) = RoyaltyAccount::create_key(&owner.key, program_id);
+    let (derived_key, _) = RoyaltyAccount::create_key(&royalty_payer_key, program_id);
     check_account_key(
-        owner_royalty_account,
+        royalty_account,
         &derived_key,
         AccessError::AccountNotDeterministic,
     )?;
 
-    // Check relationships between royalty accounts
-    let mut royalty_account_data: Option<RoyaltyAccount> = None;
-    if owner_must_pay {
-        check_account_owner(
-            owner_royalty_account,
-            program_id,
-            AccessError::WrongRoyaltyAccountOwner,
-        )?;
-        royalty_account_data = Some(RoyaltyAccount::from_account_info(owner_royalty_account)?);
-        check_account_key(
-            owner,
-            &royalty_account_data.as_ref().unwrap().royalty_payer,
-            AccessError::RoyaltyAccountMismatch,
-        )?;
-    } else if let Some(royalty_account) = royalty_account {
-        check_signer(owner, AccessError::OwnerMustSign)?;
-        royalty_account_data = Some(RoyaltyAccount::from_account_info(royalty_account)?);
+    if royalty_account.data_is_empty() {
+        return Ok(None);
     }
 
-    if let Some(royalty_account) = royalty_account_data.as_ref() {
-        check_account_key(
-            royalty_ata.ok_or(AccessError::RoyaltyAtaMismatch)?,
-            &royalty_account.recipient_ata,
-            AccessError::RoyaltyAtaMismatch,
-        )?;
-        if royalty_account.expiration_date > Clock::get()?.unix_timestamp as u64 {
-            return Ok(royalty_account_data);
-        }
+    if royalty_ata.is_none() {
+        return Err(AccessError::RoyaltyAtaNotProvided.into());
     }
-    Ok(None)
+
+    check_account_owner(
+        royalty_ata.unwrap(),
+        &spl_token::ID,
+        AccessError::WrongOwner,
+    )?;
+
+    let royalty_account_data = RoyaltyAccount::from_account_info(royalty_account)?;
+    check_account_key(
+        royalty_ata.unwrap(),
+        &royalty_account_data.recipient_ata,
+        AccessError::RoyaltyAtaNotDeterministic,
+    )?;
+
+    Ok(Some(royalty_account_data))
 }
 
 #[allow(missing_docs)]

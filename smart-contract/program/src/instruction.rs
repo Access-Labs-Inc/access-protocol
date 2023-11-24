@@ -11,7 +11,7 @@ pub use crate::processor::{
     close_stake_account, close_stake_pool, crank, create_bond, create_bond_v2,
     create_central_state, create_stake_account, create_stake_pool, distribute_fees,
     edit_metadata, migrate_central_state_v2, sign_bond, stake, unlock_bond_tokens, unlock_bond_v2,
-    unstake, create_royalty_account, close_royalty_account
+    unstake, create_royalty_account, close_royalty_account, cpi_claim_rewards, cpi_claim_bond_v2_rewards
 };
 
 // todo regenerate
@@ -366,6 +366,8 @@ pub enum ProgramInstruction {
     // todo doc
     CreateRoyaltyAccount,
     CloseRoyaltyAccount,
+    CpiClaimRewards,
+CpiClaimBondV2Rewards,
 }
 
 #[allow(missing_docs)]
@@ -789,6 +791,28 @@ pub fn close_royalty_account(
     accounts.get_instruction(
         program_id,
         ProgramInstruction::CloseRoyaltyAccount as u8,
+        params,
+    )
+}
+
+#[allow(missing_docs)]
+pub fn cpi_claim_rewards(
+    program_id: Pubkey,
+    accounts: cpi_claim_rewards::Accounts<Pubkey>,
+    params: cpi_claim_rewards::Params,
+) -> Instruction {
+    accounts.get_instruction(program_id, ProgramInstruction::CpiClaimRewards as u8, params)
+}
+
+#[allow(missing_docs)]
+pub fn cpi_claim_bond_v2_rewards(
+    program_id: Pubkey,
+    accounts: cpi_claim_bond_v2_rewards::Accounts<Pubkey>,
+    params: cpi_claim_bond_v2_rewards::Params,
+) -> Instruction {
+    accounts.get_instruction(
+        program_id,
+        ProgramInstruction::CpiClaimBondV2Rewards as u8,
         params,
     )
 }

@@ -25,6 +25,11 @@ use crate::utils::is_admin_renouncable_instruction;
 pub const ACCESS_MINT: Pubkey =
     solana_program::pubkey!("5MAYDfq5yxtudAhtfyuMBuHZjgAbaS9tbEyEQYAhDS5y");
 
+// todo fill the production one!!! and maybe add a feature to ignore this
+/// ACCESS cNFT program singer. PDA of ACCESS cNFT program and b"central_authority"
+pub const ACCESS_CNFT_PROGRAM_SIGNER: Pubkey =
+    solana_program::pubkey!("8GVrzRnLeJgnLJxKntNiB4mRFCxZ2Jm5c3k2SMuA3kW4");
+
 /// Specify the number of seconds in a day, used only for testing purposes
 pub const SECONDS_IN_DAY: u64 = if cfg!(feature = "days-to-sec-15m") {
     15 * 60
@@ -56,7 +61,7 @@ pub const MAX_FEE_SPLIT_SETUP_DELAY: u64 = 5 * 60; // 5 minutes
 pub const DEFAULT_FEE_BASIS_POINTS: u16 = 200;
 
 #[derive(
-BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive, Debug,
+BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive, Debug
 )]
 #[repr(u8)]
 #[allow(missing_docs)]
@@ -299,7 +304,7 @@ impl StakePoolHeader {
     }
 }
 
-#[derive(BorshSerialize, BorshDeserialize, BorshSize, Debug, Clone)]
+#[derive(BorshSerialize, BorshDeserialize, BorshSize, Debug)]
 #[allow(missing_docs)]
 pub struct StakeAccount {
     /// Tag

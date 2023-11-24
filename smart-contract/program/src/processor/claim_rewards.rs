@@ -65,10 +65,6 @@ pub struct Accounts<'a, T> {
     /// The royalty ATA account
     #[cons(writable)]
     pub royalty_ata: Option<&'a T>,
-
-    /// The optional royalty account to pay royalties to if there is no owner royalty split account
-    /// this is be used by the Access NFT contract to pay royalties even for the NFTs owned by the owner
-    pub royalty_account: Option<&'a T>,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -87,7 +83,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             spl_token_program: next_account_info(accounts_iter)?,
             owner_royalty_account: next_account_info(accounts_iter)?,
             royalty_ata: next_account_info(accounts_iter).ok(),
-            royalty_account: next_account_info(accounts_iter).ok(),
         };
 
         // Check keys
@@ -113,20 +108,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             &spl_token::ID,
             AccessError::WrongOwner,
         )?;
-        if let Some(royalty_account) = accounts.royalty_account {
-            check_account_owner(
-                royalty_account,
-                program_id,
-                AccessError::WrongRoyaltyAccountOwner,
-            )?
-        }
-        if let Some(royalty_ata) = accounts.royalty_ata {
-            check_account_owner(
-                royalty_ata,
-                &spl_token::ID,
-                AccessError::WrongOwner,
-            )?;
-        }
         check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
         check_account_owner(accounts.mint, &spl_token::ID, AccessError::WrongOwner)?;
 
@@ -148,9 +129,8 @@ pub fn process_claim_rewards(
 
     let royalty_account_data = check_and_retrieve_royalty_account(
         program_id,
-        accounts.owner,
+        accounts.owner.key,
         accounts.owner_royalty_account,
-        accounts.royalty_account,
         accounts.royalty_ata,
     )?;
 

@@ -212,6 +212,21 @@ impl PrintProgramError for AccessError {
             AccessError::OwnerMustSign => {
                 msg!("Owner must sign")
             }
+            AccessError::RoyaltyAtaNotProvided => {
+                msg!("Royalty ata not provided")
+            }
+            AccessError::RoyaltyAtaNotDeterministic => {
+                msg!("Royalty ata not deterministic")
+            }
+            AccessError::WrongSysvarInstructionsId => {
+                msg!("Wrong sysvar instructions id")
+            }
+            AccessError::WrongAccessCnftAuthority => {
+                msg!("Wrong Access cnft authority")
+            }
+            AccessError::AccessCnftAuthorityMustSign => {
+                msg!("Access cnft authority must sign")
+            }
         }
     }
 }
