@@ -162,8 +162,7 @@ pub fn process_stake(
     )?;
 
     // if we were previously under the minimum stake limit it gets reset to the pool's one
-    if stake_account.stake_amount < stake_account.pool_minimum_at_creation
-    {
+    if stake_account.stake_amount < stake_account.pool_minimum_at_creation {
         stake_account.pool_minimum_at_creation = stake_pool.header.minimum_stake_amount;
     }
 

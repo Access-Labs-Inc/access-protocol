@@ -599,15 +599,6 @@ impl TestRunner {
         self.claim_staker_rewards_advanced(stake_pool_owner, staker, false).await
     }
 
-    pub async fn claim_staker_rewards_with_royalty(
-        &mut self,
-        stake_pool_owner: &Pubkey,
-        staker: &Keypair,
-        royalty_account: &Pubkey,
-    ) -> Result<(), BanksClientError> {
-        self.claim_staker_rewards_advanced(stake_pool_owner, staker, true).await
-    }
-
     pub async fn claim_staker_rewards_advanced(
         &mut self,
         stake_pool_owner: &Pubkey,
@@ -1103,37 +1094,28 @@ impl TestRunner {
 
     pub async fn create_bond_v2(
         &mut self,
-        from: &Keypair,
-        to: &Pubkey,
+        owner: &Pubkey,
         pool_owner: &Pubkey,
-        bond_amount: u64,
         unlock_date: Option<i64>,
     ) -> Result<(), BanksClientError> {
         let pool_key = self.get_pool_pda(pool_owner);
-        let (bond_key, _) = BondV2Account::create_key(to, &pool_key, unlock_date, &self.program_id);
+        let (bond_key, _) = BondV2Account::create_key(owner, &pool_key, unlock_date, &self.program_id);
 
         let create_bond_v2_ix = access_protocol::instruction::create_bond_v2(
             self.program_id,
             access_protocol::instruction::create_bond_v2::Accounts {
                 fee_payer: &self.prg_test_ctx.payer.pubkey(),
-                from: &from.pubkey(),
-                from_ata: &get_associated_token_address(&from.pubkey(), &self.mint),
-                to,
                 bond_v2_account: &bond_key,
                 central_state: &self.central_state,
-                central_state_vault: &self.central_state_vault,
                 pool: &pool_key,
-                pool_vault: &get_associated_token_address(&pool_key, &self.mint),
-                mint: &self.mint,
-                spl_token_program: &spl_token::ID,
                 system_program: &system_program::ID,
             },
             access_protocol::instruction::create_bond_v2::Params {
-                amount: bond_amount,
                 unlock_timestamp: unlock_date,
+                owner: *owner,
             },
         );
-        sign_send_instructions(&mut self.prg_test_ctx, vec![create_bond_v2_ix], vec![from]).await?;
+        sign_send_instructions(&mut self.prg_test_ctx, vec![create_bond_v2_ix], vec![]).await?;
         Ok(())
     }
 

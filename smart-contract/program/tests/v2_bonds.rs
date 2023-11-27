@@ -55,6 +55,15 @@ async fn v2_bonds() {
 
         // Create bond
         tr.create_bond_v2(
+            &bond_recipient.pubkey(),
+            &pool_owner.pubkey(),
+            Some(unlock_date),
+        )
+            .await
+            .unwrap();
+
+        // Add to bond
+        tr.add_to_bond_v2(
             &bond_creator,
             &bond_recipient.pubkey(),
             &pool_owner.pubkey(),
@@ -231,6 +240,15 @@ async fn v2_bonds() {
         // Create bond
         let bond_amount = 30_000;
         tr.create_bond_v2(
+            &bond_recipient.pubkey(),
+            &pool_owner.pubkey(),
+            None,
+        )
+            .await
+            .unwrap();
+
+        // add to bond
+        tr.add_to_bond_v2(
             &bond_creator,
             &bond_recipient.pubkey(),
             &pool_owner.pubkey(),

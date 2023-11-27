@@ -149,6 +149,16 @@ pub fn process_add_to_bond_v2(
     central_state.assert_instruction_allowed(&AddToBondV2)?;
     assert_valid_fee(accounts.central_state_vault, accounts.central_state.key)?;
 
+    // if we were previously under the amount gets reset to the pool's one
+    if bond.amount < bond.pool_minimum_at_creation {
+        bond.pool_minimum_at_creation = pool.header.minimum_stake_amount;
+    }
+
+    // We want to limit the bond amount by the pool minumum even in the case when the user has other subscriptions
+    if bond.pool_minimum_at_creation > bond.amount + amount {
+        return Err(AccessError::InvalidAmount.into());
+    }
+
     check_account_key(
         accounts.pool_vault,
         &Pubkey::new(&pool.header.vault),
@@ -162,6 +172,10 @@ pub fn process_add_to_bond_v2(
             central_state.get_current_offset()?
         );
         return Err(AccessError::PoolMustBeCranked.into());
+    }
+
+    if bond.amount == 0 {
+        bond.last_claimed_offset = central_state.get_current_offset()?;
     }
 
     check_account_key(
@@ -190,11 +204,6 @@ pub fn process_add_to_bond_v2(
     if bond.amount > 0 && bond.last_claimed_offset < pool.header.current_day_idx as u64 {
         msg!("Cannot add to a bond that has unclaimed rewards");
         return Err(AccessError::UnclaimedRewards.into());
-    }
-
-    if bond.amount == 0 {
-        msg!("Bond cannnot be empty");
-        return Err(AccessError::InvalidAmount.into());
     }
 
     let current_time = Clock::get()?.unix_timestamp;

@@ -831,16 +831,14 @@ impl BondV2Account {
         owner: Pubkey,
         pool: Pubkey,
         pool_minimum_at_creation: u64,
-        amount: u64,
         unlock_timestamp: Option<i64>,
-        current_offset: u64,
     ) -> Self {
         Self {
             tag: Tag::BondV2Account,
             owner,
-            amount,
+            amount: 0,
             pool,
-            last_claimed_offset: current_offset,
+            last_claimed_offset: 0,
             pool_minimum_at_creation,
             unlock_timestamp,
         }

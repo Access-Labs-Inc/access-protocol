@@ -259,6 +259,10 @@ pub fn check_and_retrieve_royalty_account(
         AccessError::RoyaltyAtaNotDeterministic,
     )?;
 
+    if royalty_account_data.expiration_date < Clock::get()?.unix_timestamp as u64 {
+        return Ok(None); // Royalty account has expired - no royalty split is applicable
+    }
+
     Ok(Some(royalty_account_data))
 }
 
