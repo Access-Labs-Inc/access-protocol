@@ -128,7 +128,7 @@ pub fn process_claim_bond(
     )?;
     check_account_key(
         accounts.pool_vault,
-        &Pubkey::new(&stake_pool.header.vault),
+        &Pubkey::from(stake_pool.header.vault),
         AccessError::StakePoolVaultMismatch,
     )?;
 

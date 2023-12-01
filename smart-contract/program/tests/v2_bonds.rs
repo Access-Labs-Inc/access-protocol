@@ -261,7 +261,7 @@ async fn v2_bonds() {
         let staker_stats = tr.staker_stats(bond_creator.pubkey()).await.unwrap();
         assert_eq!(
             staker_stats.balance,
-            100_000 - bond_amount as u64 // no protocol fee for forever bonds
+            100_000 - bond_amount // no protocol fee for forever bonds
         );
         let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
         assert_eq!(pool_stats.header.total_staked, bond_amount);
@@ -297,7 +297,7 @@ async fn v2_bonds() {
         let staker_stats = tr.staker_stats(bond_creator.pubkey()).await.unwrap();
         assert_eq!(
             staker_stats.balance,
-            100_000 - (bond_amount + add_amount) as u64 // no protocol fee for forever bonds
+            100_000 - (bond_amount + add_amount) // no protocol fee for forever bonds
         );
         let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
         assert_eq!(pool_stats.header.total_staked, (bond_amount + add_amount));

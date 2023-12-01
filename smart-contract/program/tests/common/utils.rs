@@ -7,7 +7,7 @@ use solana_program_test::{BanksClientError, ProgramTest, ProgramTestContext};
 use solana_sdk::{signature::Keypair, transaction::Transaction};
 use solana_sdk::account::Account;
 use solana_sdk::signature::Signer;
-use solana_sdk::transaction::TransactionError;
+
 use spl_token::state::Mint;
 
 // Utils

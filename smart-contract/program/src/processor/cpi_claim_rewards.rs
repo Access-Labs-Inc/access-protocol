@@ -17,7 +17,7 @@ use crate::error::AccessError;
 use crate::instruction::ProgramInstruction::ClaimRewards;
 use crate::state::{ ACCESS_CNFT_PROGRAM_SIGNER, StakeAccount, StakePool, Tag};
 use crate::state::CentralStateV2;
-use crate::utils::{assert_no_close_or_delegate, calc_reward_fp32, check_account_key, check_account_owner, check_and_retrieve_royalty_account, check_signer};
+use crate::utils::{calc_reward_fp32, check_account_key, check_account_owner, check_and_retrieve_royalty_account, check_signer};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `claim_rewards` instruction

@@ -161,7 +161,7 @@ pub fn process_add_to_bond_v2(
 
     check_account_key(
         accounts.pool_vault,
-        &Pubkey::new(&pool.header.vault),
+        &Pubkey::from(pool.header.vault),
         AccessError::StakePoolVaultMismatch,
     )?;
 

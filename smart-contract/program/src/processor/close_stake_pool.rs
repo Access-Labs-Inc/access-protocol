@@ -94,12 +94,12 @@ pub fn process_close_stake_pool(
 
     check_account_key(
         accounts.owner,
-        &Pubkey::new(&stake_pool.header.owner),
+        &Pubkey::from(stake_pool.header.owner),
         AccessError::WrongStakePoolOwner,
     )?;
     check_account_key(
         accounts.pool_vault,
-        &Pubkey::new(&stake_pool.header.vault),
+        &Pubkey::from(stake_pool.header.vault),
         AccessError::StakePoolVaultMismatch,
     )?;
 

@@ -139,7 +139,7 @@ pub fn process_claim_pool_rewards(
     // Safety checks
     check_account_key(
         accounts.owner,
-        &Pubkey::new(&stake_pool.header.owner),
+        &Pubkey::from(stake_pool.header.owner),
         AccessError::WrongStakePoolAccountOwner,
     )?;
     check_account_key(

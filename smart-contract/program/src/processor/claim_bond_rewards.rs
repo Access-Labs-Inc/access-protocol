@@ -107,7 +107,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 pub fn process_claim_bond_rewards(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
-    params: Params,
+    _params: Params,
 ) -> ProgramResult {
     // If you don't want to issue rewards to bond holders
     if cfg!(feature = "claim-bond-rewards-off") {

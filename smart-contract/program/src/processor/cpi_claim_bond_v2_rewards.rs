@@ -3,7 +3,7 @@ use crate::error::AccessError;
 use crate::state::{ACCESS_CNFT_PROGRAM_SIGNER, BondV2Account};
 use crate::state::{StakePool, Tag};
 use crate::utils::{
-    assert_no_close_or_delegate, calc_reward_fp32, check_account_key, check_account_owner,
+    calc_reward_fp32, check_account_key, check_account_owner,
     check_signer, check_and_retrieve_royalty_account
 };
 use std::convert::TryInto;

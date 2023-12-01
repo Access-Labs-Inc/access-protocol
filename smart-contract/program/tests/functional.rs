@@ -17,7 +17,7 @@ use access_protocol::{
     },
     state::BondAccount,
 };
-use mpl_token_metadata::instruction::update_metadata_accounts;
+use mpl_token_metadata::instruction::update_metadata_accounts_v2;
 use mpl_token_metadata::{instruction::create_metadata_accounts_v3, pda::find_metadata_account};
 
 use spl_token::{instruction::set_authority, instruction::AuthorityType};
@@ -111,13 +111,14 @@ async fn functional_10s() {
     .await
     .unwrap();
 
-    let metaplex_set_authority_to_cs_ix = update_metadata_accounts(
+    let metaplex_set_authority_to_cs_ix = update_metadata_accounts_v2(
         mpl_token_metadata::ID,
         metadata_key,
         authority.pubkey(),
         Some(central_state),
         None,
-        Some(true),
+        None,
+        None,
     );
 
     sign_send_instructions(
@@ -531,7 +532,6 @@ async fn functional_10s() {
             mint: &mint,
             spl_token_program: &spl_token::ID,
             owner_royalty_account: &RoyaltyAccount::create_key(&stake_pool_owner.pubkey(), &program_id).0,
-            royalty_account: None,
             royalty_ata: None,
         },
         claim_pool_rewards::Params {},
@@ -584,7 +584,6 @@ async fn functional_10s() {
             mint: &mint,
             spl_token_program: &spl_token::ID,
             owner_royalty_account: &RoyaltyAccount::create_key(&staker.pubkey(), &program_id).0,
-            royalty_account: None,
             royalty_ata: None,
         },
         claim_rewards::Params {
@@ -723,7 +722,6 @@ async fn functional_10s() {
             mint: &mint,
             spl_token_program: &spl_token::ID,
             owner_royalty_account: &RoyaltyAccount::create_key(&staker.pubkey(), &program_id).0,
-            royalty_account: None,
             royalty_ata: None,
         },
         claim_rewards::Params {

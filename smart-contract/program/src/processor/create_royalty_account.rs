@@ -98,7 +98,7 @@ pub fn process_create_royalty_account(
     central_state.assert_instruction_allowed(&CreateRoyaltyAccount)?;
 
     let (derived_royalty_key, bump_seed) = RoyaltyAccount::create_key(
-        &accounts.royalty_payer.key,
+        accounts.royalty_payer.key,
         program_id,
     );
 

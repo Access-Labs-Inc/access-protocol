@@ -228,7 +228,7 @@ impl TestRunner {
     pub async fn get_sol(&mut self, recipient: &Pubkey, amount: i64) -> Result<(), BanksClientError> {
         let ix = transfer(
             &self.prg_test_ctx.payer.pubkey(),
-            &recipient,
+            recipient,
             amount as u64,
         );
         sign_send_instructions(&mut self.prg_test_ctx, vec![ix], vec![]).await?;

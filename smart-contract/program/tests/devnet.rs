@@ -144,7 +144,7 @@ fn devnet() {
         );
         println!("Stake result: {:?}", result);
     }
-    return;
+
     // ------------------------------------
     // DISTRIBUTE FEES
     // ------------------------------------

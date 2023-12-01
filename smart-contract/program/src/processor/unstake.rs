@@ -156,7 +156,7 @@ pub fn process_unstake(
     )?;
     check_account_key(
         accounts.vault,
-        &Pubkey::new(&stake_pool.header.vault),
+        &Pubkey::from(stake_pool.header.vault),
         AccessError::StakePoolVaultMismatch,
     )?;
 

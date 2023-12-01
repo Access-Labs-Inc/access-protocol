@@ -42,7 +42,7 @@ async fn end_to_end() {
     assert_eq!(pool_stats.header.last_claimed_offset, 0);
     assert_eq!(pool_stats.header.stakers_part, 50);
     assert_eq!(
-        Pubkey::new(&pool_stats.header.owner).to_string(),
+        Pubkey::from(pool_stats.header.owner).to_string(),
         stake_pool_owner.pubkey().to_string()
     );
 
@@ -241,7 +241,7 @@ async fn end_to_end() {
     assert_eq!(stake_pool_stats.header.last_claimed_offset, 0);
     assert_eq!(stake_pool_stats.header.stakers_part, 50);
     assert_eq!(
-        Pubkey::new(&pool_stats.header.owner).to_string(),
+        Pubkey::from(pool_stats.header.owner).to_string(),
         stake_pool_owner.pubkey().to_string()
     );
 

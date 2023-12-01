@@ -133,7 +133,7 @@ pub fn process_unlock_bond_tokens(
     )?;
     check_account_key(
         accounts.pool_vault,
-        &Pubkey::new(&stake_pool.header.vault),
+        &Pubkey::from(stake_pool.header.vault),
         AccessError::StakePoolVaultMismatch,
     )?;
 

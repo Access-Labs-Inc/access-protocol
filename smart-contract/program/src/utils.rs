@@ -231,7 +231,7 @@ pub fn check_and_retrieve_royalty_account(
     royalty_account: &AccountInfo,
     royalty_ata: Option<&AccountInfo>,
 ) -> Result<Option<RoyaltyAccount>, ProgramError> {
-    let (derived_key, _) = RoyaltyAccount::create_key(&royalty_payer_key, program_id);
+    let (derived_key, _) = RoyaltyAccount::create_key(royalty_payer_key, program_id);
     check_account_key(
         royalty_account,
         &derived_key,
