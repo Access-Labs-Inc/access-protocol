@@ -55,6 +55,15 @@ async fn v2_bonds() {
 
         // Create bond
         tr.create_bond_v2(
+            &bond_recipient.pubkey(),
+            &pool_owner.pubkey(),
+            Some(unlock_date),
+        )
+            .await
+            .unwrap();
+
+        // Add to bond
+        tr.add_to_bond_v2(
             &bond_creator,
             &bond_recipient.pubkey(),
             &pool_owner.pubkey(),
@@ -231,6 +240,15 @@ async fn v2_bonds() {
         // Create bond
         let bond_amount = 30_000;
         tr.create_bond_v2(
+            &bond_recipient.pubkey(),
+            &pool_owner.pubkey(),
+            None,
+        )
+            .await
+            .unwrap();
+
+        // add to bond
+        tr.add_to_bond_v2(
             &bond_creator,
             &bond_recipient.pubkey(),
             &pool_owner.pubkey(),
@@ -243,7 +261,7 @@ async fn v2_bonds() {
         let staker_stats = tr.staker_stats(bond_creator.pubkey()).await.unwrap();
         assert_eq!(
             staker_stats.balance,
-            (100_000 - bond_amount)- (bond_amount as f64 * tr.get_protocol_fees().await / 100.0).ceil() as u64
+            100_000 - bond_amount // no protocol fee for forever bonds
         );
         let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
         assert_eq!(pool_stats.header.total_staked, bond_amount);
@@ -279,7 +297,7 @@ async fn v2_bonds() {
         let staker_stats = tr.staker_stats(bond_creator.pubkey()).await.unwrap();
         assert_eq!(
             staker_stats.balance,
-            100_000 - (bond_amount + add_amount)- ((bond_amount + add_amount) as f64 * tr.get_protocol_fees().await / 100.0).ceil() as u64
+            100_000 - (bond_amount + add_amount) // no protocol fee for forever bonds
         );
         let pool_stats = tr.pool_stats(pool_owner.pubkey()).await.unwrap();
         assert_eq!(pool_stats.header.total_staked, (bond_amount + add_amount));

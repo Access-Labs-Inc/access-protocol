@@ -20,7 +20,7 @@ pub mod common;
         // Check the pool
         let stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
         assert_eq!(
-            Pubkey::new(&stats.header.owner).to_string(),
+            Pubkey::from(stats.header.owner).to_string(),
             stake_pool_owner.pubkey().to_string()
         );
         assert_eq!(stats.header.tag, Tag::InactiveStakePool as u8);
@@ -31,7 +31,7 @@ pub mod common;
         // Check the pool
         let stats = tr.pool_stats(stake_pool_owner.pubkey()).await.unwrap();
         assert_eq!(
-            Pubkey::new(&stats.header.owner).to_string(),
+            Pubkey::from(stats.header.owner).to_string(),
             stake_pool_owner.pubkey().to_string()
         );
         assert_eq!(stats.header.tag, Tag::StakePool as u8);

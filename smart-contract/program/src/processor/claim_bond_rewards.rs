@@ -1,5 +1,6 @@
 //! Claim bond rewards
 //! This Instruction allows bond owners to claim their staking rewards
+use std::convert::TryInto;
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -13,7 +14,7 @@ use solana_program::{
 
 use crate::state::{BondAccount, StakePool};
 use crate::{error::AccessError, state::Tag};
-use bonfida_utils::{fp_math::safe_downcast, BorshSize, InstructionsAccount};
+use bonfida_utils::{BorshSize, InstructionsAccount};
 use spl_token::{instruction::mint_to, state::Account};
 use crate::instruction::ProgramInstruction::{ClaimBondRewards};
 
@@ -122,6 +123,8 @@ pub fn process_claim_bond_rewards(
 
     let destination_token_acc = Account::unpack(&accounts.rewards_destination.data.borrow())?;
     if destination_token_acc.mint != central_state.token_mint {
+        msg!("Invalid ACCESS mint");
+        #[cfg(not(feature = "no-mint-check"))]
         return Err(AccessError::WrongMint.into());
     }
 
@@ -160,8 +163,9 @@ pub fn process_claim_bond_rewards(
     // Multiply by the staker shares of the total pool
     .checked_mul(bond.total_staked as u128)
     .map(|r| ((r >> 31) + 1) >> 1)
-    .and_then(safe_downcast)
-    .ok_or(AccessError::Overflow)?;
+        .ok_or(AccessError::Overflow)?
+        .try_into()
+        .map_err(|_|AccessError::Overflow)?;
 
     msg!("Claiming bond rewards {}", reward);
     msg!("Total staked {}", bond.total_staked);

@@ -1,9 +1,9 @@
-//! Claim rewards of a bond V2  from the Access NFT Program
+//! Claim rewards of a bond V2
 use crate::error::AccessError;
-use crate::state::BondV2Account;
+use crate::state::{ACCESS_CNFT_PROGRAM_SIGNER, BondV2Account};
 use crate::state::{StakePool, Tag};
 use crate::utils::{
-    assert_no_close_or_delegate, calc_reward_fp32, check_account_key, check_account_owner,
+    calc_reward_fp32, check_account_key, check_account_owner,
     check_signer, check_and_retrieve_royalty_account
 };
 use std::convert::TryInto;
@@ -24,22 +24,26 @@ use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `claim_bond_v2_rewards` instruction
-pub struct Params {}
+pub struct Params {
+    /// cNFT Owner
+    pub cnft_owner: Pubkey,
+}
 
 #[derive(InstructionsAccount)]
 /// The required accounts for the `claim_bond_v2_rewards` instruction
 pub struct Accounts<'a, T> {
+    ///  The central authority signer of the Access cNFT program
+    #[cons(signer)]
+    pub cnft_program_signer: &'a T,
+
     /// The stake pool account
     #[cons(writable)]
     pub pool: &'a T,
 
-    /// The Bond V2 account
+    // todo check that we are cheking this one level up
+    /// The Bond V2 account - this is unchecked here as it is checked in the Access NFT program
     #[cons(writable)]
     pub bond_v2_account: &'a T,
-
-    /// The owner of the Bond V2 account
-    #[cons(signer)]
-    pub owner: &'a T,
 
     /// The rewards destination
     #[cons(writable)]
@@ -56,11 +60,11 @@ pub struct Accounts<'a, T> {
     pub spl_token_program: &'a T,
 
     /// The owner's royalty split account to check if royalties need to be paid
-    pub owner_royalty_account: &'a T,
+    pub cnft_owner_royalty_account: &'a T,
 
     /// The royalty ATA account
     #[cons(writable)]
-    pub royalty_ata: Option<&'a T>,
+    pub royalty_ata: &'a T,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -70,15 +74,15 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     ) -> Result<Self, ProgramError> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
+            cnft_program_signer: next_account_info(accounts_iter)?,
             pool: next_account_info(accounts_iter)?,
             bond_v2_account: next_account_info(accounts_iter)?,
-            owner: next_account_info(accounts_iter)?,
             rewards_destination: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
             mint: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
-            owner_royalty_account: next_account_info(accounts_iter)?,
-            royalty_ata: next_account_info(accounts_iter).ok(),
+            cnft_owner_royalty_account: next_account_info(accounts_iter)?,
+            royalty_ata: next_account_info(accounts_iter)?,
         };
 
         // Check keys
@@ -86,6 +90,11 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             accounts.spl_token_program,
             &spl_token::ID,
             AccessError::WrongSplTokenProgramId,
+        )?;
+        check_account_key(
+            accounts.cnft_program_signer,
+            &ACCESS_CNFT_PROGRAM_SIGNER,
+            AccessError::WrongAccessCnftAuthority,
         )?;
 
         // Check ownership
@@ -107,14 +116,15 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
         check_account_owner(accounts.mint, &spl_token::ID, AccessError::WrongOwner)?;
 
+        check_signer(accounts.cnft_program_signer, AccessError::AccessCnftAuthorityMustSign)?;
         Ok(accounts)
     }
 }
 
-pub fn process_claim_bond_v2_rewards(
+pub fn process_cpi_claim_bond_v2_rewards(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
-    _params: Params,
+    params: Params,
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 
@@ -125,20 +135,13 @@ pub fn process_claim_bond_v2_rewards(
 
     let royalty_account_data = check_and_retrieve_royalty_account(
         program_id,
-        accounts.owner.key,
-        accounts.owner_royalty_account,
-        accounts.royalty_ata,
+        &params.cnft_owner,
+        accounts.cnft_owner_royalty_account,
+        Some(accounts.royalty_ata),
     )?;
 
     let destination_token_acc = Account::unpack(&accounts.rewards_destination.data.borrow())?;
     msg!("Account owner: {}", destination_token_acc.owner);
-
-    if destination_token_acc.owner != bond_v2_account.owner {
-        // If the destination does not belong to the staker he must sign
-        check_signer(accounts.owner, AccessError::OwnerMustSign)?;
-    } else {
-        assert_no_close_or_delegate(&destination_token_acc)?;
-    }
 
     if destination_token_acc.mint != central_state.token_mint {
         msg!("Invalid ACCESS mint");
@@ -150,11 +153,6 @@ pub fn process_claim_bond_v2_rewards(
         accounts.pool,
         &bond_v2_account.pool,
         AccessError::WrongStakePool,
-    )?;
-    check_account_key(
-        accounts.owner,
-        &bond_v2_account.owner,
-        AccessError::WrongOwner,
     )?;
     check_account_key(
         accounts.mint,
@@ -211,7 +209,7 @@ pub fn process_claim_bond_v2_rewards(
         let mint_royalty_ix = mint_to(
             &spl_token::ID,
             accounts.mint.key,
-            accounts.royalty_ata.unwrap().key,
+            accounts.royalty_ata.key,
             accounts.central_state.key,
             &[],
             royalty_amount,
@@ -222,7 +220,7 @@ pub fn process_claim_bond_v2_rewards(
                 accounts.spl_token_program.clone(),
                 accounts.mint.clone(),
                 accounts.central_state.clone(),
-                accounts.royalty_ata.unwrap().clone(),
+                accounts.royalty_ata.clone(),
             ],
             &[&[&program_id.to_bytes(), &[central_state.bump_seed]]],
         )?;
