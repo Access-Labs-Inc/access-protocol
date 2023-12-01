@@ -88,7 +88,7 @@ pub fn process_change_pool_multiplier(
 
     check_account_key(
         accounts.stake_pool_owner,
-        &Pubkey::new(&stake_pool.header.owner),
+        &Pubkey::from(stake_pool.header.owner),
         AccessError::StakeAccountOwnerMismatch,
     )?;
 

@@ -25,6 +25,11 @@ use crate::utils::is_admin_renouncable_instruction;
 pub const ACCESS_MINT: Pubkey =
     solana_program::pubkey!("5MAYDfq5yxtudAhtfyuMBuHZjgAbaS9tbEyEQYAhDS5y");
 
+// todo fill in the production one
+/// ACCESS cNFT program singer. PDA of ACCESS cNFT program and b"central_authority"
+pub const ACCESS_CNFT_PROGRAM_SIGNER: Pubkey =
+    solana_program::pubkey!("8GVrzRnLeJgnLJxKntNiB4mRFCxZ2Jm5c3k2SMuA3kW4");
+
 /// Specify the number of seconds in a day, used only for testing purposes
 pub const SECONDS_IN_DAY: u64 = if cfg!(feature = "days-to-sec-15m") {
     15 * 60
@@ -56,7 +61,7 @@ pub const MAX_FEE_SPLIT_SETUP_DELAY: u64 = 5 * 60; // 5 minutes
 pub const DEFAULT_FEE_BASIS_POINTS: u16 = 200;
 
 #[derive(
-BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive, Debug,
+BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive, Debug
 )]
 #[repr(u8)]
 #[allow(missing_docs)]
@@ -78,6 +83,7 @@ pub enum Tag {
     // V2 tags
     BondV2Account,
     CentralStateV2,
+    RoyaltyAccount,
 }
 
 impl Tag {
@@ -825,16 +831,14 @@ impl BondV2Account {
         owner: Pubkey,
         pool: Pubkey,
         pool_minimum_at_creation: u64,
-        amount: u64,
         unlock_timestamp: Option<i64>,
-        current_offset: u64,
     ) -> Self {
         Self {
             tag: Tag::BondV2Account,
             owner,
-            amount,
+            amount: 0,
             pool,
-            last_claimed_offset: current_offset,
+            last_claimed_offset: 0,
             pool_minimum_at_creation,
             unlock_timestamp,
         }
@@ -861,6 +865,96 @@ impl BondV2Account {
             .checked_sub(amount)
             .ok_or(AccessError::Overflow)?;
         Ok(())
+    }
+}
+
+#[derive(BorshSerialize, BorshDeserialize, BorshSize)]
+#[allow(missing_docs)]
+pub struct RoyaltyAccount {
+    /// Tag
+    pub tag: Tag,
+
+    /// The address that paid for the creation of this PDA
+    pub rent_payer: Pubkey,
+
+    /// The address that has to pay royalties from all their claims
+    pub royalty_payer: Pubkey,
+
+    /// The address that collects the royalties
+    pub recipient_ata: Pubkey,
+
+    /// The date after which the royalties are not paid anymore
+    pub expiration_date: u64,
+
+    /// The royalty basis points (i.e 1% = 100) going to the recommender
+    pub royalty_basis_points: u16,
+}
+
+
+#[allow(missing_docs)]
+impl RoyaltyAccount {
+    pub const SEED: &'static [u8; 15] = b"royalty_account";
+
+    pub fn create_key(
+        payer: &Pubkey,
+        program_id: &Pubkey,
+    ) -> (Pubkey, u8) {
+        let seeds: &[&[u8]] = &[
+            RoyaltyAccount::SEED,
+            &payer.to_bytes(),
+        ];
+        Pubkey::find_program_address(seeds, program_id)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        fee_payer: Pubkey,
+        royalty_payer: Pubkey,
+        recipient_ata: Pubkey,
+        expiration_date: u64,
+        royalty_basis_points: u16,
+    ) -> Self {
+        Self {
+            tag: Tag::RoyaltyAccount,
+            rent_payer: fee_payer,
+            royalty_payer,
+            recipient_ata,
+            expiration_date,
+            royalty_basis_points,
+        }
+    }
+
+    pub fn save(&self, mut dst: &mut [u8]) -> ProgramResult {
+        self.serialize(&mut dst)
+            .map_err(|_| ProgramError::InvalidAccountData)
+    }
+
+    pub fn from_account_info(a: &AccountInfo) -> Result<RoyaltyAccount, ProgramError> {
+        let mut data = &a.data.borrow() as &[u8];
+        let tag = Tag::RoyaltyAccount;
+        if data[0] != tag as u8 && data[0] != Tag::Uninitialized as u8 {
+            return Err(AccessError::DataTypeMismatch.into());
+        }
+        let result = RoyaltyAccount::deserialize(&mut data)?;
+        Ok(result)
+    }
+
+    pub fn close(&mut self) {
+        self.tag = Tag::Deleted
+    }
+
+    pub fn calculate_royalty_amount(&self, amount: u64) -> Result<u64, ProgramError> {
+        let royalty = amount
+            .checked_mul(self.royalty_basis_points as u64)
+            .ok_or(AccessError::Overflow)?
+            .checked_add(9_999)// rounding
+            .ok_or(AccessError::Overflow)?
+            .checked_div(10_000)
+            .ok_or(AccessError::Overflow)?;
+        if royalty > amount {
+            return Err(AccessError::Overflow.into());
+        }
+        Ok(royalty)
     }
 }
 

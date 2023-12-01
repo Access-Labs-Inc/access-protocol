@@ -149,9 +149,19 @@ pub fn process_add_to_bond_v2(
     central_state.assert_instruction_allowed(&AddToBondV2)?;
     assert_valid_fee(accounts.central_state_vault, accounts.central_state.key)?;
 
+    // if we were previously under the amount gets reset to the pool's one
+    if bond.amount < bond.pool_minimum_at_creation {
+        bond.pool_minimum_at_creation = pool.header.minimum_stake_amount;
+    }
+
+    // We want to limit the bond amount by the pool minumum even in the case when the user has other subscriptions
+    if bond.pool_minimum_at_creation > bond.amount + amount {
+        return Err(AccessError::InvalidAmount.into());
+    }
+
     check_account_key(
         accounts.pool_vault,
-        &Pubkey::new(&pool.header.vault),
+        &Pubkey::from(pool.header.vault),
         AccessError::StakePoolVaultMismatch,
     )?;
 
@@ -164,6 +174,10 @@ pub fn process_add_to_bond_v2(
         return Err(AccessError::PoolMustBeCranked.into());
     }
 
+    if bond.amount == 0 {
+        bond.last_claimed_offset = central_state.get_current_offset()?;
+    }
+
     check_account_key(
         accounts.mint,
         &central_state.token_mint,
@@ -172,6 +186,8 @@ pub fn process_add_to_bond_v2(
 
     let from_ata = Account::unpack(&accounts.from_ata.data.borrow())?;
     if from_ata.mint != central_state.token_mint {
+        msg!("Invalid ACCESS mint");
+        #[cfg(not(feature = "no-mint-check"))]
         return Err(AccessError::WrongMint.into());
     }
     if &from_ata.owner != accounts.from.key {
@@ -188,11 +204,6 @@ pub fn process_add_to_bond_v2(
     if bond.amount > 0 && bond.last_claimed_offset < pool.header.current_day_idx as u64 {
         msg!("Cannot add to a bond that has unclaimed rewards");
         return Err(AccessError::UnclaimedRewards.into());
-    }
-
-    if bond.amount == 0 {
-        msg!("Bond cannnot be empty");
-        return Err(AccessError::InvalidAmount.into());
     }
 
     let current_time = Clock::get()?.unix_timestamp;
@@ -220,6 +231,27 @@ pub fn process_add_to_bond_v2(
                 accounts.from.clone(),
             ],
         )?;
+
+        // Transfer fees
+        let fee_amount = central_state.calculate_fee(amount)?;
+        msg!("Transfer fees: {}", fee_amount);
+        let transfer_fees = transfer(
+            &spl_token::ID,
+            accounts.from_ata.key,
+            accounts.central_state_vault.key,
+            accounts.from.key,
+            &[],
+            fee_amount,
+        )?;
+        invoke(
+            &transfer_fees,
+            &[
+                accounts.spl_token_program.clone(),
+                accounts.from_ata.clone(),
+                accounts.central_state_vault.clone(),
+                accounts.from.clone(),
+            ],
+        )?;
     } else {
         let burn_instruction = spl_token::instruction::burn(
             &spl_token::ID,
@@ -239,27 +271,6 @@ pub fn process_add_to_bond_v2(
             ],
         )?;
     }
-
-    // Transfer fees
-    let fee_amount = central_state.calculate_fee(amount)?;
-    msg!("Transfer fees: {}", fee_amount);
-    let transfer_fees = transfer(
-        &spl_token::ID,
-        accounts.from_ata.key,
-        accounts.central_state_vault.key,
-        accounts.from.key,
-        &[],
-        fee_amount,
-    )?;
-    invoke(
-        &transfer_fees,
-        &[
-            accounts.spl_token_program.clone(),
-            accounts.from_ata.clone(),
-            accounts.central_state_vault.clone(),
-            accounts.from.clone(),
-        ],
-    )?;
 
     // Update all the appropriate states
     bond.amount = bond

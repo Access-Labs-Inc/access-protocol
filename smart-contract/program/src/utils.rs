@@ -1,13 +1,15 @@
 //! Utils
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
-    program_pack::Pack, pubkey::Pubkey,
+    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
+    program_error::ProgramError, program_pack::Pack,
+    pubkey::Pubkey,
+    sysvar::Sysvar,
 };
 use spl_token::state::Account;
 
 use crate::error::AccessError;
 use crate::instruction::ProgramInstruction;
-use crate::state::{AUTHORIZED_BOND_SELLERS, BondAccount};
+use crate::state::{AUTHORIZED_BOND_SELLERS, BondAccount, RoyaltyAccount};
 use crate::state::{ACCESS_MINT, STAKE_BUFFER_LEN, StakeAccount, StakePoolRef};
 
 /// Cumulate the claimable rewards from the last claimed day to the present.
@@ -218,6 +220,50 @@ pub fn assert_no_close_or_delegate(token_account: &Account) -> ProgramResult {
         return Err(ProgramError::InvalidArgument);
     }
     Ok(())
+}
+
+///  This function checks if there is an existing royalty account for the owner.
+///  Checks the relationship between the appropriate royalty account and the royalty ATA
+///  Returns the royalty account data if it exists. Otherwise returns None.
+pub fn check_and_retrieve_royalty_account(
+    program_id: &Pubkey,
+    royalty_payer_key: &Pubkey,
+    royalty_account: &AccountInfo,
+    royalty_ata: Option<&AccountInfo>,
+) -> Result<Option<RoyaltyAccount>, ProgramError> {
+    let (derived_key, _) = RoyaltyAccount::create_key(royalty_payer_key, program_id);
+    check_account_key(
+        royalty_account,
+        &derived_key,
+        AccessError::AccountNotDeterministic,
+    )?;
+
+    if royalty_account.data_is_empty() {
+        return Ok(None);
+    }
+
+    if royalty_ata.is_none() {
+        return Err(AccessError::RoyaltyAtaNotProvided.into());
+    }
+
+    check_account_owner(
+        royalty_ata.unwrap(),
+        &spl_token::ID,
+        AccessError::WrongOwner,
+    )?;
+
+    let royalty_account_data = RoyaltyAccount::from_account_info(royalty_account)?;
+    check_account_key(
+        royalty_ata.unwrap(),
+        &royalty_account_data.recipient_ata,
+        AccessError::RoyaltyAtaNotDeterministic,
+    )?;
+
+    if royalty_account_data.expiration_date < Clock::get()?.unix_timestamp as u64 {
+        return Ok(None); // Royalty account has expired - no royalty split is applicable
+    }
+
+    Ok(Some(royalty_account_data))
 }
 
 #[allow(missing_docs)]

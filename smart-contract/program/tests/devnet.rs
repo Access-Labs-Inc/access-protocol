@@ -144,7 +144,7 @@ fn devnet() {
         );
         println!("Stake result: {:?}", result);
     }
-    return;
+
     // ------------------------------------
     // DISTRIBUTE FEES
     // ------------------------------------
@@ -291,7 +291,7 @@ fn lock(
         stake::Accounts {
             stake_account: &stake_acc_key,
             stake_pool: &pool,
-            owner: &staker.pubkey(),
+            token_owner: &staker.pubkey(),
             source_token: &get_associated_token_address(&staker.pubkey(), &token_mint),
             spl_token_program: &spl_token::ID,
             vault: &pool_vault,

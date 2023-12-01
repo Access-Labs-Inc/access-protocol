@@ -4,14 +4,15 @@ use num_derive::FromPrimitive;
 use solana_program::{instruction::Instruction, pubkey::Pubkey};
 
 pub use crate::processor::{
-    activate_stake_pool, add_to_bond_v2, admin_freeze, admin_mint, admin_program_freeze,
-    admin_renounce, admin_set_protocol_fee, admin_setup_fee_split, change_central_state_authority,
-    change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards,
-    claim_bond_v2_rewards, claim_pool_rewards, claim_rewards, close_stake_account,
-    close_stake_pool, crank, create_bond, create_bond_v2, create_central_state,
-    create_stake_account, create_stake_pool, distribute_fees, edit_metadata,
-    migrate_central_state_v2, sign_bond, stake, unlock_bond_tokens, unlock_bond_v2, unstake,
-    admin_change_freeze_authority
+    activate_stake_pool, add_to_bond_v2, admin_change_freeze_authority, admin_freeze, admin_mint,
+    admin_program_freeze, admin_renounce, admin_set_protocol_fee, admin_setup_fee_split,
+    change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier,
+    claim_bond, claim_bond_rewards, claim_bond_v2_rewards, claim_pool_rewards, claim_rewards,
+    close_royalty_account, close_stake_account, close_stake_pool, cpi_claim_bond_v2_rewards,
+    cpi_claim_rewards, crank, create_bond, create_bond_v2, create_central_state,
+    create_royalty_account, create_stake_account, create_stake_pool, distribute_fees,
+    edit_metadata, migrate_central_state_v2, sign_bond, stake, unlock_bond_tokens, unlock_bond_v2,
+    unstake,
 };
 
 #[allow(missing_docs)]
@@ -55,16 +56,16 @@ pub enum ProgramInstruction {
     CreateStakeAccount,
     /// Stake
     ///
-    /// | Index | Writable | Signer | Description                            |
-    /// | ------------------------------------------------------------------ |
-    /// | 0     | ✅        | ❌      | The central state account              |
-    /// | 1     | ✅        | ❌      | The stake account                      |
-    /// | 2     | ✅        | ❌      | The stake pool account                 |
-    /// | 3     | ❌        | ✅      | The owner of the stake account         |
-    /// | 4     | ✅        | ❌      | The source account of the stake tokens |
-    /// | 5     | ❌        | ❌      | The SPL token program account          |
-    /// | 6     | ✅        | ❌      | The stake pool vault account           |
-    /// | 7     | ✅        | ❌      | The central state ATA                  |
+    /// | Index | Writable | Signer | Description                                             |
+    /// | ----------------------------------------------------------------------------------- |
+    /// | 0     | ✅        | ❌      | The central state account                               |
+    /// | 1     | ✅        | ❌      | The destination stake account -  can be owned by anyone |
+    /// | 2     | ✅        | ❌      | The stake pool account                                  |
+    /// | 3     | ❌        | ✅      | The owner of the token account - staker                 |
+    /// | 4     | ✅        | ❌      | The source account of the stake tokens                  |
+    /// | 5     | ❌        | ❌      | The SPL token program account                           |
+    /// | 6     | ✅        | ❌      | The stake pool vault account                            |
+    /// | 7     | ✅        | ❌      | The central state ATA                                   |
     Stake,
     /// Unstake
     ///
@@ -81,27 +82,31 @@ pub enum ProgramInstruction {
     /// Claim rewards of a stake pool
     /// This instruction is used by stake pool owner for claiming their staking rewards
     ///
-    /// | Index | Writable | Signer | Description                          |
-    /// | ---------------------------------------------------------------- |
-    /// | 0     | ✅        | ❌      | The stake pool account               |
-    /// | 1     | ❌        | ✅      | The stake pool owner account         |
-    /// | 2     | ✅        | ❌      | The rewards destination              |
-    /// | 3     | ❌        | ❌      | The central state account            |
-    /// | 4     | ✅        | ❌      | The mint address of the ACCESS token |
-    /// | 5     | ❌        | ❌      | The SPL token program account        |
+    /// | Index | Writable | Signer | Description                                                             |
+    /// | --------------------------------------------------------------------------------------------------- |
+    /// | 0     | ✅        | ❌      | The stake pool account                                                  |
+    /// | 1     | ❌        | ✅      | The stake pool owner account                                            |
+    /// | 2     | ✅        | ❌      | The rewards destination                                                 |
+    /// | 3     | ❌        | ❌      | The central state account                                               |
+    /// | 4     | ✅        | ❌      | The mint address of the ACCESS token                                    |
+    /// | 5     | ❌        | ❌      | The SPL token program account                                           |
+    /// | 6     | ❌        | ❌      | The owner's royalty split account to check if royalties need to be paid |
+    /// | 7     | ✅        | ❌      | The royalty ATA account                                                 |
     ClaimPoolRewards,
     /// Claim rewards of a stake account
     /// This instruction can be used by stakers to claim their staking rewards
     ///
-    /// | Index | Writable | Signer | Description                       |
-    /// | ------------------------------------------------------------- |
-    /// | 0     | ✅        | ❌      | The stake pool account            |
-    /// | 1     | ✅        | ❌      | The stake account                 |
-    /// | 2     | ❌        | ✅      | The owner of the stake account    |
-    /// | 3     | ✅        | ❌      | The rewards destination           |
-    /// | 4     | ❌        | ❌      | The central state account         |
-    /// | 5     | ✅        | ❌      | The mint address of the ACS token |
-    /// | 6     | ❌        | ❌      | The SPL token program account     |
+    /// | Index | Writable | Signer | Description                                                             |
+    /// | --------------------------------------------------------------------------------------------------- |
+    /// | 0     | ✅        | ❌      | The stake pool account                                                  |
+    /// | 1     | ✅        | ❌      | The stake account                                                       |
+    /// | 2     | ❌        | ✅      | The owner of the stake account                                          |
+    /// | 3     | ✅        | ❌      | The rewards destination                                                 |
+    /// | 4     | ❌        | ❌      | The central state account                                               |
+    /// | 5     | ✅        | ❌      | The mint address of the ACS token                                       |
+    /// | 6     | ❌        | ❌      | The SPL token program account                                           |
+    /// | 7     | ❌        | ❌      | The owner's royalty split account to check if royalties need to be paid |
+    /// | 8     | ✅        | ❌      | The royalty ATA account                                                 |
     ClaimRewards,
     /// Permissionless crank to update the stake pool rewards
     /// This instructions updates the circular buffer with the pool balances multiplied by the current inflation
@@ -254,20 +259,13 @@ pub enum ProgramInstruction {
     EditMetadata,
     /// Create a Bond V2
     ///
-    /// | Index | Writable | Signer | Description                       |
-    /// | ------------------------------------------------------------- |
-    /// | 0     | ✅        | ✅      | The fee account                   |
-    /// | 1     | ✅        | ✅      | The bond seller account           |
-    /// | 2     | ✅        | ❌      | From ATA                          |
-    /// | 3     | ❌        | ❌      | The bond recipient wallet         |
-    /// | 4     | ✅        | ❌      | The bond account                  |
-    /// | 5     | ✅        | ❌      | Central state                     |
-    /// | 6     | ✅        | ❌      | The vault of the central state    |
-    /// | 7     | ✅        | ❌      | The pool account                  |
-    /// | 8     | ✅        | ❌      | The vault of the pool             |
-    /// | 9     | ✅        | ❌      | The mint address of the ACS token |
-    /// | 10    | ❌        | ❌      | The SPL token program account     |
-    /// | 11    | ❌        | ❌      | The system program account        |
+    /// | Index | Writable | Signer | Description                |
+    /// | ------------------------------------------------------ |
+    /// | 0     | ✅        | ❌      | The bond account           |
+    /// | 1     | ❌        | ❌      | The system program account |
+    /// | 2     | ✅        | ❌      | The pool account           |
+    /// | 3     | ✅        | ✅      | The fee account            |
+    /// | 4     | ✅        | ❌      | Central state              |
     CreateBondV2,
     /// Add more tokens to an existing Bond V2
     ///
@@ -284,17 +282,19 @@ pub enum ProgramInstruction {
     /// | 8     | ❌        | ❌      | The SPL token program account     |
     /// | 9     | ❌        | ❌      | The system program account        |
     AddToBondV2,
-    /// Claim rewards of a bond V2
+    /// Claim rewards of a bond V2  from the Access NFT Program
     ///
-    /// | Index | Writable | Signer | Description                       |
-    /// | ------------------------------------------------------------- |
-    /// | 0     | ✅        | ❌      | The stake pool account            |
-    /// | 1     | ✅        | ❌      | The Bond V2 account               |
-    /// | 2     | ❌        | ✅      | The owner of the Bond V2 account  |
-    /// | 3     | ✅        | ❌      | The rewards destination           |
-    /// | 4     | ❌        | ❌      | The central state account         |
-    /// | 5     | ✅        | ❌      | The mint address of the ACS token |
-    /// | 6     | ❌        | ❌      | The SPL token program account     |
+    /// | Index | Writable | Signer | Description                                                             |
+    /// | --------------------------------------------------------------------------------------------------- |
+    /// | 0     | ✅        | ❌      | The stake pool account                                                  |
+    /// | 1     | ✅        | ❌      | The Bond V2 account                                                     |
+    /// | 2     | ❌        | ✅      | The owner of the Bond V2 account                                        |
+    /// | 3     | ✅        | ❌      | The rewards destination                                                 |
+    /// | 4     | ❌        | ❌      | The central state account                                               |
+    /// | 5     | ✅        | ❌      | The mint address of the ACS token                                       |
+    /// | 6     | ❌        | ❌      | The SPL token program account                                           |
+    /// | 7     | ❌        | ❌      | The owner's royalty split account to check if royalties need to be paid |
+    /// | 8     | ✅        | ❌      | The royalty ATA account                                                 |
     ClaimBondV2Rewards,
     /// Unlock bond v2
     ///
@@ -343,10 +343,10 @@ pub enum ProgramInstruction {
     MigrateCentralStateV2,
     /// Admin program freeze instruction.
     ///
-    /// | Index | Writable | Signer | Description                         |
-    /// | --------------------------------------------------------------- |
-    /// | 0     | ✅        | ❌      | The central state account           |
-    /// | 1     | ❌        | ✅      | The central state account authority |
+    /// | Index | Writable | Signer | Description                                             |
+    /// | ----------------------------------------------------------------------------------- |
+    /// | 0     | ✅        | ❌      | The central state account                               |
+    /// | 1     | ❌        | ✅      | The central state account authority or freeze authority |
     AdminProgramFreeze,
     /// Admin renounce functionality
     ///
@@ -361,7 +361,55 @@ pub enum ProgramInstruction {
     /// | --------------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The central state account           |
     /// | 1     | ❌        | ✅      | The central state account authority |
-    AdminChangeFreezeAuthority
+    AdminChangeFreezeAuthority,
+    /// Create royalty account
+    ///
+    /// | Index | Writable | Signer | Description                       |
+    /// | ------------------------------------------------------------- |
+    /// | 0     | ✅        | ❌      | The royalty account to be created |
+    /// | 1     | ✅        | ✅      | The fee payer account             |
+    /// | 2     | ❌        | ✅      | The royalty payer                 |
+    /// | 3     | ❌        | ❌      | The system program account        |
+    /// | 4     | ❌        | ❌      | The central state account         |
+    CreateRoyaltyAccount,
+    /// Close a royalty account
+    /// This instruction can be used to close a royalty account. The laports will be sent to the original fee payer
+    ///
+    /// | Index | Writable | Signer | Description                                    |
+    /// | -------------------------------------------------------------------------- |
+    /// | 0     | ✅        | ❌      | The royalty account                            |
+    /// | 1     | ❌        | ✅      | The royalty payer of the royalty account       |
+    /// | 2     | ✅        | ❌      | The account where the funds should be returned |
+    /// | 3     | ❌        | ❌      | The central state account                      |
+    CloseRoyaltyAccount,
+    /// Claim rewards of a stake account from the Access NFT Program
+    ///
+    /// | Index | Writable | Signer | Description                                                                           |
+    /// | ----------------------------------------------------------------------------------------------------------------- |
+    /// | 0     | ❌        | ✅      | The central authority signer of the Access cNFT program                               |
+    /// | 1     | ✅        | ❌      | The stake pool account                                                                |
+    /// | 2     | ✅        | ❌      | The stake account - this is unchecked here as it is checked in the Access NFT program |
+    /// | 3     | ✅        | ❌      | The rewards destination                                                               |
+    /// | 4     | ❌        | ❌      | The central state account                                                             |
+    /// | 5     | ✅        | ❌      | The mint address of the ACS token                                                     |
+    /// | 6     | ❌        | ❌      | The SPL token program account                                                         |
+    /// | 7     | ❌        | ❌      | The owner's royalty split account to check if royalties need to be paid               |
+    /// | 8     | ✅        | ❌      | The royalty ATA account                                                               |
+    CpiClaimRewards,
+    /// Claim rewards of a bond V2
+    ///
+    /// | Index | Writable | Signer | Description                                                                             |
+    /// | ------------------------------------------------------------------------------------------------------------------- |
+    /// | 0     | ❌        | ✅      | The central authority signer of the Access cNFT program                                 |
+    /// | 1     | ✅        | ❌      | The stake pool account                                                                  |
+    /// | 2     | ✅        | ❌      | The Bond V2 account - this is unchecked here as it is checked in the Access NFT program |
+    /// | 3     | ✅        | ❌      | The rewards destination                                                                 |
+    /// | 4     | ❌        | ❌      | The central state account                                                               |
+    /// | 5     | ✅        | ❌      | The mint address of the ACS token                                                       |
+    /// | 6     | ❌        | ❌      | The SPL token program account                                                           |
+    /// | 7     | ❌        | ❌      | The owner's royalty split account to check if royalties need to be paid                 |
+    /// | 8     | ✅        | ❌      | The royalty ATA account                                                                 |
+    CpiClaimBondV2Rewards,
 }
 
 #[allow(missing_docs)]
@@ -759,6 +807,58 @@ pub fn admin_change_freeze_authority(
     accounts.get_instruction(
         program_id,
         ProgramInstruction::AdminChangeFreezeAuthority as u8,
+        params,
+    )
+}
+
+#[allow(missing_docs)]
+pub fn create_royalty_account(
+    program_id: Pubkey,
+    accounts: create_royalty_account::Accounts<Pubkey>,
+    params: create_royalty_account::Params,
+) -> Instruction {
+    accounts.get_instruction(
+        program_id,
+        ProgramInstruction::CreateRoyaltyAccount as u8,
+        params,
+    )
+}
+
+#[allow(missing_docs)]
+pub fn close_royalty_account(
+    program_id: Pubkey,
+    accounts: close_royalty_account::Accounts<Pubkey>,
+    params: close_royalty_account::Params,
+) -> Instruction {
+    accounts.get_instruction(
+        program_id,
+        ProgramInstruction::CloseRoyaltyAccount as u8,
+        params,
+    )
+}
+
+#[allow(missing_docs)]
+pub fn cpi_claim_rewards(
+    program_id: Pubkey,
+    accounts: cpi_claim_rewards::Accounts<Pubkey>,
+    params: cpi_claim_rewards::Params,
+) -> Instruction {
+    accounts.get_instruction(
+        program_id,
+        ProgramInstruction::CpiClaimRewards as u8,
+        params,
+    )
+}
+
+#[allow(missing_docs)]
+pub fn cpi_claim_bond_v2_rewards(
+    program_id: Pubkey,
+    accounts: cpi_claim_bond_v2_rewards::Accounts<Pubkey>,
+    params: cpi_claim_bond_v2_rewards::Params,
+) -> Instruction {
+    accounts.get_instruction(
+        program_id,
+        ProgramInstruction::CpiClaimBondV2Rewards as u8,
         params,
     )
 }

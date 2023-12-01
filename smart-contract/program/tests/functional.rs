@@ -17,11 +17,12 @@ use access_protocol::{
     },
     state::BondAccount,
 };
-use mpl_token_metadata::instruction::update_metadata_accounts;
+use mpl_token_metadata::instruction::update_metadata_accounts_v2;
 use mpl_token_metadata::{instruction::create_metadata_accounts_v3, pda::find_metadata_account};
 
 use spl_token::{instruction::set_authority, instruction::AuthorityType};
 use access_protocol::instruction::migrate_central_state_v2;
+use access_protocol::state::RoyaltyAccount;
 
 #[tokio::test]
 async fn functional_10s() {
@@ -110,13 +111,14 @@ async fn functional_10s() {
     .await
     .unwrap();
 
-    let metaplex_set_authority_to_cs_ix = update_metadata_accounts(
+    let metaplex_set_authority_to_cs_ix = update_metadata_accounts_v2(
         mpl_token_metadata::ID,
         metadata_key,
         authority.pubkey(),
         Some(central_state),
         None,
-        Some(true),
+        None,
+        None,
     );
 
     sign_send_instructions(
@@ -470,7 +472,7 @@ async fn functional_10s() {
         stake::Accounts {
             stake_account: &stake_acc_key,
             stake_pool: &stake_pool_key,
-            owner: &staker.pubkey(),
+            token_owner: &staker.pubkey(),
             source_token: &staker_token_acc,
             spl_token_program: &spl_token::ID,
             vault: &pool_vault,
@@ -529,6 +531,8 @@ async fn functional_10s() {
             central_state: &central_state,
             mint: &mint,
             spl_token_program: &spl_token::ID,
+            owner_royalty_account: &RoyaltyAccount::create_key(&stake_pool_owner.pubkey(), &program_id).0,
+            royalty_ata: None,
         },
         claim_pool_rewards::Params {},
         true,
@@ -579,6 +583,8 @@ async fn functional_10s() {
             central_state: &central_state,
             mint: &mint,
             spl_token_program: &spl_token::ID,
+            owner_royalty_account: &RoyaltyAccount::create_key(&staker.pubkey(), &program_id).0,
+            royalty_ata: None,
         },
         claim_rewards::Params {
             allow_zero_rewards: false,
@@ -715,6 +721,8 @@ async fn functional_10s() {
             central_state: &central_state,
             mint: &mint,
             spl_token_program: &spl_token::ID,
+            owner_royalty_account: &RoyaltyAccount::create_key(&staker.pubkey(), &program_id).0,
+            royalty_ata: None,
         },
         claim_rewards::Params {
             allow_zero_rewards: false,

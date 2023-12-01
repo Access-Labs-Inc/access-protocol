@@ -116,6 +116,24 @@ pub enum AccessError {
     InvalidRenounceParams,
     #[error("Already renounced")]
     AlreadyRenounced,
+    #[error("Royalty account mismatch")]
+    RoyaltyAccountMismatch,
+    #[error("Royalty ata mismatch")]
+    RoyaltyAtaMismatch,
+    #[error("Wrong royalty account owner")]
+    WrongRoyaltyAccountOwner,
+    #[error("Owner must sign")]
+    OwnerMustSign,
+    #[error("Royalty ata not provided")]
+    RoyaltyAtaNotProvided,
+    #[error("Royalty ata not deterministic")]
+    RoyaltyAtaNotDeterministic,
+    #[error("Wrong sysvar instructions id")]
+    WrongSysvarInstructionsId,
+    #[error("Wrong Access cnft authority")]
+    WrongAccessCnftAuthority,
+    #[error("Access cnft authority must sign")]
+    AccessCnftAuthorityMustSign,
 }
 
 impl From<AccessError> for ProgramError {

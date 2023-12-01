@@ -13,6 +13,7 @@ use solana_program::{
     entrypoint::ProgramResult,
     program_error::ProgramError,
     pubkey::Pubkey,
+    msg,
 };
 use spl_token::instruction::transfer;
 use spl_token::state::Account;
@@ -132,6 +133,8 @@ pub fn process_unstake(
 
     let destination_token_acc = Account::unpack(&accounts.destination_token.data.borrow())?;
     if destination_token_acc.mint != central_state.token_mint {
+        msg!("Invalid ACCESS mint");
+        #[cfg(not(feature = "no-mint-check"))]
         return Err(AccessError::WrongMint.into());
     }
 
@@ -141,7 +144,6 @@ pub fn process_unstake(
     if (stake_pool.header.current_day_idx as u64) < central_state.get_current_offset()? {
         return Err(AccessError::PoolMustBeCranked.into());
     }
-
     check_account_key(
         accounts.owner,
         &stake_account.owner,
@@ -154,7 +156,7 @@ pub fn process_unstake(
     )?;
     check_account_key(
         accounts.vault,
-        &Pubkey::new(&stake_pool.header.vault),
+        &Pubkey::from(stake_pool.header.vault),
         AccessError::StakePoolVaultMismatch,
     )?;
 

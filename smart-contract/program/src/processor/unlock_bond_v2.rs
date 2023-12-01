@@ -131,6 +131,8 @@ pub fn process_unlock_bond_v2(
 
     let destination_token_acc = Account::unpack(&accounts.owner_token_account.data.borrow())?;
     if destination_token_acc.mint != central_state.token_mint {
+        msg!("Invalid ACCESS mint");
+        #[cfg(not(feature = "no-mint-check"))]
         return Err(AccessError::WrongMint.into());
     }
     if &destination_token_acc.owner != accounts.owner.key {
@@ -157,7 +159,7 @@ pub fn process_unlock_bond_v2(
     )?;
     check_account_key(
         accounts.pool_vault,
-        &Pubkey::new(&stake_pool.header.vault),
+        &Pubkey::from(stake_pool.header.vault),
         AccessError::StakePoolVaultMismatch,
     )?;
 
