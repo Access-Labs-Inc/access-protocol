@@ -25,7 +25,7 @@ use crate::utils::is_admin_renouncable_instruction;
 pub const ACCESS_MINT: Pubkey =
     solana_program::pubkey!("5MAYDfq5yxtudAhtfyuMBuHZjgAbaS9tbEyEQYAhDS5y");
 
-// todo fill the production one!!! and maybe add a feature to ignore this
+// todo fill in the production one
 /// ACCESS cNFT program singer. PDA of ACCESS cNFT program and b"central_authority"
 pub const ACCESS_CNFT_PROGRAM_SIGNER: Pubkey =
     solana_program::pubkey!("8GVrzRnLeJgnLJxKntNiB4mRFCxZ2Jm5c3k2SMuA3kW4");

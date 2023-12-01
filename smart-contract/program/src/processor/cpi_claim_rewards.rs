@@ -38,7 +38,6 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub stake_pool: &'a T,
 
-    // todo check that we are cheking this one level up
     /// The stake account - this is unchecked here as it is checked in the Access NFT program
     #[cons(writable)]
     pub stake_account: &'a T,
