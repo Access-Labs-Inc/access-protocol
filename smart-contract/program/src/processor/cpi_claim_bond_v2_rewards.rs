@@ -37,7 +37,6 @@ pub struct Accounts<'a, T> {
     pub cnft_program_signer: &'a T,
 
     /// The stake pool account
-    #[cons(writable)]
     pub pool: &'a T,
 
     /// The Bond V2 account - this is unchecked here as it is checked in the Access NFT program

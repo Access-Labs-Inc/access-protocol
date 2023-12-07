@@ -718,7 +718,7 @@ impl TestRunner {
                 bond_v2_account: &bond_v2_acc_key,
                 pool: &stake_pool_key,
                 owner: &owner.pubkey(),
-                owner_token_account: &staker_token_acc,
+                destination_account: &staker_token_acc,
                 spl_token_program: &spl_token::ID,
                 central_state: &self.central_state,
                 pool_vault: &pool_vault,

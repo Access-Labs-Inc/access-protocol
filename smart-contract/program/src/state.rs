@@ -28,7 +28,7 @@ pub const ACCESS_MINT: Pubkey =
 // todo fill in the production one
 /// ACCESS cNFT program singer. PDA of ACCESS cNFT program and b"central_authority"
 pub const ACCESS_CNFT_PROGRAM_SIGNER: Pubkey =
-    solana_program::pubkey!("8GVrzRnLeJgnLJxKntNiB4mRFCxZ2Jm5c3k2SMuA3kW4");
+    solana_program::pubkey!("AF7bqw2GjPPX25nWNRYtDpNALMp9B4D9FEaFekur2LEr");
 
 /// Specify the number of seconds in a day, used only for testing purposes
 pub const SECONDS_IN_DAY: u64 = if cfg!(feature = "days-to-sec-15m") {

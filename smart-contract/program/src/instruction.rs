@@ -263,9 +263,9 @@ pub enum ProgramInstruction {
     /// | ------------------------------------------------------ |
     /// | 0     | ✅        | ❌      | The bond account           |
     /// | 1     | ❌        | ❌      | The system program account |
-    /// | 2     | ✅        | ❌      | The pool account           |
+    /// | 2     | ❌        | ❌      | The pool account           |
     /// | 3     | ✅        | ✅      | The fee account            |
-    /// | 4     | ✅        | ❌      | Central state              |
+    /// | 4     | ❌        | ❌      | Central state              |
     CreateBondV2,
     /// Add more tokens to an existing Bond V2
     ///

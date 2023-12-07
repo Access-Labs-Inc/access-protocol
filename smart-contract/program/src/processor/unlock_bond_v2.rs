@@ -46,7 +46,7 @@ pub struct Accounts<'a, T> {
 
     /// The destination of the locked tokens
     #[cons(writable)]
-    pub owner_token_account: &'a T,
+    pub destination_account: &'a T,
 
     /// The pool account
     #[cons(writable)]
@@ -70,7 +70,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             central_state: next_account_info(accounts_iter)?,
             bond_v2_account: next_account_info(accounts_iter)?,
             owner: next_account_info(accounts_iter)?,
-            owner_token_account: next_account_info(accounts_iter)?,
+            destination_account: next_account_info(accounts_iter)?,
             pool: next_account_info(accounts_iter)?,
             pool_vault: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
@@ -100,7 +100,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             AccessError::WrongStakePoolAccountOwner,
         )?;
         check_account_owner(
-            accounts.owner_token_account,
+            accounts.destination_account,
             &spl_token::ID,
             AccessError::WrongTokenAccountOwner,
         )?;
@@ -129,14 +129,11 @@ pub fn process_unlock_bond_v2(
     let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
     central_state.assert_instruction_allowed(&UnlockBondV2)?;
 
-    let destination_token_acc = Account::unpack(&accounts.owner_token_account.data.borrow())?;
+    let destination_token_acc = Account::unpack(&accounts.destination_account.data.borrow())?;
     if destination_token_acc.mint != central_state.token_mint {
         msg!("Invalid ACCESS mint");
         #[cfg(not(feature = "no-mint-check"))]
         return Err(AccessError::WrongMint.into());
-    }
-    if &destination_token_acc.owner != accounts.owner.key {
-        return Err(AccessError::WrongTokenAccountOwner.into());
     }
 
     if (stake_pool.header.current_day_idx as u64) < central_state.get_current_offset()? {
@@ -198,7 +195,7 @@ pub fn process_unlock_bond_v2(
     let transfer_instruction = transfer(
         &spl_token::ID,
         accounts.pool_vault.key,
-        accounts.owner_token_account.key,
+        accounts.destination_account.key,
         accounts.pool.key,
         &[],
         amount,
@@ -211,7 +208,7 @@ pub fn process_unlock_bond_v2(
         &[
             accounts.spl_token_program.clone(),
             accounts.pool_vault.clone(),
-            accounts.owner_token_account.clone(),
+            accounts.destination_account.clone(),
             accounts.pool.clone(),
         ],
         &[signer_seeds],
