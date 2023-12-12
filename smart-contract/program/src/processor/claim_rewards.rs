@@ -1,8 +1,9 @@
 //! Claim rewards of a stake account
 //! This instruction can be used by stakers to claim their staking rewards
+use std::convert::TryInto;
+
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
-use std::convert::TryInto;
 use solana_program::{
     account_info::{AccountInfo, next_account_info},
     entrypoint::ProgramResult,
@@ -16,11 +17,11 @@ use spl_token::{instruction::mint_to, state::Account};
 
 use crate::error::AccessError;
 use crate::instruction::ProgramInstruction::ClaimRewards;
-use crate::state::{StakeAccount, StakePool, Tag};
+use crate::state::{ACCESS_NFT_PROGRAM_ADDRESS, StakeAccount, StakePool, Tag};
 use crate::state::CentralStateV2;
 use crate::utils::{
     assert_no_close_or_delegate, calc_reward_fp32, check_account_key, check_account_owner,
-    check_signer, check_and_retrieve_royalty_account
+    check_signer, retrieve_royalty_account,
 };
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -127,28 +128,42 @@ pub fn process_claim_rewards(
     let stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
 
-    let royalty_account_data = check_and_retrieve_royalty_account(
-        program_id,
-        accounts.owner.key,
-        accounts.owner_royalty_account,
-        accounts.royalty_ata,
-    )?;
-
     let destination_token_acc = Account::unpack(&accounts.rewards_destination.data.borrow())?;
-    msg!("Account owner: {}", destination_token_acc.owner);
-
-    if destination_token_acc.owner != stake_account.owner {
-        // If the destination does not belong to the staker he must sign
-        check_signer(accounts.owner, AccessError::StakeAccountOwnerMustSign)?;
-    } else {
-        assert_no_close_or_delegate(&destination_token_acc)?;
-    }
 
     if destination_token_acc.mint != central_state.token_mint {
         msg!("Invalid ACCESS mint");
         #[cfg(not(feature = "no-mint-check"))]
         return Err(AccessError::WrongMint.into());
     }
+
+    msg!("Token account owner: {}", destination_token_acc.owner);
+
+    // the only case when we allow custom royalty account is when the owner the NFT program PDA
+    if accounts.owner.owner != ACCESS_NFT_PROGRAM_ADDRESS {
+        let (derived_key, _) = RoyaltyAccount::create_key(accounts.owner, program_id);
+        check_account_key(
+            royalty_account,
+            &derived_key,
+            AccessError::AccountNotDeterministic,
+        )?;
+
+        if destination_token_acc.owner != stake_account.owner {
+            // If the destination does not belong to the staker he must sign
+            check_signer(accounts.owner, AccessError::StakeAccountOwnerMustSign)?;
+        } else {
+            assert_no_close_or_delegate(&destination_token_acc)?;
+        }
+    } else {
+        // If the owner is the NFT program, we need the signature, otherwise a bad actor would be able to create a token account
+        // for this PDA and then claim the rewards into this token account making them forever inaccessible.
+        check_signer(accounts.owner, AccessError::StakeAccountOwnerMustSign)?;
+    }
+
+    let royalty_account_data = retrieve_royalty_account(
+        program_id,
+        accounts.owner_royalty_account,
+        accounts.royalty_ata,
+    )?;
 
     check_account_key(
         accounts.stake_pool,
@@ -167,7 +182,7 @@ pub fn process_claim_rewards(
     )?;
 
     // Calculate the rewards (checks if the pool is cranked as well)
-    let mut  reward = calc_reward_fp32(
+    let mut reward = calc_reward_fp32(
         central_state.last_snapshot_offset,
         stake_account.last_claimed_offset,
         &stake_pool,
@@ -179,7 +194,7 @@ pub fn process_claim_rewards(
         .map(|r| ((r >> 31) + 1) >> 1)
         .ok_or(AccessError::Overflow)?
         .try_into()
-        .map_err(|_|AccessError::Overflow)?;
+        .map_err(|_| AccessError::Overflow)?;
 
     // split the rewards if there is a royalty account
     let mut royalty_amount = 0;
