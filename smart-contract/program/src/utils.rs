@@ -226,7 +226,6 @@ pub fn assert_no_close_or_delegate(token_account: &Account) -> ProgramResult {
 ///  Checks the relationship between the appropriate royalty account and the royalty ATA
 ///  Returns the royalty account data if it exists. Otherwise returns None.
 pub fn retrieve_royalty_account(
-    program_id: &Pubkey,
     royalty_account: &AccountInfo,
     royalty_ata: Option<&AccountInfo>,
 ) -> Result<Option<RoyaltyAccount>, ProgramError> {
