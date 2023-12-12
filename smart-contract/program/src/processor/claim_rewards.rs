@@ -18,7 +18,7 @@ use spl_token::{instruction::mint_to, state::Account};
 use crate::error::AccessError;
 use crate::instruction::ProgramInstruction::ClaimRewards;
 use crate::state::{ACCESS_NFT_PROGRAM_ADDRESS, StakeAccount, StakePool, Tag};
-use crate::state::CentralStateV2;
+use crate::state::{CentralStateV2, RoyaltyAccount};
 use crate::utils::{
     assert_no_close_or_delegate, calc_reward_fp32, check_account_key, check_account_owner,
     check_signer, retrieve_royalty_account,
@@ -139,10 +139,10 @@ pub fn process_claim_rewards(
     msg!("Token account owner: {}", destination_token_acc.owner);
 
     // the only case when we allow custom royalty account is when the owner the NFT program PDA
-    if accounts.owner.owner != ACCESS_NFT_PROGRAM_ADDRESS {
-        let (derived_key, _) = RoyaltyAccount::create_key(accounts.owner, program_id);
+    if accounts.owner.owner != &ACCESS_NFT_PROGRAM_ADDRESS {
+        let (derived_key, _) = RoyaltyAccount::create_key(accounts.owner.key, program_id);
         check_account_key(
-            royalty_account,
+            accounts.owner_royalty_account,
             &derived_key,
             AccessError::AccountNotDeterministic,
         )?;
@@ -160,7 +160,6 @@ pub fn process_claim_rewards(
     }
 
     let royalty_account_data = retrieve_royalty_account(
-        program_id,
         accounts.owner_royalty_account,
         accounts.royalty_ata,
     )?;

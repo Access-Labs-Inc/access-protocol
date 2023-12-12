@@ -1,7 +1,7 @@
 //! Claim rewards of a bond V2  from the Access NFT Program
 use crate::error::AccessError;
 use crate::state::BondV2Account;
-use crate::state::{StakePool, Tag};
+use crate::state::{StakePool, RoyaltyAccount, Tag, ACCESS_NFT_PROGRAM_ADDRESS};
 use crate::utils::{
     assert_no_close_or_delegate, calc_reward_fp32, check_account_key, check_account_owner,
     check_signer, retrieve_royalty_account
@@ -134,15 +134,15 @@ pub fn process_claim_bond_v2_rewards(
     msg!("Token account owner: {}", destination_token_acc.owner);
 
     // the only case when we allow custom royalty account is when the owner the NFT program PDA
-    if accounts.owner.owner != ACCESS_NFT_PROGRAM_ADDRESS {
-        let (derived_key, _) = RoyaltyAccount::create_key(accounts.owner, program_id);
+    if accounts.owner.owner != &ACCESS_NFT_PROGRAM_ADDRESS {
+        let (derived_key, _) = RoyaltyAccount::create_key(accounts.owner.key, program_id);
         check_account_key(
-            royalty_account,
+            accounts.owner_royalty_account,
             &derived_key,
             AccessError::AccountNotDeterministic,
         )?;
 
-        if destination_token_acc.owner != stake_account.owner {
+        if destination_token_acc.owner != bond_v2_account.owner {
             // If the destination does not belong to the staker he must sign
             check_signer(accounts.owner, AccessError::StakeAccountOwnerMustSign)?;
         } else {
@@ -155,7 +155,6 @@ pub fn process_claim_bond_v2_rewards(
     }
 
     let royalty_account_data = retrieve_royalty_account(
-        program_id,
         accounts.owner_royalty_account,
         accounts.royalty_ata,
     )?;

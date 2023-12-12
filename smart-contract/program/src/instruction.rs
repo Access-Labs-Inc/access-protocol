@@ -8,8 +8,7 @@ pub use crate::processor::{
     admin_program_freeze, admin_renounce, admin_set_protocol_fee, admin_setup_fee_split,
     change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier,
     claim_bond, claim_bond_rewards, claim_bond_v2_rewards, claim_pool_rewards, claim_rewards,
-    close_royalty_account, close_stake_account, close_stake_pool, cpi_claim_bond_v2_rewards,
-    cpi_claim_rewards, crank, create_bond, create_bond_v2, create_central_state,
+    close_royalty_account, close_stake_account, close_stake_pool, crank, create_bond, create_bond_v2, create_central_state,
     create_royalty_account, create_stake_account, create_stake_pool, distribute_fees,
     edit_metadata, migrate_central_state_v2, sign_bond, stake, unlock_bond_tokens, unlock_bond_v2,
     unstake,
@@ -382,34 +381,6 @@ pub enum ProgramInstruction {
     /// | 2     | ✅        | ❌      | The account where the funds should be returned |
     /// | 3     | ❌        | ❌      | The central state account                      |
     CloseRoyaltyAccount,
-    /// Claim rewards of a stake account from the Access NFT Program
-    ///
-    /// | Index | Writable | Signer | Description                                                                           |
-    /// | ----------------------------------------------------------------------------------------------------------------- |
-    /// | 0     | ❌        | ✅      | The central authority signer of the Access cNFT program                               |
-    /// | 1     | ✅        | ❌      | The stake pool account                                                                |
-    /// | 2     | ✅        | ❌      | The stake account - this is unchecked here as it is checked in the Access NFT program |
-    /// | 3     | ✅        | ❌      | The rewards destination                                                               |
-    /// | 4     | ❌        | ❌      | The central state account                                                             |
-    /// | 5     | ✅        | ❌      | The mint address of the ACS token                                                     |
-    /// | 6     | ❌        | ❌      | The SPL token program account                                                         |
-    /// | 7     | ❌        | ❌      | The owner's royalty split account to check if royalties need to be paid               |
-    /// | 8     | ✅        | ❌      | The royalty ATA account                                                               |
-    CpiClaimRewards,
-    /// Claim rewards of a bond V2
-    ///
-    /// | Index | Writable | Signer | Description                                                                             |
-    /// | ------------------------------------------------------------------------------------------------------------------- |
-    /// | 0     | ❌        | ✅      | The central authority signer of the Access cNFT program                                 |
-    /// | 1     | ✅        | ❌      | The stake pool account                                                                  |
-    /// | 2     | ✅        | ❌      | The Bond V2 account - this is unchecked here as it is checked in the Access NFT program |
-    /// | 3     | ✅        | ❌      | The rewards destination                                                                 |
-    /// | 4     | ❌        | ❌      | The central state account                                                               |
-    /// | 5     | ✅        | ❌      | The mint address of the ACS token                                                       |
-    /// | 6     | ❌        | ❌      | The SPL token program account                                                           |
-    /// | 7     | ❌        | ❌      | The owner's royalty split account to check if royalties need to be paid                 |
-    /// | 8     | ✅        | ❌      | The royalty ATA account                                                                 |
-    CpiClaimBondV2Rewards,
 }
 
 #[allow(missing_docs)]
@@ -833,32 +804,6 @@ pub fn close_royalty_account(
     accounts.get_instruction(
         program_id,
         ProgramInstruction::CloseRoyaltyAccount as u8,
-        params,
-    )
-}
-
-#[allow(missing_docs)]
-pub fn cpi_claim_rewards(
-    program_id: Pubkey,
-    accounts: cpi_claim_rewards::Accounts<Pubkey>,
-    params: cpi_claim_rewards::Params,
-) -> Instruction {
-    accounts.get_instruction(
-        program_id,
-        ProgramInstruction::CpiClaimRewards as u8,
-        params,
-    )
-}
-
-#[allow(missing_docs)]
-pub fn cpi_claim_bond_v2_rewards(
-    program_id: Pubkey,
-    accounts: cpi_claim_bond_v2_rewards::Accounts<Pubkey>,
-    params: cpi_claim_bond_v2_rewards::Params,
-) -> Instruction {
-    accounts.get_instruction(
-        program_id,
-        ProgramInstruction::CpiClaimBondV2Rewards as u8,
         params,
     )
 }

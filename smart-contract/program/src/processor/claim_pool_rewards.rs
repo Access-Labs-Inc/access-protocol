@@ -16,11 +16,11 @@ use spl_token::{instruction::mint_to, state::Account};
 
 use crate::error::AccessError;
 use crate::instruction::ProgramInstruction::ClaimPoolRewards;
-use crate::state::{StakePool, Tag};
+use crate::state::{StakePool,RoyaltyAccount, Tag};
 use crate::state::CentralStateV2;
 use crate::utils::{
     assert_no_close_or_delegate, calc_reward_fp32, check_account_key, check_account_owner,
-    check_and_retrieve_royalty_account, check_signer,
+    retrieve_royalty_account, check_signer,
 };
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -113,9 +113,14 @@ pub fn process_claim_pool_rewards(
     central_state.assert_instruction_allowed(&ClaimPoolRewards)?;
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
 
-    let royalty_account_data = check_and_retrieve_royalty_account(
-        program_id,
-        accounts.owner.key,
+    let (derived_key, _) = RoyaltyAccount::create_key(accounts.owner.key, program_id);
+    check_account_key(
+        accounts.owner_royalty_account,
+        &derived_key,
+        AccessError::AccountNotDeterministic,
+    )?;
+
+    let royalty_account_data = retrieve_royalty_account(
         accounts.owner_royalty_account,
         accounts.royalty_ata,
     )?;
