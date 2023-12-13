@@ -620,6 +620,7 @@ impl TestRunner {
             claim_rewards::Params {
                 allow_zero_rewards: true,
             },
+            false,
         );
 
         sign_send_instructions(&mut self.prg_test_ctx, vec![claim_ix], vec![staker]).await
@@ -659,6 +660,7 @@ impl TestRunner {
                 royalty_ata,
             },
             access_protocol::instruction::claim_bond_v2_rewards::Params {},
+            false,
         );
 
         sign_send_instructions(&mut self.prg_test_ctx, vec![claim_ix], vec![owner]).await

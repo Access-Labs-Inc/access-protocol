@@ -590,6 +590,7 @@ async fn functional_10s() {
         claim_rewards::Params {
             allow_zero_rewards: false,
         },
+        false,
     );
 
     sign_send_instructions(&mut prg_test_ctx, vec![claim_ix], vec![&staker])
@@ -728,6 +729,7 @@ async fn functional_10s() {
         claim_rewards::Params {
             allow_zero_rewards: false,
         },
+        false,
     );
 
     sign_send_instructions(&mut prg_test_ctx, vec![claim_ix], vec![&staker])

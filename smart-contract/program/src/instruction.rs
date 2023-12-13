@@ -465,8 +465,14 @@ pub fn claim_rewards(
     program_id: Pubkey,
     accounts: claim_rewards::Accounts<Pubkey>,
     params: claim_rewards::Params,
+    is_access_nft_cpi_call: bool,
 ) -> Instruction {
-    accounts.get_instruction(program_id, ProgramInstruction::ClaimRewards as u8, params)
+    let mut ix =
+        accounts.get_instruction(program_id, ProgramInstruction::ClaimRewards as u8, params);
+    if let Some(acc) = ix.accounts.get_mut(6) {
+        acc.is_signer = is_access_nft_cpi_call
+    }
+    ix
 }
 
 #[allow(missing_docs)]
@@ -545,12 +551,18 @@ pub fn claim_bond_v2_rewards(
     program_id: Pubkey,
     accounts: claim_bond_v2_rewards::Accounts<Pubkey>,
     params: claim_bond_v2_rewards::Params,
+    is_access_nft_cpi_call: bool,
 ) -> Instruction {
-    accounts.get_instruction(
-        program_id,
-        ProgramInstruction::ClaimBondV2Rewards as u8,
-        params,
-    )
+    let mut ix =
+        accounts.get_instruction(
+            program_id,
+            ProgramInstruction::ClaimBondV2Rewards as u8,
+            params,
+        );
+    if let Some(acc) = ix.accounts.get_mut(6) {
+        acc.is_signer = is_access_nft_cpi_call
+    }
+    ix
 }
 
 #[allow(missing_docs)]
