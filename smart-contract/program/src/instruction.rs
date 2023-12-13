@@ -465,14 +465,8 @@ pub fn claim_rewards(
     program_id: Pubkey,
     accounts: claim_rewards::Accounts<Pubkey>,
     params: claim_rewards::Params,
-    owner_must_sign: bool,
 ) -> Instruction {
-    let mut ix =
-        accounts.get_instruction(program_id, ProgramInstruction::ClaimRewards as u8, params);
-    if let Some(acc) = ix.accounts.get_mut(2) {
-        acc.is_signer = owner_must_sign
-    }
-    ix
+    accounts.get_instruction(program_id, ProgramInstruction::ClaimRewards as u8, params)
 }
 
 #[allow(missing_docs)]
@@ -551,17 +545,12 @@ pub fn claim_bond_v2_rewards(
     program_id: Pubkey,
     accounts: claim_bond_v2_rewards::Accounts<Pubkey>,
     params: claim_bond_v2_rewards::Params,
-    owner_must_sign: bool,
 ) -> Instruction {
-    let mut ix = accounts.get_instruction(
+    accounts.get_instruction(
         program_id,
         ProgramInstruction::ClaimBondV2Rewards as u8,
         params,
-    );
-    if let Some(acc) = ix.accounts.get_mut(2) {
-        acc.is_signer = owner_must_sign
-    }
-    ix
+    )
 }
 
 #[allow(missing_docs)]

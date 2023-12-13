@@ -20,7 +20,7 @@ use access_protocol::{
     },
 };
 use access_protocol::instruction::{admin_change_freeze_authority, admin_program_freeze, admin_renounce, admin_set_protocol_fee, change_central_state_authority, change_inflation, change_pool_minimum, change_pool_multiplier, claim_bond, claim_bond_rewards, create_bond, migrate_central_state_v2, ProgramInstruction, unlock_bond_tokens, unlock_bond_v2};
-use access_protocol::state::{BondAccount, BondV2Account, CentralState, CentralStateV2, FeeRecipient, RoyaltyAccount, StakeAccount, StakePoolHeader};
+use access_protocol::state::{ACCESS_NFT_PROGRAM_SIGNER, BondAccount, BondV2Account, CentralState, CentralStateV2, FeeRecipient, RoyaltyAccount, StakeAccount, StakePoolHeader};
 
 use crate::common::utils::{mint_bootstrap, sign_send_instructions, sign_send_instructions_without_authority};
 
@@ -596,15 +596,6 @@ impl TestRunner {
         stake_pool_owner: &Pubkey,
         staker: &Keypair,
     ) -> Result<(), BanksClientError> {
-        self.claim_staker_rewards_advanced(stake_pool_owner, staker, false).await
-    }
-
-    pub async fn claim_staker_rewards_advanced(
-        &mut self,
-        stake_pool_owner: &Pubkey,
-        staker: &Keypair,
-        owner_must_sign: bool,
-    ) -> Result<(), BanksClientError> {
         let stake_pool_key = self.get_pool_pda(stake_pool_owner);
         let (stake_acc_key, _) = self.get_stake_account_pda(&stake_pool_key, &staker.pubkey());
         let staker_token_acc = get_associated_token_address(&staker.pubkey(), &self.mint);
@@ -621,6 +612,7 @@ impl TestRunner {
                 rewards_destination: &staker_token_acc,
                 central_state: &self.central_state,
                 mint: &self.mint,
+                access_nft_signer: &ACCESS_NFT_PROGRAM_SIGNER,
                 spl_token_program: &spl_token::ID,
                 owner_royalty_account: &RoyaltyAccount::create_key(&staker.pubkey(), &self.program_id).0,
                 royalty_ata,
@@ -628,16 +620,9 @@ impl TestRunner {
             claim_rewards::Params {
                 allow_zero_rewards: true,
             },
-            owner_must_sign,
         );
 
-        sign_send_instructions(&mut self.prg_test_ctx, vec![claim_ix],
-                               if owner_must_sign {
-                                   vec![staker]
-                               } else {
-                                   vec![]
-                               },
-        ).await
+        sign_send_instructions(&mut self.prg_test_ctx, vec![claim_ix], vec![staker]).await
     }
 
 
@@ -646,16 +631,6 @@ impl TestRunner {
         owner: &Keypair,
         stake_pool_owner: &Pubkey,
         unlock_date: Option<i64>,
-    ) -> Result<(), BanksClientError> {
-        self.claim_bond_v2_rewards_advanced(owner, stake_pool_owner, unlock_date, false).await
-    }
-
-    async fn claim_bond_v2_rewards_advanced(
-        &mut self,
-        owner: &Keypair,
-        stake_pool_owner: &Pubkey,
-        unlock_date: Option<i64>,
-        owner_must_sign: bool,
     ) -> Result<(), BanksClientError> {
         let stake_pool_key = self.get_pool_pda(stake_pool_owner);
         let (bond_v2_acc_key, _) = BondV2Account::create_key(
@@ -678,21 +653,15 @@ impl TestRunner {
                 rewards_destination: &owner_token_acc,
                 central_state: &self.central_state,
                 mint: &self.mint,
+                access_nft_signer: &ACCESS_NFT_PROGRAM_SIGNER,
                 spl_token_program: &spl_token::ID,
                 owner_royalty_account: &RoyaltyAccount::create_key(&owner.pubkey(), &self.program_id).0,
                 royalty_ata,
             },
             access_protocol::instruction::claim_bond_v2_rewards::Params {},
-            owner_must_sign,
         );
 
-        sign_send_instructions(&mut self.prg_test_ctx, vec![claim_ix],
-                               if owner_must_sign {
-                                   vec![owner]
-                               } else {
-                                   vec![]
-                               },
-        ).await
+        sign_send_instructions(&mut self.prg_test_ctx, vec![claim_ix], vec![owner]).await
     }
 
     pub async fn unlock_bond_v2_tokens(

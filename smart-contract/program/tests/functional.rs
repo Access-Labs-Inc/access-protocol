@@ -22,7 +22,7 @@ use mpl_token_metadata::{instruction::create_metadata_accounts_v3, pda::find_met
 
 use spl_token::{instruction::set_authority, instruction::AuthorityType};
 use access_protocol::instruction::migrate_central_state_v2;
-use access_protocol::state::RoyaltyAccount;
+use access_protocol::state::{ACCESS_NFT_PROGRAM_SIGNER, RoyaltyAccount};
 
 #[tokio::test]
 async fn functional_10s() {
@@ -582,6 +582,7 @@ async fn functional_10s() {
             rewards_destination: &staker_token_acc,
             central_state: &central_state,
             mint: &mint,
+            access_nft_signer: &ACCESS_NFT_PROGRAM_SIGNER,
             spl_token_program: &spl_token::ID,
             owner_royalty_account: &RoyaltyAccount::create_key(&staker.pubkey(), &program_id).0,
             royalty_ata: None,
@@ -589,7 +590,6 @@ async fn functional_10s() {
         claim_rewards::Params {
             allow_zero_rewards: false,
         },
-        true,
     );
 
     sign_send_instructions(&mut prg_test_ctx, vec![claim_ix], vec![&staker])
@@ -720,6 +720,7 @@ async fn functional_10s() {
             rewards_destination: &staker_token_acc,
             central_state: &central_state,
             mint: &mint,
+            access_nft_signer: &ACCESS_NFT_PROGRAM_SIGNER,
             spl_token_program: &spl_token::ID,
             owner_royalty_account: &RoyaltyAccount::create_key(&staker.pubkey(), &program_id).0,
             royalty_ata: None,
@@ -727,7 +728,6 @@ async fn functional_10s() {
         claim_rewards::Params {
             allow_zero_rewards: false,
         },
-        true,
     );
 
     sign_send_instructions(&mut prg_test_ctx, vec![claim_ix], vec![&staker])

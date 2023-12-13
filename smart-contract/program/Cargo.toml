@@ -1,6 +1,6 @@
 [package]
 name = "access-protocol"
-version = "0.7.7"
+version = "0.7.9"
 edition = "2018"
 description = "Access Protocol"
 license = "GPL-3.0"
