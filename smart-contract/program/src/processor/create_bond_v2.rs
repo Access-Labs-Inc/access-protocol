@@ -44,7 +44,6 @@ pub struct Accounts<'a, T> {
     pub system_program: &'a T,
 
     /// The pool account
-    #[cons(writable)]
     pub pool: &'a T,
 
     /// The fee account
@@ -52,7 +51,6 @@ pub struct Accounts<'a, T> {
     pub fee_payer: &'a T,
 
     /// Central state
-    #[cons(writable)]
     pub central_state: &'a T,
 }
 

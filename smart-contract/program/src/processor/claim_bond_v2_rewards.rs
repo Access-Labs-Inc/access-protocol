@@ -1,10 +1,10 @@
 //! Claim rewards of a bond V2  from the Access NFT Program
 use crate::error::AccessError;
 use crate::state::BondV2Account;
-use crate::state::{StakePool, Tag};
+use crate::state::{StakePool, RoyaltyAccount, Tag,ACCESS_NFT_PROGRAM_SIGNER};
 use crate::utils::{
-    assert_no_close_or_delegate, calc_reward_fp32, check_account_key, check_account_owner,
-    check_signer, check_and_retrieve_royalty_account
+    calc_reward_fp32, check_account_key, check_account_owner,
+    check_signer, retrieve_royalty_account
 };
 use std::convert::TryInto;
 use bonfida_utils::{BorshSize, InstructionsAccount};
@@ -52,6 +52,9 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub mint: &'a T,
 
+    /// The Access NFT program signer - to handle different royalty account
+    pub access_nft_signer: &'a T,
+
     /// The SPL token program account
     pub spl_token_program: &'a T,
 
@@ -76,6 +79,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             rewards_destination: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
             mint: next_account_info(accounts_iter)?,
+            access_nft_signer: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
             owner_royalty_account: next_account_info(accounts_iter)?,
             royalty_ata: next_account_info(accounts_iter).ok(),
@@ -86,6 +90,11 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             accounts.spl_token_program,
             &spl_token::ID,
             AccessError::WrongSplTokenProgramId,
+        )?;
+        check_account_key(
+            accounts.access_nft_signer,
+            &ACCESS_NFT_PROGRAM_SIGNER,
+            AccessError::WrongAccessCnftAuthority,
         )?;
 
         // Check ownership
@@ -107,6 +116,9 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
         check_account_owner(accounts.mint, &spl_token::ID, AccessError::WrongOwner)?;
 
+        // Check signers
+        check_signer(accounts.owner, AccessError::StakeAccountOwnerMustSign)?;
+
         Ok(accounts)
     }
 }
@@ -123,28 +135,30 @@ pub fn process_claim_bond_v2_rewards(
     let stake_pool = StakePool::get_checked(accounts.pool, vec![Tag::StakePool])?;
     let mut bond_v2_account = BondV2Account::from_account_info(accounts.bond_v2_account)?;
 
-    let royalty_account_data = check_and_retrieve_royalty_account(
-        program_id,
-        accounts.owner.key,
-        accounts.owner_royalty_account,
-        accounts.royalty_ata,
-    )?;
-
     let destination_token_acc = Account::unpack(&accounts.rewards_destination.data.borrow())?;
-    msg!("Account owner: {}", destination_token_acc.owner);
-
-    if destination_token_acc.owner != bond_v2_account.owner {
-        // If the destination does not belong to the staker he must sign
-        check_signer(accounts.owner, AccessError::OwnerMustSign)?;
-    } else {
-        assert_no_close_or_delegate(&destination_token_acc)?;
-    }
 
     if destination_token_acc.mint != central_state.token_mint {
         msg!("Invalid ACCESS mint");
         #[cfg(not(feature = "no-mint-check"))]
         return Err(AccessError::WrongMint.into());
     }
+
+    msg!("Token account owner: {}", destination_token_acc.owner);
+
+    // We only allow custom royalty account and unchecked destination account when this is a CPI call from the NFT program.
+    if !accounts.access_nft_signer.is_signer {
+        let (derived_key, _) = RoyaltyAccount::create_key(accounts.owner.key, program_id);
+        check_account_key(
+            accounts.owner_royalty_account,
+            &derived_key,
+            AccessError::AccountNotDeterministic,
+        )?;
+    }
+
+    let royalty_account_data = retrieve_royalty_account(
+        accounts.owner_royalty_account,
+        accounts.royalty_ata,
+    )?;
 
     check_account_key(
         accounts.pool,

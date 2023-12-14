@@ -43,8 +43,6 @@ pub mod admin_renounce;
 pub mod admin_change_freeze_authority;
 pub mod create_royalty_account;
 pub mod close_royalty_account;
-pub mod cpi_claim_rewards;
-pub mod cpi_claim_bond_v2_rewards;
 
 pub struct Processor {}
 
@@ -277,20 +275,6 @@ impl Processor {
             ProgramInstruction::CloseRoyaltyAccount => {
                 msg!("Instruction: Close royalty account");
                 close_royalty_account::process_close_royalty_account(program_id, accounts)?;
-            }
-            ProgramInstruction::CpiClaimRewards => {
-                msg!("Instruction: CPI claim rewards");
-                let params = cpi_claim_rewards::Params::try_from_slice(instruction_data)
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
-                cpi_claim_rewards::process_cpi_claim_rewards(program_id, accounts, params)?;
-            }
-            ProgramInstruction::CpiClaimBondV2Rewards => {
-                msg!("Instruction: CPI claim bond V2 rewards");
-                let params = cpi_claim_bond_v2_rewards::Params::try_from_slice(instruction_data)
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
-                cpi_claim_bond_v2_rewards::process_cpi_claim_bond_v2_rewards(
-                    program_id, accounts, params,
-                )?;
             }
         }
 

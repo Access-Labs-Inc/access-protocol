@@ -222,24 +222,20 @@ pub fn assert_no_close_or_delegate(token_account: &Account) -> ProgramResult {
     Ok(())
 }
 
-///  This function checks if there is an existing royalty account for the owner.
+///  This function checks if there is an existing royalty account.
 ///  Checks the relationship between the appropriate royalty account and the royalty ATA
 ///  Returns the royalty account data if it exists. Otherwise returns None.
-pub fn check_and_retrieve_royalty_account(
-    program_id: &Pubkey,
-    royalty_payer_key: &Pubkey,
+pub fn retrieve_royalty_account(
     royalty_account: &AccountInfo,
     royalty_ata: Option<&AccountInfo>,
 ) -> Result<Option<RoyaltyAccount>, ProgramError> {
-    let (derived_key, _) = RoyaltyAccount::create_key(royalty_payer_key, program_id);
-    check_account_key(
-        royalty_account,
-        &derived_key,
-        AccessError::AccountNotDeterministic,
-    )?;
-
     if royalty_account.data_is_empty() {
         return Ok(None);
+    }
+
+    let royalty_account_data = RoyaltyAccount::from_account_info(royalty_account)?;
+    if royalty_account_data.expiration_date < Clock::get()?.unix_timestamp as u64 {
+        return Ok(None); // Royalty account has expired - no royalty split is applicable
     }
 
     if royalty_ata.is_none() {
@@ -252,16 +248,11 @@ pub fn check_and_retrieve_royalty_account(
         AccessError::WrongOwner,
     )?;
 
-    let royalty_account_data = RoyaltyAccount::from_account_info(royalty_account)?;
     check_account_key(
         royalty_ata.unwrap(),
         &royalty_account_data.recipient_ata,
         AccessError::RoyaltyAtaNotDeterministic,
     )?;
-
-    if royalty_account_data.expiration_date < Clock::get()?.unix_timestamp as u64 {
-        return Ok(None); // Royalty account has expired - no royalty split is applicable
-    }
 
     Ok(Some(royalty_account_data))
 }

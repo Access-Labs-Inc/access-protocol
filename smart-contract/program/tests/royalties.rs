@@ -1,4 +1,7 @@
+
+
 use solana_sdk::signer::Signer;
+
 use crate::common::test_runner::TestRunner;
 
 pub mod common;
@@ -26,7 +29,7 @@ async fn program_freeze() {
     )
         .await
         .unwrap();
-    let create_royalty_fee =  fee_payer_balance - tr.fee_payer_sol_balance().await.unwrap();
+    let create_royalty_fee = fee_payer_balance - tr.fee_payer_sol_balance().await.unwrap();
 
     // Pool owner accepts the invitation
     tr.create_royalty(
@@ -182,6 +185,4 @@ async fn program_freeze() {
     assert_eq!(stats.balance, 150_000 * 10);
     let stats = tr.staker_stats(recommender.pubkey()).await.unwrap();
     assert_eq!(stats.balance, 250_000 + 100_000 * 10);
-
-
 }
