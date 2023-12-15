@@ -705,6 +705,88 @@ export class BondV2Account {
 }
 
 
+/**
+ * Royalty account state
+ */
+export class RoyaltyAccount {
+  tag: Tag;
+  rentPayer: PublicKey;
+  royaltyPayer: PublicKey;
+  recipientAta: PublicKey;
+  expirationDate: BN;
+  roayltyBasisPoints: BN;
+
+  static schema: Schema = new Map<any, any>([
+    [
+      RoyaltyAccount,
+      {
+        kind: "struct",
+        fields: [
+          ["tag", "u8"],
+          ["rentPayer", [32]],
+          ["royaltyPayer", [32]],
+          ["recipientAta", [32]],
+          ["expirationDate", "u64"],
+          ["roayltyBasisPoints", "u16"],
+        ],
+      },
+    ],
+  ]);
+
+  constructor(obj: {
+    tag: number;
+    rentPayer: Uint8Array;
+    royaltyPayer: Uint8Array;
+    recipientAta: Uint8Array;
+    expirationDate: BN;
+    royaltyBasisPoints: BN;
+  }) {
+    this.tag = obj.tag;
+    this.rentPayer = new PublicKey(obj.rentPayer);
+    this.royaltyPayer = new PublicKey(obj.royaltyPayer);
+    this.recipientAta = new PublicKey(obj.recipientAta);
+    this.expirationDate = obj.expirationDate;
+    this.roayltyBasisPoints = obj.royaltyBasisPoints;
+  }
+
+  static deserialize(data: Buffer) {
+    return deserialize(this.schema, RoyaltyAccount, data);
+  }
+
+  /**
+   * This method can be used to retrieve the state of a stake account
+   * @param connection The Solana RPC connection
+   * @param key The stake account key
+   * @returns
+   */
+  static async retrieve(connection: Connection, key: PublicKey) {
+    const accountInfo = await connection.getAccountInfo(key);
+    if (!accountInfo || !accountInfo.data) {
+      throw new Error("Royalty account not found");
+    }
+    return this.deserialize(accountInfo.data);
+  }
+
+  /**
+   * This method can be used to derive the stake account key
+   * @param programId The ACCESS program ID
+   * @param owner The key of the stake account owner
+   * @param stakePool The key of the stake pool
+   * @returns
+   */
+  static getKey(
+    programId: PublicKey,
+    royaltyPayer: PublicKey,
+  ) {
+    return PublicKey.findProgramAddressSync(
+      [Buffer.from("royalty_account"), royaltyPayer.toBuffer()],
+      programId
+    );
+  }
+}
+
+
 /// mainnet ACCESS token mint and program id
 export const ACCESS_MINT = new PublicKey("5MAYDfq5yxtudAhtfyuMBuHZjgAbaS9tbEyEQYAhDS5y");
 export const ACCESS_PROGRAM_ID = new PublicKey("6HW8dXjtiTGkD4jzXs7igdFmZExPpmwUrRN5195xGup");
+export const ACCESS_NFT_PROGRAM_ID = new PublicKey("AF7bqw2GjPPX25nWNRYtDpNALMp9B4D9FEaFekur2LEr");
