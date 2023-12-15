@@ -1,6 +1,7 @@
 import {
   activateStakePoolInstruction,
-  addToBondV2Instruction, adminChangeFreezeAuthorityInstruction,
+  addToBondV2Instruction,
+  adminChangeFreezeAuthorityInstruction,
   adminProgramFreezeInstruction,
   adminRenounceInstruction,
   adminSetProtocolFeeInstruction,
@@ -35,6 +36,7 @@ import {
   CentralState,
   CentralStateV2,
   FeeRecipient,
+  RoyaltyAccount,
   StakeAccount,
   StakePool
 } from "./state.js";
@@ -166,6 +168,7 @@ export const claimPoolRewards = async (
     tokenMint,
     stakePool.owner,
   );
+  const ownerRoyaltyAccount = await RoyaltyAccount.retrieve(connection, stakePool.owner);
 
   const ix = new claimPoolRewardsInstruction().getInstruction(
     programId,
@@ -174,7 +177,9 @@ export const claimPoolRewards = async (
     rewardsDestination,
     centralStateKey,
     tokenMint,
-    TOKEN_PROGRAM_ID
+    TOKEN_PROGRAM_ID,
+    RoyaltyAccount.getKey(programId, stakePool.owner)[0],
+    ownerRoyaltyAccount ? ownerRoyaltyAccount.recipientAta : null,
   );
 
   // we don't require the owner to sign this transaction as our use-case is only the pool owner claiming their rewards
@@ -207,8 +212,9 @@ export const claimRewards = async (
   const rewardsDestination = getAssociatedTokenAddressSync(
     tokenMint,
     user,
-    true,
   );
+  const ownerRoyaltyAccount = await RoyaltyAccount.retrieve(connection, user);
+
 
   const ix = new claimRewardsInstruction({
     allowZeroRewards: Number(false),
@@ -220,7 +226,9 @@ export const claimRewards = async (
     rewardsDestination,
     centralStateKey,
     tokenMint,
-    TOKEN_PROGRAM_ID
+    TOKEN_PROGRAM_ID,
+    RoyaltyAccount.getKey(programId, user)[0],
+    ownerRoyaltyAccount ? ownerRoyaltyAccount.recipientAta : null,
   );
 
   // we don't require the owner to sign this transaction as users are claiming for themselves
@@ -560,65 +568,33 @@ export const adminChangeFreezeAuthority = async (
 
 /**
  * This function can be used to create a V2 bond
- * @param connection The Solana RPC connection
  * @param owner The owner of the bond
  * @param feePayer The fee payer of the transaction
- * @param from The owner of the tokens being bonded
  * @param pool The pool to which the tokens are being bonded
- * @param amount The amount of tokens being bonded
  * @param unlockTimestamp The timestamp at which the tokens can be unlocked if ever. If set to null the tokens are locked forever.
  * @param programId The ACCESS program ID
  * @returns ix The instruction to create the bond V2
  */
-export const createBondV2 = async (
-  connection: Connection,
+export const createBondV2 = (
   owner: PublicKey,
   feePayer: PublicKey,
-  from: PublicKey,
   pool: PublicKey,
-  amount: BN,
   unlockTimestamp: BN | null,
   programId = ACCESS_PROGRAM_ID,
 ) => {
   const [centralStateKey] = CentralStateV2.getKey(programId);
-  let tokenMint = ACCESS_MINT;
-  if (programId !== ACCESS_PROGRAM_ID) {
-    tokenMint = (await CentralStateV2.retrieve(connection, centralStateKey)).tokenMint;
-  }
-  const fromAta = getAssociatedTokenAddressSync(
-    tokenMint,
-    from,
-    true,
-  );
   const [bondV2Account] = BondV2Account.getKey(programId, owner, pool, unlockTimestamp);
-  const centralStateVault = getAssociatedTokenAddressSync(
-    tokenMint,
-    centralStateKey,
-    true,
-  );
-  const poolVault = getAssociatedTokenAddressSync(
-    tokenMint,
-    pool,
-    true,
-  );
 
   return new createBondV2Instruction({
-    amount,
     unlockTimestamp,
+    owner: owner.toBuffer(),
   }).getInstruction(
     programId,
-    feePayer,
-    from,
-    fromAta,
-    owner,
     bondV2Account,
-    centralStateKey,
-    centralStateVault,
-    pool,
-    poolVault,
-    tokenMint,
-    TOKEN_PROGRAM_ID,
     SystemProgram.programId,
+    pool,
+    feePayer,
+    centralStateKey,
   );
 };
 
@@ -704,6 +680,8 @@ export const claimBondV2Rewards = async (
     bond.owner,
     true,
   );
+  const ownerRoyaltyAccount = await RoyaltyAccount.retrieve(connection, bond.owner);
+
 
   return new claimBondV2RewardsInstruction().getInstruction(
     programId,
@@ -714,6 +692,8 @@ export const claimBondV2Rewards = async (
     centralStateKey,
     tokenMint,
     TOKEN_PROGRAM_ID,
+    RoyaltyAccount.getKey(programId, bond.owner)[0],
+    ownerRoyaltyAccount ? ownerRoyaltyAccount.recipientAta : null,
   );
 };
 

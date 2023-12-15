@@ -762,7 +762,7 @@ export class RoyaltyAccount {
   static async retrieve(connection: Connection, key: PublicKey) {
     const accountInfo = await connection.getAccountInfo(key);
     if (!accountInfo || !accountInfo.data) {
-      throw new Error("Royalty account not found");
+      return null; // here we are not throwing an error as this is a valid case
     }
     return this.deserialize(accountInfo.data);
   }
@@ -770,8 +770,7 @@ export class RoyaltyAccount {
   /**
    * This method can be used to derive the stake account key
    * @param programId The ACCESS program ID
-   * @param owner The key of the stake account owner
-   * @param stakePool The key of the stake pool
+   * @param royaltyPayer The key of the royalty payer
    * @returns
    */
   static getKey(
