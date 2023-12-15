@@ -107,11 +107,15 @@ const main = async () => {
   );
 
   console.log(`Funding mint authority wallet with 1 SOL...`)
-  const airdropSignature = await connection.requestAirdrop(authorityKeypair.publicKey, LAMPORTS_PER_SOL);
-  await connection.confirmTransaction(airdropSignature);
+  try {
+    const airdropSignature = await connection.requestAirdrop(authorityKeypair.publicKey, LAMPORTS_PER_SOL);
+    await connection.confirmTransaction(airdropSignature);
+  } catch (e) {
+    console.error(`Error requesting airdrop, top up the wallet manually: ${e}`);
+  }
 
-  console.log(`Waiting for 20 seconds to ensure that the airdrop succeeds...`);
-  await new Promise(resolve => setTimeout(resolve, 20000));
+  console.log(`Waiting for 30 seconds to ensure that the airdrop succeeds...`);
+  await new Promise(resolve => setTimeout(resolve, 30000));
 
   // Initialize mint
   const tokenPubkey = await createDevnetSplToken(

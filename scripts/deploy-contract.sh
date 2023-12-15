@@ -1,11 +1,11 @@
 #!/bin/bash
-# set -x
+ set -x
 
 pwd=$(pwd)
 NETWORK=${NETWORK:-devnet}
 ALLOW_V1=${ALLOW_V1:-false}
 
-pushd ../smart-contract/program
+pushd ../smart-contract/program || exit;
 echo  "Building smart contract program..."
 # IMPORTANT: If not no-mint-check present you need to update MINT_ADDRESS in (state.rs)
 FEATURES="no-bond-signer no-mint-check"
@@ -73,8 +73,9 @@ echo "Program pubkey: $program_pubkey"
 authority_pubkey=$(solana-keygen pubkey ${AUTHORITY_KEYPAIR})
 echo "Authority pubkey: $authority_pubkey"
 solana program deploy ./target/deploy/access_protocol.so \
+ -k ${AUTHORITY_KEYPAIR} \
  --program-id ${PROGRAM_KEYPAIR} \
- --upgrade-authority ${authority_pubkey} \
+ --upgrade-authority ${AUTHORITY_KEYPAIR} \
  -u ${NETWORK}
 
-popd
+popd || exit;
