@@ -13,7 +13,7 @@ import {
   claimBondRewardsInstruction,
   claimBondV2RewardsInstruction,
   claimPoolRewardsInstruction,
-  claimRewardsInstruction,
+  claimRewardsInstruction, closeRoyaltyAccountInstruction,
   crankInstruction,
   createBondV2Instruction,
   createCentralStateInstruction, createRoyaltyAccountInstruction,
@@ -896,7 +896,7 @@ export const adminRenounce = async (
  * @param royaltyBasisPoints The royalty basis points (i.e. 100 = 1%)
  * @param expirationDate The expiration date of the royalty account
  * @param programId The ACCESS program ID
- * @returns ix The instruction to renounce the admin authority
+ * @returns ix The instruction to create the royalty account
  */
 export const createRoyaltyAccount = (
   feePayer: PublicKey,
@@ -919,6 +919,31 @@ export const createRoyaltyAccount = (
     feePayer,
     royaltyPayer,
     SystemProgram.programId,
+    centralStateKey,
+  );
+}
+
+/**
+ * This function can be used to close a royalty account
+ * @param connection The Solana RPC connection
+ * @param royaltyPayer The payer of the royalty account
+ * @param programId The ACCESS program ID
+ * @returns ix The instruction to close the royalty account
+ */
+export const closeRoyaltyAccount = async (
+  connection: Connection,
+  royaltyPayer: PublicKey,
+  programId = ACCESS_PROGRAM_ID,
+) => {
+  const [centralStateKey] = CentralStateV2.getKey(programId);
+  const [royaltyAccountAddr] = RoyaltyAccount.getKey(programId, royaltyPayer);
+  const royaltyAccount = await RoyaltyAccount.retrieve(connection, royaltyPayer);
+
+  return new closeRoyaltyAccountInstruction().getInstruction(
+    programId,
+    royaltyAccountAddr,
+    royaltyPayer,
+    royaltyAccount.rentPayer,
     centralStateKey,
   );
 }
