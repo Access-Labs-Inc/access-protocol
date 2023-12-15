@@ -16,7 +16,7 @@ import {
   claimRewardsInstruction,
   crankInstruction,
   createBondV2Instruction,
-  createCentralStateInstruction,
+  createCentralStateInstruction, createRoyaltyAccountInstruction,
   createStakeAccountInstruction,
   createStakePoolInstruction,
   distributeFeesInstruction,
@@ -886,3 +886,39 @@ export const adminRenounce = async (
     centralState.authority,
   );
 };
+
+
+/**
+ * This function can be used to create a royalty account
+ * @param feePayer The fee payer of the transaction
+ * @param royaltyPayer The payer of the royalty account
+ * @param royaltyDestination The destination of the royalty account (ATA)
+ * @param royaltyBasisPoints The royalty basis points (i.e. 100 = 1%)
+ * @param expirationDate The expiration date of the royalty account
+ * @param programId The ACCESS program ID
+ * @returns ix The instruction to renounce the admin authority
+ */
+export const createRoyaltyAccount = (
+  feePayer: PublicKey,
+  royaltyPayer: PublicKey,
+  royaltyDestination: PublicKey,
+  royaltyBasisPoints: number,
+  expirationDate: BN,
+  programId = ACCESS_PROGRAM_ID,
+) => {
+  const [centralStateKey] = CentralStateV2.getKey(programId);
+  const [royaltyAccount] = RoyaltyAccount.getKey(programId, royaltyDestination);
+
+  return new createRoyaltyAccountInstruction({
+    royaltyBasisPoints,
+    expirationDate,
+    royaltyAta: royaltyDestination.toBuffer(),
+  }).getInstruction(
+    programId,
+    royaltyAccount,
+    feePayer,
+    royaltyPayer,
+    SystemProgram.programId,
+    centralStateKey,
+  );
+}
