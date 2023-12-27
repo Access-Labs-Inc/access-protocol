@@ -1,6 +1,7 @@
 import { Connection, MemcmpFilter, PublicKey, TransactionInstruction } from "@solana/web3.js";
 import {
   ACCESS_MINT,
+  ACCESS_NFT_PROGRAM_SIGNER,
   ACCESS_PROGRAM_ID,
   BondAccount,
   BondV2Account,
@@ -365,6 +366,7 @@ export const hasValidSubscriptionForPool = async (
  * @param pool The pool's pubkey
  * @param feePayer The fee payer's pubkey
  * @param amount The amount to lock in ACS
+ * @param currentTimestamp The current Solana timestamp
  * @param feePayerCompensation The amount of ACS to reimburse to the fee payer if creating a StakeAccount
  * @param programId The program ID
  * @param centralState The central state, if already known (otherwise retrieved from the blockchain)
@@ -379,6 +381,7 @@ export const fullLock = async (
   pool: PublicKey,
   feePayer: PublicKey,
   amount: number,
+  currentTimestamp: number,
   feePayerCompensation = 0,
   programId = ACCESS_PROGRAM_ID,
   centralState?: CentralStateV2,
@@ -404,8 +407,7 @@ export const fullLock = async (
   if (
     centralState.lastSnapshotOffset.toNumber() > poolData.currentDayIdx ||
     centralState.creationTime.toNumber() +
-    86400 * (poolData.currentDayIdx + 1) <
-    Date.now() / 1000
+    86400 * (centralState.lastSnapshotOffset.toNumber() + 1) < currentTimestamp
   ) {
     ixs.push(crank(pool, programId));
     hasCranked = true;
@@ -564,6 +566,7 @@ const lockBondV2Account = async (
       feePayer,
       pool,
       unlockDate ? new BN.BN(unlockDate) : null,
+      programId,
     ));
 
     return ixs;
@@ -690,7 +693,7 @@ export const fullUnlock = async (
  * @param programId The program ID
  * @param poolOffsets The pool offsets, if already known (otherwise retrieved from the blockchain)
  */
-const fullUserRewardClaim = async (
+export const fullUserRewardClaim = async (
   connection: Connection,
   user: PublicKey,
   feePayer: PublicKey,
@@ -748,6 +751,7 @@ const fullUserRewardClaim = async (
               centralStateKey,
               centralState.tokenMint,
               TOKEN_PROGRAM_ID,
+              ACCESS_NFT_PROGRAM_SIGNER,
               royaltyAccount,
               royaltyAta
             );
@@ -800,6 +804,7 @@ const fullUserRewardClaim = async (
               centralStateKey,
               centralState.tokenMint,
               TOKEN_PROGRAM_ID,
+              ACCESS_NFT_PROGRAM_SIGNER,
               royaltyAccount,
               royaltyAta
             );

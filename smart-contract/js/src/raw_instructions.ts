@@ -53,7 +53,6 @@ export class adminSetupFeeSplitInstruction implements TaggedInstruction {
     programId: PublicKey,
     authority: PublicKey,
     centralState: PublicKey,
-    systemProgram: PublicKey,
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -66,11 +65,6 @@ export class adminSetupFeeSplitInstruction implements TaggedInstruction {
       pubkey: centralState,
       isSigner: false,
       isWritable: true,
-    });
-    keys.push({
-      pubkey: systemProgram,
-      isSigner: false,
-      isWritable: false,
     });
     return new TransactionInstruction({
       keys,
@@ -653,7 +647,7 @@ export class claimPoolRewardsInstruction implements TaggedInstruction {
     mint: PublicKey,
     splTokenProgram: PublicKey,
     ownerRoyaltyAccount: PublicKey,
-    royaltyAta?: PublicKey,
+    royaltyAta: PublicKey | null,
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -801,7 +795,7 @@ export class claimRewardsInstruction {
     accessNftSigner: PublicKey,
     splTokenProgram: PublicKey,
     ownerRoyaltyAccount: PublicKey,
-    royaltyAta?: PublicKey,
+    royaltyAta: PublicKey | null,
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -1251,7 +1245,7 @@ export class claimBondV2RewardsInstruction implements TaggedInstruction {
     accessNftSigner: PublicKey,
     splTokenProgram: PublicKey,
     ownerRoyaltyAccount: PublicKey,
-    royaltyAta?: PublicKey,
+    royaltyAta: PublicKey | null,
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];

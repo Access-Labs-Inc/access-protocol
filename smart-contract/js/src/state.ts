@@ -788,4 +788,4 @@ export class RoyaltyAccount {
 /// mainnet ACCESS token mint and program id
 export const ACCESS_MINT = new PublicKey("5MAYDfq5yxtudAhtfyuMBuHZjgAbaS9tbEyEQYAhDS5y");
 export const ACCESS_PROGRAM_ID = new PublicKey("6HW8dXjtiTGkD4jzXs7igdFmZExPpmwUrRN5195xGup");
-export const ACCESS_NFT_PROGRAM_ID = new PublicKey("AF7bqw2GjPPX25nWNRYtDpNALMp9B4D9FEaFekur2LEr");
+export const ACCESS_NFT_PROGRAM_SIGNER = new PublicKey("AF7bqw2GjPPX25nWNRYtDpNALMp9B4D9FEaFekur2LEr");

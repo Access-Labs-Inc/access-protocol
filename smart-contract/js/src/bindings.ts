@@ -29,7 +29,7 @@ import {
 } from "./raw_instructions.js";
 import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
 import {
-  ACCESS_MINT,
+  ACCESS_MINT, ACCESS_NFT_PROGRAM_SIGNER,
   ACCESS_PROGRAM_ID,
   BondAccount,
   BondV2Account,
@@ -168,7 +168,8 @@ export const claimPoolRewards = async (
     tokenMint,
     stakePool.owner,
   );
-  const ownerRoyaltyAccount = await RoyaltyAccount.retrieve(connection, stakePool.owner);
+  const royaltyAccountAddr = RoyaltyAccount.getKey(programId, stakePool.owner)[0];
+  const ownerRoyaltyAccount = await RoyaltyAccount.retrieve(connection, royaltyAccountAddr);
 
   const ix = new claimPoolRewardsInstruction().getInstruction(
     programId,
@@ -178,7 +179,7 @@ export const claimPoolRewards = async (
     centralStateKey,
     tokenMint,
     TOKEN_PROGRAM_ID,
-    RoyaltyAccount.getKey(programId, stakePool.owner)[0],
+    royaltyAccountAddr,
     ownerRoyaltyAccount ? ownerRoyaltyAccount.recipientAta : null,
   );
 
@@ -213,7 +214,8 @@ export const claimRewards = async (
     tokenMint,
     user,
   );
-  const ownerRoyaltyAccount = await RoyaltyAccount.retrieve(connection, user);
+  const royaltyAccountAddr = RoyaltyAccount.getKey(programId, user)[0];
+  const ownerRoyaltyAccount = await RoyaltyAccount.retrieve(connection, royaltyAccountAddr);
 
 
   const ix = new claimRewardsInstruction({
@@ -226,8 +228,9 @@ export const claimRewards = async (
     rewardsDestination,
     centralStateKey,
     tokenMint,
+    ACCESS_NFT_PROGRAM_SIGNER,
     TOKEN_PROGRAM_ID,
-    RoyaltyAccount.getKey(programId, user)[0],
+    royaltyAccountAddr,
     ownerRoyaltyAccount ? ownerRoyaltyAccount.recipientAta : null,
   );
 
@@ -347,12 +350,17 @@ export const createStakePool = async (
     true,
   );
 
-  const createVaultIx = createAssociatedTokenAccountInstruction(
-    feePayer,
-    vault,
-    stakePool,
-    tokenMint,
-  );
+  const ixs = []
+  const vaultData = await connection.getAccountInfo(vault);
+  if (!vaultData) {
+    const createVaultIx = createAssociatedTokenAccountInstruction(
+      feePayer,
+      vault,
+      stakePool,
+      tokenMint,
+    );
+    ixs.push(createVaultIx);
+  }
 
   const ix = new createStakePoolInstruction({
     owner: owner.toBuffer(),
@@ -366,7 +374,8 @@ export const createStakePool = async (
     centralStateKey,
   );
 
-  return [createVaultIx, ix];
+  ixs.push(ix);
+  return ixs
 };
 
 /**
@@ -680,8 +689,8 @@ export const claimBondV2Rewards = async (
     bond.owner,
     true,
   );
-  const ownerRoyaltyAccount = await RoyaltyAccount.retrieve(connection, bond.owner);
-
+  const royaltyAccountAddr = RoyaltyAccount.getKey(programId, bond.owner)[0];
+  const ownerRoyaltyAccount = await RoyaltyAccount.retrieve(connection, royaltyAccountAddr);
 
   return new claimBondV2RewardsInstruction().getInstruction(
     programId,
@@ -691,8 +700,9 @@ export const claimBondV2Rewards = async (
     rewardsDestination,
     centralStateKey,
     tokenMint,
+    ACCESS_NFT_PROGRAM_SIGNER,
     TOKEN_PROGRAM_ID,
-    RoyaltyAccount.getKey(programId, bond.owner)[0],
+    royaltyAccountAddr,
     ownerRoyaltyAccount ? ownerRoyaltyAccount.recipientAta : null,
   );
 };
@@ -759,7 +769,6 @@ export const adminSetupFeeSplit = async (
     programId,
     centralState.authority,
     centralStateKey,
-    SystemProgram.programId,
   )
 };
 
@@ -907,7 +916,7 @@ export const createRoyaltyAccount = (
   programId = ACCESS_PROGRAM_ID,
 ) => {
   const [centralStateKey] = CentralStateV2.getKey(programId);
-  const [royaltyAccount] = RoyaltyAccount.getKey(programId, royaltyDestination);
+  const [royaltyAccount] = RoyaltyAccount.getKey(programId, royaltyPayer);
 
   return new createRoyaltyAccountInstruction({
     royaltyBasisPoints,
@@ -937,7 +946,10 @@ export const closeRoyaltyAccount = async (
 ) => {
   const [centralStateKey] = CentralStateV2.getKey(programId);
   const [royaltyAccountAddr] = RoyaltyAccount.getKey(programId, royaltyPayer);
-  const royaltyAccount = await RoyaltyAccount.retrieve(connection, royaltyPayer);
+  const royaltyAccount = await RoyaltyAccount.retrieve(connection, royaltyAccountAddr);
+  if (!royaltyAccount) {
+    throw new Error(`Royalty account ${royaltyAccountAddr.toBase58()} does not exist`);
+  }
 
   return new closeRoyaltyAccountInstruction().getInstruction(
     programId,
