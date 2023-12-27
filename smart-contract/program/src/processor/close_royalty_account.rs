@@ -67,10 +67,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 }
 
 pub fn process_close_royalty_account(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
-    if !V1_INSTRUCTIONS_ALLOWED {
-        return Err(AccessError::DeprecatedInstruction.into());
-    }
-
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
