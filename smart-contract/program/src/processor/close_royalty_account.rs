@@ -16,7 +16,7 @@ use bonfida_utils::InstructionsAccount;
 
 use crate::error::AccessError;
 use crate::instruction::ProgramInstruction::CloseStakeAccount;
-use crate::state::{RoyaltyAccount, V1_INSTRUCTIONS_ALLOWED};
+use crate::state::{RoyaltyAccount};
 use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]

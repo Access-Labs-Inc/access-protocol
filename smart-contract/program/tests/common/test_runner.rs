@@ -1319,7 +1319,6 @@ impl TestRunner {
             admin_setup_fee_split::Accounts {
                 authority: &self.prg_test_ctx.payer.pubkey(),
                 central_state: &self.central_state,
-                system_program: &system_program::ID,
             },
             admin_setup_fee_split::Params { recipients },
         );
