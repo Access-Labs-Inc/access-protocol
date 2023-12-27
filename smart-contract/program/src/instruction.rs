@@ -315,7 +315,6 @@ pub enum ProgramInstruction {
     /// | ------------------------------------------------------- |
     /// | 0     | ❌        | ✅      | The central state authority |
     /// | 1     | ✅        | ❌      | The central state account   |
-    /// | 2     | ❌        | ❌      | The system program account  |
     AdminSetupFeeSplit,
     /// Distribute fees to the recipients
     ///
