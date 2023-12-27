@@ -39,9 +39,6 @@ pub struct Accounts<'a, T> {
     /// The central state account
     #[cons(writable)]
     pub central_state: &'a T,
-
-    /// The system program account
-    pub system_program: &'a T,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -53,7 +50,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         let accounts = Accounts {
             authority: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
-            system_program: next_account_info(accounts_iter)?,
         };
 
         // Check keys
