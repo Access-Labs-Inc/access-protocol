@@ -16,7 +16,7 @@ use bonfida_utils::InstructionsAccount;
 
 use crate::error::AccessError;
 use crate::instruction::ProgramInstruction::CloseStakeAccount;
-use crate::state::{RoyaltyAccount, V1_INSTRUCTIONS_ALLOWED};
+use crate::state::{RoyaltyAccount};
 use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -67,10 +67,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 }
 
 pub fn process_close_royalty_account(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
-    if !V1_INSTRUCTIONS_ALLOWED {
-        return Err(AccessError::DeprecatedInstruction.into());
-    }
-
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let central_state = CentralStateV2::from_account_info(accounts.central_state)?;

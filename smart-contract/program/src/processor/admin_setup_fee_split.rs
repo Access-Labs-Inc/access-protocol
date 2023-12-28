@@ -1,27 +1,24 @@
 //! Setup fee split
 
-use crate::state::CentralStateV2;
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
-use solana_program::clock::Clock;
-
-use solana_program::sysvar::Sysvar;
 use solana_program::{
-    account_info::{next_account_info, AccountInfo},
+    account_info::{AccountInfo, next_account_info},
     entrypoint::ProgramResult,
     msg,
     program_error::ProgramError,
     pubkey::Pubkey,
-    system_program,
 };
+use solana_program::clock::Clock;
+use solana_program::sysvar::Sysvar;
 
-
+use crate::error::AccessError;
+use crate::instruction::ProgramInstruction::AdminSetupFeeSplit;
 use crate::state::{
     FeeRecipient, MAX_FEE_RECIPIENTS, MAX_FEE_SPLIT_SETUP_DELAY,
 };
+use crate::state::CentralStateV2;
 use crate::utils::{check_account_key, check_account_owner, check_signer};
-use crate::{error::AccessError};
-use crate::instruction::ProgramInstruction::AdminSetupFeeSplit;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `admin_setup_fee_split` instruction
@@ -39,9 +36,6 @@ pub struct Accounts<'a, T> {
     /// The central state account
     #[cons(writable)]
     pub central_state: &'a T,
-
-    /// The system program account
-    pub system_program: &'a T,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -53,15 +47,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         let accounts = Accounts {
             authority: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
-            system_program: next_account_info(accounts_iter)?,
         };
-
-        // Check keys
-        check_account_key(
-            accounts.system_program,
-            &system_program::ID,
-            AccessError::WrongSystemProgram,
-        )?;
 
         // Check ownership
         check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
