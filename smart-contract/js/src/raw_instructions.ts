@@ -53,7 +53,6 @@ export class adminSetupFeeSplitInstruction implements TaggedInstruction {
     programId: PublicKey,
     authority: PublicKey,
     centralState: PublicKey,
-    systemProgram: PublicKey,
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -66,11 +65,6 @@ export class adminSetupFeeSplitInstruction implements TaggedInstruction {
       pubkey: centralState,
       isSigner: false,
       isWritable: true,
-    });
-    keys.push({
-      pubkey: systemProgram,
-      isSigner: false,
-      isWritable: false,
     });
     return new TransactionInstruction({
       keys,
@@ -550,8 +544,8 @@ export class changePoolMinimumInstruction implements TaggedInstruction {
 
 export class createBondV2Instruction implements TaggedInstruction {
   tag: number;
-  amount: BN;
   unlockTimestamp: BN | null;
+  owner: Uint8Array;
   static schema: Schema = new Map([
     [
       createBondV2Instruction,
@@ -559,20 +553,20 @@ export class createBondV2Instruction implements TaggedInstruction {
         kind: "struct",
         fields: [
           ["tag", "u8"],
-          ["amount", "u64"],
           ["unlockTimestamp", { kind: "option", type: "u64" }],
+          ["owner", [32]],
         ],
       },
     ],
   ]);
 
   constructor(obj: {
-    amount: BN;
     unlockTimestamp: BN | null;
+    owner: Uint8Array;
   }) {
     this.tag = 23;
-    this.amount = obj.amount;
     this.unlockTimestamp = obj.unlockTimestamp;
+    this.owner = obj.owner;
   }
 
   serialize(): Uint8Array {
@@ -581,78 +575,36 @@ export class createBondV2Instruction implements TaggedInstruction {
 
   getInstruction(
     programId: PublicKey,
-    feePayer: PublicKey,
-    from: PublicKey,
-    fromAta: PublicKey,
-    to: PublicKey,
     bondV2Account: PublicKey,
-    centralState: PublicKey,
-    centralStateVault: PublicKey,
-    pool: PublicKey,
-    poolVault: PublicKey,
-    mint: PublicKey,
-    splTokenProgram: PublicKey,
     systemProgram: PublicKey,
+    pool: PublicKey,
+    feePayer: PublicKey,
+    centralState: PublicKey,
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
-    keys.push({
-      pubkey: feePayer,
-      isSigner: true,
-      isWritable: true,
-    });
-    keys.push({
-      pubkey: from,
-      isSigner: true,
-      isWritable: true,
-    });
-    keys.push({
-      pubkey: fromAta,
-      isSigner: false,
-      isWritable: true,
-    });
-    keys.push({
-      pubkey: to,
-      isSigner: false,
-      isWritable: false,
-    });
     keys.push({
       pubkey: bondV2Account,
       isSigner: false,
       isWritable: true,
     });
     keys.push({
-      pubkey: centralState,
-      isSigner: false,
-      isWritable: true,
-    });
-    keys.push({
-      pubkey: centralStateVault,
-      isSigner: false,
-      isWritable: true,
-    });
-    keys.push({
-      pubkey: pool,
-      isSigner: false,
-      isWritable: true,
-    });
-    keys.push({
-      pubkey: poolVault,
-      isSigner: false,
-      isWritable: true,
-    });
-    keys.push({
-      pubkey: mint,
-      isSigner: false,
-      isWritable: true,
-    });
-    keys.push({
-      pubkey: splTokenProgram,
+      pubkey: systemProgram,
       isSigner: false,
       isWritable: false,
     });
     keys.push({
-      pubkey: systemProgram,
+      pubkey: pool,
+      isSigner: false,
+      isWritable: false,
+    });
+    keys.push({
+      pubkey: feePayer,
+      isSigner: true,
+      isWritable: true,
+    });
+    keys.push({
+      pubkey: centralState,
       isSigner: false,
       isWritable: false,
     });
@@ -694,6 +646,8 @@ export class claimPoolRewardsInstruction implements TaggedInstruction {
     centralState: PublicKey,
     mint: PublicKey,
     splTokenProgram: PublicKey,
+    ownerRoyaltyAccount: PublicKey,
+    royaltyAta: PublicKey | null,
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -727,6 +681,18 @@ export class claimPoolRewardsInstruction implements TaggedInstruction {
       isSigner: false,
       isWritable: false,
     });
+    keys.push({
+      pubkey: ownerRoyaltyAccount,
+      isSigner: false,
+      isWritable: false,
+    });
+    if (!!royaltyAta) {
+      keys.push({
+        pubkey: royaltyAta,
+        isSigner: false,
+        isWritable: true,
+      });
+    }
     return new TransactionInstruction({
       keys,
       programId,
@@ -826,10 +792,13 @@ export class claimRewardsInstruction {
     rewardsDestination: PublicKey,
     centralState: PublicKey,
     mint: PublicKey,
-    splTokenProgram: PublicKey
+    accessNftSigner: PublicKey,
+    splTokenProgram: PublicKey,
+    ownerRoyaltyAccount: PublicKey,
+    royaltyAta: PublicKey | null,
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
-    const keys: AccountKey[] = [];
+    let keys: AccountKey[] = [];
     keys.push({
       pubkey: stakePool,
       isSigner: false,
@@ -861,10 +830,27 @@ export class claimRewardsInstruction {
       isWritable: true,
     });
     keys.push({
+      pubkey: accessNftSigner,
+      isSigner: false,
+      isWritable: false,
+    });
+    keys.push({
       pubkey: splTokenProgram,
       isSigner: false,
       isWritable: false,
     });
+    keys.push({
+      pubkey: ownerRoyaltyAccount,
+      isSigner: false,
+      isWritable: false,
+    });
+    if (!!royaltyAta) {
+      keys.push({
+        pubkey: royaltyAta,
+        isSigner: false,
+        isWritable: true,
+      });
+    }
     return new TransactionInstruction({
       keys,
       programId,
@@ -932,6 +918,84 @@ export class distributeFeesInstruction implements TaggedInstruction {
         isWritable: true,
       });
     }
+    return new TransactionInstruction({
+      keys,
+      programId,
+      data,
+    });
+  }
+}
+
+export class createRoyaltyAccountInstruction implements TaggedInstruction {
+  tag: number;
+  royaltyBasisPoints: number;
+  expirationDate: BN;
+  royaltyAta: Uint8Array;
+  static schema: Schema = new Map([
+    [
+      createRoyaltyAccountInstruction,
+      {
+        kind: "struct",
+        fields: [
+          ["tag", "u8"],
+          ["royaltyBasisPoints", "u16"],
+          ["expirationDate", "u64"],
+          ["royaltyAta", [32]],
+        ],
+      },
+    ],
+  ]);
+
+  constructor(obj: {
+    royaltyBasisPoints: number;
+    expirationDate: BN;
+    royaltyAta: Uint8Array;
+  }) {
+    this.tag = 34;
+    this.royaltyBasisPoints = obj.royaltyBasisPoints;
+    this.expirationDate = obj.expirationDate;
+    this.royaltyAta = obj.royaltyAta;
+  }
+
+  serialize(): Uint8Array {
+    return serialize(createRoyaltyAccountInstruction.schema, this);
+  }
+
+  getInstruction(
+    programId: PublicKey,
+    royaltyAccount: PublicKey,
+    feePayer: PublicKey,
+    royaltyPayer: PublicKey,
+    systemProgram: PublicKey,
+    centralState: PublicKey,
+  ): TransactionInstruction {
+    const data = Buffer.from(this.serialize());
+    let keys: AccountKey[] = [];
+    keys.push({
+      pubkey: royaltyAccount,
+      isSigner: false,
+      isWritable: true,
+    });
+    keys.push({
+      pubkey: feePayer,
+      isSigner: true,
+      isWritable: true,
+    });
+    keys.push({
+      pubkey: royaltyPayer,
+      isSigner: true,
+      isWritable: false,
+    });
+    keys.push({
+      pubkey: systemProgram,
+      isSigner: false,
+      isWritable: false,
+    });
+    keys.push({
+      pubkey: centralState,
+      isSigner: false,
+      isWritable: false,
+    });
     return new TransactionInstruction({
       keys,
       programId,
@@ -1024,7 +1088,7 @@ export class stakeInstruction implements TaggedInstruction {
     centralState: PublicKey,
     stakeAccount: PublicKey,
     stakePool: PublicKey,
-    owner: PublicKey,
+    tokenOwner: PublicKey,
     sourceToken: PublicKey,
     splTokenProgram: PublicKey,
     vault: PublicKey,
@@ -1048,7 +1112,7 @@ export class stakeInstruction implements TaggedInstruction {
       isWritable: true,
     });
     keys.push({
-      pubkey: owner,
+      pubkey: tokenOwner,
       isSigner: true,
       isWritable: false,
     });
@@ -1178,7 +1242,10 @@ export class claimBondV2RewardsInstruction implements TaggedInstruction {
     rewardsDestination: PublicKey,
     centralState: PublicKey,
     mint: PublicKey,
+    accessNftSigner: PublicKey,
     splTokenProgram: PublicKey,
+    ownerRoyaltyAccount: PublicKey,
+    royaltyAta: PublicKey | null,
   ): TransactionInstruction {
     const data = Buffer.from(this.serialize());
     let keys: AccountKey[] = [];
@@ -1213,10 +1280,27 @@ export class claimBondV2RewardsInstruction implements TaggedInstruction {
       isWritable: true,
     });
     keys.push({
+      pubkey: accessNftSigner,
+      isSigner: false,
+      isWritable: false,
+    });
+    keys.push({
       pubkey: splTokenProgram,
       isSigner: false,
       isWritable: false,
     });
+    keys.push({
+      pubkey: ownerRoyaltyAccount,
+      isSigner: false,
+      isWritable: false,
+    });
+    if (!!royaltyAta) {
+      keys.push({
+        pubkey: royaltyAta,
+        isSigner: false,
+        isWritable: true,
+      });
+    }
     return new TransactionInstruction({
       keys,
       programId,
@@ -2190,7 +2274,7 @@ export class unlockBondV2Instruction implements TaggedInstruction {
     centralState: PublicKey,
     bondV2Account: PublicKey,
     owner: PublicKey,
-    ownerTokenAccount: PublicKey,
+    destinationAccount: PublicKey,
     pool: PublicKey,
     poolVault: PublicKey,
     splTokenProgram: PublicKey,
@@ -2213,7 +2297,7 @@ export class unlockBondV2Instruction implements TaggedInstruction {
       isWritable: false,
     });
     keys.push({
-      pubkey: ownerTokenAccount,
+      pubkey: destinationAccount,
       isSigner: false,
       isWritable: true,
     });
@@ -2341,6 +2425,65 @@ export class activateStakePoolInstruction implements TaggedInstruction {
     let keys: AccountKey[] = [];
     keys.push({
       pubkey: stakePool,
+      isSigner: false,
+      isWritable: true,
+    });
+    keys.push({
+      pubkey: centralState,
+      isSigner: false,
+      isWritable: false,
+    });
+    return new TransactionInstruction({
+      keys,
+      programId,
+      data,
+    });
+  }
+}
+
+export class closeRoyaltyAccountInstruction implements TaggedInstruction {
+  tag: number;
+  static schema: Schema = new Map([
+    [
+      closeRoyaltyAccountInstruction,
+      {
+        kind: "struct",
+        fields: [
+          ["tag", "u8"],
+        ],
+      },
+    ],
+  ]);
+
+  constructor() {
+    this.tag = 35;
+  }
+
+  serialize(): Uint8Array {
+    return serialize(closeRoyaltyAccountInstruction.schema, this);
+  }
+
+  getInstruction(
+    programId: PublicKey,
+    royaltyAccount: PublicKey,
+    royaltyPayer: PublicKey,
+    rentDestination: PublicKey,
+    centralState: PublicKey,
+  ): TransactionInstruction {
+    const data = Buffer.from(this.serialize());
+    let keys: AccountKey[] = [];
+    keys.push({
+      pubkey: royaltyAccount,
+      isSigner: false,
+      isWritable: true,
+    });
+    keys.push({
+      pubkey: royaltyPayer,
+      isSigner: true,
+      isWritable: false,
+    });
+    keys.push({
+      pubkey: rentDestination,
       isSigner: false,
       isWritable: true,
     });

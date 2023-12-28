@@ -1,6 +1,7 @@
 import {
   activateStakePoolInstruction,
-  addToBondV2Instruction, adminChangeFreezeAuthorityInstruction,
+  addToBondV2Instruction,
+  adminChangeFreezeAuthorityInstruction,
   adminProgramFreezeInstruction,
   adminRenounceInstruction,
   adminSetProtocolFeeInstruction,
@@ -12,10 +13,10 @@ import {
   claimBondRewardsInstruction,
   claimBondV2RewardsInstruction,
   claimPoolRewardsInstruction,
-  claimRewardsInstruction,
+  claimRewardsInstruction, closeRoyaltyAccountInstruction,
   crankInstruction,
   createBondV2Instruction,
-  createCentralStateInstruction,
+  createCentralStateInstruction, createRoyaltyAccountInstruction,
   createStakeAccountInstruction,
   createStakePoolInstruction,
   distributeFeesInstruction,
@@ -28,13 +29,14 @@ import {
 } from "./raw_instructions.js";
 import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
 import {
-  ACCESS_MINT,
+  ACCESS_MINT, ACCESS_NFT_PROGRAM_SIGNER,
   ACCESS_PROGRAM_ID,
   BondAccount,
   BondV2Account,
   CentralState,
   CentralStateV2,
   FeeRecipient,
+  RoyaltyAccount,
   StakeAccount,
   StakePool
 } from "./state.js";
@@ -166,6 +168,8 @@ export const claimPoolRewards = async (
     tokenMint,
     stakePool.owner,
   );
+  const royaltyAccountAddr = RoyaltyAccount.getKey(programId, stakePool.owner)[0];
+  const ownerRoyaltyAccount = await RoyaltyAccount.retrieve(connection, royaltyAccountAddr);
 
   const ix = new claimPoolRewardsInstruction().getInstruction(
     programId,
@@ -174,7 +178,9 @@ export const claimPoolRewards = async (
     rewardsDestination,
     centralStateKey,
     tokenMint,
-    TOKEN_PROGRAM_ID
+    TOKEN_PROGRAM_ID,
+    royaltyAccountAddr,
+    ownerRoyaltyAccount ? ownerRoyaltyAccount.recipientAta : null,
   );
 
   // we don't require the owner to sign this transaction as our use-case is only the pool owner claiming their rewards
@@ -207,8 +213,10 @@ export const claimRewards = async (
   const rewardsDestination = getAssociatedTokenAddressSync(
     tokenMint,
     user,
-    true,
   );
+  const royaltyAccountAddr = RoyaltyAccount.getKey(programId, user)[0];
+  const ownerRoyaltyAccount = await RoyaltyAccount.retrieve(connection, royaltyAccountAddr);
+
 
   const ix = new claimRewardsInstruction({
     allowZeroRewards: Number(false),
@@ -220,7 +228,10 @@ export const claimRewards = async (
     rewardsDestination,
     centralStateKey,
     tokenMint,
-    TOKEN_PROGRAM_ID
+    ACCESS_NFT_PROGRAM_SIGNER,
+    TOKEN_PROGRAM_ID,
+    royaltyAccountAddr,
+    ownerRoyaltyAccount ? ownerRoyaltyAccount.recipientAta : null,
   );
 
   // we don't require the owner to sign this transaction as users are claiming for themselves
@@ -339,12 +350,17 @@ export const createStakePool = async (
     true,
   );
 
-  const createVaultIx = createAssociatedTokenAccountInstruction(
-    feePayer,
-    vault,
-    stakePool,
-    tokenMint,
-  );
+  const ixs = []
+  const vaultData = await connection.getAccountInfo(vault);
+  if (!vaultData) {
+    const createVaultIx = createAssociatedTokenAccountInstruction(
+      feePayer,
+      vault,
+      stakePool,
+      tokenMint,
+    );
+    ixs.push(createVaultIx);
+  }
 
   const ix = new createStakePoolInstruction({
     owner: owner.toBuffer(),
@@ -358,7 +374,8 @@ export const createStakePool = async (
     centralStateKey,
   );
 
-  return [createVaultIx, ix];
+  ixs.push(ix);
+  return ixs
 };
 
 /**
@@ -560,65 +577,33 @@ export const adminChangeFreezeAuthority = async (
 
 /**
  * This function can be used to create a V2 bond
- * @param connection The Solana RPC connection
  * @param owner The owner of the bond
  * @param feePayer The fee payer of the transaction
- * @param from The owner of the tokens being bonded
  * @param pool The pool to which the tokens are being bonded
- * @param amount The amount of tokens being bonded
  * @param unlockTimestamp The timestamp at which the tokens can be unlocked if ever. If set to null the tokens are locked forever.
  * @param programId The ACCESS program ID
  * @returns ix The instruction to create the bond V2
  */
-export const createBondV2 = async (
-  connection: Connection,
+export const createBondV2 = (
   owner: PublicKey,
   feePayer: PublicKey,
-  from: PublicKey,
   pool: PublicKey,
-  amount: BN,
   unlockTimestamp: BN | null,
   programId = ACCESS_PROGRAM_ID,
 ) => {
   const [centralStateKey] = CentralStateV2.getKey(programId);
-  let tokenMint = ACCESS_MINT;
-  if (programId !== ACCESS_PROGRAM_ID) {
-    tokenMint = (await CentralStateV2.retrieve(connection, centralStateKey)).tokenMint;
-  }
-  const fromAta = getAssociatedTokenAddressSync(
-    tokenMint,
-    from,
-    true,
-  );
   const [bondV2Account] = BondV2Account.getKey(programId, owner, pool, unlockTimestamp);
-  const centralStateVault = getAssociatedTokenAddressSync(
-    tokenMint,
-    centralStateKey,
-    true,
-  );
-  const poolVault = getAssociatedTokenAddressSync(
-    tokenMint,
-    pool,
-    true,
-  );
 
   return new createBondV2Instruction({
-    amount,
     unlockTimestamp,
+    owner: owner.toBuffer(),
   }).getInstruction(
     programId,
-    feePayer,
-    from,
-    fromAta,
-    owner,
     bondV2Account,
-    centralStateKey,
-    centralStateVault,
-    pool,
-    poolVault,
-    tokenMint,
-    TOKEN_PROGRAM_ID,
     SystemProgram.programId,
+    pool,
+    feePayer,
+    centralStateKey,
   );
 };
 
@@ -704,6 +689,8 @@ export const claimBondV2Rewards = async (
     bond.owner,
     true,
   );
+  const royaltyAccountAddr = RoyaltyAccount.getKey(programId, bond.owner)[0];
+  const ownerRoyaltyAccount = await RoyaltyAccount.retrieve(connection, royaltyAccountAddr);
 
   return new claimBondV2RewardsInstruction().getInstruction(
     programId,
@@ -713,7 +700,10 @@ export const claimBondV2Rewards = async (
     rewardsDestination,
     centralStateKey,
     tokenMint,
+    ACCESS_NFT_PROGRAM_SIGNER,
     TOKEN_PROGRAM_ID,
+    royaltyAccountAddr,
+    ownerRoyaltyAccount ? ownerRoyaltyAccount.recipientAta : null,
   );
 };
 
@@ -779,7 +769,6 @@ export const adminSetupFeeSplit = async (
     programId,
     centralState.authority,
     centralStateKey,
-    SystemProgram.programId,
   )
 };
 
@@ -906,3 +895,67 @@ export const adminRenounce = async (
     centralState.authority,
   );
 };
+
+
+/**
+ * This function can be used to create a royalty account
+ * @param feePayer The fee payer of the transaction
+ * @param royaltyPayer The payer of the royalty account
+ * @param royaltyDestination The destination of the royalty account (ATA)
+ * @param royaltyBasisPoints The royalty basis points (i.e. 100 = 1%)
+ * @param expirationDate The expiration date of the royalty account
+ * @param programId The ACCESS program ID
+ * @returns ix The instruction to create the royalty account
+ */
+export const createRoyaltyAccount = (
+  feePayer: PublicKey,
+  royaltyPayer: PublicKey,
+  royaltyDestination: PublicKey,
+  royaltyBasisPoints: number,
+  expirationDate: BN,
+  programId = ACCESS_PROGRAM_ID,
+) => {
+  const [centralStateKey] = CentralStateV2.getKey(programId);
+  const [royaltyAccount] = RoyaltyAccount.getKey(programId, royaltyPayer);
+
+  return new createRoyaltyAccountInstruction({
+    royaltyBasisPoints,
+    expirationDate,
+    royaltyAta: royaltyDestination.toBuffer(),
+  }).getInstruction(
+    programId,
+    royaltyAccount,
+    feePayer,
+    royaltyPayer,
+    SystemProgram.programId,
+    centralStateKey,
+  );
+}
+
+/**
+ * This function can be used to close a royalty account
+ * @param connection The Solana RPC connection
+ * @param royaltyPayer The payer of the royalty account
+ * @param programId The ACCESS program ID
+ * @returns ix The instruction to close the royalty account
+ */
+export const closeRoyaltyAccount = async (
+  connection: Connection,
+  royaltyPayer: PublicKey,
+  programId = ACCESS_PROGRAM_ID,
+) => {
+  const [centralStateKey] = CentralStateV2.getKey(programId);
+  const [royaltyAccountAddr] = RoyaltyAccount.getKey(programId, royaltyPayer);
+  const royaltyAccount = await RoyaltyAccount.retrieve(connection, royaltyAccountAddr);
+  if (!royaltyAccount) {
+    throw new Error(`Royalty account ${royaltyAccountAddr.toBase58()} does not exist`);
+  }
+
+  return new closeRoyaltyAccountInstruction().getInstruction(
+    programId,
+    royaltyAccountAddr,
+    royaltyPayer,
+    royaltyAccount.rentPayer,
+    centralStateKey,
+  );
+}
