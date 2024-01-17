@@ -1,6 +1,6 @@
 {
   "name": "@accessprotocol/js",
-  "version": "2.0.0-alpha.23",
+  "version": "2.0.0-alpha.28",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -61,7 +61,7 @@
     "@solana/spl-token": "^0.3.7",
     "@solana/web3.js": "^1.66.2",
     "bn.js": "^5.2.0",
-    "borsh": "^0.6.0",
+    "borsh": "^0.7.0",
     "bs58": "4.0.1"
   },
   "main": "./dist/cjs/index.js",

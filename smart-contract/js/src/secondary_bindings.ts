@@ -568,11 +568,8 @@ const lockBondV2Account = async (
       unlockDate ? new BN.BN(unlockDate) : null,
       programId,
     ));
-
-    return ixs;
   }
 
-  // If the bondV2 already exists, we add to it
   if (
     bondV2Account &&
     bondV2Account.amount.toNumber() > 0 &&
@@ -712,7 +709,6 @@ export const fullUserRewardClaim = async (
   const userOwnerAccounts = await connection.getProgramAccounts(programId, {
     filters,
   });
-
   const [centralStateKey] = CentralStateV2.getKey(programId);
   const centralState = await CentralStateV2.retrieve(
     connection,
@@ -727,9 +723,8 @@ export const fullUserRewardClaim = async (
     user,
     true,
   );
-
-  const [royaltyAccount] = RoyaltyAccount.getKey(programId, user);
-  const ownerRoyaltyAccount = await RoyaltyAccount.retrieve(connection, user);
+  const [royaltyAccountAddr] = RoyaltyAccount.getKey(programId, user);
+  const ownerRoyaltyAccount = await RoyaltyAccount.retrieve(connection, royaltyAccountAddr);
   const royaltyAta = ownerRoyaltyAccount ? ownerRoyaltyAccount.recipientAta : null;
 
   const claimIxs = userOwnerAccounts
@@ -752,7 +747,7 @@ export const fullUserRewardClaim = async (
               centralState.tokenMint,
               TOKEN_PROGRAM_ID,
               ACCESS_NFT_PROGRAM_SIGNER,
-              royaltyAccount,
+              royaltyAccountAddr,
               royaltyAta
             );
 
@@ -805,7 +800,7 @@ export const fullUserRewardClaim = async (
               centralState.tokenMint,
               TOKEN_PROGRAM_ID,
               ACCESS_NFT_PROGRAM_SIGNER,
-              royaltyAccount,
+              royaltyAccountAddr,
               royaltyAta
             );
           }
