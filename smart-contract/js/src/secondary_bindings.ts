@@ -745,8 +745,8 @@ export const fullUserRewardClaim = async (
               rewardsDestination,
               centralStateKey,
               centralState.tokenMint,
-              TOKEN_PROGRAM_ID,
               ACCESS_NFT_PROGRAM_SIGNER,
+              TOKEN_PROGRAM_ID,
               royaltyAccountAddr,
               royaltyAta
             );
@@ -798,8 +798,8 @@ export const fullUserRewardClaim = async (
               rewardsDestination,
               centralStateKey,
               centralState.tokenMint,
-              TOKEN_PROGRAM_ID,
               ACCESS_NFT_PROGRAM_SIGNER,
+              TOKEN_PROGRAM_ID,
               royaltyAccountAddr,
               royaltyAta
             );
