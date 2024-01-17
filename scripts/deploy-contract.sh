@@ -15,14 +15,14 @@ then
 fi
 cargo build-bpf --features ${FEATURES}
 
-PROGRAM_KEYPAIR=${PROGRAM_KEYPAIR:-"$pwd/artifacts/program.json"}
+PROGRAM_ID=${PROGRAM_ID:-"$pwd/artifacts/program.json"}
 echo "Check program keypair file exists..."
-if test -f "$PROGRAM_KEYPAIR"
+if test -f "$PROGRAM_ID"
 then
-  echo "Program ID keypair exists at: $PROGRAM_KEYPAIR"
+  echo "Program ID keypair exists at: $PROGRAM_ID"
 else
   echo "Creating program keypair..."
-  solana-keygen new --outfile $PROGRAM_KEYPAIR --no-bip39-passphrase
+  solana-keygen new --outfile $PROGRAM_ID --no-bip39-passphrase
 fi
 
 AUTHORITY_KEYPAIR=${AUTHORITY_KEYPAIR:-"$pwd/artifacts/authority.json"}
@@ -68,13 +68,11 @@ else
 fi
 
 echo "Deploying contract..."
-program_pubkey=$(solana-keygen pubkey ${PROGRAM_KEYPAIR})
-echo "Program pubkey: $program_pubkey"
 authority_pubkey=$(solana-keygen pubkey ${AUTHORITY_KEYPAIR})
 echo "Authority pubkey: $authority_pubkey"
 solana program deploy ./target/deploy/access_protocol.so \
  -k ${AUTHORITY_KEYPAIR} \
- --program-id ${PROGRAM_KEYPAIR} \
+ --program-id ${PROGRAM_ID} \
  --upgrade-authority ${AUTHORITY_KEYPAIR} \
  -u ${NETWORK}
 
