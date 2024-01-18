@@ -714,7 +714,7 @@ export class RoyaltyAccount {
   royaltyPayer: PublicKey;
   recipientAta: PublicKey;
   expirationDate: BN;
-  roayltyBasisPoints: BN;
+  royaltyBasisPoints: number;
 
   static schema: Schema = new Map<any, any>([
     [
@@ -727,7 +727,7 @@ export class RoyaltyAccount {
           ["royaltyPayer", [32]],
           ["recipientAta", [32]],
           ["expirationDate", "u64"],
-          ["roayltyBasisPoints", "u16"],
+          ["royaltyBasisPoints", "u16"],
         ],
       },
     ],
@@ -739,14 +739,14 @@ export class RoyaltyAccount {
     royaltyPayer: Uint8Array;
     recipientAta: Uint8Array;
     expirationDate: BN;
-    royaltyBasisPoints: BN;
+    royaltyBasisPoints: number;
   }) {
     this.tag = obj.tag;
     this.rentPayer = new PublicKey(obj.rentPayer);
     this.royaltyPayer = new PublicKey(obj.royaltyPayer);
     this.recipientAta = new PublicKey(obj.recipientAta);
     this.expirationDate = obj.expirationDate;
-    this.roayltyBasisPoints = obj.royaltyBasisPoints;
+    this.royaltyBasisPoints = obj.royaltyBasisPoints;
   }
 
   static deserialize(data: Buffer) {
