@@ -363,12 +363,12 @@ export const createStakePool = async (
   }
 
   const ix = new createStakePoolInstruction({
-    owner: owner.toBuffer(),
     minimumStakeAmount: new BN.BN(minimumStakeAmount),
   }).getInstruction(
     programId,
     stakePool,
     SystemProgram.programId,
+    owner,
     feePayer,
     vault,
     centralStateKey,

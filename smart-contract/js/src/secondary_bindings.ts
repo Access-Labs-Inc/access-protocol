@@ -205,6 +205,51 @@ export const getAllInactiveStakePools = async (
   });
 };
 
+
+/**
+ * This function can be used to retrieve the Royalty accounts of all people paying royalties to the recipient
+ * @param connection The Solana RPC connection
+ * @param recipient The recipient's public key
+ * @param currentTimestamp The current Solana timestamp
+ * @param programId The program ID
+ * @returns
+ */
+export const getActiveRoyaltyPayers = async (
+  connection: Connection,
+  recipient: PublicKey,
+  currentTimestamp: number,
+  programId: PublicKey
+) => {
+  let tokenMint = ACCESS_MINT;
+  if (programId !== ACCESS_PROGRAM_ID) {
+    const centralStateKey = CentralStateV2.getKey(programId)[0];
+    const centralState = await CentralStateV2.retrieve(connection, centralStateKey);
+    tokenMint = centralState.tokenMint;
+  }
+  const ata = getAssociatedTokenAddressSync(tokenMint, recipient);
+  const filters = [
+    {
+      memcmp: {
+        offset: 0,
+        bytes: "E",
+      },
+    },
+    {
+      memcmp: {
+        offset: 1 + 2* 32,
+        bytes: ata.toBase58(),
+      },
+    },
+  ];
+  return (await connection.getProgramAccounts(programId, {
+    filters,
+  })).map(e => RoyaltyAccount.deserialize(e.account.data))
+    .filter(e =>
+      e.expirationDate.toNumber() > currentTimestamp
+    );
+};
+
+
 /**
  * This function can be used to retrieve all the inactive bonds
  * @param connection The Solana RPC connection

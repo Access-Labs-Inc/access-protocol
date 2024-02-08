@@ -293,16 +293,16 @@ async fn functional_10s() {
         create_stake_pool::Accounts {
             stake_pool_account: &stake_pool_key,
             system_program: &system_program::ID,
+            owner: &stake_pool_owner.pubkey(),
             fee_payer: &prg_test_ctx.payer.pubkey(),
             vault: &pool_vault,
             central_state: &central_state,
         },
         create_stake_pool::Params {
-            owner: stake_pool_owner.pubkey(),
             minimum_stake_amount: 10_000_000,
         },
     );
-    sign_send_instructions(&mut prg_test_ctx, vec![create_stake_pool_ix], vec![])
+    sign_send_instructions(&mut prg_test_ctx, vec![create_stake_pool_ix], vec![&stake_pool_owner])
         .await
         .unwrap();
 

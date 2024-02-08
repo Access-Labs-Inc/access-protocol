@@ -12,7 +12,7 @@ async fn can_change_minimum_stake_amount() {
     // Create users
     let stake_pool_owner = tr.create_user_with_ata().await.unwrap();
     // Create stake pool
-    tr.create_pool(&stake_pool_owner.pubkey(), 10000)
+    tr.create_pool(&stake_pool_owner, 10000)
         .await
         .unwrap();
     // Activate stake pool
@@ -35,7 +35,7 @@ async fn can_change_stakers_part() {
     // Create users
     let stake_pool_owner = tr.create_user_with_ata().await.unwrap();
     // Create stake pool
-    tr.create_pool(&stake_pool_owner.pubkey(), 10000)
+    tr.create_pool(&stake_pool_owner, 10000)
         .await
         .unwrap();
     // Activate stake pool
