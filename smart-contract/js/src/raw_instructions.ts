@@ -2123,7 +2123,6 @@ export class unstakeInstruction implements TaggedInstruction {
 
 export class createStakePoolInstruction implements TaggedInstruction {
   tag: number;
-  owner: Uint8Array;
   minimumStakeAmount: BN;
   static schema: Schema = new Map([
     [
@@ -2132,7 +2131,6 @@ export class createStakePoolInstruction implements TaggedInstruction {
         kind: "struct",
         fields: [
           ["tag", "u8"],
-          ["owner", [32]],
           ["minimumStakeAmount", "u64"],
         ],
       },
@@ -2140,11 +2138,9 @@ export class createStakePoolInstruction implements TaggedInstruction {
   ]);
 
   constructor(obj: {
-    owner: Uint8Array;
     minimumStakeAmount: BN;
   }) {
     this.tag = 1;
-    this.owner = obj.owner;
     this.minimumStakeAmount = obj.minimumStakeAmount;
   }
 
@@ -2156,6 +2152,7 @@ export class createStakePoolInstruction implements TaggedInstruction {
     programId: PublicKey,
     stakePoolAccount: PublicKey,
     systemProgram: PublicKey,
+    owner: PublicKey,
     feePayer: PublicKey,
     vault: PublicKey,
     centralState: PublicKey,
@@ -2170,6 +2167,11 @@ export class createStakePoolInstruction implements TaggedInstruction {
     keys.push({
       pubkey: systemProgram,
       isSigner: false,
+      isWritable: false,
+    });
+    keys.push({
+      pubkey: owner,
+      isSigner: true,
       isWritable: false,
     });
     keys.push({

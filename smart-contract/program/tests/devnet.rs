@@ -102,17 +102,17 @@ fn devnet() {
             create_stake_pool::Accounts {
                 stake_pool_account: &pool_key,
                 system_program: &system_program::ID,
+                owner: &pool_keypair.pubkey(),
                 fee_payer: &authority_keypair.pubkey(),
                 vault: &pool_vault,
                 central_state: &central_state_key,
             },
             create_stake_pool::Params {
-                owner: pool_keypair.pubkey(),
                 minimum_stake_amount: 50_000_000,
             },
         );
 
-        let signers = vec![&authority_keypair];
+        let signers = vec![&authority_keypair, &pool_keypair];
         let mut transaction = Transaction::new_with_payer(&[create_stake_pool_ix], Some(&authority_keypair.pubkey()));
         let recent_blockhash = rpc_client.get_latest_blockhash().unwrap();
         transaction.sign(&signers, recent_blockhash);
@@ -354,7 +354,6 @@ fn set_fee_recipients(
         admin_setup_fee_split::Accounts {
             authority: &authority.pubkey(),
             central_state: &central_state_key,
-            system_program: &system_program::ID,
         },
         admin_setup_fee_split::Params { recipients },
     );

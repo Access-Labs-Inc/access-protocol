@@ -17,7 +17,7 @@ async fn fee_split() {
     assert_eq!(token_stats.supply, 100_000_000_000_000_000);
 
     let pool_owner = tr.create_user_with_ata().await.unwrap();
-    tr.create_pool(&pool_owner.pubkey(), 200_000_000)
+    tr.create_pool(&pool_owner, 200_000_000)
         .await
         .unwrap();
     tr.activate_stake_pool(&pool_owner.pubkey()).await.unwrap();

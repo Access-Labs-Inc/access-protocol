@@ -1,28 +1,26 @@
 //! Claim rewards of a bond V2  from the Access NFT Program
+use crate::error::AccessError;
+use crate::state::BondV2Account;
+use crate::state::{StakePool, RoyaltyAccount, Tag,ACCESS_NFT_PROGRAM_SIGNER};
+use crate::utils::{
+    calc_reward_fp32, check_account_key, check_account_owner,
+    check_signer, retrieve_royalty_account
+};
 use std::convert::TryInto;
-
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
+use solana_program::program::invoke_signed;
 use solana_program::{
-    account_info::{AccountInfo, next_account_info},
+    account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
     msg,
     program_error::ProgramError,
     program_pack::Pack,
     pubkey::Pubkey,
 };
-use solana_program::program::invoke_signed;
 use spl_token::{instruction::mint_to, state::Account};
-
-use crate::error::AccessError;
 use crate::instruction::ProgramInstruction::ClaimBondV2Rewards;
-use crate::state::{ACCESS_NFT_PROGRAM_SIGNER, RoyaltyAccount, StakePool, Tag};
-use crate::state::BondV2Account;
-use crate::state::CentralStateV2;
-use crate::utils::{
-    calc_reward_fp32, check_account_key, check_account_owner,
-    check_signer, retrieve_royalty_account,
-};
+use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `claim_bond_v2_rewards` instruction
@@ -186,12 +184,12 @@ pub fn process_claim_bond_v2_rewards(
         true,
         false,
     )?
-        // Multiply by the staker shares of the total pool
-        .checked_mul(bond_v2_account.amount as u128)
-        .map(|r| ((r >> 31) + 1) >> 1)
+    // Multiply by the staker shares of the total pool
+    .checked_mul(bond_v2_account.amount as u128)
+    .map(|r| ((r >> 31) + 1) >> 1)
         .ok_or(AccessError::Overflow)?
         .try_into()
-        .map_err(|_| AccessError::Overflow)?;
+        .map_err(|_|AccessError::Overflow)?;
 
     // split the rewards if there is a royalty account
     let mut royalty_amount = 0;

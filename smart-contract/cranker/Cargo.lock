@@ -31,7 +31,7 @@ dependencies = [
 
 [[package]]
 name = "access-protocol"
-version = "0.7.12"
+version = "0.7.13"
 dependencies = [
  "bonfida-utils",
  "borsh 0.10.3",

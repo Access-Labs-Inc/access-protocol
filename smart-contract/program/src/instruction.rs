@@ -32,6 +32,7 @@ pub enum ProgramInstruction {
     /// | -------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The stake pool account       |
     /// | 1     | ❌        | ❌      | The system program account   |
+    /// | 1     | ❌        | ✅      | Pool owner                   |
     /// | 2     | ✅        | ✅      | The fee payer account        |
     /// | 3     | ❌        | ❌      | The stake pool vault account |
     /// | 4     | ❌        | ❌      | The central state account    |

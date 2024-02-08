@@ -49,7 +49,7 @@ async fn program_freeze() {
     println!("Mint fee: {}", mint_fee);
 
     // Create stake pool on day 1
-    tr.create_pool(&stake_pool_owner.pubkey(), 10_000)
+    tr.create_pool(&stake_pool_owner, 10_000)
         .await
         .unwrap();
 

@@ -19,7 +19,7 @@ async fn repeated_claim() {
     tr.mint(&staker.pubkey(), 10_200).await.unwrap();
 
     // Create stake pool on day 1 12:00
-    tr.create_pool(&stake_pool_owner.pubkey(), 1000)
+    tr.create_pool(&stake_pool_owner, 1000)
         .await
         .unwrap();
 
@@ -37,7 +37,7 @@ async fn repeated_claim() {
     tr.sleep(3600).await.unwrap();
 
     // Create stake pool 2 on day 1 13:00
-    tr.create_pool(&stake_pool2_owner.pubkey(), 1000)
+    tr.create_pool(&stake_pool2_owner, 1000)
         .await
         .unwrap();
 

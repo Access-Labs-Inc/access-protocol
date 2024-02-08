@@ -350,10 +350,10 @@ impl TestRunner {
 
     pub async fn create_pool(
         &mut self,
-        pool_owner: &Pubkey,
+        pool_owner: &Keypair,
         minimum_stake_amount: u64,
     ) -> Result<(), BanksClientError> {
-        let stake_pool_key = self.get_pool_pda(pool_owner);
+        let stake_pool_key = self.get_pool_pda(&pool_owner.pubkey());
         let pool_vault = get_associated_token_address(&stake_pool_key, &self.mint);
         let create_ata_pool_vault_ix = create_associated_token_account(
             &self.prg_test_ctx.payer.pubkey(),
@@ -372,17 +372,17 @@ impl TestRunner {
             self.program_id,
             create_stake_pool::Accounts {
                 stake_pool_account: &stake_pool_key,
+                owner: &pool_owner.pubkey(),
                 system_program: &system_program::ID,
                 fee_payer: &self.prg_test_ctx.payer.pubkey(),
                 vault: &pool_vault,
                 central_state: &self.central_state,
             },
             create_stake_pool::Params {
-                owner: *pool_owner,
                 minimum_stake_amount,
             },
         );
-        sign_send_instructions(&mut self.prg_test_ctx, vec![create_stake_pool_ix], vec![]).await
+        sign_send_instructions(&mut self.prg_test_ctx, vec![create_stake_pool_ix], vec![&pool_owner]).await
     }
 
     pub async fn activate_stake_pool(
@@ -1319,7 +1319,6 @@ impl TestRunner {
             admin_setup_fee_split::Accounts {
                 authority: &self.prg_test_ctx.payer.pubkey(),
                 central_state: &self.central_state,
-                system_program: &system_program::ID,
             },
             admin_setup_fee_split::Params { recipients },
         );

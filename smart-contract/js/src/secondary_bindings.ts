@@ -210,6 +210,7 @@ export const getAllInactiveStakePools = async (
  * This function can be used to retrieve the Royalty accounts of all people paying royalties to the recipient
  * @param connection The Solana RPC connection
  * @param recipient The recipient's public key
+ * @param currentTimestamp The current Solana timestamp
  * @param programId The program ID
  * @returns
  */
@@ -233,12 +234,12 @@ export const getActiveRoyaltyPayers = async (
         bytes: "E",
       },
     },
-    // {
-    //   memcmp: {
-    //     offset: 1 + 2* 32,
-    //     bytes: ata.toBase58(),
-    //   },
-    // },
+    {
+      memcmp: {
+        offset: 1 + 2* 32,
+        bytes: ata.toBase58(),
+      },
+    },
   ];
   return (await connection.getProgramAccounts(programId, {
     filters,

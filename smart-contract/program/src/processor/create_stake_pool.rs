@@ -25,8 +25,6 @@ use crate::state:: CentralStateV2;
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `create_stake_pool` instruction
 pub struct Params {
-    // Owner of the stake pool
-    pub owner: Pubkey,
     // Minimum amount to stake
     pub minimum_stake_amount: u64,
 }
@@ -40,6 +38,10 @@ pub struct Accounts<'a, T> {
 
     /// The system program account
     pub system_program: &'a T,
+
+    /// The pool owner
+    #[cons(signer)]
+    pub owner: &'a T,
 
     /// The fee payer account
     #[cons(writable, signer)]
@@ -61,6 +63,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         let accounts = Accounts {
             stake_pool_account: next_account_info(accounts_iter)?,
             system_program: next_account_info(accounts_iter)?,
+            owner: next_account_info(accounts_iter)?,
             fee_payer: next_account_info(accounts_iter)?,
             vault: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
@@ -80,6 +83,11 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             &system_program::ID,
             AccessError::WrongOwner,
         )?;
+        check_account_owner(
+            accounts.vault,
+            &spl_token::ID,
+            AccessError::WrongTokenAccountOwner,
+        )?;
 
         Ok(accounts)
     }
@@ -94,7 +102,7 @@ pub fn process_create_stake_pool(
     let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
     central_state.assert_instruction_allowed(&CreateStakePool)?;
 
-    let (derived_stake_key, nonce) = StakePool::find_key(&params.owner, program_id);
+    let (derived_stake_key, nonce) = StakePool::find_key(&accounts.owner.key, program_id);
 
     check_account_key(
         accounts.stake_pool_account,
@@ -105,7 +113,7 @@ pub fn process_create_stake_pool(
     assert_valid_vault(accounts.vault, &derived_stake_key)?;
 
     let stake_pool_header = StakePoolHeader::new(
-        params.owner,
+        *accounts.owner.key,
         nonce,
         *accounts.vault.key,
         params.minimum_stake_amount,
@@ -116,7 +124,7 @@ pub fn process_create_stake_pool(
         accounts.system_program,
         accounts.fee_payer,
         accounts.stake_pool_account,
-        &[StakePoolHeader::SEED, &params.owner.to_bytes(), &[nonce]],
+        &[StakePoolHeader::SEED, &accounts.owner.key.to_bytes(), &[nonce]],
         stake_pool_header.borsh_len() + size_of::<RewardsTuple>() * STAKE_BUFFER_LEN as usize,
     )?;
 

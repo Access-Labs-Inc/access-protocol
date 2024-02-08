@@ -40,7 +40,7 @@ async fn v2_bonds() {
         // Mint to staker
         tr.mint(&bond_creator.pubkey(), 100_000).await.unwrap();
         // Create stake pool
-        tr.create_pool(&pool_owner.pubkey(), 10_000)
+        tr.create_pool(&pool_owner, 10_000)
             .await
             .unwrap();
         // Activate stake pool
@@ -228,7 +228,7 @@ async fn v2_bonds() {
         // Mint to staker
         tr.mint(&bond_creator.pubkey(), 100_000).await.unwrap();
         // Create stake pool
-        tr.create_pool(&pool_owner.pubkey(), 10_000)
+        tr.create_pool(&pool_owner, 10_000)
             .await
             .unwrap();
         // Activate stake pool
