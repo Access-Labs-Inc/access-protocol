@@ -205,6 +205,50 @@ export const getAllInactiveStakePools = async (
   });
 };
 
+
+/**
+ * This function can be used to retrieve the Royalty accounts of all people paying royalties to the recipient
+ * @param connection The Solana RPC connection
+ * @param recipient The recipient's public key
+ * @param programId The program ID
+ * @returns
+ */
+export const getActiveRoyaltyPayers = async (
+  connection: Connection,
+  recipient: PublicKey,
+  currentTimestamp: number,
+  programId: PublicKey
+) => {
+  let tokenMint = ACCESS_MINT;
+  if (programId !== ACCESS_PROGRAM_ID) {
+    const centralStateKey = CentralStateV2.getKey(programId)[0];
+    const centralState = await CentralStateV2.retrieve(connection, centralStateKey);
+    tokenMint = centralState.tokenMint;
+  }
+  const ata = getAssociatedTokenAddressSync(tokenMint, recipient);
+  const filters = [
+    {
+      memcmp: {
+        offset: 0,
+        bytes: "E",
+      },
+    },
+    // {
+    //   memcmp: {
+    //     offset: 1 + 2* 32,
+    //     bytes: ata.toBase58(),
+    //   },
+    // },
+  ];
+  return (await connection.getProgramAccounts(programId, {
+    filters,
+  })).map(e => RoyaltyAccount.deserialize(e.account.data))
+    .filter(e =>
+      e.expirationDate.toNumber() > currentTimestamp
+    );
+};
+
+
 /**
  * This function can be used to retrieve all the inactive bonds
  * @param connection The Solana RPC connection
@@ -568,11 +612,8 @@ const lockBondV2Account = async (
       unlockDate ? new BN.BN(unlockDate) : null,
       programId,
     ));
-
-    return ixs;
   }
 
-  // If the bondV2 already exists, we add to it
   if (
     bondV2Account &&
     bondV2Account.amount.toNumber() > 0 &&
@@ -712,7 +753,6 @@ export const fullUserRewardClaim = async (
   const userOwnerAccounts = await connection.getProgramAccounts(programId, {
     filters,
   });
-
   const [centralStateKey] = CentralStateV2.getKey(programId);
   const centralState = await CentralStateV2.retrieve(
     connection,
@@ -727,9 +767,8 @@ export const fullUserRewardClaim = async (
     user,
     true,
   );
-
-  const [royaltyAccount] = RoyaltyAccount.getKey(programId, user);
-  const ownerRoyaltyAccount = await RoyaltyAccount.retrieve(connection, user);
+  const [royaltyAccountAddr] = RoyaltyAccount.getKey(programId, user);
+  const ownerRoyaltyAccount = await RoyaltyAccount.retrieve(connection, royaltyAccountAddr);
   const royaltyAta = ownerRoyaltyAccount ? ownerRoyaltyAccount.recipientAta : null;
 
   const claimIxs = userOwnerAccounts
@@ -750,9 +789,9 @@ export const fullUserRewardClaim = async (
               rewardsDestination,
               centralStateKey,
               centralState.tokenMint,
-              TOKEN_PROGRAM_ID,
               ACCESS_NFT_PROGRAM_SIGNER,
-              royaltyAccount,
+              TOKEN_PROGRAM_ID,
+              royaltyAccountAddr,
               royaltyAta
             );
 
@@ -803,9 +842,9 @@ export const fullUserRewardClaim = async (
               rewardsDestination,
               centralStateKey,
               centralState.tokenMint,
-              TOKEN_PROGRAM_ID,
               ACCESS_NFT_PROGRAM_SIGNER,
-              royaltyAccount,
+              TOKEN_PROGRAM_ID,
+              royaltyAccountAddr,
               royaltyAta
             );
           }
