@@ -25,7 +25,6 @@ use crate::utils::is_admin_renouncable_instruction;
 pub const ACCESS_MINT: Pubkey =
     solana_program::pubkey!("5MAYDfq5yxtudAhtfyuMBuHZjgAbaS9tbEyEQYAhDS5y");
 
-// todo fill in the production one
 /// ACCESS NFT program address
 pub const ACCESS_NFT_PROGRAM_SIGNER: Pubkey =
     solana_program::pubkey!("AF7bqw2GjPPX25nWNRYtDpNALMp9B4D9FEaFekur2LEr");
