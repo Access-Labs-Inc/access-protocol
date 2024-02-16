@@ -648,6 +648,7 @@ const lockBondV2Account = async (
  * @param user The user's pubkey
  * @param pool The pool's pubkey
  * @param amount The amount to unlock in ACS
+ * @param currentTimestamp The current Solana timestamp
  * @param programId The program ID
  * @param centralState The central state, if already known (otherwise retrieved from the blockchain)
  * @param poolData The pool data, if already known (otherwise retrieved from the blockchain)
@@ -658,6 +659,7 @@ export const fullUnlock = async (
   user: PublicKey,
   pool: PublicKey,
   amount: number,
+  currentTimestamp: number,
   programId = ACCESS_PROGRAM_ID,
   centralState?: CentralStateV2,
   poolData?: StakePool,
@@ -687,7 +689,7 @@ export const fullUnlock = async (
     centralState.lastSnapshotOffset.toNumber() > poolData.currentDayIdx ||
     centralState.creationTime.toNumber() +
     86400 * (poolData.currentDayIdx + 1) <
-    Date.now() / 1000
+    currentTimestamp
   ) {
     ixs.push(crank(pool, programId));
     hasCranked = true;
