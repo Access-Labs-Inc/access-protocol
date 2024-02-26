@@ -16,7 +16,6 @@
     "build": "yarn clean && yarn build:esm && yarn build:cjs && ./fixup.sh",
     "build:esm": "tsc -p ./tsconfig.esm.json",
     "build:cjs": "tsc -p ./tsconfig.cjs.json",
-    "rename-mjs": "yarn renamer --find \"/\\.js/i\" --replace \".mjs\" --force \"./dist/esm/*\"",
     "prepack": "yarn build",
     "lint": "yarn pretty && eslint .",
     "lint:fix": "yarn pretty:fix && eslint . --fix",
