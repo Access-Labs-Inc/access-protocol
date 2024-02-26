@@ -1,7 +1,6 @@
 use num_derive::FromPrimitive;
-use thiserror::Error;
-
 use solana_program::{decode_error::DecodeError, program_error::ProgramError};
+use thiserror::Error;
 
 #[derive(Clone, Debug, Error, FromPrimitive)]
 pub enum AccessError {
@@ -29,7 +28,7 @@ pub enum AccessError {
     StakeAccountOwnerMustSign,
     #[error("Wrong SPL token program ID")]
     WrongSplTokenProgramId,
-    #[error("Source token account must be owned by SPL Token")]
+    #[error("Token account must be owned by SPL Token")]
     WrongTokenAccountOwner,
     #[error("Bond account must be owned by the program")]
     WrongBondAccountOwner,
@@ -75,6 +74,8 @@ pub enum AccessError {
     CannotUnstake,
     #[error("Invalid unstake amount")]
     InvalidUnstakeAmount,
+    #[error("Invalid amount")]
+    InvalidAmount,
     #[error("Inactive stake pool not allowed")]
     InactiveStakePoolNotAllowed,
     #[error("Active stake pool not allowed")]
@@ -93,6 +94,46 @@ pub enum AccessError {
     ForbiddenUnlockPeriodZero,
     #[error("Wrong MPL metadata program")]
     WrongMplProgram,
+    #[error("Unsupported instruction")]
+    UnsupportedInstruction,
+    #[error("Deprecated instruction")]
+    DeprecatedInstruction,
+    #[error("Too many recipients")]
+    TooManyRecipients,
+    #[error("No recipients")]
+    NoRecipients,
+    #[error("Invalid percentages")]
+    InvalidPercentages,
+    #[error("Invalid token account")]
+    InvalidTokenAccount,
+    #[error("Nonzero balance")]
+    NonzeroBallance,
+    #[error("Delay too long")]
+    DelayTooLong,
+    #[error("Frozen instruction")]
+    FrozenInstruction,
+    #[error("Invalid renounce params")]
+    InvalidRenounceParams,
+    #[error("Already renounced")]
+    AlreadyRenounced,
+    #[error("Royalty account mismatch")]
+    RoyaltyAccountMismatch,
+    #[error("Royalty ata mismatch")]
+    RoyaltyAtaMismatch,
+    #[error("Wrong royalty account owner")]
+    WrongRoyaltyAccountOwner,
+    #[error("Owner must sign")]
+    OwnerMustSign,
+    #[error("Royalty ata not provided")]
+    RoyaltyAtaNotProvided,
+    #[error("Royalty ata not deterministic")]
+    RoyaltyAtaNotDeterministic,
+    #[error("Wrong sysvar instructions id")]
+    WrongSysvarInstructionsId,
+    #[error("Wrong Access cnft authority")]
+    WrongAccessCnftAuthority,
+    #[error("Access cnft authority must sign")]
+    AccessCnftAuthorityMustSign,
 }
 
 impl From<AccessError> for ProgramError {

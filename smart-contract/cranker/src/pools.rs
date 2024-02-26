@@ -1,6 +1,7 @@
-use crate::{error::ProgramError, utils::current_time};
+use borsh::BorshDeserialize;
+
 use {
-    access_protocol::state::{Tag, SECONDS_IN_DAY},
+    access_protocol::state::{SECONDS_IN_DAY, Tag},
     solana_account_decoder::UiAccountEncoding,
     solana_client::{
         rpc_client::RpcClient,
@@ -11,8 +12,9 @@ use {
     solana_sdk::{account::Account, commitment_config::CommitmentConfig},
 };
 use access_protocol::state::StakePoolHeader;
+
+use crate::{error::ProgramError, utils::current_time};
 use crate::settings::PROGRAM_ID;
-use borsh::BorshDeserialize;
 
 fn filter_pool_factory(contract_creation_timestamp: u64) -> impl Fn(&(Pubkey, StakePoolHeader)) -> bool {
     move |x| {
@@ -33,7 +35,7 @@ pub fn get_all_pools(connection: RpcClient, contract_creation_timestamp: u64) ->
     let bytes = Tag::StakePool as u8 + 1;
     let memcmp = RpcFilterType::Memcmp(Memcmp {
         offset: 0,
-        bytes: MemcmpEncodedBytes::Base64(bytes.to_string()),
+        bytes: MemcmpEncodedBytes::Base58(bytes.to_string()),
         encoding: None,
     });
 

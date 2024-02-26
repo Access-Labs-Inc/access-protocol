@@ -8,17 +8,16 @@ use solana_program::{
     pubkey::Pubkey,
     system_program,
 };
+use crate::state:: CentralStateV2;
 
 use crate::error::AccessError;
-use crate::state::{BondAccount, StakePool, BOND_SIGNER_THRESHOLD};
-use crate::utils::{
-    assert_uninitialized, check_account_key, check_account_owner,
-    check_signer,
-};
+use crate::state::{BondAccount, StakePool, BOND_SIGNER_THRESHOLD, V1_INSTRUCTIONS_ALLOWED};
 #[cfg(not(feature = "no-bond-signer"))]
-use crate::utils::{assert_authorized_seller};
+use crate::utils::assert_authorized_seller;
+use crate::utils::{assert_uninitialized, check_account_key, check_account_owner, check_signer};
 use crate::{cpi::Cpi, state::Tag};
 use bonfida_utils::{BorshSize, InstructionsAccount};
+use crate::instruction::ProgramInstruction::CreateBond;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `create_bond` instruction
@@ -63,6 +62,9 @@ pub struct Accounts<'a, T> {
     /// The fee account
     #[cons(writable, signer)]
     pub fee_payer: &'a T,
+
+    /// The central state account
+    pub central_state: &'a T,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -77,6 +79,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             stake_pool: next_account_info(accounts_iter)?,
             system_program: next_account_info(accounts_iter)?,
             fee_payer: next_account_info(accounts_iter)?,
+            central_state: next_account_info(accounts_iter)?,
         };
 
         // Check keys
@@ -87,6 +90,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         )?;
 
         // Check ownership
+        check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
         check_account_owner(accounts.stake_pool, program_id, AccessError::WrongOwner)?;
 
         // Check signer
@@ -101,7 +105,13 @@ pub fn process_create_bond(
     accounts: &[AccountInfo],
     params: Params,
 ) -> ProgramResult {
+    if !V1_INSTRUCTIONS_ALLOWED {
+        return Err(AccessError::DeprecatedInstruction.into());
+    }
+
     let accounts = Accounts::parse(accounts, program_id)?;
+    let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(&CreateBond)?;
 
     let (derived_key, nonce) =
         BondAccount::create_key(&params.buyer, params.total_amount_sold, program_id);

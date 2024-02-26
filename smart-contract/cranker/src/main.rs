@@ -3,6 +3,7 @@ mod error;
 mod pools;
 mod settings;
 mod utils;
+mod distribute_fees;
 
 use solana_client::rpc_client::RpcClient;
 
@@ -11,7 +12,7 @@ use {
     std::{thread::sleep, time::Duration},
     tokio::{runtime::Runtime, task},
 };
-use access_protocol::state::CentralState;
+use access_protocol::state::{CentralStateV2};
 use crate::settings::PROGRAM_ID;
 use borsh::de::BorshDeserialize;
 
@@ -28,15 +29,19 @@ fn process() -> Result<(), error::ProgramError> {
     let acc = connection
         .get_account(&central_key)
         .unwrap();
-    let central_state = CentralState::deserialize(&mut &acc.data[..]).unwrap();
+    let central_state = CentralStateV2::deserialize(&mut &acc.data[..]).unwrap();
 
     let all_pools = pools::get_all_pools(connection, central_state.creation_time as u64)?;
-    let mut join_handles = Vec::with_capacity(all_pools.len());
+    let mut join_handles = Vec::with_capacity(all_pools.len() + 1);
 
     for pool in all_pools {
         let handle = task::spawn(async move { crank::crank_pool(pool, central_key).await });
         join_handles.push(handle)
     }
+
+    join_handles.push(task::spawn(async move {  if let Err(e) = distribute_fees::distribute_fees(central_key).await {
+        println!("Error distributing fees: {}", e);
+    }}));
 
     for t in join_handles {
         rt.block_on(t).unwrap();

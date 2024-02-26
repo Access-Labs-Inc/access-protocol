@@ -10,11 +10,13 @@ use solana_program::{
     program_error::ProgramError,
     pubkey::Pubkey,
 };
-use spl_math::{precise_number::PreciseNumber};
+use spl_math::precise_number::PreciseNumber;
 
 use crate::error::AccessError;
-use crate::state::{CentralState, RewardsTuple, StakePool, Tag};
+use crate::instruction::ProgramInstruction::Crank;
+use crate::state::{RewardsTuple, StakePool, Tag};
 use crate::utils::check_account_owner;
+use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `crank` instruction
@@ -27,7 +29,7 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub stake_pool: &'a T,
 
-    /// The account of the central state
+    /// The central state account
     #[cons(writable)]
     pub central_state: &'a T,
 }
@@ -63,7 +65,8 @@ pub fn process_crank(
     let accounts = Accounts::parse(accounts, program_id)?;
 
     let mut stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
-    let mut central_state = CentralState::from_account_info(accounts.central_state)?;
+    let mut central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(&Crank)?;
 
     let current_offset = central_state.get_current_offset()?;
     // check if we need to do a system wide snapshot
@@ -90,7 +93,7 @@ pub fn process_crank(
 
     let mut stakers_reward = 0;
     if total_staked_snapshot != 0 {
-        // stakers_reward = [(pool_total_staked << 32) * inflation * stakers_part] / (100 * total_staked * pool_total_staked)
+        // Stakers rewards per ACS staked
         stakers_reward = ((central_state.daily_inflation as u128) << 32)
             .checked_mul(stake_pool.header.stakers_part as u128)
             .ok_or(AccessError::Overflow)?
@@ -102,23 +105,29 @@ pub fn process_crank(
 
     msg!("Stakers reward {}", stakers_reward);
 
-    let precise_total_staked_snapshot = PreciseNumber::new(total_staked_snapshot.checked_shl(32)
-        .ok_or(AccessError::Overflow)?)
-        .ok_or(AccessError::Overflow)?;
-    let precise_daily_inflation = PreciseNumber::new(central_state.daily_inflation as u128)
-        .ok_or(AccessError::Overflow)?;
-    let precise_system_staked_snapshot = PreciseNumber::new(central_state.total_staked_snapshot as u128)
-        .ok_or(AccessError::Overflow)?;
+    let precise_total_staked_snapshot = PreciseNumber::new(
+        total_staked_snapshot
+            .checked_shl(32)
+            .ok_or(AccessError::Overflow)?,
+    )
+    .ok_or(AccessError::Overflow)?;
+    let precise_daily_inflation =
+        PreciseNumber::new(central_state.daily_inflation as u128).ok_or(AccessError::Overflow)?;
+    let precise_system_staked_snapshot =
+        PreciseNumber::new(central_state.total_staked_snapshot as u128)
+            .ok_or(AccessError::Overflow)?;
 
-    // pool_rewards = [(pool_total_staked << 32) * inflation * (100 - stakers_part)] / (100 * total_staked)
+    // Total pool reward
     let precise_pool_reward = (precise_total_staked_snapshot)
         .checked_mul(&precise_daily_inflation)
         .ok_or(AccessError::Overflow)?
         .checked_mul(
-            &PreciseNumber::new(100u64
-                .checked_sub(stake_pool.header.stakers_part)
-                .ok_or(AccessError::Overflow)? as u128,
-            ).ok_or(AccessError::Overflow)?,
+            &PreciseNumber::new(
+                100u64
+                    .checked_sub(stake_pool.header.stakers_part)
+                    .ok_or(AccessError::Overflow)? as u128,
+            )
+            .ok_or(AccessError::Overflow)?,
         )
         .ok_or(AccessError::Overflow)?
         .checked_div(&PreciseNumber::new(100u128).ok_or(AccessError::Overflow)?)
@@ -126,24 +135,34 @@ pub fn process_crank(
         .checked_div(&precise_system_staked_snapshot)
         .unwrap_or(PreciseNumber::new(0).ok_or(AccessError::Overflow)?);
 
-    let pool_reward= precise_pool_reward.to_imprecise().ok_or(AccessError::Overflow)?;
+    let pool_reward = precise_pool_reward
+        .to_imprecise()
+        .ok_or(AccessError::Overflow)?;
 
     msg!("Pool reward {}", pool_reward);
 
     let total_claimable_rewards = (((pool_reward >> 31) + 1) >> 1)
         .checked_add(
-            ((stakers_reward.checked_mul(total_staked_snapshot)
-                .ok_or(AccessError::Overflow)? >> 31) + 1) >> 1
-        ).ok_or(AccessError::Overflow)?;
+            ((stakers_reward
+                .checked_mul(total_staked_snapshot)
+                .ok_or(AccessError::Overflow)?
+                >> 31)
+                + 1)
+                >> 1,
+        )
+        .ok_or(AccessError::Overflow)?;
 
     msg!("Total claimable rewards {}", total_claimable_rewards);
 
-    assert!(total_claimable_rewards <= (central_state.daily_inflation as u128)
-        .checked_add(1_000_000).ok_or(AccessError::Overflow)?);
+    assert!(
+        total_claimable_rewards
+            <= (central_state.daily_inflation as u128)
+                .checked_add(1_000_000)
+                .ok_or(AccessError::Overflow)?
+    );
 
     stake_pool.push_balances_buff(
         current_offset,
-        stake_pool.header.current_day_idx as u64,
         RewardsTuple {
             pool_reward,
             stakers_reward,

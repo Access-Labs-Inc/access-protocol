@@ -1,7 +1,7 @@
 import fs from "fs";
 import { Connection, Keypair, PublicKey, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
 
-import { createCentralState, } from "../smart-contract/js/dist";
+import { createCentralState, } from "../smart-contract/js";
 
 const {
   SOLANA_RPC_PROVIDER_URL, PROGRAM_PUBKEY, AUTHORITY_KEYPAIR, MINT_ADDRESS, YEARLY_INFLATION_IN_ACS
@@ -37,11 +37,9 @@ const initCentralState = async () => {
   const ix = await createCentralState(
     Number(dailyInflation),
     authorityKeypair.publicKey, // Central state authority
-    authorityKeypair.publicKey, // Fee payer
     new PublicKey(MINT_ADDRESS), // Key to token program
     new PublicKey(PROGRAM_PUBKEY), // Program ID
   );
-
 
   const messageV0 = new TransactionMessage({
     payerKey: authorityKeypair.publicKey,

@@ -1,7 +1,11 @@
-use crate::error::AccessError;
+use std::cell::RefMut;
+use std::convert::TryInto;
+use std::mem::size_of;
+use std::ops::DerefMut;
+
 use bonfida_utils::BorshSize;
 use borsh::{BorshDeserialize, BorshSerialize};
-use bytemuck::{cast_slice, from_bytes, from_bytes_mut, try_cast_slice_mut, Pod, Zeroable};
+use bytemuck::{cast_slice, from_bytes, from_bytes_mut, Pod, try_cast_slice_mut, Zeroable};
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
 use solana_program::account_info::AccountInfo;
@@ -11,16 +15,22 @@ use solana_program::msg;
 use solana_program::program_error::ProgramError;
 use solana_program::pubkey::Pubkey;
 use solana_program::sysvar::Sysvar;
-use std::cell::RefMut;
-use std::convert::TryInto;
-use std::mem::size_of;
-use std::ops::DerefMut;
+
+use crate::error::AccessError;
+use crate::instruction::ProgramInstruction;
+use crate::instruction::ProgramInstruction::AdminProgramFreeze;
+use crate::utils::is_admin_renouncable_instruction;
 
 /// ACCESS token mint
 pub const ACCESS_MINT: Pubkey =
     solana_program::pubkey!("5MAYDfq5yxtudAhtfyuMBuHZjgAbaS9tbEyEQYAhDS5y");
 
-#[allow(missing_docs)]
+// todo fill in the production one
+/// ACCESS NFT program address
+pub const ACCESS_NFT_PROGRAM_SIGNER: Pubkey =
+    solana_program::pubkey!("AF7bqw2GjPPX25nWNRYtDpNALMp9B4D9FEaFekur2LEr");
+
+/// Specify the number of seconds in a day, used only for testing purposes
 pub const SECONDS_IN_DAY: u64 = if cfg!(feature = "days-to-sec-15m") {
     15 * 60
 } else if cfg!(feature = "days-to-sec-10s") {
@@ -29,24 +39,33 @@ pub const SECONDS_IN_DAY: u64 = if cfg!(feature = "days-to-sec-15m") {
     3600 * 24
 };
 
-/// Percentage of the staking rewards going to stakers
-pub const STAKER_MULTIPLIER: u64 = 50;
+/// Specify if the calling of the V1 instructions is allowed
+pub const V1_INSTRUCTIONS_ALLOWED: bool = cfg!(feature = "v1-instructions-allowed");
 
-/// Percentage of the staking rewards going to the pool owner
-pub const OWNER_MULTIPLIER: u64 = 100 - STAKER_MULTIPLIER;
+/// Default percentage of the staking rewards going to stakers
+pub const DEFAULT_STAKER_MULTIPLIER: u64 = 50;
 
-/// Length of the circular buffer (stores balances for 1 year)
-pub const STAKE_BUFFER_LEN: u64 = 274; // 9 Months
+/// Length of the circular buffer (stores data for calculating rewards for 274 days)
+pub const STAKE_BUFFER_LEN: u64 = 274;
 
-/// Max pending unstake requests
-pub const MAX_UNSTAKE_REQUEST: usize = 10;
+/// Maximum count of recipients of the fees
+pub const MAX_FEE_RECIPIENTS: usize = 10;
 
-/// Fees charged on staking instruction in % (i.e FEES = 1 <-> 1% fee charged)
-pub const FEES: u64 = 2;
+/// Minimum balance of the fee split account allowed for token distribution
+pub const MIN_DISTRIBUTE_AMOUNT: u64 = 100_000_000;
 
-#[derive(BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive, Debug)]
+/// Maximum delay between last fee split distribution and fee split account setup
+pub const MAX_FEE_SPLIT_SETUP_DELAY: u64 = 5 * 60; // 5 minutes
+
+/// Amount in basis points (i.e 1% = 100) added to each locking operation as a protocol fee
+pub const DEFAULT_FEE_BASIS_POINTS: u16 = 200;
+
+#[derive(
+BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive, Debug
+)]
 #[repr(u8)]
 #[allow(missing_docs)]
+// The order must be kept! Add the new tags to the end
 pub enum Tag {
     Uninitialized,
     StakePool,
@@ -61,6 +80,10 @@ pub enum Tag {
     FrozenStakePool,
     FrozenStakeAccount,
     FrozenBondAccount,
+    // V2 tags
+    BondV2Account,
+    CentralStateV2,
+    RoyaltyAccount,
 }
 
 impl Tag {
@@ -166,11 +189,17 @@ impl StakePoolHeaped {
     pub fn from_buffer(buf: &[u8]) -> Self {
         println!("StakePoolHeaped::from_buffer: buf.len() = {}", buf.len());
         let (header, balances) = buf.split_at(size_of::<StakePoolHeader>());
-        println!("StakePoolHeaped::from_buffer: header.len() = {}", header.len());
+        println!(
+            "StakePoolHeaped::from_buffer: header.len() = {}",
+            header.len()
+        );
         let header = from_bytes::<StakePoolHeader>(header);
         println!("StakePoolHeaped::from_buffer: header = {:?}", header);
         let balances = cast_slice::<_, RewardsTuple>(balances);
-        println!("StakePoolHeaped::from_buffer: balances.len() = {}", balances.len());
+        println!(
+            "StakePoolHeaped::from_buffer: balances.len() = {}",
+            balances.len()
+        );
         Self {
             header: Box::new(*header),
             balances: Box::from(balances),
@@ -179,14 +208,15 @@ impl StakePoolHeaped {
 }
 
 #[allow(missing_docs)]
-impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [RewardsTuple]>> StakePool<H, B> {
+impl<H: DerefMut<Target=StakePoolHeader>, B: DerefMut<Target=[RewardsTuple]>> StakePool<H, B> {
     pub fn push_balances_buff(
         &mut self,
         current_offset: u64,
-        last_crank_offset: u64,
         rewards: RewardsTuple,
     ) -> Result<(), ProgramError> {
-        let nb_days_passed = current_offset - last_crank_offset;
+        let nb_days_passed = current_offset
+            .checked_sub(self.header.current_day_idx as u64)
+            .ok_or(AccessError::Overflow)?;
         for i in 1..nb_days_passed {
             self.balances[(((self.header.current_day_idx as u64)
                 .checked_add(i)
@@ -249,7 +279,7 @@ impl StakePoolHeader {
             nonce,
             vault: vault.to_bytes(),
             minimum_stake_amount,
-            stakers_part: STAKER_MULTIPLIER,
+            stakers_part: DEFAULT_STAKER_MULTIPLIER,
         })
     }
 
@@ -274,7 +304,7 @@ impl StakePoolHeader {
     }
 }
 
-#[derive(BorshSerialize, BorshDeserialize, BorshSize)]
+#[derive(BorshSerialize, BorshDeserialize, BorshSize, Debug)]
 #[allow(missing_docs)]
 pub struct StakeAccount {
     /// Tag
@@ -380,15 +410,14 @@ pub struct CentralState {
     /// Central state nonce
     pub signer_nonce: u8,
 
-    /// Daily inflation in token amount, inflation is paid from
-    /// the reserve owned by the central state
+    /// Daily inflation in token amount
     pub daily_inflation: u64,
 
     /// Mint of the token being emitted
     pub token_mint: Pubkey,
 
     /// Authority
-    /// The public key that can change the inflation
+    /// The public key that can do the admin operations
     pub authority: Pubkey,
 
     /// Creation timestamp
@@ -397,7 +426,7 @@ pub struct CentralState {
     /// Total amount of staked tokens
     pub total_staked: u64,
 
-    /// The daily total_staked snapshot to calculate correctly calculate the pool rewards
+    /// The daily total_staked snapshot to correctly calculate the pool rewards
     pub total_staked_snapshot: u64,
 
     /// The offset of the total_staked_snapshot from the creation_time in days
@@ -456,10 +485,141 @@ impl CentralState {
     }
 }
 
+#[derive(BorshSerialize, BorshDeserialize, BorshSize, Debug)]
+#[allow(missing_docs)]
+pub struct CentralStateV2 {
+    /// Tag
+    pub tag: Tag,
+
+    /// Central state bump seed
+    pub bump_seed: u8,
+
+    /// Daily inflation in token amount
+    pub daily_inflation: u64,
+
+    /// Mint of the token being emitted
+    pub token_mint: Pubkey,
+
+    /// Authority
+    /// The public key that can do the admin operations
+    pub authority: Pubkey,
+
+    /// Creation timestamp
+    pub creation_time: i64,
+
+    /// Total amount of staked tokens
+    pub total_staked: u64,
+
+    /// The daily total_staked snapshot to correctly calculate the pool rewards
+    pub total_staked_snapshot: u64,
+
+    /// The offset of the total_staked_snapshot from the creation_time in days
+    pub last_snapshot_offset: u64,
+
+    /// Map of ixs to their state of gating, used for freezing the program functionality
+    /// 1 is chosen as enabled, 0 is disabled
+    pub ix_gate: u128,
+
+    ///  An additional account able to freeze the program functionality. The program can be unfrozen only by the authority
+    pub freeze_authority: Pubkey,
+
+    /// Map of ixs and their state for renouncing the admin permissions
+    /// 1 is chosen as enabled, 0 is disabled
+    pub admin_ix_gate: u128,
+
+    /// Protocol fee percentage basis points (i.e 1% = 100)
+    pub fee_basis_points: u16,
+
+    /// Last fee distribution timestamp
+    pub last_fee_distribution_time: i64,
+
+    /// List of the fee recipients and their share of the fees. The sum of the shares must be <=100%,
+    /// the rest is getting burned
+    pub recipients: Vec<FeeRecipient>,
+}
+
+impl CentralStateV2 {
+    #[allow(missing_docs)]
+    pub fn from_central_state(
+        central_state: CentralState,
+    ) -> Result<Self, ProgramError> {
+        Ok(Self {
+            tag: Tag::CentralStateV2,
+            bump_seed: central_state.signer_nonce,
+            daily_inflation: central_state.daily_inflation,
+            token_mint: central_state.token_mint,
+            authority: central_state.authority,
+            creation_time: central_state.creation_time,
+            total_staked: central_state.total_staked,
+            total_staked_snapshot: central_state.total_staked_snapshot,
+            last_snapshot_offset: central_state.last_snapshot_offset,
+            freeze_authority: central_state.authority,
+            ix_gate: u128::MAX, // all instructions enabled
+            admin_ix_gate: u128::MAX, // all instructions enabled
+            fee_basis_points: DEFAULT_FEE_BASIS_POINTS,
+            last_fee_distribution_time: Clock::get()?.unix_timestamp,
+            recipients: vec![], // the default behaviour is that 100% of the fees is getting burned
+        })
+    }
+    #[allow(missing_docs)]
+    pub fn create_key(signer_nonce: &u8, program_id: &Pubkey) -> Result<Pubkey, ProgramError> {
+        let signer_seeds: &[&[u8]] = &[&program_id.to_bytes(), &[*signer_nonce]];
+        Pubkey::create_program_address(signer_seeds, program_id)
+            .map_err(|_| ProgramError::InvalidSeeds)
+    }
+    #[allow(missing_docs)]
+    pub fn find_key(program_id: &Pubkey) -> (Pubkey, u8) {
+        Pubkey::find_program_address(&[&program_id.to_bytes()], program_id)
+    }
+    #[allow(missing_docs)]
+    pub fn save(&self, mut dst: &mut [u8]) -> ProgramResult {
+        self.serialize(&mut dst)
+            .map_err(|_| ProgramError::InvalidAccountData)
+    }
+    #[allow(missing_docs)]
+    pub fn from_account_info(a: &AccountInfo) -> Result<CentralStateV2, ProgramError> {
+        let mut data = &a.data.borrow() as &[u8];
+        if data[0] != Tag::CentralStateV2 as u8 && data[0] != Tag::Uninitialized as u8 {
+            return Err(AccessError::DataTypeMismatch.into());
+        }
+        let result = CentralStateV2::deserialize(&mut data)?;
+        Ok(result)
+    }
+    #[allow(missing_docs)]
+    pub fn get_current_offset(&self) -> Result<u64, ProgramError> {
+        let current_time = Clock::get()?.unix_timestamp as u64;
+        Ok((current_time - self.creation_time as u64) / SECONDS_IN_DAY)
+    }
+    /// Check if the instruction is not frozen or renounced.
+    /// AdminFreezeProgram instruction is allowed to be called even if frozen so that the program can be unfrozen
+    pub fn assert_instruction_allowed(&self, ix: &ProgramInstruction) -> ProgramResult {
+        let ix_num = *ix as u32;
+        let ix_mask = 1_u128.checked_shl(ix_num).ok_or(AccessError::Overflow)?;
+        if ix_mask & self.ix_gate == 0 && ix_num != AdminProgramFreeze as u32 {
+            return Err(AccessError::FrozenInstruction.into());
+        }
+        if is_admin_renouncable_instruction(ix) && ix_mask & self.admin_ix_gate == 0 {
+            return Err(AccessError::AlreadyRenounced.into());
+        }
+        Ok(())
+    }
+    /// Calculate the protocol fee for a given amount
+    pub fn calculate_fee(&self, amount: u64) -> Result<u64, ProgramError> {
+        let fee = amount
+            .checked_mul(self.fee_basis_points as u64)
+            .ok_or(AccessError::Overflow)?
+            .checked_add(9_999)// rounding
+            .ok_or(AccessError::Overflow)?
+            .checked_div(10_000)
+            .ok_or(AccessError::Overflow)?;
+        Ok(fee)
+    }
+}
+
 /// Number of sellers who need to agree for a bond to be sold
 pub const BOND_SIGNER_THRESHOLD: u64 = 1;
 
-/// List of authorized bond sellers
+/// List of authorized bond sellers (Obsolete)
 pub const AUTHORIZED_BOND_SELLERS: [Pubkey; 1] = [solana_program::pubkey!(
     "3Nrq6mCNL5i8Qk4APhggbwXismcsF23gNVDEaKycZBL8"
 )];
@@ -607,17 +767,200 @@ impl BondAccount {
         let cumulated_unlock_amnt = (missed_periods)
             .checked_mul(self.unlock_amount)
             .ok_or(AccessError::Overflow)?;
-        msg!(
-            "Unlock amount {} Total amount {}",
-            cumulated_unlock_amnt,
-            self.total_amount_sold
-        );
-
-        Ok(std::cmp::min(
+        let unlock_amnt = std::cmp::min(
             cumulated_unlock_amnt,
             self.total_amount_sold
                 .checked_sub(self.total_unlocked_amount)
                 .ok_or(AccessError::Overflow)?,
-        ))
+        );
+        msg!(
+            "Unlock amount {} Total amount {}",
+            unlock_amnt,
+            self.total_amount_sold
+        );
+        Ok(unlock_amnt)
     }
+}
+
+#[derive(BorshSerialize, BorshDeserialize, BorshSize)]
+#[allow(missing_docs)]
+pub struct BondV2Account {
+    /// Tag
+    pub tag: Tag,
+
+    /// Owner of the bond account
+    pub owner: Pubkey,
+
+    /// Amount locked in the account
+    pub amount: u64,
+
+    /// Pool which the account belongs to
+    pub pool: Pubkey,
+
+    /// Offset of a last day when rewards were claimed as an offset from the contract creation date
+    pub last_claimed_offset: u64,
+
+    /// Minimum lockable amount of the pool when the account was created
+    pub pool_minimum_at_creation: u64,
+
+    /// Unlock start date
+    pub unlock_timestamp: Option<i64>,
+}
+
+#[allow(missing_docs)]
+impl BondV2Account {
+    pub const SEED: &'static [u8; 15] = b"bond_v2_account";
+
+    pub fn create_key(
+        owner: &Pubkey,
+        pool: &Pubkey,
+        unlock_timestamp: Option<i64>,
+        program_id: &Pubkey,
+    ) -> (Pubkey, u8) {
+        let seeds: &[&[u8]] = &[
+            BondV2Account::SEED,
+            &owner.to_bytes(),
+            &pool.to_bytes(),
+            &unlock_timestamp.unwrap_or(0).to_le_bytes(),
+        ];
+        Pubkey::find_program_address(seeds, program_id)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        owner: Pubkey,
+        pool: Pubkey,
+        pool_minimum_at_creation: u64,
+        unlock_timestamp: Option<i64>,
+    ) -> Self {
+        Self {
+            tag: Tag::BondV2Account,
+            owner,
+            amount: 0,
+            pool,
+            last_claimed_offset: 0,
+            pool_minimum_at_creation,
+            unlock_timestamp,
+        }
+    }
+
+    pub fn save(&self, mut dst: &mut [u8]) -> ProgramResult {
+        self.serialize(&mut dst)
+            .map_err(|_| ProgramError::InvalidAccountData)
+    }
+
+    pub fn from_account_info(a: &AccountInfo) -> Result<BondV2Account, ProgramError> {
+        let mut data = &a.data.borrow() as &[u8];
+        let tag = Tag::BondV2Account;
+        if data[0] != tag as u8 && data[0] != Tag::Uninitialized as u8 {
+            return Err(AccessError::DataTypeMismatch.into());
+        }
+        let result = BondV2Account::deserialize(&mut data)?;
+        Ok(result)
+    }
+
+    pub fn withdraw(&mut self, amount: u64) -> ProgramResult {
+        self.amount = self
+            .amount
+            .checked_sub(amount)
+            .ok_or(AccessError::Overflow)?;
+        Ok(())
+    }
+}
+
+#[derive(BorshSerialize, BorshDeserialize, BorshSize)]
+#[allow(missing_docs)]
+pub struct RoyaltyAccount {
+    /// Tag
+    pub tag: Tag,
+
+    /// The address that paid for the creation of this PDA
+    pub rent_payer: Pubkey,
+
+    /// The address that has to pay royalties from all their claims
+    pub royalty_payer: Pubkey,
+
+    /// The address that collects the royalties
+    pub recipient_ata: Pubkey,
+
+    /// The date after which the royalties are not paid anymore
+    pub expiration_date: u64,
+
+    /// The royalty basis points (i.e 1% = 100) going to the recommender
+    pub royalty_basis_points: u16,
+}
+
+
+#[allow(missing_docs)]
+impl RoyaltyAccount {
+    pub const SEED: &'static [u8; 15] = b"royalty_account";
+
+    pub fn create_key(
+        payer: &Pubkey,
+        program_id: &Pubkey,
+    ) -> (Pubkey, u8) {
+        let seeds: &[&[u8]] = &[
+            RoyaltyAccount::SEED,
+            &payer.to_bytes(),
+        ];
+        Pubkey::find_program_address(seeds, program_id)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        fee_payer: Pubkey,
+        royalty_payer: Pubkey,
+        recipient_ata: Pubkey,
+        expiration_date: u64,
+        royalty_basis_points: u16,
+    ) -> Self {
+        Self {
+            tag: Tag::RoyaltyAccount,
+            rent_payer: fee_payer,
+            royalty_payer,
+            recipient_ata,
+            expiration_date,
+            royalty_basis_points,
+        }
+    }
+
+    pub fn save(&self, mut dst: &mut [u8]) -> ProgramResult {
+        self.serialize(&mut dst)
+            .map_err(|_| ProgramError::InvalidAccountData)
+    }
+
+    pub fn from_account_info(a: &AccountInfo) -> Result<RoyaltyAccount, ProgramError> {
+        let mut data = &a.data.borrow() as &[u8];
+        let tag = Tag::RoyaltyAccount;
+        if data[0] != tag as u8 && data[0] != Tag::Uninitialized as u8 {
+            return Err(AccessError::DataTypeMismatch.into());
+        }
+        let result = RoyaltyAccount::deserialize(&mut data)?;
+        Ok(result)
+    }
+
+    pub fn close(&mut self) {
+        self.tag = Tag::Deleted
+    }
+
+    pub fn calculate_royalty_amount(&self, amount: u64) -> Result<u64, ProgramError> {
+        let royalty = amount
+            .checked_mul(self.royalty_basis_points as u64)
+            .ok_or(AccessError::Overflow)?
+            .checked_add(9_999)// rounding
+            .ok_or(AccessError::Overflow)?
+            .checked_div(10_000)
+            .ok_or(AccessError::Overflow)?;
+        if royalty > amount {
+            return Err(AccessError::Overflow.into());
+        }
+        Ok(royalty)
+    }
+}
+
+#[derive(BorshSerialize, BorshDeserialize, BorshSize, Clone, Debug)]
+#[allow(missing_docs)]
+pub struct FeeRecipient {
+    pub owner: Pubkey,
+    pub percentage: u64,
 }

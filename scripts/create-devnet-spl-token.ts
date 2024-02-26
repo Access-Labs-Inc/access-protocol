@@ -97,7 +97,7 @@ const main = async () => {
 
   // Mint authority keypair
   const authorityKeypair = Keypair.generate();
-  console.log(`Created new Mint Authority Wallet into artifacts/spl_authority.json`);
+  console.log(`Created new Mint Authority Wallet into artifacts/spl_authority.json: ${authorityKeypair.publicKey.toBase58()}`);
   fs.writeFileSync(`artifacts/spl_authority.json`,
     JSON.stringify(authorityKeypair.secretKey
       .toString() //convert secret key to string

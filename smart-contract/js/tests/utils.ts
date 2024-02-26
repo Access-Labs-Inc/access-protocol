@@ -1,16 +1,24 @@
 import {
-  Keypair,
-  PublicKey,
   Connection,
+  Keypair,
   LAMPORTS_PER_SOL,
+  PublicKey,
   TransactionInstruction,
-  Transaction,
+  TransactionMessage,
+  VersionedTransaction,
 } from "@solana/web3.js";
 import * as path from "path";
-import { readFileSync, writeSync, closeSync } from "fs";
+import { closeSync, readFileSync, writeSync } from "fs";
 import { execSync } from "child_process";
-import tmp from "tmp";
-import { getOrCreateAssociatedTokenAccount, createMint, mintTo, TOKEN_PROGRAM_ID, AuthorityType, createSetAuthorityInstruction } from "@solana/spl-token";
+import * as tmp from "tmp";
+import {
+  AuthorityType,
+  createMint,
+  createSetAuthorityInstruction,
+  getOrCreateAssociatedTokenAccount,
+  mintTo,
+  TOKEN_PROGRAM_ID
+} from "@solana/spl-token";
 import { sleep } from "../src/utils";
 
 const programName = "access_protocol";
@@ -61,18 +69,17 @@ export function deployProgram(
 
   const bytes = readFileSync(keyfile, "utf-8");
   const keypair = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(bytes)));
-  execSync(
-    [
-      "solana program deploy",
-      stakingSo,
-      "--program-id",
-      keyfile,
-      "-u localhost",
-      "-k",
-      payerKeyFile,
-      "--commitment finalized",
-    ].join(" ")
-  );
+  const cmd = [
+    "solana program deploy",
+    stakingSo,
+    "--program-id",
+    keyfile,
+    "-u localhost",
+    "-k",
+    payerKeyFile,
+    "--commitment finalized",
+  ].join(" ")
+  execSync(cmd);
   return keypair.publicKey;
 }
 
@@ -102,29 +109,33 @@ export const signAndSendTransactionInstructions = async (
   txInstructions: Array<TransactionInstruction>,
   skipPreflight?: boolean
 ): Promise<string> => {
-  const tx = new Transaction();
-  tx.feePayer = feePayer.publicKey;
-  console.log("Fee payer: ", feePayer.publicKey.toBase58());
-  signers = signers ? [...signers, feePayer] : [];
-  tx.add(...txInstructions);
-  const sig = await connection.sendTransaction(tx, signers, {
-    skipPreflight: skipPreflight ?? false,
+  const messageV0 = new TransactionMessage({
+    payerKey: feePayer.publicKey,
+    recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
+    instructions: [...txInstructions],
+  }).compileToV0Message();
+
+  const transaction = new VersionedTransaction(messageV0);
+  transaction.sign([...signers, feePayer]);
+
+  const sig = await connection.sendTransaction(transaction, {
+    preflightCommitment: "finalized",
+    skipPreflight: false
   });
 
-  // Why? https://github.com/solana-labs/solana/issues/25955
-  try {
-    await connection.confirmTransaction(sig, "finalized");
-  } catch (e) {
-    let status = await connection.getSignatureStatus(sig);
-    console.log("Signature status: ", status.value?.confirmationStatus);
-    let attempt = 1;
-    while (status.value?.confirmationStatus !== 'finalized' && attempt < 5) {
-      sleep(1000);
-      console.log(`waiting for confirmation... (${attempt})`);
-      status = await connection.getSignatureStatus(sig);
-      attempt++;
+  let status = await connection.getSignatureStatus(sig);
+  console.log("Signature status: ", status.value?.confirmationStatus);
+  let attempt = 1;
+  while (status.value?.confirmationStatus !== 'finalized') {
+    if (attempt > 20) {
+      throw new Error(`Confirmation failed after ${attempt} attempts`);
     }
+    await sleep(5000);
+    console.log(`waiting for confirmation... (${attempt})`);
+    status = await connection.getSignatureStatus(sig);
+    attempt++;
   }
+
   return sig;
 };
 
@@ -135,7 +146,7 @@ export class TokenMint {
   mintAuthority: PublicKey;
   centralStateAuthority?: Keypair;
 
-  constructor(token: Keypair, connection: Connection, feePayer: Keypair, mintAuthority: PublicKey) { 
+  constructor(token: Keypair, connection: Connection, feePayer: Keypair, mintAuthority: PublicKey) {
     this.token = token;
     this.connection = connection;
     this.feePayer = feePayer;
@@ -157,7 +168,7 @@ export class TokenMint {
       )
     ];
 
-    const tx = await signAndSendTransactionInstructions(connection, [mintAuthorityKeypair], feePayer, 
+    const tx = await signAndSendTransactionInstructions(connection, [mintAuthorityKeypair], feePayer,
       txs
     );
     console.log(`Move mint authority to central key ${tx}`);
@@ -195,7 +206,7 @@ export class TokenMint {
 
   async mintInto(tokenAccount: PublicKey, amount: number): Promise<any> {
     return await mintTo(
-      this.connection, 
+      this.connection,
       this.feePayer,
       this.token.publicKey,
       tokenAccount,

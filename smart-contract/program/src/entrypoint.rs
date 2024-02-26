@@ -134,6 +134,9 @@ impl PrintProgramError for AccessError {
             AccessError::InvalidUnstakeAmount => {
                 msg!("Error: Invalid unstake amount")
             }
+            AccessError::InvalidAmount => {
+                msg!("Error: Invalid amount")
+            }
             AccessError::InactiveStakePoolNotAllowed => {
                 msg!("Error: Inactive stake pool not allowed")
             }
@@ -163,6 +166,66 @@ impl PrintProgramError for AccessError {
             }
             AccessError::WrongBondAccountOwner => {
                 msg!("Wrong bond account owner")
+            }
+            AccessError::UnsupportedInstruction => {
+                msg!("Unsupported instruction")
+            }
+            AccessError::DeprecatedInstruction => {
+                msg!("Deprecated instruction")
+            }
+            AccessError::TooManyRecipients => {
+                msg!("Too many recipients")
+            }
+            AccessError::NoRecipients => {
+                msg!("No recipients")
+            }
+            AccessError::InvalidPercentages => {
+                msg!("Invalid percentages")
+            }
+            AccessError::InvalidTokenAccount => {
+                msg!("Invalid token account")
+            }
+            AccessError::NonzeroBallance => {
+                msg!("Nonzero balance")
+            }
+            AccessError::DelayTooLong => {
+                msg!("Delay too long")
+            }
+            AccessError::FrozenInstruction => {
+                msg!("Frozen instruction")
+            }
+            AccessError::InvalidRenounceParams => {
+                msg!("Invalid renounce params")
+            }
+            AccessError::AlreadyRenounced => {
+                msg!("Already renounced")
+            }
+            AccessError::RoyaltyAccountMismatch => {
+                msg!("Royalty account mismatch")
+            }
+            AccessError::RoyaltyAtaMismatch => {
+                msg!("Royalty ata mismatch")
+            }
+            AccessError::WrongRoyaltyAccountOwner => {
+                msg!("Wrong royalty account owner")
+            }
+            AccessError::OwnerMustSign => {
+                msg!("Owner must sign")
+            }
+            AccessError::RoyaltyAtaNotProvided => {
+                msg!("Royalty ata not provided")
+            }
+            AccessError::RoyaltyAtaNotDeterministic => {
+                msg!("Royalty ata not deterministic")
+            }
+            AccessError::WrongSysvarInstructionsId => {
+                msg!("Wrong sysvar instructions id")
+            }
+            AccessError::WrongAccessCnftAuthority => {
+                msg!("Wrong Access cnft authority")
+            }
+            AccessError::AccessCnftAuthorityMustSign => {
+                msg!("Access cnft authority must sign")
             }
         }
     }

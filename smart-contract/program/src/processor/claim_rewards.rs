@@ -1,24 +1,28 @@
 //! Claim rewards of a stake account
 //! This instruction can be used by stakers to claim their staking rewards
-use crate::error::AccessError;
-use crate::state::{CentralState, StakeAccount, StakePool, Tag};
-use crate::utils::{
-    assert_no_close_or_delegate, calc_reward_fp32, check_account_key, check_account_owner,
-    check_signer,
-};
-use bonfida_utils::fp_math::safe_downcast;
+use std::convert::TryInto;
+
 use bonfida_utils::{BorshSize, InstructionsAccount};
 use borsh::{BorshDeserialize, BorshSerialize};
-use solana_program::program::invoke_signed;
 use solana_program::{
-    account_info::{next_account_info, AccountInfo},
+    account_info::{AccountInfo, next_account_info},
     entrypoint::ProgramResult,
     msg,
     program_error::ProgramError,
     program_pack::Pack,
     pubkey::Pubkey,
 };
+use solana_program::program::invoke_signed;
 use spl_token::{instruction::mint_to, state::Account};
+
+use crate::error::AccessError;
+use crate::instruction::ProgramInstruction::ClaimRewards;
+use crate::state::{ACCESS_NFT_PROGRAM_SIGNER, StakeAccount, StakePool, Tag};
+use crate::state::{CentralStateV2, RoyaltyAccount};
+use crate::utils::{
+    calc_reward_fp32, check_account_key, check_account_owner,
+    check_signer, retrieve_royalty_account,
+};
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `claim_rewards` instruction
@@ -38,7 +42,7 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub stake_account: &'a T,
 
-    /// The owner of the stake account
+    /// The owner of the Stake account
     #[cons(signer)]
     pub owner: &'a T,
 
@@ -49,12 +53,22 @@ pub struct Accounts<'a, T> {
     /// The central state account
     pub central_state: &'a T,
 
-    /// The mint address of the ACCESS token
+    /// The mint address of the ACS token
     #[cons(writable)]
     pub mint: &'a T,
 
+    /// The Access NFT program signer - to handle different royalty account
+    pub access_nft_signer: &'a T,
+
     /// The SPL token program account
     pub spl_token_program: &'a T,
+
+    /// The owner's royalty split account to check if royalties need to be paid
+    pub owner_royalty_account: &'a T,
+
+    /// The royalty ATA account
+    #[cons(writable)]
+    pub royalty_ata: Option<&'a T>,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -70,7 +84,10 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             rewards_destination: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
             mint: next_account_info(accounts_iter)?,
+            access_nft_signer: next_account_info(accounts_iter)?,
             spl_token_program: next_account_info(accounts_iter)?,
+            owner_royalty_account: next_account_info(accounts_iter)?,
+            royalty_ata: next_account_info(accounts_iter).ok(),
         };
 
         // Check keys
@@ -78,6 +95,11 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             accounts.spl_token_program,
             &spl_token::ID,
             AccessError::WrongSplTokenProgramId,
+        )?;
+        check_account_key(
+            accounts.access_nft_signer,
+            &ACCESS_NFT_PROGRAM_SIGNER,
+            AccessError::WrongAccessCnftAuthority,
         )?;
 
         // Check ownership
@@ -99,6 +121,9 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_owner(accounts.central_state, program_id, AccessError::WrongOwner)?;
         check_account_owner(accounts.mint, &spl_token::ID, AccessError::WrongOwner)?;
 
+        // Check signers
+        check_signer(accounts.owner, AccessError::StakeAccountOwnerMustSign)?;
+
         Ok(accounts)
     }
 }
@@ -110,23 +135,35 @@ pub fn process_claim_rewards(
 ) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let central_state = CentralState::from_account_info(accounts.central_state)?;
+    let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(&ClaimRewards)?;
     let stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut stake_account = StakeAccount::from_account_info(accounts.stake_account)?;
 
     let destination_token_acc = Account::unpack(&accounts.rewards_destination.data.borrow())?;
-    msg!("Account owner: {}", destination_token_acc.owner);
-
-    if destination_token_acc.owner != stake_account.owner {
-        // If the destination does not belong to the staker he must sign
-        check_signer(accounts.owner, AccessError::StakePoolOwnerMustSign)?;
-    } else {
-        assert_no_close_or_delegate(&destination_token_acc)?;
-    }
 
     if destination_token_acc.mint != central_state.token_mint {
+        msg!("Invalid ACCESS mint");
+        #[cfg(not(feature = "no-mint-check"))]
         return Err(AccessError::WrongMint.into());
     }
+
+    msg!("Token account owner: {}", destination_token_acc.owner);
+
+    // We only allow custom royalty account and unchecked destination account when this is a CPI call from the NFT program.
+    if !accounts.access_nft_signer.is_signer {
+        let (derived_key, _) = RoyaltyAccount::create_key(accounts.owner.key, program_id);
+        check_account_key(
+            accounts.owner_royalty_account,
+            &derived_key,
+            AccessError::AccountNotDeterministic,
+        )?;
+    }
+
+    let royalty_account_data = retrieve_royalty_account(
+        accounts.owner_royalty_account,
+        accounts.royalty_ata,
+    )?;
 
     check_account_key(
         accounts.stake_pool,
@@ -144,23 +181,32 @@ pub fn process_claim_rewards(
         AccessError::WrongMint,
     )?;
 
-    let reward = calc_reward_fp32(
+    // Calculate the rewards (checks if the pool is cranked as well)
+    let mut reward = calc_reward_fp32(
         central_state.last_snapshot_offset,
         stake_account.last_claimed_offset,
         &stake_pool,
         true,
         params.allow_zero_rewards,
     )?
-    // Multiply by the staker shares of the total pool
-    .checked_mul(stake_account.stake_amount as u128)
-    .map(|r| ((r >> 31) + 1) >> 1)
-    .and_then(safe_downcast)
-    .ok_or(AccessError::Overflow)?;
+        // Multiply by the staker shares of the total pool
+        .checked_mul(stake_account.stake_amount as u128)
+        .map(|r| ((r >> 31) + 1) >> 1)
+        .ok_or(AccessError::Overflow)?
+        .try_into()
+        .map_err(|_| AccessError::Overflow)?;
 
-    msg!("Claiming rewards {}", reward);
+    // split the rewards if there is a royalty account
+    let mut royalty_amount = 0;
+    if let Some(royalty_account) = royalty_account_data {
+        royalty_amount = royalty_account.calculate_royalty_amount(reward)?;
+        reward = reward.checked_sub(royalty_amount).ok_or(AccessError::Overflow)?;
+    }
 
-    // Transfer rewards
-    let transfer_ix = mint_to(
+    msg!("Claiming rewards {}, royalties {}", reward, royalty_amount);
+
+    // Mint rewards
+    let mint_rewards_ix = mint_to(
         &spl_token::ID,
         accounts.mint.key,
         accounts.rewards_destination.key,
@@ -169,15 +215,37 @@ pub fn process_claim_rewards(
         reward,
     )?;
     invoke_signed(
-        &transfer_ix,
+        &mint_rewards_ix,
         &[
             accounts.spl_token_program.clone(),
             accounts.mint.clone(),
             accounts.central_state.clone(),
             accounts.rewards_destination.clone(),
         ],
-        &[&[&program_id.to_bytes(), &[central_state.signer_nonce]]],
+        &[&[&program_id.to_bytes(), &[central_state.bump_seed]]],
     )?;
+
+    // Mint royalties
+    if royalty_amount > 0 {
+        let mint_royalty_ix = mint_to(
+            &spl_token::ID,
+            accounts.mint.key,
+            accounts.royalty_ata.unwrap().key,
+            accounts.central_state.key,
+            &[],
+            royalty_amount,
+        )?;
+        invoke_signed(
+            &mint_royalty_ix,
+            &[
+                accounts.spl_token_program.clone(),
+                accounts.mint.clone(),
+                accounts.central_state.clone(),
+                accounts.royalty_ata.unwrap().clone(),
+            ],
+            &[&[&program_id.to_bytes(), &[central_state.bump_seed]]],
+        )?;
+    }
 
     // Update states
     stake_account.last_claimed_offset = central_state.last_snapshot_offset;

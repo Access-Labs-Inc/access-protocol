@@ -52,7 +52,7 @@ pub mod state;
 
 #[doc(hidden)]
 pub(crate) mod processor;
-pub(crate) mod utils;
+pub mod utils;
 
 #[allow(missing_docs)]
 pub mod cpi;

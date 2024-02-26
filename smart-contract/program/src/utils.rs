@@ -1,11 +1,16 @@
-use crate::error::AccessError;
-use crate::state::{BondAccount, AUTHORIZED_BOND_SELLERS};
-use crate::state::{StakeAccount, StakePoolRef, ACCESS_MINT, STAKE_BUFFER_LEN};
+//! Utils
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
-    program_pack::Pack, pubkey::Pubkey,
+    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
+    program_error::ProgramError, program_pack::Pack,
+    pubkey::Pubkey,
+    sysvar::Sysvar,
 };
 use spl_token::state::Account;
+
+use crate::error::AccessError;
+use crate::instruction::ProgramInstruction;
+use crate::state::{AUTHORIZED_BOND_SELLERS, BondAccount, RoyaltyAccount};
+use crate::state::{ACCESS_MINT, STAKE_BUFFER_LEN, StakeAccount, StakePoolRef};
 
 /// Cumulate the claimable rewards from the last claimed day to the present.
 /// Result is in FP32 format.
@@ -22,20 +27,32 @@ pub fn calc_reward_fp32(
     msg!("Nb of days behind {}", nb_days_to_claim);
     msg!("Last claimed offset {}", last_claimed_offset);
     msg!("Current offset {}", current_offset);
-    nb_days_to_claim = std::cmp::min(nb_days_to_claim, STAKE_BUFFER_LEN - 1);
+    nb_days_to_claim = std::cmp::min(nb_days_to_claim, STAKE_BUFFER_LEN);
+    msg!("Nb of days to claim {}", nb_days_to_claim);
+    if nb_days_to_claim == 0 {
+        if !allow_zero_rewards {
+            msg!("No rewards to claim, no operation.");
+            return Err(AccessError::NoOp.into());
+        }
+        return Ok(0);
+    }
 
     if current_offset > stake_pool.header.current_day_idx as u64 {
         #[cfg(not(any(feature = "days-to-sec-10s", feature = "days-to-sec-15m")))]
         return Err(AccessError::PoolMustBeCranked.into());
     }
 
+    msg!(
+        "Stake pool current day idx wrapped {}",
+        (stake_pool.header.current_day_idx as u64) % STAKE_BUFFER_LEN
+    );
     // Saturating as we don't want to wrap around when there haven't been sufficient cranks
     let mut i = (stake_pool.header.current_day_idx as u64).saturating_sub(nb_days_to_claim)
         % STAKE_BUFFER_LEN;
 
     // Compute reward for all past days
     let mut reward: u128 = 0;
-    while i != (stake_pool.header.current_day_idx as u64) % STAKE_BUFFER_LEN {
+    loop {
         let curr_day_reward = if staker {
             stake_pool.balances[i as usize].stakers_reward
         } else {
@@ -45,6 +62,9 @@ pub fn calc_reward_fp32(
             .checked_add(curr_day_reward)
             .ok_or(AccessError::Overflow)?;
         i = (i + 1) % STAKE_BUFFER_LEN;
+        if i == (stake_pool.header.current_day_idx as u64) % STAKE_BUFFER_LEN {
+            break;
+        }
     }
 
     msg!("Reward is {}", reward);
@@ -57,6 +77,35 @@ pub fn calc_reward_fp32(
     Ok(reward)
 }
 
+// returns a mask of the instructions that are supposed to be frozen
+// if no instructions are provided, all instructions are frozen
+#[allow(missing_docs)]
+pub fn get_freeze_mask(instructions: Vec<ProgramInstruction>) -> u128 {
+    if instructions.is_empty() {
+        return 0;
+    }
+    let mut mask = u128::MAX;
+    for instruction in instructions {
+        let ix_mask = 1 << instruction as u32;
+        mask &= !ix_mask;
+    }
+    mask
+}
+
+#[allow(missing_docs)]
+pub fn get_unfreeze_mask(instructions: Vec<ProgramInstruction>) -> u128 {
+    if instructions.is_empty() {
+        return u128::MAX;
+    }
+    let mut mask = 0;
+    for instruction in instructions {
+        let ix_mask = 1 << instruction as u32;
+        mask |= ix_mask;
+    }
+    mask
+}
+
+#[allow(missing_docs)]
 pub fn check_account_key(account: &AccountInfo, key: &Pubkey, error: AccessError) -> ProgramResult {
     if account.key != key {
         return Err(error.into());
@@ -64,6 +113,7 @@ pub fn check_account_key(account: &AccountInfo, key: &Pubkey, error: AccessError
     Ok(())
 }
 
+#[allow(missing_docs)]
 pub fn check_account_owner(
     account: &AccountInfo,
     owner: &Pubkey,
@@ -75,6 +125,7 @@ pub fn check_account_owner(
     Ok(())
 }
 
+#[allow(missing_docs)]
 pub fn check_signer(account: &AccountInfo, error: AccessError) -> ProgramResult {
     if !(account.is_signer) {
         return Err(error.into());
@@ -82,6 +133,7 @@ pub fn check_signer(account: &AccountInfo, error: AccessError) -> ProgramResult 
     Ok(())
 }
 
+#[allow(missing_docs)]
 pub fn assert_empty_stake_pool(stake_pool: &StakePoolRef) -> ProgramResult {
     if stake_pool.header.total_staked != 0 {
         msg!("The stake pool must be empty");
@@ -90,6 +142,7 @@ pub fn assert_empty_stake_pool(stake_pool: &StakePoolRef) -> ProgramResult {
     Ok(())
 }
 
+#[allow(missing_docs)]
 pub fn assert_empty_stake_account(stake_account: &StakeAccount) -> ProgramResult {
     if stake_account.stake_amount != 0 {
         msg!("The stake account must be empty");
@@ -98,6 +151,7 @@ pub fn assert_empty_stake_account(stake_account: &StakeAccount) -> ProgramResult
     Ok(())
 }
 
+#[allow(missing_docs)]
 pub fn assert_valid_vault(account: &AccountInfo, vault_signer: &Pubkey) -> ProgramResult {
     let acc = Account::unpack(&account.data.borrow())?;
     if &acc.owner != vault_signer {
@@ -116,6 +170,7 @@ pub fn assert_valid_vault(account: &AccountInfo, vault_signer: &Pubkey) -> Progr
     Ok(())
 }
 
+#[allow(missing_docs)]
 pub fn assert_uninitialized(account: &AccountInfo) -> ProgramResult {
     if !account.data_is_empty() {
         return Err(ProgramError::AccountAlreadyInitialized);
@@ -123,6 +178,7 @@ pub fn assert_uninitialized(account: &AccountInfo) -> ProgramResult {
     Ok(())
 }
 
+#[allow(missing_docs)]
 pub fn assert_authorized_seller(seller: &AccountInfo, seller_index: usize) -> ProgramResult {
     let expected_seller = AUTHORIZED_BOND_SELLERS
         .get(seller_index)
@@ -133,6 +189,7 @@ pub fn assert_authorized_seller(seller: &AccountInfo, seller_index: usize) -> Pr
     Ok(())
 }
 
+#[allow(missing_docs)]
 pub fn assert_bond_derivation(
     account: &AccountInfo,
     owner: &Pubkey,
@@ -144,10 +201,11 @@ pub fn assert_bond_derivation(
     Ok(())
 }
 
+#[allow(missing_docs)]
 pub fn assert_valid_fee(account: &AccountInfo, owner: &Pubkey) -> ProgramResult {
     check_account_owner(account, &spl_token::ID, AccessError::WrongOwner)?;
     let acc = Account::unpack(&account.data.borrow())?;
-    if &acc.owner != owner {
+    if owner != &acc.owner {
         msg!("Invalid fee account owner");
         return Err(ProgramError::IllegalOwner);
     }
@@ -155,10 +213,61 @@ pub fn assert_valid_fee(account: &AccountInfo, owner: &Pubkey) -> ProgramResult 
     Ok(())
 }
 
+#[allow(missing_docs)]
 pub fn assert_no_close_or_delegate(token_account: &Account) -> ProgramResult {
     if token_account.delegate.is_some() || token_account.close_authority.is_some() {
         msg!("This token account cannot have a delegate or close authority");
         return Err(ProgramError::InvalidArgument);
     }
     Ok(())
+}
+
+///  This function checks if there is an existing royalty account.
+///  Checks the relationship between the appropriate royalty account and the royalty ATA
+///  Returns the royalty account data if it exists. Otherwise returns None.
+pub fn retrieve_royalty_account(
+    royalty_account: &AccountInfo,
+    royalty_ata: Option<&AccountInfo>,
+) -> Result<Option<RoyaltyAccount>, ProgramError> {
+    if royalty_account.data_is_empty() {
+        return Ok(None);
+    }
+
+    let royalty_account_data = RoyaltyAccount::from_account_info(royalty_account)?;
+    if royalty_account_data.expiration_date < Clock::get()?.unix_timestamp as u64 {
+        return Ok(None); // Royalty account has expired - no royalty split is applicable
+    }
+
+    if royalty_ata.is_none() {
+        return Err(AccessError::RoyaltyAtaNotProvided.into());
+    }
+
+    check_account_owner(
+        royalty_ata.unwrap(),
+        &spl_token::ID,
+        AccessError::WrongOwner,
+    )?;
+
+    check_account_key(
+        royalty_ata.unwrap(),
+        &royalty_account_data.recipient_ata,
+        AccessError::RoyaltyAtaNotDeterministic,
+    )?;
+
+    Ok(Some(royalty_account_data))
+}
+
+#[allow(missing_docs)]
+pub fn is_admin_renouncable_instruction(instruction: &ProgramInstruction) -> bool {
+    matches!(instruction,
+        ProgramInstruction::ChangeInflation |
+        ProgramInstruction::AdminMint |
+        ProgramInstruction::AdminFreeze |
+        ProgramInstruction::ChangeCentralStateAuthority |
+        ProgramInstruction::EditMetadata |
+        ProgramInstruction::AdminSetupFeeSplit |
+        ProgramInstruction::AdminSetProtocolFee |
+        ProgramInstruction::AdminProgramFreeze |
+        ProgramInstruction::AdminChangeFreezeAuthority
+    )
 }

@@ -1,14 +1,26 @@
 import { deserialize, Schema } from "borsh";
-import BN from "bn.js";
+import * as BN from 'bn.js';
 import { Connection, PublicKey } from "@solana/web3.js";
 import { u64 } from "./u64.js";
 
-/**
- * Lenght of the stake pool circular buffer used to store balances and inflation
- */
-const STAKE_BUFFER_LEN = 274; // 9 Months
+/** Default percentage of the staking rewards going to stakers */
+export const DEFAULT_STAKER_MULTIPLIER = 50;
 
-export const MAX_UNSTAKE_REQUEST = 10;
+/** Length of the circular buffer (stores data for calculating rewards for 274 days) */
+export const STAKE_BUFFER_LEN = 274;
+
+/** Maximum count of recipients of the fees */
+export const MAX_FEE_RECIPIENTS = 10;
+
+/** Minimum balance of the fee split account allowed for token distribution */
+export const MIN_DISTRIBUTE_AMOUNT = 100_000_000;
+
+/** Maximum delay between last fee split distribution and fee split account setup */
+export const MAX_FEE_SPLIT_SETUP_DELAY = 5 * 60; // 5 minutes
+
+/** Amount in basis points (i.e 1% = 100) added to each locking operation as a protocol fee */
+export const DEFAULT_FEE_BASIS_POINTS = 200;
+
 
 /**
  * Account tags (used for deserialization on-chain)
@@ -26,10 +38,13 @@ export enum Tag {
   FrozenStakePool = 8,
   FrozenStakeAccount = 9,
   FrozenBondAccount = 10,
+  // V2 tags
+  BondV2Account = 11,
+  CentralStateV2 = 12,
 }
 
 /**
- * Stake pool state
+ * Rewards tuple
  */
 export class RewardsTuple {
   poolReward: BN;
@@ -231,7 +246,8 @@ export class StakeAccount {
 }
 
 /**
- * The central state
+ * The central state V1
+ * @deprecated This is the V1 central state, it is deprecated by using the migrateCentralStateV2 instruction
  */
 export class CentralState {
   tag: Tag;
@@ -309,10 +325,165 @@ export class CentralState {
    * @param programId The ACCESS program ID
    * @returns
    */
-  static async getKey(programId: PublicKey) {
+  static getKey(programId: PublicKey) {
     return PublicKey.findProgramAddressSync([programId.toBuffer()], programId);
   }
 }
+
+/**
+ * The central state V2
+ * This can be used only after the migrateCentralStateV2 instruction has been called
+ */
+
+export class FeeRecipient {
+  owner: Buffer;
+  percentage: BN;
+
+  constructor(obj: { owner: PublicKey; percentage: BN }) {
+    this.owner = new PublicKey(obj.owner).toBuffer();
+    this.percentage = obj.percentage;
+  }
+}
+
+export class CentralStateV2 {
+  tag: Tag;
+  bumpSeed: number;
+  dailyInflation: BN;
+  tokenMint: PublicKey;
+  authority: PublicKey;
+  creationTime: BN;
+  totalStaked: BN;
+  totalStakedSnapshot: BN;
+  lastSnapshotOffset: BN;
+  ixGate: BN;
+  freezeAuthority: PublicKey;
+  adminIxGate: BN;
+  feeBasisPoints: number;
+  lastFeeDistributionTime: BN;
+  private feeRecipientsCount: number; // this is needed due to Borsh encoding, see https://borsh.io/
+  private recipients: FeeRecipient[];
+
+  static schema: Schema = new Map<any, any>([
+    [
+      CentralStateV2,
+      {
+        kind: "struct",
+        fields: [
+          ["tag", "u8"],
+          ["bumpSeed", "u8"],
+          ["dailyInflation", "u64"],
+          ["tokenMint", [32]],
+          ["authority", [32]],
+          ["creationTime", "u64"],
+          ["totalStaked", "u64"],
+          ["totalStakedSnapshot", "u64"],
+          ["lastSnapshotOffset", "u64"],
+          ["ixGate", "u128"],
+          ["freezeAuthority", [32]],
+          ["adminIxGate", "u128"],
+          ["feeBasisPoints", "u16"],
+          ["lastFeeDistributionTime", "u64"],
+          ["feeRecipientsCount", "u32"],
+          ["recipients", [FeeRecipient, MAX_FEE_RECIPIENTS]],
+        ],
+      },
+    ],
+    [
+      FeeRecipient,
+      {
+        kind: "struct",
+        fields: [
+          ["owner", [32]],
+          ["percentage", "u64"],
+        ],
+      },
+    ],
+  ]);
+
+  constructor(obj: {
+    tag: number;
+    bumpSeed: number;
+    dailyInflation: BN;
+    tokenMint: Uint8Array;
+    authority: Uint8Array;
+    creationTime: BN;
+    totalStaked: BN;
+    totalStakedSnapshot: BN;
+    lastSnapshotOffset: BN;
+    ixGate: BN;
+    freezeAuthority: Uint8Array;
+    adminIxGate: BN;
+    feeBasisPoints: number;
+    lastFeeDistributionTime: BN;
+    feeRecipientsCount: number;
+    recipients: FeeRecipient[];
+  }) {
+    this.tag = obj.tag as Tag;
+    this.bumpSeed = obj.bumpSeed;
+    this.dailyInflation = obj.dailyInflation;
+    this.tokenMint = new PublicKey(obj.tokenMint);
+    this.authority = new PublicKey(obj.authority);
+    this.creationTime = obj.creationTime.fromTwos(64);
+    this.totalStaked = obj.totalStaked;
+    this.totalStakedSnapshot = obj.totalStakedSnapshot;
+    this.lastSnapshotOffset = obj.lastSnapshotOffset;
+    this.ixGate = obj.ixGate;
+    this.freezeAuthority = new PublicKey(obj.freezeAuthority);
+    this.adminIxGate = obj.adminIxGate;
+    this.feeBasisPoints = obj.feeBasisPoints;
+    this.lastFeeDistributionTime = obj.lastFeeDistributionTime.fromTwos(64);
+    this.feeRecipientsCount = obj.feeRecipientsCount;
+    this.recipients = obj.recipients;
+  }
+
+  async getCurrentOffset(connection: Connection) {
+    const slot = await connection.getSlot();
+    const timestamp = await connection.getBlockTime(slot);
+    if (!timestamp) {
+      throw new Error("Cannot get current timestamp");
+    }
+    return new BN.BN(timestamp).sub(this.creationTime).divn(86400);
+  }
+
+  static deserialize(data: Buffer) {
+    return deserialize(this.schema, CentralStateV2, data);
+  }
+
+  /**
+   * This method can be used to retrieve the state of the central state
+   * @param connection The Solana RPC connection
+   * @param key The key of the stake account
+   * @returns
+   */
+  static async retrieve(connection: Connection, key: PublicKey) {
+    const accountInfo = await connection.getAccountInfo(key);
+    if (!accountInfo || !accountInfo.data) {
+      throw new Error("Central state V2 not found");
+    }
+    return this.deserialize(accountInfo.data);
+  }
+
+  /**
+   * This method can be used to derive the central state key
+   * @param programId The ACCESS program ID
+   * @returns
+   */
+  static getKey(programId: PublicKey) {
+    return PublicKey.findProgramAddressSync([programId.toBuffer()], programId);
+  }
+
+  calculateFee(amount: BN) {
+    return amount
+      .muln(this.feeBasisPoints)
+      .addn(9_999)
+      .divn(10_000);
+  }
+
+  feeRecipients(): FeeRecipient[] {
+    return this.recipients.slice(0, this.feeRecipientsCount);
+  }
+}
+
 
 /**
  * The bond account state
@@ -438,3 +609,183 @@ export class BondAccount {
     );
   }
 }
+
+/**
+ * The bond V2 state
+ */
+
+export class BondV2Account {
+  tag: Tag;
+  owner: PublicKey;
+  amount: BN;
+  pool: PublicKey;
+  lastClaimedOffset: BN;
+  poolMinimumAtCreation: BN;
+  unlockTimestamp: null | BN;
+
+  static schema: Schema = new Map<any, any>([
+    [
+      BondV2Account,
+      {
+        kind: "struct",
+        fields: [
+          ["tag", "u8"],
+          ["owner", [32]],
+          ["amount", "u64"],
+          ["pool", [32]],
+          ["lastClaimedOffset", "u64"],
+          ["poolMinimumAtCreation", "u64"],
+          ["unlockTimestamp", { kind: "option", type: "u64" }],
+        ],
+      },
+    ],
+  ]);
+
+  constructor(obj: {
+    tag: number;
+    owner: Uint8Array;
+    amount: BN;
+    pool: Uint8Array;
+    lastClaimedOffset: BN;
+    poolMinimumAtCreation: BN;
+    unlockTimestamp: null | BN;
+  }) {
+    this.tag = obj.tag;
+    this.owner = new PublicKey(obj.owner);
+    this.amount = obj.amount;
+    this.pool = new PublicKey(obj.pool);
+    this.lastClaimedOffset = obj.lastClaimedOffset.fromTwos(64);
+    this.poolMinimumAtCreation = obj.poolMinimumAtCreation;
+    this.unlockTimestamp = obj.unlockTimestamp;
+  }
+
+  static deserialize(data: Buffer) {
+    return deserialize(this.schema, BondV2Account, data);
+  }
+
+  /**
+   * This method can be used to retrieve the state of a stake account
+   * @param connection The Solana RPC connection
+   * @param key The stake account key
+   * @returns
+   */
+  static async retrieve(connection: Connection, key: PublicKey) {
+    const accountInfo = await connection.getAccountInfo(key);
+    if (!accountInfo || !accountInfo.data) {
+      throw new Error("Stake account not found");
+    }
+    return this.deserialize(accountInfo.data);
+  }
+
+  /**
+   * This method can be used to derive the stake account key
+   * @param programId The ACCESS program ID
+   * @param owner The key of the stake account owner
+   * @param stakePool The key of the stake pool
+   * @param unlockTimestamp todo
+   * @returns
+   */
+  static getKey(
+    programId: PublicKey,
+    owner: PublicKey,
+    stakePool: PublicKey,
+    unlockTimestamp: null | BN,
+  ) {
+    return PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("bond_v2_account"),
+        owner.toBuffer(),
+        stakePool.toBuffer(),
+        new Uint8Array((unlockTimestamp ?
+          new BN.BN(unlockTimestamp)
+          : new BN.BN(0)).toArray("le", 8))],
+      programId
+    );
+  }
+}
+
+
+/**
+ * Royalty account state
+ */
+export class RoyaltyAccount {
+  tag: Tag;
+  rentPayer: PublicKey;
+  royaltyPayer: PublicKey;
+  recipientAta: PublicKey;
+  expirationDate: BN;
+  royaltyBasisPoints: number;
+
+  static schema: Schema = new Map<any, any>([
+    [
+      RoyaltyAccount,
+      {
+        kind: "struct",
+        fields: [
+          ["tag", "u8"],
+          ["rentPayer", [32]],
+          ["royaltyPayer", [32]],
+          ["recipientAta", [32]],
+          ["expirationDate", "u64"],
+          ["royaltyBasisPoints", "u16"],
+        ],
+      },
+    ],
+  ]);
+
+  constructor(obj: {
+    tag: number;
+    rentPayer: Uint8Array;
+    royaltyPayer: Uint8Array;
+    recipientAta: Uint8Array;
+    expirationDate: BN;
+    royaltyBasisPoints: number;
+  }) {
+    this.tag = obj.tag;
+    this.rentPayer = new PublicKey(obj.rentPayer);
+    this.royaltyPayer = new PublicKey(obj.royaltyPayer);
+    this.recipientAta = new PublicKey(obj.recipientAta);
+    this.expirationDate = obj.expirationDate;
+    this.royaltyBasisPoints = obj.royaltyBasisPoints;
+  }
+
+  static deserialize(data: Buffer) {
+    return deserialize(this.schema, RoyaltyAccount, data);
+  }
+
+  /**
+   * This method can be used to retrieve the state of a stake account
+   * @param connection The Solana RPC connection
+   * @param key The stake account key
+   * @returns
+   */
+  static async retrieve(connection: Connection, key: PublicKey) {
+    const accountInfo = await connection.getAccountInfo(key);
+    if (!accountInfo || !accountInfo.data) {
+      return null; // here we are not throwing an error as this is a valid case
+    }
+    return this.deserialize(accountInfo.data);
+  }
+
+  /**
+   * This method can be used to derive the stake account key
+   * @param programId The ACCESS program ID
+   * @param royaltyPayer The key of the royalty payer
+   * @returns
+   */
+  static getKey(
+    programId: PublicKey,
+    royaltyPayer: PublicKey,
+  ) {
+    return PublicKey.findProgramAddressSync(
+      [Buffer.from("royalty_account"), royaltyPayer.toBuffer()],
+      programId
+    );
+  }
+}
+
+
+/// mainnet ACCESS token mint and program id
+export const ACCESS_MINT = new PublicKey("5MAYDfq5yxtudAhtfyuMBuHZjgAbaS9tbEyEQYAhDS5y");
+export const ACCESS_PROGRAM_ID = new PublicKey("6HW8dXjtiTGkD4jzXs7igdFmZExPpmwUrRN5195xGup");
+export const ACCESS_NFT_PROGRAM_SIGNER = new PublicKey("97VhuEes8ExokBvG7hxyexpFPGzZu18SZERVKseqVV9");

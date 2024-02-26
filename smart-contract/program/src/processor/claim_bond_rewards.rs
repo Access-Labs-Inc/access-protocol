@@ -1,5 +1,6 @@
 //! Claim bond rewards
 //! This Instruction allows bond owners to claim their staking rewards
+use std::convert::TryInto;
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -11,15 +12,17 @@ use solana_program::{
     pubkey::Pubkey,
 };
 
-use crate::state::{BondAccount, CentralState, StakePool};
+use crate::state::{BondAccount, StakePool};
 use crate::{error::AccessError, state::Tag};
-use bonfida_utils::{fp_math::safe_downcast, BorshSize, InstructionsAccount};
+use bonfida_utils::{BorshSize, InstructionsAccount};
 use spl_token::{instruction::mint_to, state::Account};
+use crate::instruction::ProgramInstruction::{ClaimBondRewards};
 
 use crate::utils::{
     assert_no_close_or_delegate, calc_reward_fp32, check_account_key, check_account_owner,
     check_signer,
 };
+use crate::state:: CentralStateV2;
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 /// The required parameters for the `claim_bond_rewards` instruction
@@ -113,12 +116,15 @@ pub fn process_claim_bond_rewards(
 
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let central_state = CentralState::from_account_info(accounts.central_state)?;
+    let central_state = CentralStateV2::from_account_info(accounts.central_state)?;
+    central_state.assert_instruction_allowed(&ClaimBondRewards)?;
     let stake_pool = StakePool::get_checked(accounts.stake_pool, vec![Tag::StakePool])?;
     let mut bond = BondAccount::from_account_info(accounts.bond_account, false)?;
 
     let destination_token_acc = Account::unpack(&accounts.rewards_destination.data.borrow())?;
     if destination_token_acc.mint != central_state.token_mint {
+        msg!("Invalid ACCESS mint");
+        #[cfg(not(feature = "no-mint-check"))]
         return Err(AccessError::WrongMint.into());
     }
 
@@ -146,6 +152,7 @@ pub fn process_claim_bond_rewards(
         AccessError::WrongMint,
     )?;
 
+    // Calculate the rewards (checks if the pool is cranked as well)
     let reward = calc_reward_fp32(
         central_state.last_snapshot_offset,
         bond.last_claimed_offset,
@@ -156,8 +163,9 @@ pub fn process_claim_bond_rewards(
     // Multiply by the staker shares of the total pool
     .checked_mul(bond.total_staked as u128)
     .map(|r| ((r >> 31) + 1) >> 1)
-    .and_then(safe_downcast)
-    .ok_or(AccessError::Overflow)?;
+        .ok_or(AccessError::Overflow)?
+        .try_into()
+        .map_err(|_|AccessError::Overflow)?;
 
     msg!("Claiming bond rewards {}", reward);
     msg!("Total staked {}", bond.total_staked);
@@ -179,7 +187,7 @@ pub fn process_claim_bond_rewards(
             accounts.central_state.clone(),
             accounts.rewards_destination.clone(),
         ],
-        &[&[&program_id.to_bytes(), &[central_state.signer_nonce]]],
+        &[&[&program_id.to_bytes(), &[central_state.bump_seed]]],
     )?;
 
     // Update states
