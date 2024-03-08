@@ -9,7 +9,7 @@ import {
   VersionedTransaction
 } from "@solana/web3.js";
 
-import { migrateCentralStateV2, } from "../smart-contract/js";
+import { migrateCentralStateV2 } from "../smart-contract/js";
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
 
 const {
@@ -44,6 +44,8 @@ const migrateCentralState = async () => {
     const ata = getAssociatedTokenAddressSync(
       new PublicKey(MINT_ADDRESS), centralKey, true
     );
+
+    console.log(`Associated token account: ${ata.toBase58()}`);
 
     const transaction = new Transaction().add(
       createAssociatedTokenAccountInstruction(

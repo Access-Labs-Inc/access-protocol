@@ -26,6 +26,7 @@ else
 fi
 
 AUTHORITY_KEYPAIR=${AUTHORITY_KEYPAIR:-"$pwd/artifacts/authority.json"}
+echo "Authority ${AUTHORITY_KEYPAIR}"
 echo "Check fee payer keypair file exists..."
 if test -f "$AUTHORITY_KEYPAIR"
 then
@@ -72,9 +73,11 @@ program_pubkey=$(solana-keygen pubkey ${PROGRAM_KEYPAIR})
 echo "Program pubkey: $program_pubkey"
 authority_pubkey=$(solana-keygen pubkey ${AUTHORITY_KEYPAIR})
 echo "Authority pubkey: $authority_pubkey"
+solana config get
 solana program deploy ./target/deploy/access_protocol.so \
  --program-id ${PROGRAM_KEYPAIR} \
  --upgrade-authority ${authority_pubkey} \
+ --keypair ${AUTHORITY_KEYPAIR} \
  -u ${NETWORK}
 
 popd
