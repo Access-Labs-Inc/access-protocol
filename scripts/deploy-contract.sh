@@ -8,7 +8,7 @@ ALLOW_V1=${ALLOW_V1:-false}
 pushd ../smart-contract/program
 echo  "Building smart contract program..."
 # IMPORTANT: If not no-mint-check present you need to update MINT_ADDRESS in (state.rs)
-FEATURES="no-bond-signer no-mint-check"
+FEATURES=""
 if [ "$ALLOW_V1" == "true" ];
 then
   FEATURES="no-bond-signer no-mint-check v1-instructions-allowed"
