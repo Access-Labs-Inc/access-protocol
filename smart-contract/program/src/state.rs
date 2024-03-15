@@ -28,7 +28,7 @@ pub const ACCESS_MINT: Pubkey =
 // todo fill in the production one
 /// ACCESS NFT program address
 pub const ACCESS_NFT_PROGRAM_SIGNER: Pubkey =
-    solana_program::pubkey!("AF7bqw2GjPPX25nWNRYtDpNALMp9B4D9FEaFekur2LEr");
+    solana_program::pubkey!("97VhuEes8ExokBvG7hxyexpFPGzZu18SZERVKseqVV9");
 
 /// Specify the number of seconds in a day, used only for testing purposes
 pub const SECONDS_IN_DAY: u64 = if cfg!(feature = "days-to-sec-15m") {
