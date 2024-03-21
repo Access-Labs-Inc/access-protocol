@@ -1,0 +1,14 @@
+#!/bin/bash
+set -x
+set -o allexport -o notify
+
+SOLANA_RPC_PROVIDER_URL=
+PROGRAM_ID=
+POOL_PUBKEY=
+USER_PUBKEY=
+PAYER_KEYPAIR=
+AMOUNT=10
+# Sun Mar 24 2024 09:45:57 GMT+0000
+UNLOCK_TIMESTAMP=1711273557
+
+ts-node drop-bond-v2.ts
