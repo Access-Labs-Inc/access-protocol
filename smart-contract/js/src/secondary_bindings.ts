@@ -736,6 +736,7 @@ export const fullUnlock = async (
  * @param feePayerCompensation The amount of ACS to reimburse to the fee payer
  * @param programId The program ID
  * @param poolOffsets The pool offsets, if already known (otherwise retrieved from the blockchain)
+ * @param tokenAccountFeepayer The token account of the fee payer
  */
 export const fullUserRewardClaim = async (
   connection: Connection,
@@ -744,6 +745,7 @@ export const fullUserRewardClaim = async (
   feePayerCompensation = 0,
   programId = ACCESS_PROGRAM_ID,
   poolOffsets: Map<string, number> | undefined = undefined,
+  tokenAccountFeepayer = feePayer,
 ): Promise<[TransactionInstruction[], TransactionInstruction[]]> => {
   const filters: MemcmpFilter[] = [
     {
@@ -862,7 +864,7 @@ export const fullUserRewardClaim = async (
   if (!userATAInfo) {
     preClaimIxs.push(
       createAssociatedTokenAccountInstruction(
-        feePayer,
+        tokenAccountFeepayer,
         userATA,
         user,
         centralState.tokenMint,
