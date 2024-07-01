@@ -1,8 +1,0 @@
-flask==1.1.2
-flask_inputs==0.3.0
-solana==0.20.0
-redis==4.1.0
-base58==2.1.1
-flask-cors==3.0.10
-python-dotenv==0.19.2
-Flask-JWT-Extended==4.3.1
