@@ -57,4 +57,4 @@ pub mod utils;
 #[allow(missing_docs)]
 pub mod cpi;
 
-declare_id!("acp1VPqNoMs5KC5aEH3MzxnyPZNyKQF1TCPouCoNRuX");
+declare_id!("6HW8dXjtiTGkD4jzXs7igdFmZExPpmwUrRN5195xGup");
