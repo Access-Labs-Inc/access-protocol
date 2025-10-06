@@ -236,7 +236,7 @@ export const getActiveRoyaltyPayers = async (
     },
     {
       memcmp: {
-        offset: 1 + 2* 32,
+        offset: 1 + 2 * 32,
         bytes: ata.toBase58(),
       },
     },
