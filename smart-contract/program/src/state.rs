@@ -5,7 +5,7 @@ use std::ops::DerefMut;
 
 use bonfida_utils::BorshSize;
 use borsh::{BorshDeserialize, BorshSerialize};
-use bytemuck::{cast_slice, from_bytes, from_bytes_mut, Pod, try_cast_slice_mut, Zeroable};
+use bytemuck::{cast_slice, from_bytes, from_bytes_mut, try_cast_slice_mut, Pod, Zeroable};
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
 use solana_program::account_info::AccountInfo;
@@ -25,9 +25,10 @@ use crate::utils::is_admin_renouncable_instruction;
 pub const ACCESS_MINT: Pubkey =
     solana_program::pubkey!("5MAYDfq5yxtudAhtfyuMBuHZjgAbaS9tbEyEQYAhDS5y");
 
+// todo fill in the production one
 /// ACCESS NFT program address
 pub const ACCESS_NFT_PROGRAM_SIGNER: Pubkey =
-    solana_program::pubkey!("AF7bqw2GjPPX25nWNRYtDpNALMp9B4D9FEaFekur2LEr");
+    solana_program::pubkey!("97VhuEes8ExokBvG7hxyexpFPGzZu18SZERVKseqVV9");
 
 /// Specify the number of seconds in a day, used only for testing purposes
 pub const SECONDS_IN_DAY: u64 = if cfg!(feature = "days-to-sec-15m") {
@@ -60,7 +61,7 @@ pub const MAX_FEE_SPLIT_SETUP_DELAY: u64 = 5 * 60; // 5 minutes
 pub const DEFAULT_FEE_BASIS_POINTS: u16 = 200;
 
 #[derive(
-BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive, Debug
+    BorshSerialize, BorshDeserialize, BorshSize, PartialEq, FromPrimitive, ToPrimitive, Debug,
 )]
 #[repr(u8)]
 #[allow(missing_docs)]
@@ -207,7 +208,7 @@ impl StakePoolHeaped {
 }
 
 #[allow(missing_docs)]
-impl<H: DerefMut<Target=StakePoolHeader>, B: DerefMut<Target=[RewardsTuple]>> StakePool<H, B> {
+impl<H: DerefMut<Target = StakePoolHeader>, B: DerefMut<Target = [RewardsTuple]>> StakePool<H, B> {
     pub fn push_balances_buff(
         &mut self,
         current_offset: u64,
@@ -539,9 +540,7 @@ pub struct CentralStateV2 {
 
 impl CentralStateV2 {
     #[allow(missing_docs)]
-    pub fn from_central_state(
-        central_state: CentralState,
-    ) -> Result<Self, ProgramError> {
+    pub fn from_central_state(central_state: CentralState) -> Result<Self, ProgramError> {
         Ok(Self {
             tag: Tag::CentralStateV2,
             bump_seed: central_state.signer_nonce,
@@ -553,7 +552,7 @@ impl CentralStateV2 {
             total_staked_snapshot: central_state.total_staked_snapshot,
             last_snapshot_offset: central_state.last_snapshot_offset,
             freeze_authority: central_state.authority,
-            ix_gate: u128::MAX, // all instructions enabled
+            ix_gate: u128::MAX,       // all instructions enabled
             admin_ix_gate: u128::MAX, // all instructions enabled
             fee_basis_points: DEFAULT_FEE_BASIS_POINTS,
             last_fee_distribution_time: Clock::get()?.unix_timestamp,
@@ -607,7 +606,7 @@ impl CentralStateV2 {
         let fee = amount
             .checked_mul(self.fee_basis_points as u64)
             .ok_or(AccessError::Overflow)?
-            .checked_add(9_999)// rounding
+            .checked_add(9_999) // rounding
             .ok_or(AccessError::Overflow)?
             .checked_div(10_000)
             .ok_or(AccessError::Overflow)?;
@@ -889,19 +888,12 @@ pub struct RoyaltyAccount {
     pub royalty_basis_points: u16,
 }
 
-
 #[allow(missing_docs)]
 impl RoyaltyAccount {
     pub const SEED: &'static [u8; 15] = b"royalty_account";
 
-    pub fn create_key(
-        payer: &Pubkey,
-        program_id: &Pubkey,
-    ) -> (Pubkey, u8) {
-        let seeds: &[&[u8]] = &[
-            RoyaltyAccount::SEED,
-            &payer.to_bytes(),
-        ];
+    pub fn create_key(payer: &Pubkey, program_id: &Pubkey) -> (Pubkey, u8) {
+        let seeds: &[&[u8]] = &[RoyaltyAccount::SEED, &payer.to_bytes()];
         Pubkey::find_program_address(seeds, program_id)
     }
 
@@ -946,7 +938,7 @@ impl RoyaltyAccount {
         let royalty = amount
             .checked_mul(self.royalty_basis_points as u64)
             .ok_or(AccessError::Overflow)?
-            .checked_add(9_999)// rounding
+            .checked_add(9_999) // rounding
             .ok_or(AccessError::Overflow)?
             .checked_div(10_000)
             .ok_or(AccessError::Overflow)?;

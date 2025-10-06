@@ -236,7 +236,7 @@ export const getActiveRoyaltyPayers = async (
     },
     {
       memcmp: {
-        offset: 1 + 2* 32,
+        offset: 1 + 2 * 32,
         bytes: ata.toBase58(),
       },
     },
@@ -736,6 +736,7 @@ export const fullUnlock = async (
  * @param feePayerCompensation The amount of ACS to reimburse to the fee payer
  * @param programId The program ID
  * @param poolOffsets The pool offsets, if already known (otherwise retrieved from the blockchain)
+ * @param tokenAccountFeepayer The token account of the fee payer
  */
 export const fullUserRewardClaim = async (
   connection: Connection,
@@ -744,6 +745,7 @@ export const fullUserRewardClaim = async (
   feePayerCompensation = 0,
   programId = ACCESS_PROGRAM_ID,
   poolOffsets: Map<string, number> | undefined = undefined,
+  tokenAccountFeepayer = feePayer,
 ): Promise<[TransactionInstruction[], TransactionInstruction[]]> => {
   const filters: MemcmpFilter[] = [
     {
@@ -780,6 +782,9 @@ export const fullUserRewardClaim = async (
         // stake account
         case Tag.StakeAccount:
           const stakeAccount = StakeAccount.deserialize(account.account.data);
+          if (stakeAccount.stakeAmount.toNumber() === 0) {
+            return null;
+          }
           relevantPools.add(stakeAccount.stakePool.toBase58());
           if (stakeAccount.lastClaimedOffset < currentOffset) {
             const claimIx = new claimRewardsInstruction({
@@ -798,10 +803,6 @@ export const fullUserRewardClaim = async (
               royaltyAta
             );
 
-            // we don't require the owner to sign this transaction as users are claiming for themselves
-            const claimIdx = claimIx.keys.findIndex(e => e.pubkey.equals(user));
-            // @ts-ignore
-            claimIx.keys[claimIdx].isSigner = false;
             return claimIx;
           }
           return null;
@@ -809,6 +810,9 @@ export const fullUserRewardClaim = async (
         // bond account
         case Tag.BondAccount:
           const bondAccount = BondAccount.deserialize(account.account.data);
+          if (bondAccount.totalStaked.toNumber() === 0) {
+            return null;
+          }
           relevantPools.add(bondAccount.stakePool.toBase58());
           if (bondAccount.lastClaimedOffset < currentOffset) {
             const bondClaimIx =
@@ -822,12 +826,6 @@ export const fullUserRewardClaim = async (
                 centralState.tokenMint,
                 TOKEN_PROGRAM_ID,
               );
-            // we don't require the owner to sign this transaction as our use-case is only the bond owner claiming their rewards.
-            const bondClaimIds = bondClaimIx.keys.findIndex(e =>
-              e.pubkey.equals(bondAccount.owner),
-            );
-            // @ts-ignore
-            bondClaimIx.keys[bondClaimIds].isSigner = false;
             return bondClaimIx;
           }
           return null;
@@ -835,6 +833,9 @@ export const fullUserRewardClaim = async (
         // bondV2 account
         case Tag.BondV2Account:
           const bondV2Account = BondV2Account.deserialize(account.account.data);
+          if (bondV2Account.amount.toNumber() === 0) {
+            return null;
+          }
           relevantPools.add(bondV2Account.pool.toBase58());
           if (bondV2Account.lastClaimedOffset < currentOffset) {
             return new claimBondV2RewardsInstruction().getInstruction(
@@ -863,7 +864,7 @@ export const fullUserRewardClaim = async (
   if (!userATAInfo) {
     preClaimIxs.push(
       createAssociatedTokenAccountInstruction(
-        feePayer,
+        tokenAccountFeepayer,
         userATA,
         user,
         centralState.tokenMint,

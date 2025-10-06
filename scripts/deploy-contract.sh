@@ -8,8 +8,16 @@ ALLOW_V1=${ALLOW_V1:-false}
 pushd ../smart-contract/program || exit;
 echo  "Building smart contract program..."
 # IMPORTANT: If not no-mint-check present you need to update MINT_ADDRESS in (state.rs)
-FEATURES="no-bond-signer no-mint-check"
+FEATURES=""
 if [ "$ALLOW_V1" == "true" ];
+then
+  FEATURES="no-bond-signer no-mint-check v1-instructions-allowed"
+fi
+cargo build-bpf --features ${FEATURES}
+
+PROGRAM_KEYPAIR=${PROGRAM_KEYPAIR:-"$pwd/artifacts/program.json"}
+echo "Check program keypair file exists..."
+if test -f "$PROGRAM_KEYPAIR"
 then
   FEATURES="no-bond-signer no-mint-check v1-instructions-allowed"
 fi
@@ -26,6 +34,7 @@ else
 fi
 
 AUTHORITY_KEYPAIR=${AUTHORITY_KEYPAIR:-"$pwd/artifacts/authority.json"}
+echo "Authority ${AUTHORITY_KEYPAIR}"
 echo "Check fee payer keypair file exists..."
 if test -f "$AUTHORITY_KEYPAIR"
 then
@@ -70,10 +79,11 @@ fi
 echo "Deploying contract..."
 authority_pubkey=$(solana-keygen pubkey ${AUTHORITY_KEYPAIR})
 echo "Authority pubkey: $authority_pubkey"
+solana config get
 solana program deploy ./target/deploy/access_protocol.so \
- -k ${AUTHORITY_KEYPAIR} \
- --program-id ${PROGRAM_ID} \
- --upgrade-authority ${AUTHORITY_KEYPAIR} \
+ --program-id ${PROGRAM_KEYPAIR} \
+ --upgrade-authority ${authority_pubkey} \
+ --keypair ${AUTHORITY_KEYPAIR} \
  -u ${NETWORK}
 
 popd || exit;
