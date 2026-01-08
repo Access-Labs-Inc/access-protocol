@@ -2,6 +2,9 @@
 node_modules
 dist
 .vscode
+.idea
+artifacts*
+.DS_Store
 __pycache__
 target/
 bin/

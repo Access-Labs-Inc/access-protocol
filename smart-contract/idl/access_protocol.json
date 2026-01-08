@@ -1,0 +1,1865 @@
+{
+  "version": "0.7.13",
+  "name": "access_protocol",
+  "address": "6HW8dXjtiTGkD4jzXs7igdFmZExPpmwUrRN5195xGup",
+  "metadata": {
+    "name": "Access Protocol Base Program",
+    "version": "0.7.13",
+    "spec": "0.1.0",
+    "description": "Access Protocol - Native Solana Program"
+  },
+  "instructions": [
+    {
+      "name": "createCentralState",
+      "discriminator": [
+        0
+      ],
+      "accounts": [
+        {
+          "name": "centralState",
+          "writable": true
+        },
+        {
+          "name": "systemProgram"
+        },
+        {
+          "name": "feePayer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mint"
+        }
+      ],
+      "args": [
+        {
+          "name": "dailyInflation",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "createStakePool",
+      "discriminator": [
+        1
+      ],
+      "accounts": [
+        {
+          "name": "Stake Pool",
+          "writable": true
+        },
+        {
+          "name": "System Program"
+        },
+        {
+          "name": "poolOwner",
+          "signer": true
+        },
+        {
+          "name": "feePayer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "stakePoolVault"
+        },
+        {
+          "name": "centralState"
+        }
+      ],
+      "args": [
+        {
+          "name": "minimumStakeAmount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "activateStakePool",
+      "discriminator": [
+        2
+      ],
+      "accounts": [
+        {
+          "name": "stakePool",
+          "writable": true
+        },
+        {
+          "name": "centralState"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "createStakeAccount",
+      "discriminator": [
+        3
+      ],
+      "accounts": [
+        {
+          "name": "stakeAccount",
+          "writable": true
+        },
+        {
+          "name": "systemProgram"
+        },
+        {
+          "name": "stakePool"
+        },
+        {
+          "name": "feePayer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "centralState"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "stake",
+      "discriminator": [
+        4
+      ],
+      "accounts": [
+        {
+          "name": "centralState",
+          "writable": true
+        },
+        {
+          "name": "stakeAccount",
+          "writable": true
+        },
+        {
+          "name": "stakePool",
+          "writable": true
+        },
+        {
+          "name": "tokenOwner",
+          "signer": true
+        },
+        {
+          "name": "sourceToken",
+          "writable": true
+        },
+        {
+          "name": "splTokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "stakePoolVault",
+          "writable": true
+        },
+        {
+          "name": "centralStateVault",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "unstake",
+      "discriminator": [
+        5
+      ],
+      "accounts": [
+        {
+          "name": "centralState",
+          "writable": true
+        },
+        {
+          "name": "stakeAccount",
+          "writable": true
+        },
+        {
+          "name": "stakePool",
+          "writable": true
+        },
+        {
+          "name": "stakeAccountOwner",
+          "signer": true
+        },
+        {
+          "name": "destinationTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "splTokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "stakePoolVault",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "claimPoolRewards",
+      "discriminator": [
+        6
+      ],
+      "accounts": [
+        {
+          "name": "stakePool",
+          "writable": true
+        },
+        {
+          "name": "stakePoolOwner",
+          "signer": true
+        },
+        {
+          "name": "rewardsDestination",
+          "writable": true
+        },
+        {
+          "name": "centralState",
+          "writable": true
+        },
+        {
+          "name": "mint",
+          "address": "5MAYDfq5yxtudAhtfyuMBuHZjgAbaS9tbEyEQYAhDS5y"
+        },
+        {
+          "name": "splTokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "royaltyAta",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "claimStakeRewards",
+      "discriminator": [
+        7
+      ],
+      "accounts": [
+        {
+          "name": "stakePool",
+          "writable": true
+        },
+        {
+          "name": "stakeAccount",
+          "writable": true
+        },
+        {
+          "name": "stakeAccountOwner",
+          "signer": true
+        },
+        {
+          "name": "rewardsDestination",
+          "writable": true
+        },
+        {
+          "name": "centralState"
+        },
+        {
+          "name": "mint",
+          "address": "5MAYDfq5yxtudAhtfyuMBuHZjgAbaS9tbEyEQYAhDS5y",
+          "writable": true
+        },
+        {
+          "name": "accessNftProgramSigner",
+          "address": "AF7bqw2GjPPX25nWNRYtDpNALMp9B4D9FEaFekur2LEr"
+        },
+        {
+          "name": "splTokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "royaltyAccount"
+        },
+        {
+          "name": "royaltyAta",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "allowZeroRewards",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "crank",
+      "discriminator": [
+        8
+      ],
+      "accounts": [
+        {
+          "name": "stakePool",
+          "writable": true
+        },
+        {
+          "name": "centralState",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "closeStakePool",
+      "discriminator": [
+        9
+      ],
+      "accounts": [
+        {
+          "name": "stakePool",
+          "writable": true
+        },
+        {
+          "name": "stakePoolVault",
+          "writable": false
+        },
+        {
+          "name": "owner",
+          "signer": true,
+          "writable": true
+        },
+        {
+          "name": "centralState",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "closeStakeAccount",
+      "discriminator": [
+        10
+      ],
+      "accounts": [
+        {
+          "name": "stakeAccount",
+          "writable": true
+        },
+        {
+          "name": "owner",
+          "signer": true,
+          "writable": true
+        },
+        {
+          "name": "centralState"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "changeInflation",
+      "discriminator": [
+        11
+      ],
+      "accounts": [
+        {
+          "name": "centralState",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "tokenMint",
+          "address": "5MAYDfq5yxtudAhtfyuMBuHZjgAbaS9tbEyEQYAhDS5y"
+        }
+      ],
+      "args": [
+        {
+          "name": "dailyInflation",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "createBond",
+      "discriminator": [
+        12
+      ],
+      "accounts": [
+        {
+          "name": "bondSeller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "bondAccount",
+          "writable": true
+        },
+        {
+          "name": "stakePool"
+        },
+        {
+          "name": "systemProgram"
+        },
+        {
+          "name": "feePayer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "centralState"
+        }
+      ],
+      "args": [
+        {
+          "name": "buyer",
+          "type": "pubkey"
+        },
+        {
+          "name": "totalAmountSold",
+          "type": "u64"
+        },
+        {
+          "name": "totalQuoteAmount",
+          "type": "u64"
+        },
+        {
+          "name": "quoteMint",
+          "type": "pubkey"
+        },
+        {
+          "name": "sellerTokenAccount",
+          "type": "pubkey"
+        },
+        {
+          "name": "unlockStartDate",
+          "type": "i64"
+        },
+        {
+          "name": "unlockPeriod",
+          "type": "i64"
+        },
+        {
+          "name": "unlockAmount",
+          "type": "u64"
+        },
+        {
+          "name": "sellerIndex",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "signBond",
+      "discriminator": [
+        13
+      ],
+      "accounts": [
+        {
+          "name": "seller",
+          "signer": true
+        },
+        {
+          "name": "bondAccount",
+          "writable": true
+        },
+        {
+          "name": "centralState"
+        }
+      ],
+      "args": [
+        {
+          "name": "sellerIndex",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "unlockBondTokens",
+      "discriminator": [
+        14
+      ],
+      "accounts": [
+        {
+          "name": "bondAccount",
+          "writable": true
+        },
+        {
+          "name": "bondOwner",
+          "signer": true
+        },
+        {
+          "name": "mint",
+          "address": "5MAYDfq5yxtudAhtfyuMBuHZjgAbaS9tbEyEQYAhDS5y"
+        },
+        {
+          "name": "accessTokenDestination",
+          "writable": true
+        },
+        {
+          "name": "centralState",
+          "writable": true
+        },
+        {
+          "name": "stakePool",
+          "writable": true
+        },
+        {
+          "name": "stakePoolVault",
+          "writable": true
+        },
+        {
+          "name": "splTokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "claimBond",
+      "discriminator": [
+        15
+      ],
+      "accounts": [
+        {
+          "name": "bondAccount",
+          "writable": true
+        },
+        {
+          "name": "buyer",
+          "signer": true
+        },
+        {
+          "name": "quoteTokenSource",
+          "writable": true
+        },
+        {
+          "name": "quoteTokenDestination",
+          "writable": true
+        },
+        {
+          "name": "stakePool",
+          "writable": true
+        },
+        {
+          "name": "accessMint",
+          "writable": true
+        },
+        {
+          "name": "poolVault",
+          "writable": true
+        },
+        {
+          "name": "centralState",
+          "writable": true
+        },
+        {
+          "name": "splTokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "changePoolMinimum",
+      "discriminator": [
+        16
+      ],
+      "accounts": [
+        {
+          "name": "stakePool",
+          "writable": true
+        },
+        {
+          "name": "stakePoolOwner",
+          "signer": true
+        },
+        {
+          "name": "centralState"
+        }
+      ],
+      "args": [
+        {
+          "name": "newMinimum",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "Admin Mint",
+      "discriminator": [
+        17
+      ],
+      "accounts": [
+        {
+          "name": "Authority",
+          "signer": true
+        },
+        {
+          "name": "Mint",
+          "writable": true
+        },
+        {
+          "name": "Access Token Destination",
+          "writable": true
+        },
+        {
+          "name": "Central State"
+        },
+        {
+          "name": "Spl Token Program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "Amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "Admin Freeze",
+      "discriminator": [
+        18
+      ],
+      "accounts": [
+        {
+          "name": "Authority",
+          "signer": true
+        },
+        {
+          "name": "Account To Freeze",
+          "writable": true
+        },
+        {
+          "name": "Central State"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "Change Pool Multiplier",
+      "discriminator": [
+        19
+      ],
+      "accounts": [
+        {
+          "name": "Stake Pool",
+          "writable": true
+        },
+        {
+          "name": "Stake Pool Owner",
+          "signer": true
+        },
+        {
+          "name": "Central State"
+        }
+      ],
+      "args": [
+        {
+          "name": "New Multiplier",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "Change Central State Authority",
+      "discriminator": [
+        20
+      ],
+      "accounts": [
+        {
+          "name": "Central State",
+          "writable": true
+        },
+        {
+          "name": "Authority",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "New Authority",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "Edit Metadata",
+      "discriminator": [
+        21
+      ],
+      "accounts": [
+        {
+          "name": "Central State"
+        },
+        {
+          "name": "Authority",
+          "signer": true
+        },
+        {
+          "name": "Metadata",
+          "writable": true
+        },
+        {
+          "name": "Metadata Program"
+        }
+      ],
+      "args": [
+        {
+          "name": "Name",
+          "type": "string"
+        },
+        {
+          "name": "Symbol",
+          "type": "string"
+        },
+        {
+          "name": "Uri",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "Create Bond V2",
+      "discriminator": [
+        22
+      ],
+      "accounts": [
+        {
+          "name": "Bond V2 Account",
+          "writable": true
+        },
+        {
+          "name": "System Program"
+        },
+        {
+          "name": "pool"
+        },
+        {
+          "name": "Fee Payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "Central State"
+        }
+      ],
+      "args": [
+        {
+          "name": "Unlock Timestamp",
+          "type": {
+            "option": "i64"
+          }
+        },
+        {
+          "name": "Owner",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "Add To Bond V2",
+      "discriminator": [
+        23
+      ],
+      "accounts": [
+        {
+          "name": "From",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "From Ata",
+          "writable": true
+        },
+        {
+          "name": "Bond V2 Account",
+          "writable": true
+        },
+        {
+          "name": "Central State",
+          "writable": true
+        },
+        {
+          "name": "Central State Vault",
+          "writable": true
+        },
+        {
+          "name": "Pool",
+          "writable": true
+        },
+        {
+          "name": "Pool Vault",
+          "writable": true
+        },
+        {
+          "name": "Mint",
+          "writable": true
+        },
+        {
+          "name": "Spl Token Program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "System Program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "Amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "Claim Bond V2 Rewards",
+      "discriminator": [
+        24
+      ],
+      "accounts": [
+        {
+          "name": "Pool",
+          "writable": true
+        },
+        {
+          "name": "Bond V2 Account",
+          "writable": true
+        },
+        {
+          "name": "Owner",
+          "signer": true
+        },
+        {
+          "name": "Rewards Destination",
+          "writable": true
+        },
+        {
+          "name": "Central State"
+        },
+        {
+          "name": "Mint",
+          "writable": true
+        },
+        {
+          "name": "Access Nft Signer",
+          "address": "AF7bqw2GjPPX25nWNRYtDpNALMp9B4D9FEaFekur2LEr"
+        },
+        {
+          "name": "Spl Token Program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "Owner Royalty Account"
+        },
+        {
+          "name": "Royalty Ata",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "Unlock Bond V2",
+      "discriminator": [
+        25
+      ],
+      "accounts": [
+        {
+          "name": "Central State",
+          "writable": true
+        },
+        {
+          "name": "Bond V2 Account",
+          "writable": true
+        },
+        {
+          "name": "Owner",
+          "signer": true
+        },
+        {
+          "name": "Destination Account",
+          "writable": true
+        },
+        {
+          "name": "Pool",
+          "writable": true
+        },
+        {
+          "name": "Pool Vault",
+          "writable": true
+        },
+        {
+          "name": "Spl Token Program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "Admin Setup Fee Split",
+      "discriminator": [
+        26
+      ],
+      "accounts": [
+        {
+          "name": "Authority",
+          "signer": true
+        },
+        {
+          "name": "Central State",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "Recipients",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "FeeRecipient"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Distribute Fees",
+      "discriminator": [
+        27
+      ],
+      "accounts": [
+        {
+          "name": "Central State",
+          "writable": true
+        },
+        {
+          "name": "Central State Vault",
+          "writable": true
+        },
+        {
+          "name": "Spl Token Program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "Mint",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "Admin Set Protocol Fee",
+      "discriminator": [
+        28
+      ],
+      "accounts": [
+        {
+          "name": "Authority",
+          "signer": true
+        },
+        {
+          "name": "Central State",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "Protocol Fee Basis Points",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "Migrate Central State V2",
+      "discriminator": [
+        29
+      ],
+      "accounts": [
+        {
+          "name": "Central State",
+          "writable": true
+        },
+        {
+          "name": "System Program"
+        },
+        {
+          "name": "Fee Payer",
+          "writable": true,
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "Admin Program Freeze",
+      "discriminator": [
+        30
+      ],
+      "accounts": [
+        {
+          "name": "Central State",
+          "writable": true
+        },
+        {
+          "name": "Authority",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "Ix Gate",
+          "type": "u128"
+        }
+      ]
+    },
+    {
+      "name": "Admin Renounce",
+      "discriminator": [
+        31
+      ],
+      "accounts": [
+        {
+          "name": "Central State",
+          "writable": true
+        },
+        {
+          "name": "Authority",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "Ix",
+          "type": {
+            "defined": {
+              "name": "ProgramInstruction"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Change Freeze Authority",
+      "discriminator": [
+        32
+      ],
+      "accounts": [
+        {
+          "name": "Central State",
+          "writable": true
+        },
+        {
+          "name": "Authority",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "New Freeze Authority",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "Create Royalty Account",
+      "discriminator": [
+        33
+      ],
+      "accounts": [
+        {
+          "name": "Royalty Account",
+          "writable": true
+        },
+        {
+          "name": "Fee Payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "Royalty Payer",
+          "signer": true
+        },
+        {
+          "name": "System Program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "Central State"
+        }
+      ],
+      "args": [
+        {
+          "name": "Royalty Basis Points",
+          "type": "u16"
+        },
+        {
+          "name": "Expiration Date",
+          "type": "u64"
+        },
+        {
+          "name": "Royalty Ata",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "Close Royalty Account",
+      "discriminator": [
+        34
+      ],
+      "accounts": [
+        {
+          "name": "Royalty Account",
+          "writable": true
+        },
+        {
+          "name": "Royalty Payer",
+          "signer": true
+        },
+        {
+          "name": "Rent Destination",
+          "writable": true
+        },
+        {
+          "name": "Central State"
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Stake Pool",
+      "discriminator": [
+        1
+      ]
+    },
+    {
+      "name": "Inactive Stake Pool",
+      "discriminator": [
+        2
+      ]
+    },
+    {
+      "name": "Stake Account",
+      "discriminator": [
+        3
+      ]
+    },
+    {
+      "name": "Inactive Bond Account",
+      "discriminator": [
+        4
+      ]
+    },
+    {
+      "name": "Bond Account",
+      "discriminator": [
+        5
+      ]
+    },
+    {
+      "name": "Central State",
+      "discriminator": [
+        6
+      ]
+    },
+    {
+      "name": "Bond V2 Account",
+      "discriminator": [
+        11
+      ]
+    },
+    {
+      "name": "Central State V2",
+      "discriminator": [
+        12
+      ]
+    },
+    {
+      "name": "Royalty Account",
+      "discriminator": [
+        13
+      ]
+    }
+  ],
+  "types": [
+    {
+      "name": "Stake Pool",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "Tag",
+            "type": "u8"
+          },
+          {
+            "name": "Nonce",
+            "type": "u8"
+          },
+          {
+            "name": "Current Day Index",
+            "type": "u16"
+          },
+          {
+            "name": "Padding",
+            "type": {
+              "array": [
+                "u8",
+                4
+              ]
+            }
+          },
+          {
+            "name": "Minimum Stake Amount",
+            "type": "u64"
+          },
+          {
+            "name": "Total Staked",
+            "type": "u64"
+          },
+          {
+            "name": "Last Claimed Offset",
+            "type": "u64"
+          },
+          {
+            "name": "Stakers Part",
+            "type": "u64"
+          },
+          {
+            "name": "Owner",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "Vault",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "Balances",
+            "type": {
+              "array": [
+                {
+                  "defined": {
+                    "name": "RewardsTuple"
+                  }
+                },
+                274
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Inactive Stake Pool",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "Tag",
+            "type": "u8"
+          },
+          {
+            "name": "Nonce",
+            "type": "u8"
+          },
+          {
+            "name": "Current Day Index",
+            "type": "u16"
+          },
+          {
+            "name": "Padding",
+            "type": {
+              "array": [
+                "u8",
+                4
+              ]
+            }
+          },
+          {
+            "name": "Minimum Stake Amount",
+            "type": "u64"
+          },
+          {
+            "name": "Total Staked",
+            "type": "u64"
+          },
+          {
+            "name": "Last Claimed Offset",
+            "type": "u64"
+          },
+          {
+            "name": "Stakers Part",
+            "type": "u64"
+          },
+          {
+            "name": "Owner",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "Vault",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "Balances",
+            "type": {
+              "array": [
+                {
+                  "defined": {
+                    "name": "RewardsTuple"
+                  }
+                },
+                274
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Stake Account",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "Tag",
+            "type": "u8"
+          },
+          {
+            "name": "Owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "Stake Amount",
+            "type": "u64"
+          },
+          {
+            "name": "Stake Pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "Last Claimed Offset",
+            "type": "u64"
+          },
+          {
+            "name": "Pool Minimum At Creation",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Inactive Bond Account",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "Tag",
+            "type": "u8"
+          },
+          {
+            "name": "Owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "Total Amount Sold",
+            "type": "u64"
+          },
+          {
+            "name": "Total Staked",
+            "type": "u64"
+          },
+          {
+            "name": "Total Quote Amount",
+            "type": "u64"
+          },
+          {
+            "name": "Quote Mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "Seller Token Account",
+            "type": "pubkey"
+          },
+          {
+            "name": "Unlock Start Date",
+            "type": "i64"
+          },
+          {
+            "name": "Unlock Period",
+            "type": "i64"
+          },
+          {
+            "name": "Unlock Amount",
+            "type": "u64"
+          },
+          {
+            "name": "Last Unlock Time",
+            "type": "i64"
+          },
+          {
+            "name": "Total Unlocked Amount",
+            "type": "u64"
+          },
+          {
+            "name": "Pool Minimum At Creation",
+            "type": "u64"
+          },
+          {
+            "name": "Stake Pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "Last Claimed Offset",
+            "type": "u64"
+          },
+          {
+            "name": "Sellers",
+            "type": {
+              "vec": "pubkey"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Bond Account",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "Tag",
+            "type": "u8"
+          },
+          {
+            "name": "Owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "Total Amount Sold",
+            "type": "u64"
+          },
+          {
+            "name": "Total Staked",
+            "type": "u64"
+          },
+          {
+            "name": "Total Quote Amount",
+            "type": "u64"
+          },
+          {
+            "name": "Quote Mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "Seller Token Account",
+            "type": "pubkey"
+          },
+          {
+            "name": "Unlock Start Date",
+            "type": "i64"
+          },
+          {
+            "name": "Unlock Period",
+            "type": "i64"
+          },
+          {
+            "name": "Unlock Amount",
+            "type": "u64"
+          },
+          {
+            "name": "Last Unlock Time",
+            "type": "i64"
+          },
+          {
+            "name": "Total Unlocked Amount",
+            "type": "u64"
+          },
+          {
+            "name": "Pool Minimum At Creation",
+            "type": "u64"
+          },
+          {
+            "name": "Stake Pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "Last Claimed Offset",
+            "type": "u64"
+          },
+          {
+            "name": "Sellers",
+            "type": {
+              "vec": "pubkey"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Central State",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "Tag",
+            "type": "u8"
+          },
+          {
+            "name": "Signer Nonce",
+            "type": "u8"
+          },
+          {
+            "name": "Daily Inflation",
+            "type": "u64"
+          },
+          {
+            "name": "Token Mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "Authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "Creation Time",
+            "type": "i64"
+          },
+          {
+            "name": "Total Staked",
+            "type": "u64"
+          },
+          {
+            "name": "Total Staked Snapshot",
+            "type": "u64"
+          },
+          {
+            "name": "Last Snapshot Offset",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Bond V2 Account",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "Tag",
+            "type": "u8"
+          },
+          {
+            "name": "Owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "Amount",
+            "type": "u64"
+          },
+          {
+            "name": "Pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "Last Claimed Offset",
+            "type": "u64"
+          },
+          {
+            "name": "Pool Minimum At Creation",
+            "type": "u64"
+          },
+          {
+            "name": "Unlock Timestamp",
+            "type": {
+              "option": "i64"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Central State V2",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "Tag",
+            "type": "u8"
+          },
+          {
+            "name": "Bump Seed",
+            "type": "u8"
+          },
+          {
+            "name": "Daily Inflation",
+            "type": "u64"
+          },
+          {
+            "name": "Token Mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "Authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "Creation Time",
+            "type": "i64"
+          },
+          {
+            "name": "Total Staked",
+            "type": "u64"
+          },
+          {
+            "name": "Total Staked Snapshot",
+            "type": "u64"
+          },
+          {
+            "name": "Last Snapshot Offset",
+            "type": "u64"
+          },
+          {
+            "name": "Ix Gate",
+            "type": "u128"
+          },
+          {
+            "name": "Freeze Authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "Admin Ix Gate",
+            "type": "u128"
+          },
+          {
+            "name": "Fee Basis Points",
+            "type": "u16"
+          },
+          {
+            "name": "Last Fee Distribution Time",
+            "type": "i64"
+          },
+          {
+            "name": "Recipients",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "FeeRecipient"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Royalty Account",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "Tag",
+            "type": "u8"
+          },
+          {
+            "name": "Rent Payer",
+            "type": "pubkey"
+          },
+          {
+            "name": "Royalty Payer",
+            "type": "pubkey"
+          },
+          {
+            "name": "Recipient Ata",
+            "type": "pubkey"
+          },
+          {
+            "name": "Expiration Date",
+            "type": "u64"
+          },
+          {
+            "name": "Royalty Basis Points",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FeeRecipient",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "Owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "Percentage",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RewardsTuple",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "Pool Reward",
+            "type": "u128"
+          },
+          {
+            "name": "Stakers Reward",
+            "type": "u128"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProgramInstruction",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Create Central State"
+          },
+          {
+            "name": "Create Stake Pool"
+          },
+          {
+            "name": "Activate Stake Pool"
+          },
+          {
+            "name": "Create Stake Account"
+          },
+          {
+            "name": "Stake"
+          },
+          {
+            "name": "Unstake"
+          },
+          {
+            "name": "Claim Pool Rewards"
+          },
+          {
+            "name": "Claim Rewards"
+          },
+          {
+            "name": "Crank"
+          },
+          {
+            "name": "Close Stake Pool"
+          },
+          {
+            "name": "Close Stake Account"
+          },
+          {
+            "name": "Change Inflation"
+          },
+          {
+            "name": "Create Bond"
+          },
+          {
+            "name": "Sign Bond"
+          },
+          {
+            "name": "Unlock Bond Tokens"
+          },
+          {
+            "name": "Claim Bond"
+          },
+          {
+            "name": "Claim Bond Rewards"
+          },
+          {
+            "name": "Change Pool Minimum"
+          },
+          {
+            "name": "Admin Mint"
+          },
+          {
+            "name": "Admin Freeze"
+          },
+          {
+            "name": "Change Pool Multiplier"
+          },
+          {
+            "name": "Change Central State Authority"
+          },
+          {
+            "name": "Edit Metadata"
+          },
+          {
+            "name": "Create Bond V2"
+          },
+          {
+            "name": "Add To Bond V2"
+          },
+          {
+            "name": "Claim Bond V2 Rewards"
+          },
+          {
+            "name": "Unlock Bond V2"
+          },
+          {
+            "name": "Admin Setup Fee Split"
+          },
+          {
+            "name": "Distribute Fees"
+          },
+          {
+            "name": "Admin Set Protocol Fee"
+          },
+          {
+            "name": "Migrate Central StateV2"
+          },
+          {
+            "name": "Admin Program Freeze"
+          },
+          {
+            "name": "Admin Renounce"
+          },
+          {
+            "name": "Admin Change Freeze Authority"
+          },
+          {
+            "name": "Create Royalty Account"
+          },
+          {
+            "name": "Close Royalty Account"
+          }
+        ]
+      }
+    }
+  ]
+}
