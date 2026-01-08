@@ -1,105 +1,140 @@
-<h1 align="center">ACCESS Protocol</h1>
+# ACCESS Protocol
 
-<h2 align="center">Table of content</h2>
+A Solana smart contract for decentralized content monetization through token staking.
 
-1. Concepts
-2. Backends
-   - Javascript
-   - Rust
-   - Go
-   - Python
-3. Smart contract
-   - Program
-   - Javascript bindings
+**Program ID:** `6HW8dXjtiTGkD4jzXs7igdFmZExPpmwUrRN5195xGup`
 
-<h2 align="center">Concepts</h2>
+## Overview
 
-ACCESS Protocol lays the foundation for digital content monetization using a web3 wallet. Users get access to content by staking ACCESS tokens (through their `StakeAccount`) into the content publisher's pool (`StakePool`). ACCESS tokens are distributed to stakers and content publishers through an inflation schedule defined in the `CentralState`.
+Users stake ACCESS tokens into content publisher pools (`StakePool`) via their `StakeAccount` to access content. Token inflation rewards are distributed to stakers and publishers based on the `CentralState` schedule.
 
-The protocol also has the possibility to create and sell bonds (`BondAccount`). Bonds allow the protocol to sell locked tokens with linear vesting. The locked tokens can be staked and used to access content of a staked pool.
+**Key components:**
+- **CentralState** – Global config: ACCESS mint, inflation schedule, mint authority
+- **StakePool** – Publisher pools with circular buffer for balance tracking (updated via permissionless `crank`)
+- **StakeAccount** – User deposits into pools; earns yield + grants content access
+- **Bonds (v1/v2)** – Locked tokens with linear vesting, can be staked while locked
 
-Publishers need to adapt their backend infrastructures to support authentication and authorization via a web3 wallet. This authentication process relies on signature verifications and a demo example is implemented in the `backends` folder in JS, Rust, Go and Python.
-
-<h2 align="center">Backends</h2>
-
-The `backends` folder contains an example implementation of a REST API using a Solana wallet for authentication and JWT authorization. The example is implemented in Javascript, Rust, Go and Python.
-
-It is strongly recommended to use either the Javascript or Rust implementation as these two language have the best Solana tooling.
-
-<h2 align="center">Smart contract</h2>
-
-The smart contract folder contains two subfolders: `js` and `program`.
-
-### Program
-
-The `program` folder contains the Solana smart contract code, documentation can be generated using Rust doc
+## Requirements
 
 ```
-cargo doc
+solana-cli 1.18.26
+cargo 1.72.0
 ```
 
-`functional.rs` test can be run using Solana program test
+## Project Structure
 
 ```
-BPF_OUT_DIR=target/deploy cargo test-bpf --features days-to-sec-10s no-mint-check no-bond-signer --test functional
+├── smart-contract/
+│   ├── program/          # Rust smart contract
+│   └── js/               # TypeScript/JS bindings (@accessprotocol/js)
+└── scripts/              # Deployment & admin scripts
 ```
 
-Other Rust tests can be run using
+## Building
 
-```
-BPF_OUT_DIR=target/deploy cargo test-bpf --features no-mint-check no-bond-signer -- --skip functional_10s
-```
-
+```bash
+make build
 ```
 
+Output: `smart-contract/program/target/deploy/access_protocol.so`
+
+Or directly:
+
+```bash
+cd smart-contract/program
+cargo build-bpf
 ```
 
-### JS
+### Build Features
 
-The `js` folder contains the Javascript bindings of the smart contract. This package is published on NPM
+| Feature | Description |
+|---------|-------------|
+| `no-mint-check` | Skip mint address validation |
+| `no-bond-signer` | Disable bond signer requirement |
+| `v1-instructions-allowed` | Enable legacy v1 instructions |
+| `days-to-sec-10s` | 1 day = 10 seconds (testing) |
+| `days-to-sec-15m` | 1 day = 15 minutes (testing) |
 
+## Testing
+
+```bash
+cd smart-contract/program
+make test
 ```
+
+Or manually:
+
+```bash
+# Unit tests
+cargo test-bpf --features no-mint-check no-bond-signer v1-instructions-allowed -- --skip functional --skip devnet
+
+# Functional tests (accelerated time)
+cargo test-bpf --features no-mint-check no-bond-signer v1-instructions-allowed days-to-sec-10s --test functional
+```
+
+## JS Bindings
+
+```bash
 npm i @accessprotocol/js
-```
-
-```
+# or
 yarn add @accessprotocol/js
 ```
 
-End to end tests are implemented using `jest`, they can be run using
+```typescript
+import { stake, unstake, ... } from "@accessprotocol/js"
+```
 
+### Building JS bindings
+
+```bash
+cd smart-contract/js
+yarn install
+yarn build
 ```
-yarn amman:start
-yarn jest
+
+## Devnet Deployment
+
+```bash
+cd scripts && npm install   # first time only
+make deploy-full-devnet RPC=https://api.devnet.solana.com
+
+# Or with v1 instructions enabled:
+make deploy-full-devnet-v1 RPC=https://api.devnet.solana.com
 ```
+
+The `RPC` parameter is required and can be any Solana RPC endpoint.
 
 This will:
+1. Create SPL token with metadata
+2. Build & deploy the program
+3. Initialize `CentralState`
+4. Mint initial tokens
+5. Transfer mint authority to program
+6. Migrate to v2 format
 
-- Spawn a local solana test validator via Amman
-- Deploy the program
-- Run all the instructions of the protocol
-- Verify the states of each account at each step
+### Deployment Artifacts
 
-### Devnet deployment
+Generated in `scripts/artifacts/`:
 
-To deploy the program on devnet run the `yarn deploy` command inside the `scripts` folder. This will:
+| File | Description |
+|------|-------------|
+| `program.json` | Program keypair |
+| `authority.json` | Upgrade authority keypair |
+| `spl_authority.json` | SPL token authority (pre-transfer) |
+| `central_state_pubkey.txt` | CentralState PDA |
+| `mint_address.txt` | ACCESS token mint |
 
-- Create an SPL token with appropriate metadata.
-- Build and deploy the Solana program (smart contract).
-- Create a `CentralState` data account for the global state of the program.
-- Transfer the SPL token authority to the program (central state). 
 
-The following artifacts will be created during the deployment in the `scripts/artifacts` folder:
+## Make Targets
 
-- `program.json` - Keypair of the program
-- `authority.json` - Keypair of the program update authority
-- `spl_authority.json` - Keypair of the SPL token authority, not used anymore after the authority transfer
-- `central_state_pubkey.txt` - Pubkey of the `CentralState` data account
-- `mint_address.txt` - Pubkey of the SPL token mint
+| Target | Description |
+|--------|-------------|
+| `make build` | Build the program |
+| `make deploy-full-devnet RPC=<url>` | Full devnet deployment |
+| `make deploy-full-devnet-v1 RPC=<url>` | Deploy with v1 instructions enabled |
+| `make check-program` | Verify .so exists |
+| `make clean` | Clean build artifacts |
 
-### Known shortcomings
+## License
 
-- Cannot create two bonds tied to a different pool with the same amount
-- Bond functionality is counterintuitive
-  - Bond unlocking does not start at `unlock_start_date`, but at `unlock_start_date + unlock_period`
-  - If bond is claimed after the `unlock_start_date`, the offset of unlock times is counted relative to this date instead of the `unlock_start_date`
+GPL-3.0

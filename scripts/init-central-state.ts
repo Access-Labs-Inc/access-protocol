@@ -1,4 +1,5 @@
 import fs from "fs";
+import path from "path";
 import { Connection, Keypair, PublicKey, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
 
 import { createCentralState, } from "../smart-contract/js";
@@ -62,7 +63,9 @@ const initCentralState = async () => {
     new PublicKey(PROGRAM_PUBKEY)
   );
   // write central state key to file
-  fs.writeFileSync("artifacts/central_state_pubkey.txt", centralKey.toString());
+  const artifactsDir = path.join(__dirname, "artifacts");
+  fs.writeFileSync(path.join(artifactsDir, "central_state_pubkey.txt"), centralKey.toString());
+  console.log("Central state pubkey:", centralKey.toString());
 };
 
 initCentralState()
