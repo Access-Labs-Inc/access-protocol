@@ -8,7 +8,7 @@ POOL_PUBKEY=
 USER_PUBKEY=
 PAYER_KEYPAIR=
 AMOUNT=10
-# Sun Mar 24 2024 09:45:57 GMT+0000
-UNLOCK_TIMESTAMP=1711273557
+# Default: 5 minutes from now. Set to 0 for no unlock.
+UNLOCK_TIMESTAMP=$(($(date +%s) + 5 * 60))
 
 ts-node drop-bond-v2.ts

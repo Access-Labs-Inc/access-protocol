@@ -5,6 +5,8 @@
   "main": "index.js",
   "scripts": {
     "create-devnet-spl-token": "ts-node create-devnet-spl-token.ts",
+    "create-stake-pool": "ts-node create-stake-pool.ts",
+    "unlock-bond-v2": "ts-node unlock-bond-v2.ts",
     "deploy-contract": "./deploy-contract.sh",
     "init-central-state": "./init-central-state.sh",
     "spl-set-authority": "./spl-set-authority.sh",

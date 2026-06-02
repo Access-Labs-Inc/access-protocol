@@ -1,9 +1,22 @@
-import { addToBondV2, createBondV2 } from "../smart-contract/js";
+import {
+  activateStakePool,
+  addToBondV2,
+  CentralStateV2,
+  crank,
+  createBondV2,
+  StakePool,
+  Tag,
+} from "../smart-contract/js";
+import {
+  createAssociatedTokenAccountInstruction,
+  getAssociatedTokenAddressSync,
+} from "@solana/spl-token";
 import {
   ComputeBudgetProgram,
   Connection,
   Keypair,
   PublicKey,
+  SendTransactionError,
   Signer,
   TransactionInstruction,
   TransactionMessage,
@@ -61,6 +74,16 @@ if (isNaN(unlockTimestamp)) {
   throw new Error("UNLOCK_TIMESTAMP must be a number");
 }
 
+if (unlockTimestamp > 0) {
+  const nowTs = Math.floor(Date.now() / 1000);
+  if (unlockTimestamp <= nowTs) {
+    throw new Error(`UNLOCK_TIMESTAMP is in the past (now=${nowTs}, unlock=${unlockTimestamp}). Set a future unix timestamp or use 0 for no unlock.`);
+  }
+}
+
+const unlockTsBn = unlockTimestamp > 0 ? new BN(unlockTimestamp) : null;
+const amountBn = new BN(amount).mul(new BN(1_000_000));
+
 export const sendIxs = async (connection: Connection, ixs: TransactionInstruction[], signers: Signer[]) => {
   const computePriceIx = ComputeBudgetProgram.setComputeUnitPrice({
     microLamports: 10_000_000,
@@ -89,28 +112,91 @@ export const sendIxs = async (connection: Connection, ixs: TransactionInstructio
   );
 }
 
+const logSendTransactionError = async (err: unknown) => {
+  if (err instanceof SendTransactionError) {
+    const logs = await (err as SendTransactionError & {
+      getLogs?: (conn: Connection) => Promise<string[]>;
+      logs?: string[];
+    }).getLogs?.(connection);
+    console.error("SendTransactionError logs:");
+    console.error(logs ?? (err as { logs?: string[] }).logs ?? []);
+    return logs ?? (err as { logs?: string[] }).logs ?? [];
+  }
+  return [] as string[];
+};
+
 const main = async () => {
+  const ixs: TransactionInstruction[] = [];
+
+  const [centralState] = CentralStateV2.getKey(programId);
+  const centralStateData = await CentralStateV2.retrieve(connection, centralState);
+  console.log(centralStateData.tokenMint)
+  console.log("payer:", payer.publicKey.toBase58());
+  const payerAta = getAssociatedTokenAddressSync(
+    centralStateData.tokenMint,
+    payer.publicKey,
+    true,
+  );
+  const payerAtaData = await connection.getAccountInfo(payerAta);
+  if (!payerAtaData) {
+    console.warn("Payer ATA missing. Adding createAssociatedTokenAccount instruction.");
+    ixs.push(
+      createAssociatedTokenAccountInstruction(
+        payer.publicKey,
+        payerAta,
+        payer.publicKey,
+        centralStateData.tokenMint,
+      )
+    );
+  }
+
+  const payerTokenBalance = await connection.getTokenAccountBalance(payerAta).catch(() => null);
+  const payerAmountRaw = BigInt(payerTokenBalance?.value.amount ?? "0");
+  const requiredAmountRaw = BigInt(amountBn.toString(10));
+  if (payerAmountRaw < requiredAmountRaw) {
+    throw new Error(
+      `Insufficient ACS balance in payer ATA ${payerAta.toBase58()}: have ${payerAmountRaw.toString()}, need ${requiredAmountRaw.toString()}.`
+    );
+  }
+
+  const poolState = await StakePool.retrieve(connection, pool);
+  if (poolState.tag === Tag.InactiveStakePool) {
+    console.warn("Stake pool is inactive (tag=2). Adding activateStakePool instruction before bonding.");
+    ixs.push(activateStakePool(pool, programId));
+  } else if (poolState.tag !== Tag.StakePool) {
+    throw new Error(`POOL_PUBKEY is not an active stake pool. Current tag: ${poolState.tag}`);
+  }
+
+  // add_to_bond_v2 requires pool current day index to be up to date.
+  ixs.push(crank(pool, programId));
+
   const createBondIx = createBondV2(
     user,
     payer.publicKey,
     pool,
-    new BN.BN(unlockTimestamp),
+    unlockTsBn,
     programId,
   );
 
-  // Add to bond V2
   const addBondIx = await addToBondV2(
     connection,
     user,
     payer.publicKey,
     pool,
-    new BN.BN(amount * 1e6),
-    new BN.BN(unlockTimestamp),
+    amountBn,
+    unlockTsBn,
     programId,
   );
 
-  const sx = await sendIxs(connection, [createBondIx, addBondIx], [payer]);
-  console.log("Transaction:", sx);
+  ixs.push(createBondIx, addBondIx);
+
+  try {
+    const sx = await sendIxs(connection, ixs, [payer]);
+    console.log("Transaction:", sx);
+  } catch (err) {
+    await logSendTransactionError(err);
+    throw err;
+  }
 };
 
 main()
